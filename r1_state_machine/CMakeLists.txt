@@ -8,13 +8,21 @@ endif()
 # find dependencies
 find_package(ament_cmake REQUIRED)
 find_package(joy REQUIRED)
+# for C++ enum
+find_package(magic_enum CONFIG REQUIRED)
 find_package(rclcpp REQUIRED)
 find_package(sensor_msgs REQUIRED)
 find_package(std_msgs REQUIRED)
 
 add_executable(r1_state_machine_node src/r1_state_machine_node.cpp)
 
-ament_target_dependencies(r1_state_machine_node rclcpp sensor_msgs std_msgs)
+ament_target_dependencies(r1_state_machine_node
+  rclcpp
+  sensor_msgs
+  std_msgs
+)
+
+target_link_libraries(r1_state_machine_node magic_enum::magic_enum)
 
 # インクルードディレクトリを設定
 target_include_directories(r1_state_machine_node PUBLIC
