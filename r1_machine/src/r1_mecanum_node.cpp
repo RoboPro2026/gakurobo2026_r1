@@ -80,7 +80,7 @@ public:
     robot_width_descriptor.floating_point_range.push_back(range);
     speed_limit_descriptor.floating_point_range.push_back(range);
 
-    this->declare_parameter("wheel_radius", 0.05, wheel_radius_descriptor);
+    this->declare_parameter("wheel_radius", 0.1, wheel_radius_descriptor);
     this->declare_parameter("robot_length", 0.5, robot_length_descriptor);
     this->declare_parameter("robot_width", 0.25, robot_width_descriptor);
     this->declare_parameter("speed_limit", 100.0, speed_limit_descriptor);

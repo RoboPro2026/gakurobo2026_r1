@@ -1,0 +1,6 @@
+r1_mecanum_node:
+  ros__parameters:
+    wheel_radius: 0.1
+    robot_length: 0.5
+    robot_width: 0.25
+    speed_limit: 100.0
