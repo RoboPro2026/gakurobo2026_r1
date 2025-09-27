@@ -80,9 +80,9 @@ public:
   {
     // スティックの状態に応じて、足回りを動かす
     // TODO: 必要に応じて、符号の反転や係数をかける。
-    target_vel_.linear.x = -left_stick_x_;
+    target_vel_.linear.x = left_stick_x_;
     target_vel_.linear.y = left_stick_y_;
-    target_vel_.angular.z = -right_stick_x_;
+    target_vel_.angular.z = right_stick_x_;
     cmd_vel_publisher_->publish(target_vel_);
   }
 
@@ -112,10 +112,10 @@ public:
   // 速度指令値
   geometry_msgs::msg::Twist target_vel_;
   // joy_stick
-  float left_stick_x_ = 0.0f;
-  float left_stick_y_ = 0.0f;
-  float right_stick_x_ = 0.0f;
-  float right_stick_y_ = 0.0f;
+  double left_stick_x_ = 0.0f;
+  double left_stick_y_ = 0.0f;
+  double right_stick_x_ = 0.0f;
+  double right_stick_y_ = 0.0f;
 };
 
 int main(int argc, char * argv[])
