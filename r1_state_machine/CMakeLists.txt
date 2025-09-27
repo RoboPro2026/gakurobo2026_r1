@@ -7,6 +7,7 @@ endif()
 
 # find dependencies
 find_package(ament_cmake REQUIRED)
+find_package(geometry_msgs REQUIRED)
 find_package(joy REQUIRED)
 # for C++ enum
 find_package(magic_enum CONFIG REQUIRED)
@@ -17,6 +18,7 @@ find_package(std_msgs REQUIRED)
 add_executable(r1_state_machine_node src/r1_state_machine_node.cpp)
 
 ament_target_dependencies(r1_state_machine_node
+  geometry_msgs
   rclcpp
   sensor_msgs
   std_msgs

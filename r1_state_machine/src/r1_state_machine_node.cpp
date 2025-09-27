@@ -1,89 +1,128 @@
-/*
+/**
+ * @file r1_state_machine_node.cpp
+ * @author Yamaguchi Yudai
+ * @brief R1の状態遷移ノード
+ * @version 0.1
+ * @date 2025-09-27
+ * 
+ * @copyright Copyright (c) 2025
+ * 
+ */
+
+#include <chrono>
+#include <functional>
+#include <map>
+#include <memory>
+#include <string>
+#include <variant>
+
+#include "geometry_msgs/msg/twist.hpp"
+#include "magic_enum.hpp"
+#include "r1_state_machine/state_machine.h"
 #include "rclcpp/rclcpp.hpp"
 #include "sensor_msgs/msg/joy.hpp"
 
-#include <map>
-
-namespace MainState{
-enum {
-  IDLE,
-  MANUAL,
-  AUTO,
-  EMERGENCY
-};
-std::map mp = {
-  {IDLE, "IDLE"},
-  {MANUAL, "MANUAL"},
-  {AUTO, "AUTO"},
-  {EMERGENCY, "EMERGENCY"};
-};
-}
-
-class MyNode : public rclcpp::Node
+class R1StateMachineNode : public rclcpp::Node
 {
 public:
-  MyNode() : Node("r1_state_machine_node")
+  R1StateMachineNode() : Node("r1_state_machine_node")
   {
-    // ジョイスティックの購読者を作成
+    cmd_vel_publisher_ = this->create_publisher<geometry_msgs::msg::Twist>("/cmd_vel", 10);
+
     joy_subscriber_ = this->create_subscription<sensor_msgs::msg::Joy>(
-      "/joy", 10, std::bind(&MyNode::joy_callback, this, std::placeholders::_1));
+      "/joy", 10, std::bind(&R1StateMachineNode::joy_callback, this, std::placeholders::_1));
+
+    timer_publisher_ =
+      this->create_wall_timer(10ms, std::bind(&R1StateMachineNode::timer_callback, this));
+
+    state_machine_ = std::make_shared<StateMachine>(
+      [this](std::string msg) { RCLCPP_INFO(this->get_logger(), "%s", msg.c_str()); });
+    state_machine_->set_next_state({MainState::MANUAL, ManualSubState::NONE});
   }
 
+  // --- コールバック関数 ---
   void joy_callback(const sensor_msgs::msg::Joy::SharedPtr msg)
   {
-    // ジョイスティックのデータを処理
-    RCLCPP_INFO(
-      this->get_logger(), "Received joystick data: axes[0]=%f, buttons[0]=%d", msg->axes[0],
-      msg->buttons[0]);
+    left_stick_x_ = msg->axes[0];
+    left_stick_y_ = msg->axes[1];
+    right_stick_x_ = msg->axes[3];
+    right_stick_y_ = msg->axes[4];
   }
 
-  int main_state_ = MainState::IDLE;
-  int sub_state_ = 0;
+  void timer_callback(void)
+  {
+    // 状態を更新
+    state_machine_->update();
+    // タスクを実行
+    main_task();
+  }
+
+  // --- 各状態のタスク ---
+  void idle_task(void)
+  {
+    // 速度指令値を0にする
+    target_vel_.linear.x = 0.0;
+    target_vel_.linear.y = 0.0;
+    target_vel_.angular.z = 0.0;
+    cmd_vel_publisher_->publish(target_vel_);
+  }
+
+  void emergency_task(void)
+  {
+    // 速度指令値を0にする
+    target_vel_.linear.x = 0.0;
+    target_vel_.linear.y = 0.0;
+    target_vel_.angular.z = 0.0;
+    cmd_vel_publisher_->publish(target_vel_);
+  }
+
+  void manual_task(void)
+  {
+    // スティックの状態に応じて、足回りを動かす
+    // TODO: 必要に応じて、符号の反転や係数をかける。
+    target_vel_.linear.x = -left_stick_x_;
+    target_vel_.linear.y = left_stick_y_;
+    target_vel_.angular.z = -right_stick_x_;
+    cmd_vel_publisher_->publish(target_vel_);
+  }
+
+  void auto_task(void) {}
+
+  void main_task(void)
+  {
+    auto current_state = state_machine_->get_current_state();
+    if (current_state.main == MainState::IDLE) {
+      idle_task();
+    } else if (current_state.main == MainState::EMERGENCY) {
+      emergency_task();
+    } else if (current_state.main == MainState::MANUAL) {
+      manual_task();
+    } else if (current_state.main == MainState::AUTO) {
+      auto_task();
+    }
+  }
+
+  std::shared_ptr<StateMachine> state_machine_;
+
+  // publisherとsubscriber
+  rclcpp::Publisher<geometry_msgs::msg::Twist>::SharedPtr cmd_vel_publisher_;
   rclcpp::Subscription<sensor_msgs::msg::Joy>::SharedPtr joy_subscriber_;
+  rclcpp::TimerBase::SharedPtr timer_publisher_;
+
+  // 速度指令値
+  geometry_msgs::msg::Twist target_vel_;
+  // joy_stick
+  float left_stick_x_ = 0.0f;
+  float left_stick_y_ = 0.0f;
+  float right_stick_x_ = 0.0f;
+  float right_stick_y_ = 0.0f;
 };
 
 int main(int argc, char * argv[])
 {
   rclcpp::init(argc, argv);
-  auto node = std::make_shared<MyNode>();
+  auto node = std::make_shared<R1StateMachineNode>();
   rclcpp::spin(node);
-  rclcpp::shutdown();
-  return 0;
-}
-*/
-
-#include "rclcpp/rclcpp.hpp"
-#include "magic_enum.hpp" // magic_enumのヘッダーをインクルード
-
-namespace MainState {
-    // enum classを定義するだけ！
-    enum class State {
-        IDLE,
-        MANUAL,
-        AUTO,
-        EMERGENCY
-    };
-}
-
-// --- 使用例 ---
-int main(int argc, char * argv[]) {
-  rclcpp::init(argc, argv);
-  auto node = rclcpp::Node::make_shared("state_example");
-  
-  MainState::State current_state = MainState::State::AUTO;
-
-  // magic_enum::enum_name() を使って状態を文字列に変換
-  auto state_name = magic_enum::enum_name(current_state);
-
-  // state_nameはstd::string_view型なので、.data()や.c_str()でC言語文字列に変換
-  RCLCPP_INFO(node->get_logger(), "Current state is: %s", state_name.data());
-
-  // 文字列からenumへの変換も可能
-  auto state_optional = magic_enum::enum_cast<MainState::State>("MANUAL");
-  if (state_optional) {
-    RCLCPP_INFO(node->get_logger(), "String 'MANUAL' converted back to enum.");
-  }
-
   rclcpp::shutdown();
   return 0;
 }
