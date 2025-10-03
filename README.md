@@ -2,7 +2,13 @@
 
 TODO: setup手順ちゃんと書く
 
-setup
+インストール
 ```
 sudo apt install ros-humble-magic-enum
+```
+
+実行
+```
+sudo ./can_setup.bash
+ros2 launch r1_bringup r1_bringup.launch.py
 ```
