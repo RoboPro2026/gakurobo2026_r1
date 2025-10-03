@@ -4,3 +4,6 @@ r1_mecanum_node:
     robot_length: 0.5
     robot_width: 0.25
     speed_limit: 100.0
+sabacan_robomas_node1:
+  ros__parameters:
+    board_id: 1
