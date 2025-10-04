@@ -58,15 +58,12 @@ public:
       "/cmd_vel", 10, std::bind(&MyNode::cmd_vel_callback, this, std::placeholders::_1));
 
     wheel_speeds_publisher_ =
-      this->create_publisher<std_msgs::msg::Float64MultiArray>("/wheel_speeds", 10);
+      this->create_publisher<std_msgs::msg::Float64MultiArray>("/mecanum_wheel_speeds", 10);
 
     parameter_callback_handler_ = this->add_on_set_parameters_callback(
       std::bind(&MyNode::parameter_callback, this, std::placeholders::_1));
 
-    auto wheel_radius_descriptor = rcl_interfaces::msg::ParameterDescriptor();
-    auto robot_length_descriptor = rcl_interfaces::msg::ParameterDescriptor();
-    auto robot_width_descriptor = rcl_interfaces::msg::ParameterDescriptor();
-    auto speed_limit_descriptor = rcl_interfaces::msg::ParameterDescriptor();
+    auto parameter_descriptor = rcl_interfaces::msg::ParameterDescriptor();
     // パラメータの範囲を設定
     auto range = rcl_interfaces::msg::FloatingPointRange();
     // 入力は0より大きい値のみ（1e-9以上）
@@ -75,15 +72,12 @@ public:
     // 刻み幅に制限なし
     range.step = 0.0;
 
-    wheel_radius_descriptor.floating_point_range.push_back(range);
-    robot_length_descriptor.floating_point_range.push_back(range);
-    robot_width_descriptor.floating_point_range.push_back(range);
-    speed_limit_descriptor.floating_point_range.push_back(range);
+    parameter_descriptor.floating_point_range.push_back(range);
 
-    this->declare_parameter("wheel_radius", 0.1, wheel_radius_descriptor);
-    this->declare_parameter("robot_length", 0.5, robot_length_descriptor);
-    this->declare_parameter("robot_width", 0.25, robot_width_descriptor);
-    this->declare_parameter("speed_limit", 100.0, speed_limit_descriptor);
+    this->declare_parameter("wheel_radius", 0.1, parameter_descriptor);
+    this->declare_parameter("robot_length", 0.5, parameter_descriptor);
+    this->declare_parameter("robot_width", 0.25, parameter_descriptor);
+    this->declare_parameter("speed_limit", 100.0, parameter_descriptor);
 
     this->get_parameter("wheel_radius", wheel_radius_);
     this->get_parameter("robot_length", robot_length_);
