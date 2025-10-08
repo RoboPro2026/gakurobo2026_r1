@@ -9,13 +9,21 @@ endif()
 find_package(ament_cmake REQUIRED)
 find_package(geometry_msgs REQUIRED)
 find_package(rclcpp REQUIRED)
+find_package(sabacan_msgs REQUIRED)
 find_package(std_msgs REQUIRED)
 
 add_executable(r1_mecanum_node src/r1_mecanum_node.cpp)
+add_executable(r1_sabacan_msgs_converter_node src/r1_sabacan_msgs_converter_node.cpp)
 
 ament_target_dependencies(r1_mecanum_node
   geometry_msgs
   rclcpp
+  std_msgs
+)
+
+ament_target_dependencies(r1_sabacan_msgs_converter_node
+  rclcpp
+  sabacan_msgs
   std_msgs
 )
 
@@ -25,7 +33,16 @@ target_include_directories(r1_mecanum_node PUBLIC
   $<INSTALL_INTERFACE:include>
 )
 
+target_include_directories(r1_sabacan_msgs_converter_node PUBLIC
+  $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+  $<INSTALL_INTERFACE:include>
+)
+
 install(TARGETS r1_mecanum_node
+  DESTINATION lib/${PROJECT_NAME}
+)
+
+install(TARGETS r1_sabacan_msgs_converter_node
   DESTINATION lib/${PROJECT_NAME}
 )
 

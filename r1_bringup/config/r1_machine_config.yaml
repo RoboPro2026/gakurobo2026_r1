@@ -7,3 +7,13 @@ r1_mecanum_node:
 sabacan_robomas_node1:
   ros__parameters:
     board_id: 1
+r1_sabacan_msgs_converter_node:
+  ros__parameters:
+    mecanum_fl_board_id: 1
+    mecanum_fr_board_id: 1
+    mecanum_rl_board_id: 1
+    mecanum_rr_board_id: 1
+    mecanum_fl_motor_number: 0
+    mecanum_fr_motor_number: 1
+    mecanum_rl_motor_number: 2
+    mecanum_rr_motor_number: 3

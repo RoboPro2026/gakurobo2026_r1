@@ -43,6 +43,8 @@ public:
   // --- コールバック関数 ---
   void joy_callback(const sensor_msgs::msg::Joy::SharedPtr msg)
   {
+    // joyトピックを受信した時刻を更新
+    last_joy_time_ = this->now();
     left_stick_x_ = msg->axes[0];
     left_stick_y_ = msg->axes[1];
     right_stick_x_ = msg->axes[3];
@@ -51,6 +53,8 @@ public:
 
   void timer_callback(void)
   {
+    // joyトピックが来ているかを確認
+    check_joy_connection();
     // 状態を更新
     state_machine_->update();
     // タスクを実行
@@ -78,11 +82,17 @@ public:
 
   void manual_task(void)
   {
-    // スティックの状態に応じて、足回りを動かす
-    // TODO: 必要に応じて、符号の反転や係数をかける。
-    target_vel_.linear.x = left_stick_x_;
-    target_vel_.linear.y = left_stick_y_;
-    target_vel_.angular.z = right_stick_x_;
+    if (is_joy_connected_) {
+      // スティックの状態に応じて、足回りを動かす
+      // TODO: 必要に応じて、符号の反転や係数をかける。
+      target_vel_.linear.x = std::abs(left_stick_x_) > 0.1 ? left_stick_x_ : 0.0;
+      target_vel_.linear.y = std::abs(left_stick_y_) > 0.1 ? left_stick_y_ : 0.0;
+      target_vel_.angular.z = std::abs(right_stick_x_) > 0.1 ? right_stick_x_ : 0.0;
+    } else {
+      target_vel_.linear.x = 0.0;
+      target_vel_.linear.y = 0.0;
+      target_vel_.angular.z = 0.0;
+    }
     cmd_vel_publisher_->publish(target_vel_);
   }
 
@@ -102,6 +112,26 @@ public:
     }
   }
 
+  void check_joy_connection(void)
+  {
+    auto now = this->now();
+    auto prev_is_joy_connected = is_joy_connected_;
+    // joyトピックを受信してから0.3秒以内なら、接続されているとみなす
+    if ((now - last_joy_time_).seconds() < 0.3) {
+      is_joy_connected_ = true;
+    } else {
+      is_joy_connected_ = false;
+    }
+    // 接続状態が変化したら、ログを出力
+    if (prev_is_joy_connected != is_joy_connected_) {
+      if (is_joy_connected_) {
+        RCLCPP_WARN(this->get_logger(), "Joy connected");
+      } else {
+        RCLCPP_WARN(this->get_logger(), "Joy disconnected");
+      }
+    }
+  }
+
   std::shared_ptr<StateMachine> state_machine_;
 
   // publisherとsubscriber
@@ -111,7 +141,10 @@ public:
 
   // 速度指令値
   geometry_msgs::msg::Twist target_vel_;
+  // joyトピックを受信した最終時刻
+  rclcpp::Time last_joy_time_ = this->now();
   // joy_stick
+  bool is_joy_connected_ = false;
   double left_stick_x_ = 0.0f;
   double left_stick_y_ = 0.0f;
   double right_stick_x_ = 0.0f;

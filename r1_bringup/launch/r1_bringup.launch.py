@@ -35,12 +35,20 @@ def generate_launch_description():
         arguments=["--ros-args", "--log-level", "warn"],
     )
 
+    r1_sabacan_msgs_converter_node = Node(
+        package="r1_machine",
+        executable="r1_sabacan_msgs_converter_node",
+        name="r1_sabacan_msgs_converter_node",
+        parameters=[param_file],
+        arguments=["--ros-args", "--log-level", "warn"],
+    )
+
     r1_state_machine_node = Node(
         package="r1_state_machine",
         executable="r1_state_machine_node",
         name="r1_state_machine_node",
         parameters=[param_file],
-        arguments=["--ros-args", "--log-level", "warn"],
+        arguments=["--ros-args", "--log-level", "info"],
     )
 
     sabacan_robomas_node1 = Node(
@@ -70,6 +78,7 @@ def generate_launch_description():
         [
             ps4_node,
             r1_mecanum_node,
+            r1_sabacan_msgs_converter_node,
             r1_state_machine_node,
             sabacan_robomas_node1,
             socket_can_bridge_launch,
