@@ -19,6 +19,7 @@
 #include <variant>
 
 #include "magic_enum.hpp"
+#include "rclcpp/rclcpp.hpp"
 
 // MainStateの定義
 enum class MainState
@@ -76,7 +77,7 @@ public:
    * 
    * @param logger print_state用。引数にstd::string,返り値voidのstd::function
    */
-  StateMachine(std::function<void(std::string)> logger) : logger_(logger) {}
+  StateMachine(std::string logger_name = "state_machine") : logger_name_(logger_name) {}
   void set_prev_state(RobotState state) { prev_state_ = state; }
   RobotState get_prev_state(void) { return prev_state_; }
   void set_current_state(RobotState state) { current_state_ = state; }
@@ -89,7 +90,8 @@ public:
     std::string sub_state_str =
       std::visit([](auto s) { return std::string(magic_enum::enum_name(s)); }, state.sub);
 
-    logger_(prefix_msg + "main_state = " + main_state_str + ", sub_state = " + sub_state_str);
+    auto s = prefix_msg + "main_state = " + main_state_str + ", sub_state = " + sub_state_str;
+    RCLCPP_INFO(rclcpp::get_logger(logger_name_), "%s", s.c_str());
   }
   bool is_changed_state(RobotState state1, RobotState state2) { return state1 != state2; }
 
@@ -113,7 +115,7 @@ public:
   }
 
 private:
-  std::function<void(std::string)> logger_;
+  std::string logger_name_;
   RobotState next_state_{MainState::IDLE, IdleSubState::NONE};
   RobotState current_state_{MainState::IDLE, IdleSubState::NONE};
   RobotState prev_state_{MainState::IDLE, IdleSubState::NONE};

@@ -38,8 +38,7 @@ public:
 
     ps4_ = std::make_shared<PS4>("PS4");
 
-    state_machine_ = std::make_shared<StateMachine>(
-      [this](std::string msg) { RCLCPP_INFO(this->get_logger(), "%s", msg.c_str()); });
+    state_machine_ = std::make_shared<StateMachine>();
     state_machine_->set_next_state({MainState::MANUAL, ManualSubState::NONE});
   }
 
