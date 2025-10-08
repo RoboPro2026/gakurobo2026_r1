@@ -36,7 +36,7 @@ public:
     timer_publisher_ =
       this->create_wall_timer(10ms, std::bind(&R1StateMachineNode::timer_callback, this));
 
-    ps4_ = std::make_shared<PS4>();
+    ps4_ = std::make_shared<PS4>("PS4");
 
     state_machine_ = std::make_shared<StateMachine>(
       [this](std::string msg) { RCLCPP_INFO(this->get_logger(), "%s", msg.c_str()); });
@@ -52,6 +52,7 @@ public:
     // 状態を更新
     state_machine_->update();
     // タスクを実行
+    // ps4_->print_data();
     main_task();
   }
 

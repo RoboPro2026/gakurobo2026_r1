@@ -52,30 +52,18 @@ private:
   bool is_connected_ = false;
   bool prev_is_connected_ = false;
   sensor_msgs::msg::Joy::SharedPtr msg_;
-  bool update_flag_ = false;
   double deadzone_ = 0.1;
+  std::string logger_name_;
 
   double apply_deadzone(double x) { return std::abs(x) >= deadzone_ ? x : 0.0; }
 
 public:
-  PS4() {}
-
-  PS4(double deadzone)
-  {
-    if (0 <= deadzone && deadzone <= 1.0) {
-      deadzone_ = deadzone;
-    } else {
-      RCLCPP_ERROR(rclcpp::get_logger("PS4"), "deadzone errror. deadzone = %f", deadzone);
-    }
-  }
+  PS4(std::string logger_name = "PS4") : logger_name_(logger_name) {}
 
   void joy_callback(const sensor_msgs::msg::Joy::SharedPtr msg)
   {
-    // 接続されているとみなす
-    is_connected_ = true;
     last_time_ = rclcpp::Clock().now();
     msg_ = msg;
-    update_flag_ = true;
   }
 
   /**
@@ -85,6 +73,8 @@ public:
    */
   void update()
   {
+    // 一度も受信したことがないときは終了する。
+    if (msg_ == nullptr) return;
     // 接続状況を更新
     prev_is_connected_ = is_connected_;
     if ((rclcpp::Clock().now() - last_time_).seconds() < 0.3) {
@@ -95,12 +85,12 @@ public:
     // 接続状況が変化した場合は、ログを出力
     if (is_connected_ != prev_is_connected_) {
       if (is_connected_)
-        RCLCPP_WARN(rclcpp::get_logger("PS4"), "PS4 connected");
+        RCLCPP_WARN(rclcpp::get_logger(logger_name_), "PS4 connected");
       else
-        RCLCPP_WARN(rclcpp::get_logger("PS4"), "PS4 disconnected");
+        RCLCPP_WARN(rclcpp::get_logger(logger_name_), "PS4 disconnected");
     }
 
-    if (is_connected_ && update_flag_) {
+    if (is_connected_) {
       // PS4のデータを更新
       prev_data = data;  // 前のデータを保存
 
@@ -135,8 +125,40 @@ public:
       // 未接続の場合はスティックのデータを0にする
       prev_data = data = PS4Data();
     }
-    // update関数終了時にflagはfalseにする。
-    update_flag_ = false;
+  }
+
+  void print_data()
+  {
+    auto logger = rclcpp::get_logger(logger_name_);
+    RCLCPP_INFO(logger, "is connected: %d", is_connected_);
+    RCLCPP_INFO(logger, "--- PS4 Data ---");
+    RCLCPP_INFO(logger, "Sticks:");
+    RCLCPP_INFO(
+      logger, "  Left X: %.3f, Left Y: %.3f, Pushed: %s", data.left_stick_x, data.left_stick_y,
+      data.left_stick_pushed ? "true" : "false");
+    RCLCPP_INFO(
+      logger, "  Right X: %.3f, Right Y: %.3f, Pushed: %s", data.right_stick_x, data.right_stick_y,
+      data.right_stick_pushed ? "true" : "false");
+    RCLCPP_INFO(logger, "Triggers:");
+    RCLCPP_INFO(logger, "  L2 Analog: %.3f, R2 Analog: %.3f", data.l2_analog, data.r2_analog);
+    RCLCPP_INFO(logger, "D-Pad:");
+    RCLCPP_INFO(
+      logger, "  Up: %s, Down: %s, Left: %s, Right: %s", data.up ? "true" : "false",
+      data.down ? "true" : "false", data.left ? "true" : "false", data.right ? "true" : "false");
+    RCLCPP_INFO(logger, "Action Buttons:");
+    RCLCPP_INFO(
+      logger, "  Cross: %s, Circle: %s, Triangle: %s, Square: %s", data.cross ? "true" : "false",
+      data.circle ? "true" : "false", data.triangle ? "true" : "false",
+      data.square ? "true" : "false");
+    RCLCPP_INFO(logger, "Shoulder Buttons:");
+    RCLCPP_INFO(
+      logger, "  L1: %s, R1: %s, L2: %s, R2: %s", data.l1 ? "true" : "false",
+      data.r1 ? "true" : "false", data.l2 ? "true" : "false", data.r2 ? "true" : "false");
+    RCLCPP_INFO(logger, "Other Buttons:");
+    RCLCPP_INFO(
+      logger, "  L3: %s, R3: %s, PS: %s", data.l3 ? "true" : "false", data.r3 ? "true" : "false",
+      data.ps ? "true" : "false");
+    RCLCPP_INFO(logger, "----------------");
   }
 
   void set_deadzone(double deadzone)

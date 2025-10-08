@@ -99,10 +99,10 @@ public:
     wheel_speeds_publisher_->publish(wheel_speeds_msg);
 
     // デバッグ用
-    RCLCPP_DEBUG(
+    RCLCPP_INFO(
       this->get_logger(), "Cmd Vel: x: %.2f, y: %.2f, omega: %.2f", target_vel_.linear.x,
       target_vel_.linear.y, target_vel_.angular.z);
-    RCLCPP_DEBUG(
+    RCLCPP_INFO(
       this->get_logger(), "Wheel Speeds: FL: %.2f, FR: %.2f, RL: %.2f, RR: %.2f", wheel_speeds_[FL],
       wheel_speeds_[FR], wheel_speeds_[RL], wheel_speeds_[RR]);
   }
