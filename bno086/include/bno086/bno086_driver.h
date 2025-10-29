@@ -100,7 +100,6 @@ public:
     int j = 0;
     // 受信データを受信状況に応じて処理
     while (j < (int)rx_buff.size()) {
-      std::cout << i << std::endl;
       switch (i) {
         case 0:
           buff_[i] = rx_buff[j];
@@ -121,10 +120,8 @@ public:
           buff_[i] = rx_buff[j];
           if (buff_[18] == calc_check_sum()) {
             // 値を更新
-            std::cout << "true" << std::endl;
             update_sensor_value();
           } else {
-            std::cout << "false" << std::endl;
           }
           i = 0;
           break;

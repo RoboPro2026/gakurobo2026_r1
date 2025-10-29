@@ -29,11 +29,11 @@ private:
   int serial_port_;
   struct termios tty_;
   std::string port_name_;
-  std::string logger_name_;
+  std::string logger_name_ = "serial_driver";
+  bool is_initialize_success;
 
 public:
-  SerialDriver(std::string port_name = "/dev/ttyUSB0", std::string logger_name = "serial_driver")
-  : port_name_(port_name), logger_name_(logger_name)
+  SerialDriver(std::string port_name) : port_name_(port_name)
   {
     // 接続開始処理
     // --- シリアルポートを開く ---
@@ -44,17 +44,19 @@ public:
 
     // open()が-1を返した場合、エラー
     if (serial_port_ < 0) {
-      RCLCPP_ERROR(
+      RCLCPP_FATAL(
         rclcpp::get_logger(logger_name_), "errno = %i(%s), port '%s' can't open", errno,
         strerror(errno), port_name_.c_str());
+      is_initialize_success = false;
       return;
     }
 
     // --- 現在のシリアルポート設定を取得 ---
     if (tcgetattr(serial_port_, &tty_) != 0) {
-      RCLCPP_ERROR(
+      RCLCPP_FATAL(
         rclcpp::get_logger(logger_name_), "errno = %i(%s), tcgetattr failed.", errno,
         strerror(errno));
+      is_initialize_success = false;
       return;
     }
 
@@ -107,13 +109,15 @@ public:
 
     // --- 設定をポートに適用 ---
     if (tcsetattr(serial_port_, TCSANOW, &tty_) != 0) {
-      RCLCPP_ERROR(
+      RCLCPP_FATAL(
         rclcpp::get_logger(logger_name_), "errno = %i(%s), tcsetattr failed.", errno,
         strerror(errno));
+      is_initialize_success = false;
       return;
     }
     // 接続完了
     RCLCPP_INFO(rclcpp::get_logger(logger_name_), "%s connect.", port_name_.c_str());
+    is_initialize_success = true;
   }
 
   ~SerialDriver()
@@ -122,6 +126,8 @@ public:
     close(serial_port_);
     RCLCPP_INFO(rclcpp::get_logger(logger_name_), "%s closed.", port_name_.c_str());
   }
+
+  bool get_is_initialize_success() { return is_initialize_success; }
 
   void write_buff(std::vector<uint8_t> tx_buff)
   {
@@ -132,13 +138,13 @@ public:
     } else {
       // ログの出力処理
       std::string msg;
-      RCLCPP_INFO(rclcpp::get_logger(logger_name_), "%d byte write success.", n);
+      // RCLCPP_INFO(rclcpp::get_logger(logger_name_), "%d byte write success.", n);
       for (int i = 0; i < n; i++) {
         char buff[256];
         sprintf(buff, "[%d] = %d, ", i, tx_buff[i]);
         msg += buff;
       }
-      RCLCPP_INFO(rclcpp::get_logger(logger_name_), "%s", msg.c_str());
+      // RCLCPP_INFO(rclcpp::get_logger(logger_name_), "%s", msg.c_str());
     }
   }
 
@@ -157,13 +163,13 @@ public:
       for (int i = 0; i < n; i++) ret[i] = rx_buff[i];
       // ログの出力
       std::string msg;
-      RCLCPP_INFO(rclcpp::get_logger(logger_name_), "%d byte read success.", n);
+      // RCLCPP_INFO(rclcpp::get_logger(logger_name_), "%d byte read success.", n);
       for (int i = 0; i < n; i++) {
         char buff[256];
         sprintf(buff, "[%d] = %d, ", i, rx_buff[i]);
         msg += buff;
       }
-      RCLCPP_INFO(rclcpp::get_logger(logger_name_), "%s", msg.c_str());
+      // RCLCPP_INFO(rclcpp::get_logger(logger_name_), "%s", msg.c_str());
     }
     return ret;
   }
