@@ -42,12 +42,13 @@ private:
   rclcpp::Time prev_time_;
   BNO086Driver::Data current_data_;
   BNO086Driver::Data prev_data_;
-  BNO086Driver::Data offset_;
-  bool is_first_;
+  BNO086Driver::Data offset_data_;
   static constexpr int BUFF_SIZE = 256;
 
 public:
+  // degreeからradianへの変換係数
   static constexpr double DEG_TO_RAD = M_PI / 180.0;
+  // mgからm/s/sへの変換係数
   static constexpr double MG_TO_MSS = 0.00980665;
   //バッファ
   std::vector<uint8_t> buff_;
@@ -62,6 +63,25 @@ public:
     return ret & 0xff;
   }
 
+  /**
+   * @brief 角度を-pi~piの範囲に正規化する
+   * 
+   * @param angle 
+   * @return double 
+   */
+  double angle_normalize(double angle)
+  {
+    std::complex<double> ret = std::polar(1.0, angle);
+    return std::arg(ret);
+  }
+
+  /**
+   * @brief 角度差を計算する。計算結果は-pi~pi
+   * 
+   * @param current_angle 
+   * @param prev_angle 
+   * @return double 
+   */
   double angle_diff(double current_angle, double prev_angle)
   {
     std::complex<double> current = std::polar(1.0, current_angle);
@@ -72,26 +92,57 @@ public:
 
   void update_sensor_value()
   {
+    // ROS 2の座標系では、
+    // yaw(Z軸回り)はロボットを真上から見たときに半時計周りが正の方向（左旋回）
+    // pitch(Y軸周り)はロボットを左から見たときに半時計回りが正の方向（機首上げ）
+    // roll(X軸回り)はロボットを後ろから見たときに半時計回りが正の方向（左傾き）
+
+    double yaw_angle, pitch_angle, roll_angle;
+
     // prevを更新
     prev_data_ = current_data_;
     prev_time_ = current_time_;
 
     current_time_ = rclcpp::Clock().now();
     current_data_.index = buff_[2];
-    current_data_.yaw_angle = (double)((int16_t)(buff_[3] + (buff_[4] << 8))) / 100.0 * DEG_TO_RAD;
-    current_data_.pitch_angle =
-      (double)((int16_t)(buff_[5] + (buff_[6] << 8))) / 100.0 * DEG_TO_RAD;
-    current_data_.roll_angle = (double)((int16_t)(buff_[7] + (buff_[8] << 8))) / 100.0 * DEG_TO_RAD;
-    current_data_.x_axis_accel = (double)((int16_t)(buff_[9] + (buff_[10] << 8))) * MG_TO_MSS;
-    current_data_.y_axis_accel = (double)((int16_t)(buff_[11] + (buff_[12] << 8))) * MG_TO_MSS;
-    current_data_.z_axis_accel = (double)((int16_t)(buff_[13] + (buff_[14] << 8))) * MG_TO_MSS;
+
+    // 角度を計算
+    yaw_angle = (double)((int16_t)(buff_[3] + (buff_[4] << 8))) / 100.0 * DEG_TO_RAD;
+    // UART-RVCモードでは、yawだけ、ROS 2の座標系と回転方向が逆なので、反転
+    yaw_angle *= -1;
+    // オフセットを適用。オフセットは反転後の角度を基準としている
+    yaw_angle += offset_data_.yaw_angle;
+    // 値を正規化(-pi~pi)の範囲にし、current_data_に代入
+    current_data_.yaw_angle = angle_normalize(yaw_angle);
+
+    pitch_angle = (double)((int16_t)(buff_[5] + (buff_[6] << 8))) / 100.0 * DEG_TO_RAD;
+    // オフセットを適用
+    pitch_angle += offset_data_.pitch_angle;
+    // 値を正規化(-pi~pi)の範囲にし、current_data_に代入
+    current_data_.pitch_angle = angle_normalize(pitch_angle);
+
+    roll_angle = (double)((int16_t)(buff_[7] + (buff_[8] << 8))) / 100.0 * DEG_TO_RAD;
+    // オフセットを適用
+    roll_angle += offset_data_.roll_angle;
+    // 値を正規化(-pi~pi)の範囲にし、current_data_に代入
+    current_data_.roll_angle = angle_normalize(roll_angle);
+
+    // 加速度を計算
+    current_data_.x_axis_accel =
+      (double)((int16_t)(buff_[9] + (buff_[10] << 8))) * MG_TO_MSS + offset_data_.x_axis_accel;
+    current_data_.y_axis_accel =
+      (double)((int16_t)(buff_[11] + (buff_[12] << 8))) * MG_TO_MSS + offset_data_.y_axis_accel;
+    current_data_.z_axis_accel =
+      (double)((int16_t)(buff_[13] + (buff_[14] << 8))) * MG_TO_MSS + offset_data_.z_axis_accel;
+
+    // 角速度を計算
     double dt = current_time_.seconds() - prev_time_.seconds();
     double d_yaw = angle_diff(current_data_.yaw_angle, prev_data_.yaw_angle);
     double d_pitch = angle_diff(current_data_.pitch_angle, prev_data_.pitch_angle);
     double d_roll = angle_diff(current_data_.roll_angle, prev_data_.roll_angle);
-    current_data_.yaw_angular_velocity = d_yaw / dt;
-    current_data_.pitch_angular_velocity = d_pitch / dt;
-    current_data_.roll_angular_velocity = d_roll / dt;
+    current_data_.yaw_angular_velocity = d_yaw / dt + offset_data_.yaw_angular_velocity;
+    current_data_.pitch_angular_velocity = d_pitch / dt + offset_data_.pitch_angular_velocity;
+    current_data_.roll_angular_velocity = d_roll / dt + offset_data_.roll_angular_velocity;
   }
 
   void decode(std::vector<uint8_t> rx_buff)
@@ -140,7 +191,6 @@ public:
   {
     current_time_ = prev_time_ = rclcpp::Clock().now();
     buff_.resize(BUFF_SIZE);
-    is_first_ = true;
   }
 
   void update()
@@ -162,5 +212,14 @@ public:
       data.roll_angular_velocity);
   }
 
-  BNO086Driver::Data getData() { return current_data_; }
+  /**
+ * @brief オフセットを設定する。Data.indexは関係ないので、無視される。
+ * 
+ * @param offset_data 
+ */
+  void set_offset_data(BNO086Driver::Data offset_data) { offset_data_ = offset_data; }
+
+  BNO086Driver::Data get_offset_data(void) { return offset_data_; }
+
+  BNO086Driver::Data get_data() { return current_data_; }
 };

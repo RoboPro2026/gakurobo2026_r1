@@ -27,7 +27,7 @@ TEST(TestBNO086Driver, decodeExampleData)
                                        0xFE, 0xEC, 0xFF, 0xD1, 0x03, 0x00, 0x00, 0x00, 0xE7};
 
   bno086_driver.decode(example_data);
-  BNO086Driver::Data data = bno086_driver.getData();
+  BNO086Driver::Data data = bno086_driver.get_data();
   bno086_driver.print(data);
 
   // 角度、加速度のテスト

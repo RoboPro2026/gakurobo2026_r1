@@ -1,7 +1,7 @@
 /**
  * @file bno086_node.cpp
  * @author Yamaguchi Yudai
- * @brief 
+ * @brief bno086のROS 2ノード
  * @version 0.1
  * @date 2025-10-18
  * 
@@ -54,7 +54,7 @@ public:
   void timer_callback(void)
   {
     bno086_driver_->update();
-    bno086_driver_->print(bno086_driver_->getData());
+    bno086_driver_->print(bno086_driver_->get_data());
   }
 
   std::shared_ptr<SerialDriver> serial_;
