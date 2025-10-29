@@ -28,15 +28,20 @@ install(TARGETS bno086_node
 )
 
 if(BUILD_TESTING)
-  find_package(ament_lint_auto REQUIRED)
-  # the following line skips the linter which checks for copyrights
-  # comment the line when a copyright and license is added to all source files
-  set(ament_cmake_copyright_FOUND TRUE)
-  # the following line skips cpplint (only works in a git repo)
-  # comment the line when this package is in a git repo and when
-  # a copyright and license is added to all source files
-  set(ament_cmake_cpplint_FOUND TRUE)
-  ament_lint_auto_find_test_dependencies()
+  find_package(ament_cmake_gtest REQUIRED)
+
+  ament_add_gtest(test_bno086_driver test/test_bno086_driver.cpp)
+
+  ament_target_dependencies(test_bno086_driver
+    rclcpp
+    ament_cmake_gtest
+  )
+
+  target_include_directories(test_bno086_driver PUBLIC
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+    $<INSTALL_INTERFACE:include>
+  )
+
 endif()
 
 ament_package()

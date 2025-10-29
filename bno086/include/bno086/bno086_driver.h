@@ -45,8 +45,11 @@ private:
   BNO086Driver::Data offset_;
   bool is_first_;
   static constexpr int BUFF_SIZE = 256;
+
+public:
   static constexpr double DEG_TO_RAD = M_PI / 180.0;
   static constexpr double MG_TO_MSS = 0.00980665;
+  //バッファ
   std::vector<uint8_t> buff_;
 
   uint8_t calc_check_sum()
@@ -55,7 +58,7 @@ private:
     // Checksum (Csum): The Index, yaw, pitch, roll, acceleration and reserved data bytes are added to produce the
     // checksum.
     int ret = 0;
-    for (int i = 0; i < 18; i++) ret += buff_[i];
+    for (int i = 2; i < 18; i++) ret += buff_[i];
     return ret & 0xff;
   }
 
@@ -75,12 +78,13 @@ private:
 
     current_time_ = rclcpp::Clock().now();
     current_data_.index = buff_[2];
-    current_data_.yaw_angle = (double)((int)(buff_[3] + (buff_[4] << 8))) / 1000.0 * DEG_TO_RAD;
-    current_data_.pitch_angle = (double)((int)(buff_[5] + (buff_[6] << 8))) / 1000.0 * DEG_TO_RAD;
-    current_data_.yaw_angle = (double)((int)(buff_[7] + (buff_[8] << 8))) / 1000.0 * DEG_TO_RAD;
-    current_data_.x_axis_accel = (double)((int)(buff_[9] + (buff_[10] << 8))) * MG_TO_MSS;
-    current_data_.y_axis_accel = (double)((int)(buff_[11] + (buff_[12] << 8))) * MG_TO_MSS;
-    current_data_.z_axis_accel = (double)((int)(buff_[13] + (buff_[14] << 8))) * MG_TO_MSS;
+    current_data_.yaw_angle = (double)((int16_t)(buff_[3] + (buff_[4] << 8))) / 100.0 * DEG_TO_RAD;
+    current_data_.pitch_angle =
+      (double)((int16_t)(buff_[5] + (buff_[6] << 8))) / 100.0 * DEG_TO_RAD;
+    current_data_.roll_angle = (double)((int16_t)(buff_[7] + (buff_[8] << 8))) / 100.0 * DEG_TO_RAD;
+    current_data_.x_axis_accel = (double)((int16_t)(buff_[9] + (buff_[10] << 8))) * MG_TO_MSS;
+    current_data_.y_axis_accel = (double)((int16_t)(buff_[11] + (buff_[12] << 8))) * MG_TO_MSS;
+    current_data_.z_axis_accel = (double)((int16_t)(buff_[13] + (buff_[14] << 8))) * MG_TO_MSS;
     double dt = current_time_.seconds() - prev_time_.seconds();
     double d_yaw = angle_diff(current_data_.yaw_angle, prev_data_.yaw_angle);
     double d_pitch = angle_diff(current_data_.pitch_angle, prev_data_.pitch_angle);
@@ -88,6 +92,49 @@ private:
     current_data_.yaw_angular_velocity = d_yaw / dt;
     current_data_.pitch_angular_velocity = d_pitch / dt;
     current_data_.roll_angular_velocity = d_roll / dt;
+  }
+
+  void decode(std::vector<uint8_t> rx_buff)
+  {
+    static int i = 0;
+    int j = 0;
+    // 受信データを受信状況に応じて処理
+    while (j < (int)rx_buff.size()) {
+      std::cout << i << std::endl;
+      switch (i) {
+        case 0:
+          buff_[i] = rx_buff[j];
+          if ((buff_[0] = rx_buff[j]) == 0xAA) {
+            i++;
+          }
+          break;
+        case 1:
+          buff_[i] = rx_buff[j];
+          if ((buff_[1] = rx_buff[j]) == 0xAA) {
+            i++;
+          } else {
+            i = 0;
+          }
+          break;
+        case 18:
+          // チェックサムを計算
+          buff_[i] = rx_buff[j];
+          if (buff_[18] == calc_check_sum()) {
+            // 値を更新
+            std::cout << "true" << std::endl;
+            update_sensor_value();
+          } else {
+            std::cout << "false" << std::endl;
+          }
+          i = 0;
+          break;
+        default:
+          buff_[i] = rx_buff[j];
+          i++;
+          break;
+      }
+      j++;
+    }
   }
 
 public:
@@ -101,39 +148,8 @@ public:
 
   void update()
   {
-    static int i = 0;
-    int j = 0;
     std::vector<uint8_t> rx_buff = serial_->read();
-    // 受信データを受信状況に応じて処理
-    while (j < (int)rx_buff.size()) {
-      switch (i) {
-        case 0:
-          if ((buff_[0] = rx_buff[j]) == 0xAA) {
-            i++;
-          }
-          break;
-        case 1:
-          if ((buff_[1] = rx_buff[j]) == 0xAA) {
-            i++;
-          } else {
-            i = 0;
-          }
-          break;
-        case 18:
-          // チェックサムを計算
-          if ((buff_[18] = rx_buff[j]) == calc_check_sum()) {
-            // 値を更新
-            update_sensor_value();
-          }
-          i = 0;
-          break;
-        default:
-          buff_[i] = rx_buff[j];
-          i++;
-          break;
-      }
-      j++;
-    }
+    decode(rx_buff);
   }
 
   void print(Data data)

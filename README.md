@@ -5,6 +5,7 @@ TODO: setup手順ちゃんと書く
 インストール
 ```
 sudo apt install ros-humble-magic-enum
+ros-humble-ament-cmake-gtest
 ```
 
 実行
