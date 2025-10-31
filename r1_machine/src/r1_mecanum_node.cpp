@@ -165,7 +165,7 @@ public:
 
     // 計算した値がlimitより高いかを確認
     max_speed = std::abs(wheel_speeds_[FL]);
-    for (int i = 1; i < 4; i++) {
+    for (int i = 0; i < 4; i++) {
       max_speed = std::max(max_speed, std::abs(wheel_speeds_[i]));
     }
 
