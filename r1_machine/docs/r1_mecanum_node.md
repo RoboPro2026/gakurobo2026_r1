@@ -59,19 +59,6 @@
 | `gear_ratio` | double | `1.0` | 減速比。出力角速度は計算値を `gear_ratio` で割った後に配信されます。 |
 | `motor_inverse` | bool[4] | `[false, false, false, false]` | 各ホイールの正回転方向を反転させるフラグ。`true` で-1倍されます。 |
 
-`gakurobo2026_r1/r1_bringup/config/r1_machine_config.yaml` では、実機に合わせて以下のように上書きしています。
-
-```yaml
-r1_mecanum_node:
-  ros__parameters:
-    wheel_radius: 0.05
-    robot_length: 0.5
-    robot_width: 0.25
-    speed_limit: 30.0
-    gear_ratio: 0.80952
-    motor_inverse: [false, false, true, true]
-```
-
 ノードは `rclcpp::Node::add_on_set_parameters_callback` を用いているため、`ros2 param set` で実行中に値を変更できます (値が不正な場合は拒否されます)。
 
 ## 逆運動学の概要
@@ -96,8 +83,7 @@ wheel_speeds[RR] = (1 / R) * (vx_body - vy_body - (L + W) * omega)
 
 ```bash
 source ~/ros2_ws/install/setup.bash
-ros2 run r1_machine r1_mecanum_node --ros-args --params-file \
-  $(ros2 pkg prefix r1_bringup)/share/r1_bringup/config/r1_machine_config.yaml
+ros2 run r1_machine r1_mecanum_node
 ```
 
 ## パラメータ調整とデバッグ
