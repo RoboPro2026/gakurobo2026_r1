@@ -6,6 +6,7 @@ r1_mecanum_node:
     speed_limit: 30.0
     # モーターの出力は歯数が34（モーター側）と歯数が42（ホイール側）で組みあわせているので
     # 減速比は34 / 42 = 0.80952
+    # ギア比で割った値がモーターの出力となる
     gear_ratio: 0.80952
     motor_inverse: [false, false, true, true]
 sabacan_robomas_node1:

@@ -1,10 +1,10 @@
 # r1_machine
 
+[r1_mecanum_node](./docs/r1_mecanum_node.md)
+
+# めも
+
 各モータの出力はfloat64で出力。(r1_mecanum_nodeなど)   
 r1_sabacan_msgs_converter_nodeで、各モータの出力をsabacan_robomas_refに変換する。  
 このような設計にするのは、デバッグをしやすくするため。例えば、r1_mecanum_nodeの出力がsabacan_robomas_refだと、メカナムの計算などのデバッグがしにくくなってしまう。  
 また、r1_mecanum_nodeがsabacan_robomas_refに依存してなくて気分がいい。このプログラム自体再利用を考えていないので、大した違いはないが。
-
-
-# 各種資料
-[r1_mecanum_node](./docs/r1_mecanum_node.md)

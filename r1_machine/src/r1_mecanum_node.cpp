@@ -211,7 +211,7 @@ public:
   double robot_length_;  // ロボットの長さ (m)
   double robot_width_;   // ロボットの幅 (m)
   double wheel_radius_;  // ホイールの半径 (m)
-  double gear_ratio_;    // ギア比（減速比）
+  double gear_ratio_;    // ギア比（減速比）。ギア比で割った値が出力される
   // motor_inverse = trueのときはmotor_dir_が-1.0になる。
   std::vector<double> motor_dir_ = {1.0, 1.0, 1.0, 1.0};
   double wheel_speeds_[4] = {0.0, 0.0, 0.0, 0.0};  // FL, FR, RL, RR
