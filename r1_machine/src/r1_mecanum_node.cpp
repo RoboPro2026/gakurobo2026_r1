@@ -78,11 +78,17 @@ public:
     this->declare_parameter("robot_length", 0.5, parameter_descriptor);
     this->declare_parameter("robot_width", 0.25, parameter_descriptor);
     this->declare_parameter("speed_limit", 100.0, parameter_descriptor);
+    this->declare_parameter("gear_ratio", 1.0, parameter_descriptor);
+    this->declare_parameter("motor_inverse", std::vector<bool>{false, false, false, false});
 
     this->get_parameter("wheel_radius", wheel_radius_);
     this->get_parameter("robot_length", robot_length_);
     this->get_parameter("robot_width", robot_width_);
     this->get_parameter("speed_limit", speed_limit_);
+    this->get_parameter("gear_ratio", gear_ratio_);
+    std::vector<bool> motor_inverse(4);
+    this->get_parameter("motor_inverse", motor_inverse);
+    for (int i = 0; i < 4; i++) motor_dir_[i] = motor_inverse[i] ? -1.0 : 1.0;
   }
 
   void cmd_vel_callback(const geometry_msgs::msg::Twist::SharedPtr msg)
@@ -127,6 +133,16 @@ public:
       } else if (name == "speed_limit") {
         speed_limit_ = parameter.as_double();
         RCLCPP_INFO(this->get_logger(), "Updated parameter: speed_limit = %.3f", speed_limit_);
+      } else if (name == "gear_ratio") {
+        gear_ratio_ = parameter.as_double();
+        RCLCPP_INFO(this->get_logger(), "Updated parameter: gear_ratio = %.3f", gear_ratio_);
+      } else if (name == "motor_inverse") {
+        std::vector<bool> motor_inverse = parameter.as_bool_array();
+        for (int i = 0; i < 4; i++) motor_dir_[i] = motor_inverse[i] ? -1.0 : 1.0;
+        RCLCPP_INFO(
+          this->get_logger(), "Updated parameter: motor_inverse = [%s, %s, %s, %s]",
+          motor_inverse[0] ? "true" : "false", motor_inverse[1] ? "true" : "false",
+          motor_inverse[2] ? "true" : "false", motor_inverse[3] ? "true" : "false");
       } else {
         result.successful = false;
         result.reason = "Invalid parameter name: " + name;
@@ -163,9 +179,13 @@ public:
     wheel_speeds_[RL] = (1 / R) * (vx + vy - (L + W) * omega);
     wheel_speeds_[RR] = (1 / R) * (vx - vy - (L + W) * omega);
 
-    // デバッグ用
-    wheel_speeds_[RL] *= -1;
-    wheel_speeds_[RR] *= -1;
+    // モーターのギア比と回転方向を考慮
+    for (int i = 0; i < 4; i++) {
+      // ギア比
+      wheel_speeds_[i] /= gear_ratio_;
+      // 回転方向
+      wheel_speeds_[i] *= motor_dir_[i];
+    }
 
     // 計算した値がlimitより高いかを確認
     max_speed = std::abs(wheel_speeds_[FL]);
@@ -187,10 +207,13 @@ public:
   // 速度指令値
   geometry_msgs::msg::Twist target_vel_;
   double theta_ = 0.0;
-  double speed_limit_;                             //rad/s
-  double robot_length_;                            // ロボットの長さ (m)
-  double robot_width_;                             // ロボットの幅 (m)
-  double wheel_radius_;                            // ホイールの半径 (m)
+  double speed_limit_;   //rad/s
+  double robot_length_;  // ロボットの長さ (m)
+  double robot_width_;   // ロボットの幅 (m)
+  double wheel_radius_;  // ホイールの半径 (m)
+  double gear_ratio_;    // ギア比（減速比）
+  // motor_inverse = trueのときはmotor_dir_が-1.0になる。
+  std::vector<double> motor_dir_ = {1.0, 1.0, 1.0, 1.0};
   double wheel_speeds_[4] = {0.0, 0.0, 0.0, 0.0};  // FL, FR, RL, RR
   static constexpr int FL = 0;
   static constexpr int FR = 1;
