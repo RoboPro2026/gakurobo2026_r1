@@ -146,7 +146,7 @@ public:
       } else {
         result.successful = false;
         result.reason = "Invalid parameter name: " + name;
-        RCLCPP_WARN(this->get_logger(), "%s", result.reason.c_str());
+        RCLCPP_ERROR(this->get_logger(), "%s", result.reason.c_str());
       }
     }
 
