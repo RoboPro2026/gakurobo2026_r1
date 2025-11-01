@@ -25,19 +25,19 @@
   //                 ^
   //                 |
   //                 |
-  //  FL(0) ↙︎       |      ↖︎ FR(1)
-  //        /------------------\
+  //  FL(0) ↖︎       |          ↙ FR(1)
+  //        \------------------/
   //        |        |         |
   //        |        |         |
   //        |                  | 
   //        |        |         |
   // <---x--|--------O---------|
-  //        |       ↻ w       |
+  //        |       ↺ w       |
   //        |                  | 
   //        |                  |
   //        |                  | 
-  //        \------------------/
-  //  RL(2) ↖︎                  ↙︎ RR(3)
+  //        /------------------\
+  //  RL(2) ↙                  ↖︎ RR(3)
 // clang-format on
 
 #include <chrono>
@@ -162,6 +162,10 @@ public:
     wheel_speeds_[FR] = (1 / R) * (vx + vy + (L + W) * omega);
     wheel_speeds_[RL] = (1 / R) * (vx + vy - (L + W) * omega);
     wheel_speeds_[RR] = (1 / R) * (vx - vy - (L + W) * omega);
+
+    // デバッグ用
+    wheel_speeds_[RL] *= -1;
+    wheel_speeds_[RR] *= -1;
 
     // 計算した値がlimitより高いかを確認
     max_speed = std::abs(wheel_speeds_[FL]);

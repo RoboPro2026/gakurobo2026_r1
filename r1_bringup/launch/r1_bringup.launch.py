@@ -32,7 +32,7 @@ def generate_launch_description():
         executable="r1_mecanum_node",
         name="r1_mecanum_node",  # YAMLファイル内のノード名と一致させる
         parameters=[param_file],
-        arguments=["--ros-args", "--log-level", "warn"],
+        arguments=["--ros-args", "--log-level", "info"],
     )
 
     r1_sabacan_msgs_converter_node = Node(
@@ -81,6 +81,6 @@ def generate_launch_description():
             r1_sabacan_msgs_converter_node,
             r1_state_machine_node,
             sabacan_robomas_node1,
-            socket_can_bridge_launch,
+            # socket_can_bridge_launch,
         ]
     )
