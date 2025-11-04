@@ -78,10 +78,29 @@ public:
   {
     if (ps4_->is_connected()) {
       // スティックの状態に応じて、足回りを動かす
-      // TODO: 必要に応じて、符号の反転や係数をかける。
-      target_vel_.linear.x = ps4_->data.left_stick_x;
-      target_vel_.linear.y = ps4_->data.left_stick_y;
-      target_vel_.angular.z = ps4_->data.right_stick_x;
+      double VEL = 1.0;
+      if (ps4_->data.right) {
+        target_vel_.linear.x = -VEL;
+        target_vel_.linear.y = 0;
+        target_vel_.angular.z = 0;
+      } else if (ps4_->data.left) {
+        target_vel_.linear.x = VEL;
+        target_vel_.linear.y = 0;
+        target_vel_.angular.z = 0;
+      } else if (ps4_->data.up) {
+        target_vel_.linear.x = 0;
+        target_vel_.linear.y = VEL;
+        target_vel_.angular.z = 0;
+      } else if (ps4_->data.down) {
+        target_vel_.linear.x = 0;
+        target_vel_.linear.y = -VEL;
+        target_vel_.angular.z = 0;
+      } else {
+        // TODO: 必要に応じて、符号の反転や係数をかける。
+        target_vel_.linear.x = ps4_->data.left_stick_x;
+        target_vel_.linear.y = ps4_->data.left_stick_y;
+        target_vel_.angular.z = ps4_->data.right_stick_x;
+      }
     } else {
       target_vel_.linear.x = 0.0;
       target_vel_.linear.y = 0.0;
