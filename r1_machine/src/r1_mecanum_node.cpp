@@ -1,7 +1,7 @@
 /**
  * @file r1_mecanum_node.cpp
  * @author Yamaguchi Yudai
- * @brief メカナムホイールの逆運動学を計算するノード
+ * @brief メカナムホイールの運動学/逆運動学計算するノード
  * @version 0.1
  * @date 2025-09-27
  * 
@@ -199,6 +199,34 @@ public:
         wheel_speeds_[i] = wheel_speeds_[i] / max_speed * speed_limit_;
       }
     }
+  }
+
+  /**
+ * @brief メカナムホイールの順運動学を計算する
+ *
+ * @param wheel_speed FL, FR, RL, RR の順のホイール角速度[rad/s]
+ * @param theta ロボットの角度[rad]。y軸正方向を0度とし、反時計回りを正とする。IMUを使用しない場合はtheta=0
+ */
+  std::vector<double> calculate_robot_velocity(std::vector<double> wheel_speed, double theta)
+  {
+    double L = robot_length_;
+    double W = robot_width_;
+    double R = wheel_radius_;
+    double vx, vy, omega;
+
+    // 順運動学計算
+    vx = (R / 4.0) * (wheel_speed[FL] + wheel_speed[FR] + wheel_speed[RL] + wheel_speed[RR]);
+    vy = (R / 4.0) * (-wheel_speed[FL] + wheel_speed[FR] + wheel_speed[RL] - wheel_speed[RR]);
+    omega = (R / (4.0 * (L + W))) * (-wheel_speed[FL] - wheel_speed[FR] + wheel_speed[RL] + wheel_speed[RR]);
+
+    // IMU角度による座標変換（θはロボット姿勢角）
+    double vx_robot = vx;
+    double vy_robot = vy;
+    vx = vx_robot * cos(theta) - vy_robot * sin(theta);
+    vy = vx_robot * sin(theta) + vy_robot * cos(theta);
+
+    std::vector<double> ret = {vx, vy, omega};
+    return ret;
   }
 
   rclcpp::Subscription<geometry_msgs::msg::Twist>::SharedPtr cmd_vel_subscriber_;
