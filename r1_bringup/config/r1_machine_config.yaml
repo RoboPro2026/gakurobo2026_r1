@@ -19,7 +19,7 @@ r1_mecanum_node:
     robot_length: 0.450
     # 661mm
     robot_width: 0.661
-    speed_limit: 100.0
+    speed_limit: 30.0
     # モーターの出力は歯数が37（モーター側）と歯数が28（ホイール側）で組みあわせているので
     # 減速比は37 / 28 = 1.321
     # ギア比で割った値がモーターの出力となる
@@ -36,7 +36,7 @@ sabacan_robomas_node1:
     pos_gain_p: [6.0, 6.0, 6.0, 6.0]
     pos_gain_i: [3.0, 3.0, 3.0, 3.0]
     pos_gain_d: [0.0, 0.0, 0.0, 0.0]
-    speed_lim: [100.0, 100.0, 100.0, 100.0]
+    speed_lim: [30.0, 30.0, 30.0, 30.0]
 r1_sabacan_msgs_converter_node:
   ros__parameters:
     mecanum_fl_board_id: 1
