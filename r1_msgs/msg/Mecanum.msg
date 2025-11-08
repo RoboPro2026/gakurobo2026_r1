@@ -1,0 +1,4 @@
+float32 fl_wheel_speed
+float32 fr_wheel_speed
+float32 rl_wheel_speed
+float32 rr_wheel_speed

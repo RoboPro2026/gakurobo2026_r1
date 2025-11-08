@@ -48,6 +48,7 @@
 #include "rcl_interfaces/msg/parameter_descriptor.hpp"
 #include "rclcpp/rclcpp.hpp"
 #include "std_msgs/msg/float64_multi_array.hpp"
+#include "r1_msgs/msg/mecanum.hpp"
 
 class MyNode : public rclcpp::Node
 {
@@ -58,7 +59,7 @@ public:
       "/cmd_vel", 10, std::bind(&MyNode::cmd_vel_callback, this, std::placeholders::_1));
 
     wheel_speeds_publisher_ =
-      this->create_publisher<std_msgs::msg::Float64MultiArray>("/mecanum_wheel_speeds", 10);
+      this->create_publisher<r1_msgs::msg::Mecanum>("/mecanum_wheel_speeds", 10);
 
     parameter_callback_handler_ = this->add_on_set_parameters_callback(
       std::bind(&MyNode::parameter_callback, this, std::placeholders::_1));
@@ -99,10 +100,12 @@ public:
       target_vel_.linear.x, target_vel_.linear.y, target_vel_.angular.z, theta_);
 
     // 角速度をFloat64MultiArrayでパブリッシュ
-    auto wheel_speeds_msg = std_msgs::msg::Float64MultiArray();
-    wheel_speeds_msg.data = {
-      wheel_speeds_[FL], wheel_speeds_[FR], wheel_speeds_[RL], wheel_speeds_[RR]};
-    wheel_speeds_publisher_->publish(wheel_speeds_msg);
+    auto mecanum_msg = r1_msgs::msg::Mecanum();
+    mecanum_msg.fl_wheel_speed = wheel_speeds_[FL];
+    mecanum_msg.fr_wheel_speed = wheel_speeds_[FR];
+    mecanum_msg.rl_wheel_speed = wheel_speeds_[RL];
+    mecanum_msg.rr_wheel_speed = wheel_speeds_[RR];
+    wheel_speeds_publisher_->publish(mecanum_msg);
 
     // デバッグ用
     RCLCPP_INFO(
@@ -231,7 +234,7 @@ public:
 
   rclcpp::Subscription<geometry_msgs::msg::Twist>::SharedPtr cmd_vel_subscriber_;
   rclcpp::node_interfaces::OnSetParametersCallbackHandle::SharedPtr parameter_callback_handler_;
-  rclcpp::Publisher<std_msgs::msg::Float64MultiArray>::SharedPtr wheel_speeds_publisher_;
+  rclcpp::Publisher<r1_msgs::msg::Mecanum>::SharedPtr wheel_speeds_publisher_;
   // 速度指令値
   geometry_msgs::msg::Twist target_vel_;
   double theta_ = 0.0;

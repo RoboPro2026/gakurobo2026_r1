@@ -12,10 +12,13 @@
 #include <chrono>
 #include <limits>
 
+#include "r1_msgs/msg/mecanum.hpp"
+#include "r1_msgs/msg/motor.hpp"
 #include "rcl_interfaces/msg/floating_point_range.hpp"
 #include "rcl_interfaces/msg/parameter_descriptor.hpp"
 #include "rclcpp/rclcpp.hpp"
 #include "sabacan_msgs/msg/sabacan_robomas_ref.hpp"
+#include "sabacan_msgs/msg/sabacan_robomas_status.hpp"
 #include "std_msgs/msg/float64_multi_array.hpp"
 
 class MyNode : public rclcpp::Node
@@ -31,9 +34,19 @@ public:
           "/sabacan_robomas_ref" + std::to_string(i), 10);
     }
 
-    mecanum_wheel_speeds_subscriber_ = this->create_subscription<std_msgs::msg::Float64MultiArray>(
+    mecanum_wheel_speeds_subscriber_ = this->create_subscription<r1_msgs::msg::Mecanum>(
       "/mecanum_wheel_speeds", 10,
       std::bind(&MyNode::mecanum_wheel_speeds_callback, this, std::placeholders::_1));
+
+    sabacan_robomas_status_subscription_ =
+      this->create_subscription<sabacan_msgs::msg::SabacanRobomasStatus>(
+        "/sabacan_robomas_status1", 10,
+        std::bind(&MyNode::sabacan_robomas_status_callback, this, std::placeholders::_1));
+
+    fl_motor_publisher_ = this->create_publisher<r1_msgs::msg::Motor>("/fl_motor", 10);
+    fr_motor_publisher_ = this->create_publisher<r1_msgs::msg::Motor>("/fr_motor", 10);
+    rl_motor_publisher_ = this->create_publisher<r1_msgs::msg::Motor>("/rl_motor", 10);
+    rr_motor_publisher_ = this->create_publisher<r1_msgs::msg::Motor>("/rr_motor", 10);
 
     // パラメータの宣言
     // パラメータはすべて初期値を明確にしないと動かない。
@@ -72,33 +85,72 @@ public:
     this->get_parameter("mecanum_rr_motor_number", mecanum_motor_number_[3]);
   }
 
-  void mecanum_wheel_speeds_callback(const std_msgs::msg::Float64MultiArray::SharedPtr msg)
+  void sabacan_robomas_status_callback(
+    const sabacan_msgs::msg::SabacanRobomasStatus::ConstSharedPtr msg)
   {
-    if (msg->data.size() != 4) {
-      RCLCPP_ERROR(this->get_logger(), "wheel_speeds size error: size=%ld", msg->data.size());
-      return;
+    auto msg_status = r1_msgs::msg::Motor();
+    msg_status.motor_type = msg->motor_type;
+    msg_status.control_type = msg->control_type;
+    msg_status.motor_state = msg->motor_state;
+    msg_status.torque = msg->torque;
+    msg_status.speed = msg->speed;
+    msg_status.pos = msg->pos;
+    msg_status.abs_pos = msg->abs_pos;
+    msg_status.abs_speed = msg->abs_speed;
+    msg_status.abs_turn_cnt = msg->abs_turn_cnt;
+    msg_status.vesc_voltage = msg->vesc_voltage;
+    msg_status.vesc_current = msg->vesc_current;
+    msg_status.vesc_erpm = msg->vesc_erpm;
+    if (msg->motor_number == FL) {
+      fl_motor_publisher_->publish(msg_status);
+    } else if (msg->motor_number == FR) {
+      fr_motor_publisher_->publish(msg_status);
+    } else if (msg->motor_number == RL) {
+      rl_motor_publisher_->publish(msg_status);
+    } else if (msg->motor_number == RR) {
+      rr_motor_publisher_->publish(msg_status);
     }
+  }
 
-    RCLCPP_DEBUG(
-      this->get_logger(), "wheel_speeds: FL=%f, FR=%f, RL=%f, RR=%f", msg->data[0], msg->data[1],
-      msg->data[2], msg->data[3]);
-    std::vector<double> wheel_speeds = msg->data;
+  void mecanum_wheel_speeds_callback(const r1_msgs::msg::Mecanum::ConstSharedPtr msg)
+  {
+    RCLCPP_INFO(
+      this->get_logger(), "wheel_speeds: FL=%f, FR=%f, RL=%f, RR=%f", msg->fl_wheel_speed,
+      msg->fr_wheel_speed, msg->rl_wheel_speed, msg->rr_wheel_speed);
+    RCLCPP_INFO(this->get_logger(), "alfjdl");
     for (int i = 0; i < 4; i++) {
-      auto msg = sabacan_msgs::msg::SabacanRobomasRef();
-      msg.motor_number = mecanum_motor_number_[i];
-      msg.ref = wheel_speeds[i];
-      sabacan_robomas_ref_publisher_[mecanum_board_id_[i]]->publish(msg);
+      auto msg_ref = sabacan_msgs::msg::SabacanRobomasRef();
+      msg_ref.motor_number = mecanum_motor_number_[i];
+      if (mecanum_motor_number_[i] == FL) {
+        msg_ref.ref = msg->fl_wheel_speed;
+      } else if (mecanum_motor_number_[i] == FR) {
+        msg_ref.ref = msg->fr_wheel_speed;
+      } else if (mecanum_motor_number_[i] == RL) {
+        msg_ref.ref = msg->rl_wheel_speed;
+      } else if (mecanum_motor_number_[i] == RR) {
+        msg_ref.ref = msg->rr_wheel_speed;
+      }
+      sabacan_robomas_ref_publisher_[mecanum_board_id_[i]]->publish(msg_ref);
     }
   }
 
   // sabacan_robomas_refの0~9までのpublisherを宣言
   std::vector<rclcpp::Publisher<sabacan_msgs::msg::SabacanRobomasRef>::SharedPtr>
     sabacan_robomas_ref_publisher_;
-  rclcpp::Subscription<std_msgs::msg::Float64MultiArray>::SharedPtr
-    mecanum_wheel_speeds_subscriber_;
+  rclcpp::Subscription<r1_msgs::msg::Mecanum>::SharedPtr mecanum_wheel_speeds_subscriber_;
+  rclcpp::Subscription<sabacan_msgs::msg::SabacanRobomasStatus>::SharedPtr
+    sabacan_robomas_status_subscription_;
+  rclcpp::Publisher<r1_msgs::msg::Motor>::SharedPtr fl_motor_publisher_;
+  rclcpp::Publisher<r1_msgs::msg::Motor>::SharedPtr fr_motor_publisher_;
+  rclcpp::Publisher<r1_msgs::msg::Motor>::SharedPtr rl_motor_publisher_;
+  rclcpp::Publisher<r1_msgs::msg::Motor>::SharedPtr rr_motor_publisher_;
   // モータのパラメータ名
   int mecanum_board_id_[4];
   int mecanum_motor_number_[4];
+  static constexpr int FL = 0;
+  static constexpr int FR = 1;
+  static constexpr int RL = 2;
+  static constexpr int RR = 3;
 };
 
 int main(int argc, char ** argv)
