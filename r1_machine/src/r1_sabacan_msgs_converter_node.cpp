@@ -21,6 +21,8 @@
 #include "sabacan_msgs/msg/sabacan_robomas_status.hpp"
 #include "std_msgs/msg/float64_multi_array.hpp"
 
+using namespace std::chrono_literals;
+
 class MyNode : public rclcpp::Node
 {
 public:
@@ -34,9 +36,12 @@ public:
           "/sabacan_robomas_ref" + std::to_string(i), 10);
     }
 
-    mecanum_wheel_speeds_subscriber_ = this->create_subscription<r1_msgs::msg::Mecanum>(
-      "/mecanum_wheel_speeds", 10,
-      std::bind(&MyNode::mecanum_wheel_speeds_callback, this, std::placeholders::_1));
+    mecanum_wheel_speeds_ref_subscriber_ = this->create_subscription<r1_msgs::msg::Mecanum>(
+      "/mecanum_wheel_speeds_ref", 10,
+      std::bind(&MyNode::mecanum_wheel_speeds_ref_callback, this, std::placeholders::_1));
+
+    mecanum_wheel_speeds_feedback_publisher_ =
+      this->create_publisher<r1_msgs::msg::Mecanum>("/mecanum_wheel_speeds_feedback", 10);
 
     sabacan_robomas_status_subscription_ =
       this->create_subscription<sabacan_msgs::msg::SabacanRobomasStatus>(
@@ -47,6 +52,8 @@ public:
     fr_motor_publisher_ = this->create_publisher<r1_msgs::msg::Motor>("/fr_motor", 10);
     rl_motor_publisher_ = this->create_publisher<r1_msgs::msg::Motor>("/rl_motor", 10);
     rr_motor_publisher_ = this->create_publisher<r1_msgs::msg::Motor>("/rr_motor", 10);
+
+    timer_ = this->create_wall_timer(10ms, std::bind(&MyNode::timer_callback, this));
 
     // パラメータの宣言
     // パラメータはすべて初期値を明確にしないと動かない。
@@ -101,6 +108,9 @@ public:
     msg_status.vesc_voltage = msg->vesc_voltage;
     msg_status.vesc_current = msg->vesc_current;
     msg_status.vesc_erpm = msg->vesc_erpm;
+    // メカナムの運動学計算用にエンコーダの値を代入
+    mecanum_wheel_speeds_feedback_[msg->motor_number] = msg->speed;
+
     if (msg->motor_number == FL) {
       fl_motor_publisher_->publish(msg_status);
     } else if (msg->motor_number == FR) {
@@ -112,12 +122,11 @@ public:
     }
   }
 
-  void mecanum_wheel_speeds_callback(const r1_msgs::msg::Mecanum::ConstSharedPtr msg)
+  void mecanum_wheel_speeds_ref_callback(const r1_msgs::msg::Mecanum::ConstSharedPtr msg)
   {
     RCLCPP_INFO(
-      this->get_logger(), "wheel_speeds: FL=%f, FR=%f, RL=%f, RR=%f", msg->fl_wheel_speed,
+      this->get_logger(), "wheel_speeds_ref: FL=%f, FR=%f, RL=%f, RR=%f", msg->fl_wheel_speed,
       msg->fr_wheel_speed, msg->rl_wheel_speed, msg->rr_wheel_speed);
-    RCLCPP_INFO(this->get_logger(), "alfjdl");
     for (int i = 0; i < 4; i++) {
       auto msg_ref = sabacan_msgs::msg::SabacanRobomasRef();
       msg_ref.motor_number = mecanum_motor_number_[i];
@@ -134,23 +143,38 @@ public:
     }
   }
 
+  void timer_callback()
+  {
+    // メカナムのフィードバック値を計算してパブリッシュ
+    auto msg_feedback = r1_msgs::msg::Mecanum();
+    msg_feedback.fl_wheel_speed = mecanum_wheel_speeds_feedback_[FL];
+    msg_feedback.fr_wheel_speed = mecanum_wheel_speeds_feedback_[FR];
+    msg_feedback.rl_wheel_speed = mecanum_wheel_speeds_feedback_[RL];
+    msg_feedback.rr_wheel_speed = mecanum_wheel_speeds_feedback_[RR];
+    mecanum_wheel_speeds_feedback_publisher_->publish(msg_feedback);
+  }
+
   // sabacan_robomas_refの0~9までのpublisherを宣言
   std::vector<rclcpp::Publisher<sabacan_msgs::msg::SabacanRobomasRef>::SharedPtr>
     sabacan_robomas_ref_publisher_;
-  rclcpp::Subscription<r1_msgs::msg::Mecanum>::SharedPtr mecanum_wheel_speeds_subscriber_;
+  rclcpp::Subscription<r1_msgs::msg::Mecanum>::SharedPtr mecanum_wheel_speeds_ref_subscriber_;
+  rclcpp::Publisher<r1_msgs::msg::Mecanum>::SharedPtr mecanum_wheel_speeds_feedback_publisher_;
   rclcpp::Subscription<sabacan_msgs::msg::SabacanRobomasStatus>::SharedPtr
     sabacan_robomas_status_subscription_;
-  rclcpp::Publisher<r1_msgs::msg::Motor>::SharedPtr fl_motor_publisher_;
-  rclcpp::Publisher<r1_msgs::msg::Motor>::SharedPtr fr_motor_publisher_;
-  rclcpp::Publisher<r1_msgs::msg::Motor>::SharedPtr rl_motor_publisher_;
-  rclcpp::Publisher<r1_msgs::msg::Motor>::SharedPtr rr_motor_publisher_;
+  rclcpp::TimerBase::SharedPtr timer_;
   // モータのパラメータ名
   int mecanum_board_id_[4];
   int mecanum_motor_number_[4];
+  std::vector<double> mecanum_wheel_speeds_feedback_ = std::vector<double>(4);
   static constexpr int FL = 0;
   static constexpr int FR = 1;
   static constexpr int RL = 2;
   static constexpr int RR = 3;
+  // デバッグ用
+  rclcpp::Publisher<r1_msgs::msg::Motor>::SharedPtr fl_motor_publisher_;
+  rclcpp::Publisher<r1_msgs::msg::Motor>::SharedPtr fr_motor_publisher_;
+  rclcpp::Publisher<r1_msgs::msg::Motor>::SharedPtr rl_motor_publisher_;
+  rclcpp::Publisher<r1_msgs::msg::Motor>::SharedPtr rr_motor_publisher_;
 };
 
 int main(int argc, char ** argv)
