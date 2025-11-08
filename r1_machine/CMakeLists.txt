@@ -15,6 +15,7 @@ find_package(std_msgs REQUIRED)
 find_package(tf2 REQUIRED)
 find_package(tf2_ros REQUIRED)
 find_package(nav_msgs REQUIRED)
+find_package(r1_msgs REQUIRED)
 
 add_executable(r1_mecanum_node src/r1_mecanum_node.cpp)
 add_executable(r1_sabacan_msgs_converter_node src/r1_sabacan_msgs_converter_node.cpp)
@@ -24,12 +25,14 @@ ament_target_dependencies(r1_mecanum_node
   geometry_msgs
   rclcpp
   std_msgs
+  r1_msgs
 )
 
 ament_target_dependencies(r1_sabacan_msgs_converter_node
   rclcpp
   sabacan_msgs
   std_msgs
+  r1_msgs
 )
 
 ament_target_dependencies(r1_odometry_node
@@ -39,6 +42,7 @@ ament_target_dependencies(r1_odometry_node
   tf2_ros
   nav_msgs
   sensor_msgs
+  r1_msgs
 )
 
 # インクルードディレクトリを設定

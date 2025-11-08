@@ -1,7 +1,7 @@
 /**
  * @file r1_mecanum_node.cpp
  * @author Yamaguchi Yudai
- * @brief メカナムホイールの逆運動学を計算するノード
+ * @brief メカナムホイールの運動学/逆運動学計算するノード
  * @version 0.1
  * @date 2025-09-27
  * 
@@ -44,6 +44,7 @@
 #include <limits>
 
 #include "geometry_msgs/msg/twist.hpp"
+#include "r1_msgs/msg/mecanum.hpp"
 #include "rcl_interfaces/msg/floating_point_range.hpp"
 #include "rcl_interfaces/msg/parameter_descriptor.hpp"
 #include "rclcpp/rclcpp.hpp"
@@ -57,8 +58,16 @@ public:
     cmd_vel_subscriber_ = this->create_subscription<geometry_msgs::msg::Twist>(
       "/cmd_vel", 10, std::bind(&MyNode::cmd_vel_callback, this, std::placeholders::_1));
 
-    wheel_speeds_publisher_ =
-      this->create_publisher<std_msgs::msg::Float64MultiArray>("/mecanum_wheel_speeds", 10);
+    // 角速度指令値
+    wheel_speeds_ref_publisher_ =
+      this->create_publisher<r1_msgs::msg::Mecanum>("/mecanum_wheel_speeds_ref", 10);
+
+    wheel_speeds_feedback_subscription_ = this->create_subscription<r1_msgs::msg::Mecanum>(
+      "/mecanum_wheel_speeds_feedback", 10,
+      std::bind(&MyNode::wheel_speeds_feedback_callback, this, std::placeholders::_1));
+
+    feedback_vel_publisher_ =
+      this->create_publisher<geometry_msgs::msg::Twist>("/mecanum_feedback_vel", 10);
 
     parameter_callback_handler_ = this->add_on_set_parameters_callback(
       std::bind(&MyNode::parameter_callback, this, std::placeholders::_1));
@@ -99,18 +108,39 @@ public:
       target_vel_.linear.x, target_vel_.linear.y, target_vel_.angular.z, theta_);
 
     // 角速度をFloat64MultiArrayでパブリッシュ
-    auto wheel_speeds_msg = std_msgs::msg::Float64MultiArray();
-    wheel_speeds_msg.data = {
-      wheel_speeds_[FL], wheel_speeds_[FR], wheel_speeds_[RL], wheel_speeds_[RR]};
-    wheel_speeds_publisher_->publish(wheel_speeds_msg);
+    auto mecanum_msg = r1_msgs::msg::Mecanum();
+    mecanum_msg.fl_wheel_speed = wheel_speeds_ref_[FL];
+    mecanum_msg.fr_wheel_speed = wheel_speeds_ref_[FR];
+    mecanum_msg.rl_wheel_speed = wheel_speeds_ref_[RL];
+    mecanum_msg.rr_wheel_speed = wheel_speeds_ref_[RR];
+    wheel_speeds_ref_publisher_->publish(mecanum_msg);
 
     // デバッグ用
     RCLCPP_INFO(
       this->get_logger(), "Cmd Vel: x: %.2f, y: %.2f, omega: %.2f", target_vel_.linear.x,
       target_vel_.linear.y, target_vel_.angular.z);
     RCLCPP_INFO(
-      this->get_logger(), "Wheel Speeds: FL: %.2f, FR: %.2f, RL: %.2f, RR: %.2f", wheel_speeds_[FL],
-      wheel_speeds_[FR], wheel_speeds_[RL], wheel_speeds_[RR]);
+      this->get_logger(), "Wheel Speeds Ref: FL: %.2f, FR: %.2f, RL: %.2f, RR: %.2f",
+      wheel_speeds_ref_[FL], wheel_speeds_ref_[FR], wheel_speeds_ref_[RL], wheel_speeds_ref_[RR]);
+  }
+
+  void wheel_speeds_feedback_callback(const r1_msgs::msg::Mecanum::SharedPtr msg)
+  {
+    RCLCPP_INFO(
+      this->get_logger(), "Wheel Speeds Feedback: FL: %.2f, FR: %.2f, RL: %.2f, RR: %.2f",
+      msg->fl_wheel_speed, msg->fr_wheel_speed, msg->rl_wheel_speed, msg->rr_wheel_speed);
+    auto wheel_speeds_feedback = std::vector<double>{
+      msg->fl_wheel_speed, msg->fr_wheel_speed, msg->rl_wheel_speed, msg->rr_wheel_speed};
+    // メカナムホイールの順運動学を計算
+    auto res = calculate_robot_velocity(wheel_speeds_feedback, theta_);
+    auto feedback_vel = geometry_msgs::msg::Twist();
+    feedback_vel.linear.x = res[0];
+    feedback_vel.linear.y = res[1];
+    feedback_vel.angular.z = res[2];
+    feedback_vel_publisher_->publish(feedback_vel);
+    RCLCPP_INFO(
+      this->get_logger(), "Feedback Vel: x: %.2f, y: %.2f, omega: %.2f", feedback_vel.linear.x,
+      feedback_vel.linear.y, feedback_vel.angular.z);
   }
 
   rcl_interfaces::msg::SetParametersResult parameter_callback(
@@ -174,36 +204,74 @@ public:
     omega = _omega;
 
     // メカナムホイールの逆運動学の計算
-    wheel_speeds_[FL] = (1 / R) * (vx - vy + (L + W) * omega);
-    wheel_speeds_[FR] = (1 / R) * (vx + vy + (L + W) * omega);
-    wheel_speeds_[RL] = (1 / R) * (vx + vy - (L + W) * omega);
-    wheel_speeds_[RR] = (1 / R) * (vx - vy - (L + W) * omega);
+    wheel_speeds_ref_[FL] = (1 / R) * (vx - vy - (L + W) * omega);
+    wheel_speeds_ref_[FR] = (1 / R) * (vx + vy - (L + W) * omega);
+    wheel_speeds_ref_[RL] = (1 / R) * (vx + vy + (L + W) * omega);
+    wheel_speeds_ref_[RR] = (1 / R) * (vx - vy + (L + W) * omega);
 
     // モーターのギア比と回転方向を考慮
     for (int i = 0; i < 4; i++) {
       // ギア比
-      wheel_speeds_[i] /= gear_ratio_;
+      wheel_speeds_ref_[i] /= gear_ratio_;
       // 回転方向
-      wheel_speeds_[i] *= motor_dir_[i];
+      wheel_speeds_ref_[i] *= motor_dir_[i];
     }
 
     // 計算した値がlimitより高いかを確認
-    max_speed = std::abs(wheel_speeds_[FL]);
+    max_speed = std::abs(wheel_speeds_ref_[FL]);
     for (int i = 0; i < 4; i++) {
-      max_speed = std::max(max_speed, std::abs(wheel_speeds_[i]));
+      max_speed = std::max(max_speed, std::abs(wheel_speeds_ref_[i]));
     }
 
     // 計算した値がlimitを超えていたら、limitに収まるように全体をスケーリング
     if (max_speed > speed_limit_) {
       for (int i = 0; i < 4; i++) {
-        wheel_speeds_[i] = wheel_speeds_[i] / max_speed * speed_limit_;
+        wheel_speeds_ref_[i] = wheel_speeds_ref_[i] / max_speed * speed_limit_;
       }
     }
   }
 
+  /**
+ * @brief メカナムホイールの順運動学を計算する
+ *
+ * @param wheel_speed FL, FR, RL, RR の順のホイール角速度[rad/s]
+ * @param theta ロボットの角度[rad]。y軸正方向を0度とし、反時計回りを正とする。IMUを使用しない場合はtheta=0
+ */
+  std::vector<double> calculate_robot_velocity(std::vector<double> _wheel_speed, double theta)
+  {
+    double L = robot_length_;
+    double W = robot_width_;
+    double R = wheel_radius_;
+    double vx, vy, omega;
+
+    std::vector<double> wheel_speed(N);
+    // モータの回転方向を適応
+    for (int i = 0; i < 4; i++) {
+      wheel_speed[i] = _wheel_speed[i];
+      wheel_speed[i] = motor_dir_[i] * _wheel_speed[i];
+    }
+
+    // 順運動学計算
+    vx = (R / 4.0) * (wheel_speed[FL] + wheel_speed[FR] + wheel_speed[RL] + wheel_speed[RR]);
+    vy = (R / 4.0) * (-wheel_speed[FL] + wheel_speed[FR] + wheel_speed[RL] - wheel_speed[RR]);
+    omega = (R / (4.0 * (L + W))) *
+            (-wheel_speed[FL] - wheel_speed[FR] + wheel_speed[RL] + wheel_speed[RR]);
+
+    // IMU角度による座標変換（θはロボット姿勢角）
+    double vx_robot = vx;
+    double vy_robot = vy;
+    vx = vx_robot * cos(theta) - vy_robot * sin(theta);
+    vy = vx_robot * sin(theta) + vy_robot * cos(theta);
+
+    std::vector<double> ret = {vx, vy, omega};
+    return ret;
+  }
+
   rclcpp::Subscription<geometry_msgs::msg::Twist>::SharedPtr cmd_vel_subscriber_;
   rclcpp::node_interfaces::OnSetParametersCallbackHandle::SharedPtr parameter_callback_handler_;
-  rclcpp::Publisher<std_msgs::msg::Float64MultiArray>::SharedPtr wheel_speeds_publisher_;
+  rclcpp::Publisher<r1_msgs::msg::Mecanum>::SharedPtr wheel_speeds_ref_publisher_;
+  rclcpp::Subscription<r1_msgs::msg::Mecanum>::SharedPtr wheel_speeds_feedback_subscription_;
+  rclcpp::Publisher<geometry_msgs::msg::Twist>::SharedPtr feedback_vel_publisher_;
   // 速度指令値
   geometry_msgs::msg::Twist target_vel_;
   double theta_ = 0.0;
@@ -214,11 +282,12 @@ public:
   double gear_ratio_;    // ギア比（減速比）。ギア比で割った値が出力される
   // motor_inverse = trueのときはmotor_dir_が-1.0になる。
   std::vector<double> motor_dir_ = {1.0, 1.0, 1.0, 1.0};
-  double wheel_speeds_[4] = {0.0, 0.0, 0.0, 0.0};  // FL, FR, RL, RR
+  std::vector<double> wheel_speeds_ref_ = {0.0, 0.0, 0.0, 0.0};  // FL, FR, RL, RR
   static constexpr int FL = 0;
   static constexpr int FR = 1;
   static constexpr int RL = 2;
   static constexpr int RR = 3;
+  static constexpr int N = 4;
 };
 
 int main(int argc, char * argv[])

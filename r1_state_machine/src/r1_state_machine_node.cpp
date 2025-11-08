@@ -103,7 +103,7 @@ public:
       }
     } else {
       target_vel_.linear.x = 0.0;
-      target_vel_.linear.y = 0.0;
+      target_vel_.linear.y = 0;
       target_vel_.angular.z = 0.0;
     }
     cmd_vel_publisher_->publish(target_vel_);
