@@ -135,9 +135,24 @@ public:
     }
 
     if (msg->motor_number == odometry_encoder_motor_number_[0]) {
-      odometry_encoder_values_[0] = msg->abs_pos;
+      odometry_encoder_update_[0] = true;
+      odometry_encoder_pos_values_[0] = msg->abs_pos;
+      odometry_encoder_speed_values_[0] = msg->abs_speed;
     } else if (msg->motor_number == odometry_encoder_motor_number_[1]) {
-      odometry_encoder_values_[1] = msg->abs_pos;
+      odometry_encoder_update_[1] = true;
+      odometry_encoder_pos_values_[1] = msg->abs_pos;
+      odometry_encoder_speed_values_[1] = msg->abs_speed;
+    }
+
+    if (odometry_encoder_update_[0] && odometry_encoder_update_[1]) {
+      auto odom_msg = r1_msgs::msg::OdometryEncoder();
+      odom_msg.encoder_pos_x = odometry_encoder_pos_values_[0];
+      odom_msg.encoder_pos_y = odometry_encoder_pos_values_[1];
+      odom_msg.encoder_speed_x = odometry_encoder_speed_values_[0];
+      odom_msg.encoder_speed_y = odometry_encoder_speed_values_[1];
+      odometry_encoder_publisher_->publish(odom_msg);
+      odometry_encoder_update_[0] = false;
+      odometry_encoder_update_[1] = false;
     }
   }
 
@@ -171,11 +186,6 @@ public:
     msg_feedback.rl_wheel_speed = mecanum_wheel_speeds_feedback_[RL];
     msg_feedback.rr_wheel_speed = mecanum_wheel_speeds_feedback_[RR];
     mecanum_wheel_speeds_feedback_publisher_->publish(msg_feedback);
-    // オドメトリのエンコーダ値をパブリッシュ
-    auto msg_odometry = r1_msgs::msg::OdometryEncoder();
-    msg_odometry.encoder_x = odometry_encoder_values_[0];
-    msg_odometry.encoder_y = odometry_encoder_values_[1];
-    odometry_encoder_publisher_->publish(msg_odometry);
   }
 
   // sabacan_robomas_refの0~9までのpublisherを宣言
@@ -192,7 +202,9 @@ public:
   int mecanum_motor_number_[4];
   int odometry_encoder_board_id_[2];
   int odometry_encoder_motor_number_[2];
-  double odometry_encoder_values_[2] = {0.0, 0.0};
+  double odometry_encoder_pos_values_[2] = {0.0, 0.0};
+  double odometry_encoder_speed_values_[2] = {0.0, 0.0};
+  bool odometry_encoder_update_[2] = {true, true};
   std::vector<double> mecanum_wheel_speeds_feedback_ = std::vector<double>(4);
   static constexpr int FL = 0;
   static constexpr int FR = 1;
