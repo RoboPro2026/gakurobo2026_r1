@@ -5,7 +5,7 @@
 ## トピック
 
 - **Subscribe**
-  - `/odometry_encoder` (`std_msgs/msg/Float64MultiArray`): X・Y 方向のエンコーダ積算値。ノードでは配列の `[0]` を X、`[1]` を Y として受け取り、単位は [rad] と想定しています。
+  - `/odometry_encoder` (`r1_msgs/msg/OdometryEncoder`): X・Y 方向のエンコーダ積算値。`encoder_x`, `encoder_y` にそれぞれの軸の積算角度 [rad] が格納されます。
   - `/bno086/imu/data_raw` (`sensor_msgs/msg/Imu`): IMU からのヨー角と角速度。オドメトリの向きと角速度の参照にのみ使用します。
 - **Publish**
   - `/odometry` (`nav_msgs/msg/Odometry`): 推定された位置・姿勢・速度。`header.frame_id = "odom"`、`child_frame_id = "base_link"` 固定です。
@@ -16,16 +16,18 @@
 
 | パラメータ名 | 型 | デフォルト値 | 説明 |
 | --- | --- | --- | --- |
-| `wheel_radius` | double | `0.05` | 設置ホイールの半径 [m]。エンコーダ角度から移動距離へ換算する際に使用します。 |
+| `wheel_radius` | double | `0.025` | 設置ホイールの半径 [m]。エンコーダ角度から移動距離へ換算する際に使用します。 |
 | `offset_pos_x` | double | `0.0` | 最終的な X 位置に加算するオフセット [m]。パラメータ更新時は現在値に加算されます。 |
 | `offset_pos_y` | double | `0.0` | 最終的な Y 位置に加算するオフセット [m]。パラメータ更新時は現在値に加算されます。 |
 | `offset_yaw` | double | `0.0` | IMU ヨー角に加算する追加オフセット [rad]。パラメータ更新時は現在値に加算されます。 |
+| `encoder_x_inverse` | bool | `false` | X 方向エンコーダの正負を反転するか。`true` で時計回り/反時計回りの定義が逆転します。 |
+| `encoder_y_inverse` | bool | `false` | Y 方向エンコーダの正負を反転するか。`true` で時計回り/反時計回りの定義が逆転します。 |
 
 ## 計算の流れ
 
 1. `/odometry_encoder` から受け取った値を `encoder_x`, `encoder_y` として内部に保存します。どちらも積算角度 [rad] を想定しています。
 2. 受信タイミングでの `rclcpp::Time` を記録し、タイマコールバックで前回時刻との差 `dt` を計算します。
-3. 距離換算は `pos_x = wheel_radius * encoder_x`、`pos_y = wheel_radius * encoder_y` で行います（エンコーダが1周すると、値が2pi変化します）。
+3. 距離換算は `pos_x = direction_x * wheel_radius * encoder_x`、`pos_y = direction_y * wheel_radius * encoder_y` で行います。`direction_*` は `encoder_*_inverse` パラメータから ±1 を設定し、配線や設置向きの違いを吸収します（エンコーダが1周すると、値が 2π 変化します）。
 4. `/bno086/imu/data_raw` から得たクォータニオンを Roll-Pitch-Yaw に変換し、Yaw 成分と Z 軸の角速度のみを使用します。
 5. 位置は `offset_pos_x`, `offset_pos_y`, `offset_yaw` を加算した値で `nav_msgs/msg/Odometry` に反映します。現在の実装では `pose.pose.position.z` にヨー角を格納しており、`orientation` フィールドは初期値 (単位クォータニオン) のままです。
 6. 速度は前回ステップからの差分で `vx`, `vy` を計算し、角速度は IMU の `angular_velocity.z` をそのまま使用して `twist.twist` にセットします。

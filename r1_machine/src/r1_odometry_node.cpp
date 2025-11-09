@@ -15,6 +15,7 @@
 #include <sensor_msgs/msg/imu.hpp>
 #include <std_msgs/msg/float64_multi_array.hpp>
 
+#include "r1_msgs/msg/odometry_encoder.hpp"
 #include "tf2/LinearMath/Matrix3x3.h"
 #include "tf2/LinearMath/Quaternion.h"
 
@@ -27,7 +28,7 @@ public:
   {
     odometry_publisher_ = this->create_publisher<nav_msgs::msg::Odometry>("/odometry", 10);
 
-    encoder_subscription_ = this->create_subscription<std_msgs::msg::Float64MultiArray>(
+    encoder_subscription_ = this->create_subscription<r1_msgs::msg::OdometryEncoder>(
       "/odometry_encoder", 10, std::bind(&MyNode::encoder_callback, this, std::placeholders::_1));
 
     imu_subscription_ = this->create_subscription<sensor_msgs::msg::Imu>(
@@ -40,15 +41,23 @@ public:
     param_callback_handle_ = this->add_on_set_parameters_callback(
       std::bind(&MyNode::parameter_callback, this, std::placeholders::_1));
 
-    this->declare_parameter<double>("wheel_radius", 0.05);
+    this->declare_parameter<double>("wheel_radius", 0.025);
     this->declare_parameter<double>("offset_pos_x", 0.0);
     this->declare_parameter<double>("offset_pos_y", 0.0);
     this->declare_parameter<double>("offset_yaw", 0.0);
+    this->declare_parameter<bool>("encoder_x_inverse", false);
+    this->declare_parameter<bool>("encoder_y_inverse", false);
 
     this->get_parameter("wheel_radius", wheel_radius_);
     this->get_parameter("offset_pos_x", offset_pos_x_);
     this->get_parameter("offset_pos_y", offset_pos_y_);
     this->get_parameter("offset_yaw", offset_yaw_);
+
+    bool encoder_inverse[2];
+    this->get_parameter("encoder_x_inverse", encoder_inverse[0]);
+    this->get_parameter("encoder_y_inverse", encoder_inverse[1]);
+    encoder_x_direction_ = encoder_inverse[0] ? -1.0 : 1.0;
+    encoder_y_direction_ = encoder_inverse[1] ? -1.0 : 1.0;
   }
 
   rcl_interfaces::msg::SetParametersResult parameter_callback(
@@ -70,6 +79,16 @@ public:
       } else if (name == "offset_yaw") {
         offset_yaw_ += param.as_double();
         RCLCPP_INFO(this->get_logger(), "Updated parameter: offset_yaw = %.3f", offset_yaw_);
+      } else if ("encoder_x_inverse") {
+        encoder_x_direction_ = param.as_bool() ? -1.0 : 1.0;
+        RCLCPP_INFO(
+          this->get_logger(), "Updated parameter: encoder_x_inverse = %s",
+          param.as_bool() ? "true" : "false");
+      } else if (name == "encoder_y_inverse") {
+        encoder_y_direction_ = param.as_bool() ? -1.0 : 1.0;
+        RCLCPP_INFO(
+          this->get_logger(), "Updated parameter: encoder_y_inverse = %s",
+          param.as_bool() ? "true" : "false");
       } else {
         result.successful = false;
         result.reason = "Invalid parameter name: " + name;
@@ -79,11 +98,11 @@ public:
     return result;
   }
 
-  void encoder_callback(const std_msgs::msg::Float64MultiArray::SharedPtr msg)
+  void encoder_callback(const r1_msgs::msg::OdometryEncoder::SharedPtr msg)
   {
     // エンコーダの値を更新
-    encoder_x_ = msg->data[0];
-    encoder_y_ = msg->data[1];
+    encoder_x_ = msg->encoder_x;
+    encoder_y_ = msg->encoder_y;
     prev_time_ = this->now();
   }
 
@@ -102,10 +121,10 @@ public:
   {
     // 時間差を計算
     rclcpp::Time current_time = this->now();
-    if (current_time.get_clock_type() != prev_time_.get_clock_type()) {
-      prev_time_ = current_time;
-      return;
-    }
+    // if (current_time.get_clock_type() != prev_time_.get_clock_type()) {
+    //   prev_time_ = current_time;
+    //   return;
+    // }
     double dt_sec = (current_time - prev_time_).seconds();
 
     if (dt_sec <= 0.0) {
@@ -120,8 +139,8 @@ public:
     odom_msg.child_frame_id = "base_link";
 
     // 位置と姿勢の更新
-    pos_x_ = wheel_radius_ * encoder_x_;
-    pos_y_ = wheel_radius_ * encoder_y_;
+    pos_x_ = encoder_x_direction_ * wheel_radius_ * encoder_x_;
+    pos_y_ = encoder_y_direction_ * wheel_radius_ * encoder_y_;
 
     odom_msg.pose.pose.position.x = pos_x_ + offset_pos_x_;
     odom_msg.pose.pose.position.y = pos_y_ + offset_pos_y_;
@@ -148,7 +167,7 @@ public:
 
 private:
   rclcpp::Publisher<nav_msgs::msg::Odometry>::SharedPtr odometry_publisher_;
-  rclcpp::Subscription<std_msgs::msg::Float64MultiArray>::SharedPtr encoder_subscription_;
+  rclcpp::Subscription<r1_msgs::msg::OdometryEncoder>::SharedPtr encoder_subscription_;
   rclcpp::Subscription<sensor_msgs::msg::Imu>::SharedPtr imu_subscription_;
   rclcpp::TimerBase::SharedPtr timer_;
   rclcpp::Time prev_time_ = rclcpp::Time(0);
@@ -162,10 +181,12 @@ private:
   double prev_pos_y_ = 0.0;                // m
   double imu_yaw_ = 0.0;                   // rad
   double imu_yaw_angular_velocity_ = 0.0;  // rad/s
-  double wheel_radius_ = 0.05;             // m
+  double wheel_radius_ = 0.025;            // m
   double offset_pos_x_ = 0.0;              // m
   double offset_pos_y_ = 0.0;              // m
   double offset_yaw_ = 0.0;                // rad
+  double encoder_x_direction_ = 1.0;
+  double encoder_y_direction_ = 1.0;
   // TODO: 必要であれば、imu_yaw_angular_velocity_のオフセットも追加する
 };
 

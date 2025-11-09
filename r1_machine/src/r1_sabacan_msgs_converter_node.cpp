@@ -14,6 +14,7 @@
 
 #include "r1_msgs/msg/mecanum.hpp"
 #include "r1_msgs/msg/motor.hpp"
+#include "r1_msgs/msg/odometry_encoder.hpp"
 #include "rcl_interfaces/msg/floating_point_range.hpp"
 #include "rcl_interfaces/msg/parameter_descriptor.hpp"
 #include "rclcpp/rclcpp.hpp"
@@ -39,6 +40,9 @@ public:
     mecanum_wheel_speeds_ref_subscriber_ = this->create_subscription<r1_msgs::msg::Mecanum>(
       "/mecanum_wheel_speeds_ref", 10,
       std::bind(&MyNode::mecanum_wheel_speeds_ref_callback, this, std::placeholders::_1));
+
+    odometry_encoder_publisher_ =
+      this->create_publisher<r1_msgs::msg::OdometryEncoder>("/odometry_encoder", 10);
 
     mecanum_wheel_speeds_feedback_publisher_ =
       this->create_publisher<r1_msgs::msg::Mecanum>("/mecanum_wheel_speeds_feedback", 10);
@@ -81,6 +85,10 @@ public:
     this->declare_parameter<int>("mecanum_fr_motor_number", motor_number_descriptor);
     this->declare_parameter<int>("mecanum_rl_motor_number", motor_number_descriptor);
     this->declare_parameter<int>("mecanum_rr_motor_number", motor_number_descriptor);
+    this->declare_parameter<int>("odometry_x_board_id", board_id_descriptor);
+    this->declare_parameter<int>("odometry_y_board_id", board_id_descriptor);
+    this->declare_parameter<int>("odometry_x_motor_number", motor_number_descriptor);
+    this->declare_parameter<int>("odometry_y_motor_number", motor_number_descriptor);
 
     this->get_parameter("mecanum_fl_board_id", mecanum_board_id_[0]);
     this->get_parameter("mecanum_fr_board_id", mecanum_board_id_[1]);
@@ -90,8 +98,13 @@ public:
     this->get_parameter("mecanum_fr_motor_number", mecanum_motor_number_[1]);
     this->get_parameter("mecanum_rl_motor_number", mecanum_motor_number_[2]);
     this->get_parameter("mecanum_rr_motor_number", mecanum_motor_number_[3]);
+    this->get_parameter("odometry_x_board_id", odometry_encoder_board_id_[0]);
+    this->get_parameter("odometry_y_board_id", odometry_encoder_board_id_[1]);
+    this->get_parameter("odometry_x_motor_number", odometry_encoder_motor_number_[0]);
+    this->get_parameter("odometry_y_motor_number", odometry_encoder_motor_number_[1]);
   }
 
+  // TODO: board_idが増えてもいい感じになるようにする
   void sabacan_robomas_status_callback(
     const sabacan_msgs::msg::SabacanRobomasStatus::ConstSharedPtr msg)
   {
@@ -111,14 +124,20 @@ public:
     // メカナムの運動学計算用にエンコーダの値を代入
     mecanum_wheel_speeds_feedback_[msg->motor_number] = msg->speed;
 
-    if (msg->motor_number == FL) {
+    if (msg->motor_number == mecanum_motor_number_[FL]) {
       fl_motor_publisher_->publish(msg_status);
-    } else if (msg->motor_number == FR) {
+    } else if (msg->motor_number == mecanum_motor_number_[FR]) {
       fr_motor_publisher_->publish(msg_status);
-    } else if (msg->motor_number == RL) {
+    } else if (msg->motor_number == mecanum_motor_number_[RL]) {
       rl_motor_publisher_->publish(msg_status);
-    } else if (msg->motor_number == RR) {
+    } else if (msg->motor_number == mecanum_motor_number_[RR]) {
       rr_motor_publisher_->publish(msg_status);
+    }
+
+    if (msg->motor_number == odometry_encoder_motor_number_[0]) {
+      odometry_encoder_values_[0] = msg->abs_pos;
+    } else if (msg->motor_number == odometry_encoder_motor_number_[1]) {
+      odometry_encoder_values_[1] = msg->abs_pos;
     }
   }
 
@@ -152,6 +171,11 @@ public:
     msg_feedback.rl_wheel_speed = mecanum_wheel_speeds_feedback_[RL];
     msg_feedback.rr_wheel_speed = mecanum_wheel_speeds_feedback_[RR];
     mecanum_wheel_speeds_feedback_publisher_->publish(msg_feedback);
+    // オドメトリのエンコーダ値をパブリッシュ
+    auto msg_odometry = r1_msgs::msg::OdometryEncoder();
+    msg_odometry.encoder_x = odometry_encoder_values_[0];
+    msg_odometry.encoder_y = odometry_encoder_values_[1];
+    odometry_encoder_publisher_->publish(msg_odometry);
   }
 
   // sabacan_robomas_refの0~9までのpublisherを宣言
@@ -159,18 +183,23 @@ public:
     sabacan_robomas_ref_publisher_;
   rclcpp::Subscription<r1_msgs::msg::Mecanum>::SharedPtr mecanum_wheel_speeds_ref_subscriber_;
   rclcpp::Publisher<r1_msgs::msg::Mecanum>::SharedPtr mecanum_wheel_speeds_feedback_publisher_;
+  rclcpp::Publisher<r1_msgs::msg::OdometryEncoder>::SharedPtr odometry_encoder_publisher_;
   rclcpp::Subscription<sabacan_msgs::msg::SabacanRobomasStatus>::SharedPtr
     sabacan_robomas_status_subscription_;
   rclcpp::TimerBase::SharedPtr timer_;
   // モータのパラメータ名
   int mecanum_board_id_[4];
   int mecanum_motor_number_[4];
+  int odometry_encoder_board_id_[2];
+  int odometry_encoder_motor_number_[2];
+  double odometry_encoder_values_[2] = {0.0, 0.0};
   std::vector<double> mecanum_wheel_speeds_feedback_ = std::vector<double>(4);
   static constexpr int FL = 0;
   static constexpr int FR = 1;
   static constexpr int RL = 2;
   static constexpr int RR = 3;
   // デバッグ用
+  // TODO: ここのデバッグ用の部分がいけてないので、なんとかする
   rclcpp::Publisher<r1_msgs::msg::Motor>::SharedPtr fl_motor_publisher_;
   rclcpp::Publisher<r1_msgs::msg::Motor>::SharedPtr fr_motor_publisher_;
   rclcpp::Publisher<r1_msgs::msg::Motor>::SharedPtr rl_motor_publisher_;

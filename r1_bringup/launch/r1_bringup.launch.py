@@ -27,10 +27,20 @@ def generate_launch_description():
         arguments=["--ros-args", "--log-level", "warn"],
     )
 
+    # メカナムホイールの指令値を知りたいときはinfoにする
     r1_mecanum_node = Node(
         package="r1_machine",
         executable="r1_mecanum_node",
         name="r1_mecanum_node",  # YAMLファイル内のノード名と一致させる
+        parameters=[param_file],
+        arguments=["--ros-args", "--log-level", "warn"],
+    )
+
+    # オドメトリの値を知りたいときはinfoにする
+    r1_odometry_node = Node(
+        package="r1_machine",
+        executable="r1_odometry_node",
+        name="r1_odometry_node",
         parameters=[param_file],
         arguments=["--ros-args", "--log-level", "info"],
     )
@@ -78,6 +88,7 @@ def generate_launch_description():
         [
             ps4_node,
             r1_mecanum_node,
+            r1_odometry_node,
             r1_sabacan_msgs_converter_node,
             r1_state_machine_node,
             sabacan_robomas_node1,
