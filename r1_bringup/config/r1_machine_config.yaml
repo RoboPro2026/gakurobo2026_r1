@@ -47,6 +47,11 @@ sabacan_robomas_node1:
     pos_gain_d: [0.0, 0.0, 0.0, 0.0]
     speed_lim: [60.0, 60.0, 60.0, 60.0]
     monitor_period: 50
+    enable_monitor_period: true
+    # monitor_reg1: [864691128455135232, 864691128455135232, 864691128455135232, 864691128455135232] #abs_encoder + speed
+    # monitor_reg1: [864691128455135232, 0, 0, 0] #abs_encoder + speed
+    monitor_reg2: [0, 0, 0, 0]
+
 r1_sabacan_msgs_converter_node:
   ros__parameters:
     # メカナム

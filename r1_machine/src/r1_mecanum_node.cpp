@@ -258,6 +258,7 @@ public:
             (-wheel_speed[FL] - wheel_speed[FR] + wheel_speed[RL] + wheel_speed[RR]);
 
     // IMU角度による座標変換（θはロボット姿勢角）
+    // TODO: ここの回転行列の符号が逆な気がする
     double vx_robot = vx;
     double vy_robot = vy;
     vx = vx_robot * cos(theta) - vy_robot * sin(theta);
