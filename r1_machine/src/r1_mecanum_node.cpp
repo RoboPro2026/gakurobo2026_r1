@@ -245,10 +245,9 @@ public:
     double vx, vy, omega;
 
     std::vector<double> wheel_speed(N);
-    // モータの回転方向を適応
+    // モータの回転方向とギア比を考慮
     for (int i = 0; i < 4; i++) {
-      wheel_speed[i] = _wheel_speed[i];
-      wheel_speed[i] = motor_dir_[i] * _wheel_speed[i];
+      wheel_speed[i] = motor_dir_[i] * _wheel_speed[i] * gear_ratio_;
     }
 
     // 順運動学計算
