@@ -27,7 +27,7 @@ using namespace std::chrono_literals;
 class MyNode : public rclcpp::Node
 {
 public:
-  MyNode() : Node("r1_float64_to_sabacan_converter")
+  MyNode() : Node("r1_sabacan_msgs_converter_node")
   {
     // sabacan_robomas_refの0~9までのpublisherを作成
     sabacan_robomas_ref_publisher_.resize(10);
