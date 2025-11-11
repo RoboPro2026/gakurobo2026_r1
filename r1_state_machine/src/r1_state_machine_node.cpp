@@ -97,13 +97,14 @@ public:
         target_vel_.angular.z = 0;
       } else {
         // TODO: 必要に応じて、符号の反転や係数をかける。
-        target_vel_.linear.x = ps4_->data.left_stick_x;
-        target_vel_.linear.y = ps4_->data.left_stick_y;
+        double stick_max_velocity = 3.0;
+        target_vel_.linear.x = stick_max_velocity * ps4_->data.left_stick_x;
+        target_vel_.linear.y = stick_max_velocity * ps4_->data.left_stick_y;
         target_vel_.angular.z = ps4_->data.right_stick_x;
       }
     } else {
       target_vel_.linear.x = 0.0;
-      target_vel_.linear.y = 0;
+      target_vel_.linear.y = 0.0;
       target_vel_.angular.z = 0.0;
     }
     cmd_vel_publisher_->publish(target_vel_);

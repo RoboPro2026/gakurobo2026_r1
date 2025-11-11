@@ -25,6 +25,8 @@ ament_target_dependencies(r1_mecanum_node
   geometry_msgs
   rclcpp
   std_msgs
+  sensor_msgs
+  tf2
   r1_msgs
 )
 

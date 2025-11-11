@@ -117,6 +117,10 @@ public:
   void imu_callback(const sensor_msgs::msg::Imu::SharedPtr msg)
   {
     // IMUのyaw角の情報を更新、他の情報は使用しない（必要ないので）
+
+    // imuを使わない設定の場合は処理しない
+    if (!use_imu_) return;
+
     imu_update_ = true;
     tf2::Quaternion q(
       msg->orientation.x, msg->orientation.y, msg->orientation.z, msg->orientation.w);

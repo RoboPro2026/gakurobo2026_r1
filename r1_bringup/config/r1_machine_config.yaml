@@ -25,6 +25,7 @@ r1_mecanum_node:
     # ギア比で割った値がモーターの出力となる
     gear_ratio: 1.3214285714285714
     motor_inverse: [false, false, true, true]
+    use_imu: false
 r1_odometry_node:
   ros__parameters:
     # 計測輪の半径[m]
@@ -45,7 +46,7 @@ sabacan_robomas_node1:
     pos_gain_p: [6.0, 6.0, 6.0, 6.0]
     pos_gain_i: [3.0, 3.0, 3.0, 3.0]
     pos_gain_d: [0.0, 0.0, 0.0, 0.0]
-    speed_lim: [60.0, 60.0, 60.0, 60.0]
+    speed_lim: [75.0, 75.0, 75.0, 75.0]
     monitor_period: 50
     enable_monitor_period: true
     # monitor_reg1: [864691128455135232, 864691128455135232, 864691128455135232, 864691128455135232] #abs_encoder + speed
