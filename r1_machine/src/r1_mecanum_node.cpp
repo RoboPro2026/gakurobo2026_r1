@@ -42,6 +42,7 @@
 
 #include <chrono>
 #include <limits>
+#include <sensor_msgs/msg/imu.hpp>
 
 #include "geometry_msgs/msg/twist.hpp"
 #include "r1_msgs/msg/mecanum.hpp"
@@ -49,6 +50,8 @@
 #include "rcl_interfaces/msg/parameter_descriptor.hpp"
 #include "rclcpp/rclcpp.hpp"
 #include "std_msgs/msg/float64_multi_array.hpp"
+#include "tf2/LinearMath/Matrix3x3.h"
+#include "tf2/LinearMath/Quaternion.h"
 
 class MyNode : public rclcpp::Node
 {
@@ -72,6 +75,10 @@ public:
     parameter_callback_handler_ = this->add_on_set_parameters_callback(
       std::bind(&MyNode::parameter_callback, this, std::placeholders::_1));
 
+    // BNO086以外のIMUを使う場合は、適宜変えること。
+    imu_subscription_ = this->create_subscription<sensor_msgs::msg::Imu>(
+      "/bno086/imu/data_raw", 10, std::bind(&MyNode::imu_callback, this, std::placeholders::_1));
+
     auto parameter_descriptor = rcl_interfaces::msg::ParameterDescriptor();
     // パラメータの範囲を設定
     auto range = rcl_interfaces::msg::FloatingPointRange();
@@ -89,6 +96,7 @@ public:
     this->declare_parameter("speed_limit", 100.0, parameter_descriptor);
     this->declare_parameter("gear_ratio", 1.0, parameter_descriptor);
     this->declare_parameter("motor_inverse", std::vector<bool>{false, false, false, false});
+    this->declare_parameter("use_imu", true);
 
     this->get_parameter("wheel_radius", wheel_radius_);
     this->get_parameter("robot_length", robot_length_);
@@ -98,6 +106,7 @@ public:
     std::vector<bool> motor_inverse(4);
     this->get_parameter("motor_inverse", motor_inverse);
     for (int i = 0; i < 4; i++) motor_dir_[i] = motor_inverse[i] ? -1.0 : 1.0;
+    this->get_parameter("use_imu", use_imu_);
   }
 
   void cmd_vel_callback(const geometry_msgs::msg::Twist::SharedPtr msg)
@@ -166,6 +175,11 @@ public:
       } else if (name == "gear_ratio") {
         gear_ratio_ = parameter.as_double();
         RCLCPP_INFO(this->get_logger(), "Updated parameter: gear_ratio = %.3f", gear_ratio_);
+      } else if (name == "use_imu") {
+        use_imu_ = parameter.as_bool();
+        RCLCPP_INFO(
+          this->get_logger(), "Updated parameter: use_imu = %s",
+          parameter.as_bool() ? "true" : "false");
       } else if (name == "motor_inverse") {
         std::vector<bool> motor_inverse = parameter.as_bool_array();
         for (int i = 0; i < 4; i++) motor_dir_[i] = motor_inverse[i] ? -1.0 : 1.0;
@@ -181,6 +195,19 @@ public:
     }
 
     return result;
+  }
+
+  void imu_callback(const sensor_msgs::msg::Imu::SharedPtr msg)
+  {
+    // imuを使わない設定の場合は処理しない
+    if (!use_imu_) return;
+
+    // IMUのyaw角の情報を更新
+    tf2::Quaternion q(
+      msg->orientation.x, msg->orientation.y, msg->orientation.z, msg->orientation.w);
+    double yaw, pitch, roll;
+    tf2::Matrix3x3(q).getRPY(roll, pitch, yaw);
+    theta_ = yaw;
   }
 
   /**
@@ -245,10 +272,9 @@ public:
     double vx, vy, omega;
 
     std::vector<double> wheel_speed(N);
-    // モータの回転方向を適応
+    // モータの回転方向とギア比を考慮
     for (int i = 0; i < 4; i++) {
-      wheel_speed[i] = _wheel_speed[i];
-      wheel_speed[i] = motor_dir_[i] * _wheel_speed[i];
+      wheel_speed[i] = motor_dir_[i] * _wheel_speed[i] * gear_ratio_;
     }
 
     // 順運動学計算
@@ -258,6 +284,7 @@ public:
             (-wheel_speed[FL] - wheel_speed[FR] + wheel_speed[RL] + wheel_speed[RR]);
 
     // IMU角度による座標変換（θはロボット姿勢角）
+    // TODO: ここの回転行列の符号が逆な気がする
     double vx_robot = vx;
     double vy_robot = vy;
     vx = vx_robot * cos(theta) - vy_robot * sin(theta);
@@ -271,16 +298,18 @@ public:
   rclcpp::node_interfaces::OnSetParametersCallbackHandle::SharedPtr parameter_callback_handler_;
   rclcpp::Publisher<r1_msgs::msg::Mecanum>::SharedPtr wheel_speeds_ref_publisher_;
   rclcpp::Subscription<r1_msgs::msg::Mecanum>::SharedPtr wheel_speeds_feedback_subscription_;
+  rclcpp::Subscription<sensor_msgs::msg::Imu>::SharedPtr imu_subscription_;
   rclcpp::Publisher<geometry_msgs::msg::Twist>::SharedPtr feedback_vel_publisher_;
   // 速度指令値
   geometry_msgs::msg::Twist target_vel_;
   double theta_ = 0.0;
+  bool use_imu_ = true;
   double speed_limit_;   //rad/s
   double robot_length_;  // ロボットの長さ (m)
   double robot_width_;   // ロボットの幅 (m)
   double wheel_radius_;  // ホイールの半径 (m)
   double gear_ratio_;    // ギア比（減速比）。ギア比で割った値が出力される
-  // motor_inverse = trueのときはmotor_dir_が-1.0になる。
+  // motor_inverse = trueのとき、motor_dir_が-1.0になる。
   std::vector<double> motor_dir_ = {1.0, 1.0, 1.0, 1.0};
   std::vector<double> wheel_speeds_ref_ = {0.0, 0.0, 0.0, 0.0};  // FL, FR, RL, RR
   static constexpr int FL = 0;

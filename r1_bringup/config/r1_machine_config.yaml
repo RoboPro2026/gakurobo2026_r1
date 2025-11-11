@@ -25,6 +25,16 @@ r1_mecanum_node:
     # ギア比で割った値がモーターの出力となる
     gear_ratio: 1.3214285714285714
     motor_inverse: [false, false, true, true]
+    use_imu: false
+r1_odometry_node:
+  ros__parameters:
+    # 計測輪の半径[m]
+    # 使ったオムニは小さい白オムニ
+    # 適当に実測したパラメータなので、ずれてるかも
+    wheel_radius: 0.025
+    encoder_x_inverse: false
+    encoder_y_inverse: true
+    use_imu: false
 sabacan_robomas_node1:
   ros__parameters:
     board_id: 1
@@ -36,9 +46,16 @@ sabacan_robomas_node1:
     pos_gain_p: [6.0, 6.0, 6.0, 6.0]
     pos_gain_i: [3.0, 3.0, 3.0, 3.0]
     pos_gain_d: [0.0, 0.0, 0.0, 0.0]
-    speed_lim: [60.0, 60.0, 60.0, 60.0]
+    speed_lim: [75.0, 75.0, 75.0, 75.0]
+    monitor_period: 50
+    enable_monitor_period: true
+    # monitor_reg1: [864691128455135232, 864691128455135232, 864691128455135232, 864691128455135232] #abs_encoder + speed
+    # monitor_reg1: [864691128455135232, 0, 0, 0] #abs_encoder + speed
+    monitor_reg2: [0, 0, 0, 0]
+
 r1_sabacan_msgs_converter_node:
   ros__parameters:
+    # メカナム
     mecanum_fl_board_id: 1
     mecanum_fr_board_id: 1
     mecanum_rl_board_id: 1
@@ -47,3 +64,8 @@ r1_sabacan_msgs_converter_node:
     mecanum_fr_motor_number: 1
     mecanum_rl_motor_number: 2
     mecanum_rr_motor_number: 3
+    # オドメトリ用エンコーダ、メカナムの基板と兼用
+    odometry_x_board_id: 1
+    odometry_y_board_id: 1
+    odometry_x_motor_number: 2
+    odometry_y_motor_number: 3

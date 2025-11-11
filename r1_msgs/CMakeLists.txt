@@ -14,6 +14,7 @@ find_package(std_msgs REQUIRED)
 rosidl_generate_interfaces(${PROJECT_NAME}
   "msg/Mecanum.msg"
   "msg/Motor.msg"
+  "msg/OdometryEncoder.msg"
   DEPENDENCIES std_msgs
 )
 

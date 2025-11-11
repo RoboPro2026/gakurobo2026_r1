@@ -1,0 +1,4 @@
+float32 encoder_pos_x
+float32 encoder_pos_y
+float32 encoder_speed_x
+float32 encoder_speed_y
