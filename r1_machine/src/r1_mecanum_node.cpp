@@ -42,13 +42,13 @@
 
 #include <chrono>
 #include <limits>
-#include <sensor_msgs/msg/imu.hpp>
 
 #include "geometry_msgs/msg/twist.hpp"
 #include "r1_msgs/msg/mecanum.hpp"
 #include "rcl_interfaces/msg/floating_point_range.hpp"
 #include "rcl_interfaces/msg/parameter_descriptor.hpp"
 #include "rclcpp/rclcpp.hpp"
+#include "sensor_msgs/msg/imu.hpp"
 #include "std_msgs/msg/float64_multi_array.hpp"
 #include "tf2/LinearMath/Matrix3x3.h"
 #include "tf2/LinearMath/Quaternion.h"
@@ -231,10 +231,11 @@ public:
     omega = _omega;
 
     // メカナムホイールの逆運動学の計算
-    wheel_speeds_ref_[FL] = (1 / R) * (vx - vy - (L + W) * omega);
-    wheel_speeds_ref_[FR] = (1 / R) * (vx + vy - (L + W) * omega);
-    wheel_speeds_ref_[RL] = (1 / R) * (vx + vy + (L + W) * omega);
-    wheel_speeds_ref_[RR] = (1 / R) * (vx - vy + (L + W) * omega);
+    // ここはうまく行かなかったら適当に入れ替えてる
+    wheel_speeds_ref_[FL] = (1 / R) * (vx + vy + (L + W) * omega);
+    wheel_speeds_ref_[FR] = (1 / R) * (vx - vy + (L + W) * omega);
+    wheel_speeds_ref_[RL] = (1 / R) * (vx - vy - (L + W) * omega);
+    wheel_speeds_ref_[RR] = (1 / R) * (vx + vy - (L + W) * omega);
 
     // モーターのギア比と回転方向を考慮
     for (int i = 0; i < 4; i++) {
@@ -279,9 +280,9 @@ public:
 
     // 順運動学計算
     vx = (R / 4.0) * (wheel_speed[FL] + wheel_speed[FR] + wheel_speed[RL] + wheel_speed[RR]);
-    vy = (R / 4.0) * (-wheel_speed[FL] + wheel_speed[FR] + wheel_speed[RL] - wheel_speed[RR]);
+    vy = (R / 4.0) * (wheel_speed[FL] - wheel_speed[FR] - wheel_speed[RL] + wheel_speed[RR]);
     omega = (R / (4.0 * (L + W))) *
-            (-wheel_speed[FL] - wheel_speed[FR] + wheel_speed[RL] + wheel_speed[RR]);
+            (wheel_speed[FL] + wheel_speed[FR] - wheel_speed[RL] - wheel_speed[RR]);
 
     // IMU角度による座標変換（θはロボット姿勢角）
     // TODO: ここの回転行列の符号が逆な気がする

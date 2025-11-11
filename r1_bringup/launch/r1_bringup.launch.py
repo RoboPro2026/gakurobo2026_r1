@@ -33,7 +33,7 @@ def generate_launch_description():
         executable="r1_mecanum_node",
         name="r1_mecanum_node",  # YAMLファイル内のノード名と一致させる
         parameters=[param_file],
-        arguments=["--ros-args", "--log-level", "warn"],
+        arguments=["--ros-args", "--log-level", "info"],
     )
 
     # オドメトリの値を知りたいときはinfoにする
