@@ -53,6 +53,14 @@ def generate_launch_description():
         arguments=["--ros-args", "--log-level", "warn"],
     )
 
+    r1_linear_motion_node = Node(
+        package="r1_machine",
+        executable="r1_linear_motion_node",
+        name="r1_linear_motion_node",
+        parameters=[param_file],
+        arguments=["--ros-args", "--log-level", "info"],
+    )
+
     r1_state_machine_node = Node(
         package="r1_state_machine",
         executable="r1_state_machine_node",
@@ -65,6 +73,22 @@ def generate_launch_description():
         package="sabacan",
         executable="sabacan_robomasv2_node",
         name="sabacan_robomas_node1",
+        parameters=[param_file],
+        arguments=["--ros-args", "--log-level", "warn"],
+    )
+
+    sabacan_robomas_node2 = Node(
+        package="sabacan",
+        executable="sabacan_robomasv2_node",
+        name="sabacan_robomas_node2",
+        parameters=[param_file],
+        arguments=["--ros-args", "--log-level", "warn"],
+    )
+
+    sabacan_gpio_node1 = Node(
+        package="sabacan",
+        executable="sabacan_gpio_node",
+        name="sabacan_gpio_node1",
         parameters=[param_file],
         arguments=["--ros-args", "--log-level", "warn"],
     )
@@ -89,9 +113,12 @@ def generate_launch_description():
             ps4_node,
             r1_mecanum_node,
             r1_odometry_node,
+            r1_linear_motion_node,
             r1_sabacan_msgs_converter_node,
             r1_state_machine_node,
             sabacan_robomas_node1,
+            sabacan_robomas_node2,
+            sabacan_gpio_node1,
             # socket_can_bridge_launch,
         ]
     )

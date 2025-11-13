@@ -20,6 +20,7 @@ find_package(r1_msgs REQUIRED)
 add_executable(r1_mecanum_node src/r1_mecanum_node.cpp)
 add_executable(r1_sabacan_msgs_converter_node src/r1_sabacan_msgs_converter_node.cpp)
 add_executable(r1_odometry_node src/r1_odometry_node.cpp)
+add_executable(r1_linear_motion_node src/r1_linear_motion_node.cpp)
 
 ament_target_dependencies(r1_mecanum_node
   geometry_msgs
@@ -47,6 +48,12 @@ ament_target_dependencies(r1_odometry_node
   r1_msgs
 )
 
+ament_target_dependencies(r1_linear_motion_node
+  rclcpp
+  std_msgs
+  r1_msgs
+)
+
 # インクルードディレクトリを設定
 target_include_directories(r1_mecanum_node PUBLIC
   $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
@@ -63,6 +70,11 @@ target_include_directories(r1_odometry_node PUBLIC
   $<INSTALL_INTERFACE:include>
 )
 
+target_include_directories(r1_linear_motion_node PUBLIC
+  $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+  $<INSTALL_INTERFACE:include>
+)
+
 install(TARGETS r1_mecanum_node
   DESTINATION lib/${PROJECT_NAME}
 )
@@ -72,6 +84,10 @@ install(TARGETS r1_sabacan_msgs_converter_node
 )
 
 install(TARGETS r1_odometry_node
+  DESTINATION lib/${PROJECT_NAME}
+)
+
+install(TARGETS r1_linear_motion_node
   DESTINATION lib/${PROJECT_NAME}
 )
 
