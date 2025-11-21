@@ -93,6 +93,46 @@ def generate_launch_description():
         arguments=["--ros-args", "--log-level", "warn"],
     )
 
+    sabacan_single_control_mecanum_fl = Node(
+        package="sabacan_single_control",
+        executable="sabacan_single_control_node",
+        name="sabacan_single_control_mecanum_fl",
+        parameters=[param_file],
+        arguments=["--ros-args", "--log-level", "warn"],
+    )
+
+    sabacan_single_control_mecanum_fr = Node(
+        package="sabacan_single_control",
+        executable="sabacan_single_control_node",
+        name="sabacan_single_control_mecanum_fr",
+        parameters=[param_file],
+        arguments=["--ros-args", "--log-level", "warn"],
+    )
+
+    sabacan_single_control_mecanum_rl = Node(
+        package="sabacan_single_control",
+        executable="sabacan_single_control_node",
+        name="sabacan_single_control_mecanum_rl",
+        parameters=[param_file],
+        arguments=["--ros-args", "--log-level", "warn"],
+    )
+
+    sabacan_single_control_mecanum_rr = Node(
+        package="sabacan_single_control",
+        executable="sabacan_single_control_node",
+        name="sabacan_single_control_mecanum_rr",
+        parameters=[param_file],
+        arguments=["--ros-args", "--log-level", "warn"],
+    )
+
+    sabacan_single_control_linear_motion = Node(
+        package="sabacan_single_control",
+        executable="sabacan_single_control_node",
+        name="sabacan_single_control_linear_motion",
+        parameters=[param_file],
+        arguments=["--ros-args", "--log-level", "warn"],
+    )
+
     socket_can_bridge_launch = IncludeLaunchDescription(
         AnyLaunchDescriptionSource(
             [
@@ -119,6 +159,11 @@ def generate_launch_description():
             sabacan_robomas_node1,
             sabacan_robomas_node2,
             sabacan_gpio_node1,
+            sabacan_single_control_mecanum_fl,
+            sabacan_single_control_mecanum_fr,
+            sabacan_single_control_mecanum_rl,
+            sabacan_single_control_mecanum_rr,
+            sabacan_single_control_linear_motion,
             # socket_can_bridge_launch,
         ]
     )

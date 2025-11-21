@@ -22,8 +22,8 @@
 #include "rcl_interfaces/msg/parameter_descriptor.hpp"
 #include "rclcpp/rclcpp.hpp"
 #include "sabacan_msgs/msg/sabacan_gpio_status.hpp"
-#include "sabacan_msgs/msg/sabacan_robomas_ref.hpp"
 #include "sabacan_msgs/msg/sabacan_robomas_status.hpp"
+#include "sabacan_single_control_msgs/msg/sabacan_robomas_single_ref.hpp"
 #include "std_msgs/msg/float64.hpp"
 #include "std_msgs/msg/float64_multi_array.hpp"
 
@@ -75,14 +75,6 @@ class MyNode : public rclcpp::Node
 public:
   MyNode() : Node("r1_sabacan_msgs_converter_node")
   {
-    // sabacan_robomas_refの0~9までのpublisherを作成
-    sabacan_robomas_ref_publisher_.resize(10);
-    for (size_t i = 0; i < sabacan_robomas_ref_publisher_.size(); i++) {
-      sabacan_robomas_ref_publisher_[i] =
-        this->create_publisher<sabacan_msgs::msg::SabacanRobomasRef>(
-          "/sabacan_robomas_ref" + std::to_string(i), 10);
-    }
-
     sabacan_gpio_ref_publisher_.resize(10);
     for (size_t i = 0; i < sabacan_gpio_ref_publisher_.size(); i++) {
       sabacan_gpio_ref_publisher_[i] = this->create_publisher<sabacan_msgs::msg::SabacanGPIOStatus>(
@@ -184,6 +176,25 @@ public:
     this->get_parameter("linear_motion_high_switch_board_id", linear_motion_switch_[1].board_id);
     this->get_parameter("linear_motion_low_switch_gpio_number", linear_motion_switch_[0].number);
     this->get_parameter("linear_motion_high_switch_gpio_number", linear_motion_switch_[1].number);
+
+    // sabacan_single_control_msgsのpublisherを作成
+    for (int i = 0; i < 4; ++i) {
+      const auto & info = mecanum_[i];
+      const std::string topic = "/sabacan_robomas_ref" + std::to_string(info.board_id) + "/motor" +
+                                std::to_string(info.number);
+      mecanum_single_ref_publisher_[i] =
+        this->create_publisher<sabacan_single_control_msgs::msg::SabacanRobomasSingleRef>(
+          topic, 10);
+    }
+
+    {
+      const auto & info = linear_motion_;
+      const std::string topic = "/sabacan_robomas_ref" + std::to_string(info.board_id) + "/motor" +
+                                std::to_string(info.number);
+      linear_motion_single_ref_publisher_ =
+        this->create_publisher<sabacan_single_control_msgs::msg::SabacanRobomasSingleRef>(
+          topic, 10);
+    }
 
     // デバッグ用のpublisherを追加
     debug_motor_.push_back(
@@ -307,10 +318,6 @@ public:
   void sabacan_gpio_status_callback(
     int board_id, sabacan_msgs::msg::SabacanGPIOStatus::SharedPtr msg)
   {
-    auto msg_status = sabacan_msgs::msg::SabacanGPIOStatus();
-    msg_status.pin_number = msg->pin_number;
-    msg_status.input = msg->input;
-
     BoardInfo receive{board_id, msg->pin_number};
 
     // リニアモーションのスイッチ状態を更新
@@ -338,10 +345,9 @@ public:
       this->get_logger(), "wheel_speeds_ref: FL=%f, FR=%f, RL=%f, RR=%f", msg->fl_wheel_speed,
       msg->fr_wheel_speed, msg->rl_wheel_speed, msg->rr_wheel_speed);
     for (int i = 0; i < 4; i++) {
-      auto msg_ref = sabacan_msgs::msg::SabacanRobomasRef();
-      msg_ref.motor_number = mecanum_[i].number;
+      auto msg_ref = sabacan_single_control_msgs::msg::SabacanRobomasSingleRef();
+      msg_ref.control_type = "VELOCITY";
 
-      // board_idとmotor_numberがマッチしたものを、指令値更新
       if (mecanum_[i] == mecanum_[FL]) {
         msg_ref.ref = msg->fl_wheel_speed;
       } else if (mecanum_[i] == mecanum_[FR]) {
@@ -352,18 +358,21 @@ public:
         msg_ref.ref = msg->rr_wheel_speed;
       }
 
-      sabacan_robomas_ref_publisher_[mecanum_[i].board_id]->publish(msg_ref);
+      if (mecanum_single_ref_publisher_[i]) {
+        mecanum_single_ref_publisher_[i]->publish(msg_ref);
+      }
     }
   }
 
-  void linear_motion_motor_ref_callback(r1_msgs::msg::MotorRef msg)
+  void linear_motion_motor_ref_callback(const r1_msgs::msg::MotorRef::SharedPtr msg)
   {
-    // TODO: ここはsabacan_singleに対応してから治す
-    // RCLCPP_INFO(this->get_logger(), "linear_motion_motor_ref: %f", msg->data);
-    // auto msg_ref = sabacan_msgs::msg::SabacanRobomasRef();
-    // msg_ref.motor_number = linear_motion_.number;
-    // msg_ref.ref = msg->data;
-    // sabacan_robomas_ref_publisher_[linear_motion_.board_id]->publish(msg_ref);
+    auto msg_ref = sabacan_single_control_msgs::msg::SabacanRobomasSingleRef();
+    msg_ref.control_type = msg->control_type;
+    msg_ref.ref = msg->ref;
+
+    if (linear_motion_single_ref_publisher_) {
+      linear_motion_single_ref_publisher_->publish(msg_ref);
+    }
   }
 
   void timer_callback()
@@ -377,8 +386,10 @@ public:
     mecanum_wheel_speeds_feedback_publisher_->publish(msg_feedback);
   }
 
-  std::vector<rclcpp::Publisher<sabacan_msgs::msg::SabacanRobomasRef>::SharedPtr>
-    sabacan_robomas_ref_publisher_;
+  rclcpp::Publisher<sabacan_single_control_msgs::msg::SabacanRobomasSingleRef>::SharedPtr
+    mecanum_single_ref_publisher_[4];
+  rclcpp::Publisher<sabacan_single_control_msgs::msg::SabacanRobomasSingleRef>::SharedPtr
+    linear_motion_single_ref_publisher_;
   std::vector<rclcpp::Publisher<sabacan_msgs::msg::SabacanGPIOStatus>::SharedPtr>
     sabacan_gpio_ref_publisher_;
 

@@ -10,6 +10,7 @@ find_package(ament_cmake REQUIRED)
 find_package(geometry_msgs REQUIRED)
 find_package(rclcpp REQUIRED)
 find_package(sabacan_msgs REQUIRED)
+find_package(sabacan_single_control_msgs REQUIRED)
 find_package(sensor_msgs REQUIRED)
 find_package(std_msgs REQUIRED)
 find_package(tf2 REQUIRED)
@@ -34,6 +35,7 @@ ament_target_dependencies(r1_mecanum_node
 ament_target_dependencies(r1_sabacan_msgs_converter_node
   rclcpp
   sabacan_msgs
+  sabacan_single_control_msgs
   std_msgs
   r1_msgs
 )
