@@ -16,6 +16,7 @@
 #include "r1_msgs/msg/linear_motion.hpp"
 #include "r1_msgs/msg/mecanum.hpp"
 #include "r1_msgs/msg/motor.hpp"
+#include "r1_msgs/msg/motor_ref.hpp"
 #include "r1_msgs/msg/odometry_encoder.hpp"
 #include "rcl_interfaces/msg/floating_point_range.hpp"
 #include "rcl_interfaces/msg/parameter_descriptor.hpp"
@@ -121,8 +122,8 @@ public:
     linear_motion_status_publisher_ =
       this->create_publisher<r1_msgs::msg::LinearMotion>("/linear_motion_status", 10);
 
-    linear_motion_motor_ref_subscription_ = this->create_subscription<std_msgs::msg::Float64>(
-      "/linear_motion_motor_position_ref", 10,
+    linear_motion_motor_ref_subscription_ = this->create_subscription<r1_msgs::msg::MotorRef>(
+      "/linear_motion_motor_ref", 10,
       std::bind(&MyNode::linear_motion_motor_ref_callback, this, std::placeholders::_1));
 
     timer_ = this->create_wall_timer(10ms, std::bind(&MyNode::timer_callback, this));
@@ -274,6 +275,8 @@ public:
     }
     if (receive == linear_motion_) {
       auto linear_msg = r1_msgs::msg::LinearMotion();
+      linear_msg.torque = msg->torque;
+      linear_msg.speed = msg->speed;
       linear_msg.pos = msg->pos;
       linear_msg.low_switch = linear_motion_switch_value_[0];
       linear_msg.high_switch = linear_motion_switch_value_[1];
@@ -353,13 +356,14 @@ public:
     }
   }
 
-  void linear_motion_motor_ref_callback(const std_msgs::msg::Float64::ConstSharedPtr msg)
+  void linear_motion_motor_ref_callback(r1_msgs::msg::MotorRef msg)
   {
-    RCLCPP_INFO(this->get_logger(), "linear_motion_motor_ref: %f", msg->data);
-    auto msg_ref = sabacan_msgs::msg::SabacanRobomasRef();
-    msg_ref.motor_number = linear_motion_.number;
-    msg_ref.ref = msg->data;
-    sabacan_robomas_ref_publisher_[linear_motion_.board_id]->publish(msg_ref);
+    // TODO: ここはsabacan_singleに対応してから治す
+    // RCLCPP_INFO(this->get_logger(), "linear_motion_motor_ref: %f", msg->data);
+    // auto msg_ref = sabacan_msgs::msg::SabacanRobomasRef();
+    // msg_ref.motor_number = linear_motion_.number;
+    // msg_ref.ref = msg->data;
+    // sabacan_robomas_ref_publisher_[linear_motion_.board_id]->publish(msg_ref);
   }
 
   void timer_callback()
@@ -387,7 +391,7 @@ public:
   rclcpp::Publisher<r1_msgs::msg::Mecanum>::SharedPtr mecanum_wheel_speeds_feedback_publisher_;
   rclcpp::Publisher<r1_msgs::msg::OdometryEncoder>::SharedPtr odometry_encoder_publisher_;
   rclcpp::Publisher<r1_msgs::msg::LinearMotion>::SharedPtr linear_motion_status_publisher_;
-  rclcpp::Subscription<std_msgs::msg::Float64>::SharedPtr linear_motion_motor_ref_subscription_;
+  rclcpp::Subscription<r1_msgs::msg::MotorRef>::SharedPtr linear_motion_motor_ref_subscription_;
 
   rclcpp::TimerBase::SharedPtr timer_;
   // モータのパラメータ名
@@ -400,6 +404,7 @@ public:
   bool odometry_encoder_update_[2] = {true, true};
   double linear_motion_value_ = 0.0;
   bool linear_motion_switch_value_[2] = {false, false};
+  std::string linear_motion_control_type_;
   std::vector<double> mecanum_wheel_speeds_feedback_ = std::vector<double>(4);
   static constexpr int FL = 0;
   static constexpr int FR = 1;

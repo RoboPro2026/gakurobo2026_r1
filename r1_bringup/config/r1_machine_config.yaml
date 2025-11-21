@@ -67,8 +67,11 @@ r1_linear_motion_node:
     use_high_switch: true
     pos_min: 0.0
     pos_max: 1.0
-    pos_offset: 0.0
+    # ギアが一周すると34pi=107 mm進むので、半径は17mm
+    radius: 0.017
     inverse_motor: false
+    inverse_low_switch_logic: false
+    inverse_high_switch_logic: false
 
 sabacan_gpio_node1:
   ros__parameters:
