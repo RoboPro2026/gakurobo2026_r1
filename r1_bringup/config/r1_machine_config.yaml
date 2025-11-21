@@ -38,25 +38,25 @@ r1_odometry_node:
 
 r1_linear_motion_node:
   ros__parameters:
-    torque_threshold: 0.7 # Nm
-    origin_detect_threshold: 0.5 # 秒
-    output_torque: 0.25 # Nm
+    torque_threshold: 0.5 # Nm
+    origin_detect_threshold_time: 0.5 # 秒
+    output_detect_speed: 3.14 # rad/s
     pos_min: 0.0
-    pos_max: 1.0
+    pos_max: 0.3
     # ギアが一周すると34pi=107 mm進むので、半径は17mm
     radius: 0.017
     inverse_motor: false
     use_low_switch: true
-    use_high_switch: true
-    inverse_low_switch_logic: false
+    use_high_switch: false
+    inverse_low_switch_logic: true
     inverse_high_switch_logic: false
 
-sabacan_gpio_node1:
+sabacan_gpio_node_id1:
   ros__parameters:
     board_id: 1
     pin_type: ["INPUT", "INPUT", "INPUT", "INPUT", "INPUT", "INPUT", "INPUT", "INPUT", "INPUT"]
 
-sabacan_robomas_node1:
+sabacan_robomasv2_node_id1:
   ros__parameters:
     board_id: 1
     motor_type: ["C620", "C620", "C620", "C620"]
@@ -64,13 +64,14 @@ sabacan_robomas_node1:
     speed_gain_p: [0.5, 0.5, 0.5, 0.5]
     speed_gain_i: [0.2, 0.2, 0.2, 0.2]
     speed_gain_d: [0.0, 0.0, 0.0, 0.0]
+    torque_lim: [5.0, 5.0, 5.0, 5.0]
     pos_gain_p: [6.0, 6.0, 6.0, 6.0]
     pos_gain_i: [3.0, 3.0, 3.0, 3.0]
     pos_gain_d: [0.0, 0.0, 0.0, 0.0]
     speed_lim: [75.0, 75.0, 75.0, 75.0]
     # VESCのフィードバックは無効化
     monitor_reg2: [0, 0, 0, 0]
-sabacan_robomas_node2:
+sabacan_robomasv2_node_id2:
   ros__parameters:
     board_id: 2
     motor_type: ["C610", "C610", "C610", "C610"]
@@ -78,10 +79,11 @@ sabacan_robomas_node2:
     speed_gain_p: [0.5, 0.5, 0.5, 0.5]
     speed_gain_i: [0.2, 0.2, 0.2, 0.2]
     speed_gain_d: [0.0, 0.0, 0.0, 0.0]
+    torque_lim: [5.0, 5.0, 5.0, 5.0]
     pos_gain_p: [6.0, 6.0, 6.0, 6.0]
     pos_gain_i: [3.0, 3.0, 3.0, 3.0]
     pos_gain_d: [0.0, 0.0, 0.0, 0.0]
-    speed_lim: [75.0, 75.0, 75.0, 75.0]
+    speed_lim: [10.0, 10.0, 10.0, 10.0]
     # VESCのフィードバックは無効化
     monitor_reg2: [0, 0, 0, 0]
 

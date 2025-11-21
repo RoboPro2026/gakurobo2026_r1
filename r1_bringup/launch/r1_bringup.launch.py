@@ -33,7 +33,7 @@ def generate_launch_description():
         executable="r1_mecanum_node",
         name="r1_mecanum_node",  # YAMLファイル内のノード名と一致させる
         parameters=[param_file],
-        arguments=["--ros-args", "--log-level", "info"],
+        arguments=["--ros-args", "--log-level", "warn"],
     )
 
     # オドメトリの値を知りたいときはinfoにする
@@ -42,7 +42,7 @@ def generate_launch_description():
         executable="r1_odometry_node",
         name="r1_odometry_node",
         parameters=[param_file],
-        arguments=["--ros-args", "--log-level", "info"],
+        arguments=["--ros-args", "--log-level", "warn"],
     )
 
     r1_sabacan_msgs_converter_node = Node(
@@ -72,7 +72,7 @@ def generate_launch_description():
     sabacan_robomas_node1 = Node(
         package="sabacan",
         executable="sabacan_robomasv2_node",
-        name="sabacan_robomas_node1",
+        name="sabacan_robomasv2_node_id1",
         parameters=[param_file],
         arguments=["--ros-args", "--log-level", "warn"],
     )
@@ -80,7 +80,7 @@ def generate_launch_description():
     sabacan_robomas_node2 = Node(
         package="sabacan",
         executable="sabacan_robomasv2_node",
-        name="sabacan_robomas_node2",
+        name="sabacan_robomasv2_node_id2",
         parameters=[param_file],
         arguments=["--ros-args", "--log-level", "warn"],
     )
@@ -88,7 +88,7 @@ def generate_launch_description():
     sabacan_gpio_node1 = Node(
         package="sabacan",
         executable="sabacan_gpio_node",
-        name="sabacan_gpio_node1",
+        name="sabacan_gpio_node_id1",
         parameters=[param_file],
         arguments=["--ros-args", "--log-level", "warn"],
     )

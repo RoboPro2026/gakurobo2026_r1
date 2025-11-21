@@ -50,8 +50,8 @@ public:
     this->declare_parameter("use_low_switch", true);
     this->declare_parameter("use_high_switch", true);
     this->declare_parameter("torque_threshold", 1.0);              // Nm
-    this->declare_parameter("origin_detect_threshold_time", 0.0);  // s
-    this->declare_parameter("output_torque", 0.3);                 // Nm
+    this->declare_parameter("origin_detect_threshold_time", 0.1);  // s
+    this->declare_parameter("origin_detect_speed", 3.14);          // rad
     this->declare_parameter("pos_min", 0.0);                       // m
     this->declare_parameter("pos_max", 1.0);                       // m
     this->declare_parameter("radius", 0.05);                       // m
@@ -63,7 +63,7 @@ public:
     this->get_parameter("use_high_switch", use_high_switch_);
     this->get_parameter("torque_threshold", torque_threshold_);
     this->get_parameter("origin_detect_threshold_time", origin_detect_threshold_time_);
-    this->get_parameter("output_torque", output_torque_);
+    this->get_parameter("origin_detect_speed", origin_detect_speed_);
     this->get_parameter("pos_min", pos_min_);
     this->get_parameter("pos_max", pos_max_);
     this->get_parameter("radius", radius_);
@@ -101,9 +101,11 @@ public:
         RCLCPP_INFO(
           this->get_logger(), "Updated parameter: origin_detect_threshold_time = %.3f",
           origin_detect_threshold_time_);
-      } else if (name == "output_torque") {
-        output_torque_ = parameter.as_double();
-        RCLCPP_INFO(this->get_logger(), "Updated parameter: output_torque = %.3f", output_torque_);
+      } else if (name == "origin_detect_speed") {
+        origin_detect_speed_ = parameter.as_double();
+        RCLCPP_INFO(
+          this->get_logger(), "Updated parameter: origin_detect_speed = %.3f",
+          origin_detect_speed_);
       } else if (name == "pos_min") {
         pos_min_ = parameter.as_double();
         RCLCPP_INFO(this->get_logger(), "Updated parameter: pos_min = %.3f", pos_min_);
@@ -150,20 +152,25 @@ public:
 
   void positon_ref_callback(const std_msgs::msg::Float64::SharedPtr msg)
   {
-    double target_pos = msg->data + pos_offset_;
+    // TODO: 気が向いたら、リミットスイッチが反応したときの動作を追加する
+    double target_pos;
 
-    if (mode_ == MODE_TORQUE) {
-      RCLCPP_ERROR(this->get_logger(), "Currently in torque mode, position ref ignored.");
+    if (mode_ == MODE_SPEED) {
+      RCLCPP_ERROR(this->get_logger(), "Currently in speed mode, position ref ignored.");
       return;
     }
 
     // 範囲内に収める
-    if (target_pos < pos_min_) {
-      target_pos = pos_min_;
-      RCLCPP_WARN(this->get_logger(), "Target position below minimum. Clamping to %.3f", pos_min_);
-    } else if (target_pos > pos_max_) {
-      target_pos = pos_max_;
-      RCLCPP_WARN(this->get_logger(), "Target position above maximum. Clamping to %.3f", pos_max_);
+    if (msg->data < pos_min_) {
+      target_pos = pos_min_ + pos_offset_;
+      RCLCPP_WARN(
+        this->get_logger(), "Target position below minimum. Clamping to %.3f", target_pos);
+    } else if (msg->data > pos_max_) {
+      target_pos = pos_max_ + pos_offset_;
+      RCLCPP_WARN(
+        this->get_logger(), "Target position above maximum. Clamping to %.3f", target_pos);
+    } else {
+      target_pos = msg->data + pos_offset_;
     }
 
     auto motor_msg = r1_msgs::msg::MotorRef();
@@ -177,19 +184,19 @@ public:
   void detect_origin_callback(const std_msgs::msg::Bool::SharedPtr msg)
   {
     if (msg->data) {
-      mode_ = MODE_POSITON;
-      RCLCPP_INFO(this->get_logger(), "Switched to position control mode.");
-    } else {
-      mode_ = MODE_TORQUE;
+      mode_ = MODE_SPEED;
       // 最後に通常のトルクを検出した時刻を更新
       last_normal_torque_time_ = this->now();
-      RCLCPP_INFO(this->get_logger(), "Switched to torque control mode.");
+      RCLCPP_INFO(this->get_logger(), "Switched to speed control mode.");
+    } else {
+      mode_ = MODE_POSITON;
+      RCLCPP_INFO(this->get_logger(), "Switched to position control mode.");
     }
   }
 
   void timer_callback()
   {
-    if (mode_ == MODE_TORQUE) {
+    if (mode_ == MODE_SPEED) {
       bool detect_origin = false;
       // リミットスイッチが反応している場合
       // TODO: 必要であれば、リミットスイッチの反応時間のしきい値を設ける
@@ -209,16 +216,17 @@ public:
         // 原点検出時
         // オフセットを更新し、位置制御モードへ切り替え
         mode_ = MODE_POSITON;
-        pos_offset_ = current_pos_;
+        pos_offset_ = radius_ * current_pos_;
         motor_ref_msg.control_type = "POSITION";
-        motor_ref_msg.ref = pos_offset_;
+        motor_ref_msg.ref = current_pos_;
         RCLCPP_INFO(this->get_logger(), "Origin detected at position: %.3f", pos_offset_);
       } else {
-        motor_ref_msg.control_type = "TORQUE";
-        motor_ref_msg.ref = motor_dir_ * output_torque_;
+        // 原研検出時は負の方向にモータを回転させる。
+        motor_ref_msg.control_type = "VELOCITY";
+        motor_ref_msg.ref = -motor_dir_ * origin_detect_speed_;
       }
       linear_motion_ref_publisher_->publish(motor_ref_msg);
-      // RCLCPP_INFO(this->get_logger(), "Publishing motor torque ref: %.3f", motor_ref_msg.ref);
+      // RCLCPP_INFO(this->get_logger(), "Publishing motor speed ref: %.3f", motor_ref_msg.ref);
     }
   }
 
@@ -234,7 +242,7 @@ private:
   rclcpp::Time last_normal_torque_time_ = rclcpp::Time(0);
   bool use_low_switch_ = true;
   bool use_high_switch_ = true;
-  double output_torque_ = 0.0;
+  double origin_detect_speed_ = 0.0;
   double torque_threshold_ = 0.0;
   double origin_detect_threshold_time_ = 0.0;
   double motor_dir_ = 1.0;
@@ -251,7 +259,7 @@ private:
   double current_pos_ = 0.0;
   double radius_ = 0.05;  // m、値は適当
   static constexpr int MODE_POSITON = 0;
-  static constexpr int MODE_TORQUE = 1;
+  static constexpr int MODE_SPEED = 1;
   int mode_ = MODE_POSITON;
 };
 
