@@ -12,8 +12,11 @@ find_package(std_msgs REQUIRED)
 
 # Generate interfaces
 rosidl_generate_interfaces(${PROJECT_NAME}
+  "msg/GPIOInput.msg"
+  "msg/LinearMotion.msg"
   "msg/Mecanum.msg"
   "msg/Motor.msg"
+  "msg/MotorRef.msg"
   "msg/OdometryEncoder.msg"
   DEPENDENCIES std_msgs
 )
