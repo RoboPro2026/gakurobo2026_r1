@@ -11,6 +11,7 @@ find_package(geometry_msgs REQUIRED)
 find_package(joy REQUIRED)
 # for C++ enum
 find_package(magic_enum CONFIG REQUIRED)
+find_package(r1_msgs REQUIRED)
 find_package(rclcpp REQUIRED)
 find_package(sabacan_msgs REQUIRED)
 find_package(sensor_msgs REQUIRED)
@@ -28,6 +29,7 @@ ament_target_dependencies(r1_state_machine_node
 
 ament_target_dependencies(test_node
   rclcpp
+  r1_msgs
   sabacan_msgs
   sensor_msgs
   std_msgs
