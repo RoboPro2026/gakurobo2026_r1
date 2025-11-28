@@ -12,14 +12,23 @@ find_package(joy REQUIRED)
 # for C++ enum
 find_package(magic_enum CONFIG REQUIRED)
 find_package(rclcpp REQUIRED)
+find_package(sabacan_msgs REQUIRED)
 find_package(sensor_msgs REQUIRED)
 find_package(std_msgs REQUIRED)
 
 add_executable(r1_state_machine_node src/r1_state_machine_node.cpp)
+add_executable(test_node src/test_node.cpp)
 
 ament_target_dependencies(r1_state_machine_node
   geometry_msgs
   rclcpp
+  sensor_msgs
+  std_msgs
+)
+
+ament_target_dependencies(test_node
+  rclcpp
+  sabacan_msgs
   sensor_msgs
   std_msgs
 )
@@ -32,7 +41,17 @@ target_include_directories(r1_state_machine_node PUBLIC
   $<INSTALL_INTERFACE:include>
 )
 
+target_include_directories(test_node PUBLIC
+  $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+  $<INSTALL_INTERFACE:include>
+)
+
+
 install(TARGETS r1_state_machine_node
+  DESTINATION lib/${PROJECT_NAME}
+)
+
+install(TARGETS test_node
   DESTINATION lib/${PROJECT_NAME}
 )
 

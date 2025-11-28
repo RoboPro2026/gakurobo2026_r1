@@ -11,7 +11,6 @@
 
 #include <chrono>
 
-#include "r1_msgs/msg/limit_switch.hpp"
 #include "r1_msgs/msg/linear_motion.hpp"
 #include "r1_msgs/msg/motor_ref.hpp"
 #include "rcl_interfaces/msg/floating_point_range.hpp"
