@@ -59,6 +59,9 @@ r1_angle_motion_node:
     origin_detect_speed: -3.14 # rad/s
     angle_min: 0.0
     angle_max: 3.14
+    # ギア比で割った値がモーターの角度指令値となる
+    # 減速比は28 / 80 = 0.35
+    gear_ratio: 0.35
     inverse_motor: false
     use_low_switch: false
     use_high_switch: false
