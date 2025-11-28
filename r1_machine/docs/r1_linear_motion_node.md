@@ -21,7 +21,7 @@
 | `use_high_switch` | bool | `true` | 高側リミットスイッチを原点検出判定に使うか。 |
 | `torque_threshold` | double | `1.0` | 許容トルク [Nm]。この絶対値を超え続けたら原点とみなします。 |
 | `origin_detect_threshold_time` | double | `0.1` | トルクしきい値超過を原点とみなすまでの継続時間 [s]。 |
-| `origin_detect_speed` | double | `3.14` | 原点検出中に流す一定角速度 [rad/s]。符号は `inverse_motor` に応じて反転します。 |
+| `origin_detect_speed` | double | `-3.14` | 原点検出中に流す一定角速度 [rad/s]。負の符号でも可。  符号は `inverse_motor` に応じて反転します。 |
 | `pos_min` | double | `0.0` | 指令として受け付ける位置の下限 [m]。外れた場合はクランプされます。 |
 | `pos_max` | double | `1.0` | 指令として受け付ける位置の上限 [m]。 |
 | `radius` | double | `0.05` | 巻取りドラムの半径 [m]。位置[m] をモータ角度[rad]に換算するときに使用。 |

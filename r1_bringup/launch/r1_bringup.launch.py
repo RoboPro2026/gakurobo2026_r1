@@ -61,6 +61,14 @@ def generate_launch_description():
         arguments=["--ros-args", "--log-level", "info"],
     )
 
+    r1_angle_motion_node = Node(
+        package="r1_machine",
+        executable="r1_angle_motion_node",
+        name="r1_angle_motion_node",
+        parameters=[param_file],
+        arguments=["--ros-args", "--log-level", "info"],
+    )
+
     r1_state_machine_node = Node(
         package="r1_state_machine",
         executable="r1_state_machine_node",
@@ -125,10 +133,26 @@ def generate_launch_description():
         arguments=["--ros-args", "--log-level", "warn"],
     )
 
-    sabacan_single_control_linear_motion = Node(
+    sabacan_single_control_linear_motion_x = Node(
         package="sabacan_single_control",
         executable="sabacan_single_control_node",
-        name="sabacan_single_control_linear_motion",
+        name="sabacan_single_control_linear_motion_x",
+        parameters=[param_file],
+        arguments=["--ros-args", "--log-level", "warn"],
+    )
+
+    sabacan_single_control_linear_motion_y = Node(
+        package="sabacan_single_control",
+        executable="sabacan_single_control_node",
+        name="sabacan_single_control_linear_motion_y",
+        parameters=[param_file],
+        arguments=["--ros-args", "--log-level", "warn"],
+    )
+
+    sabacan_single_control_angle_motion = Node(
+        package="sabacan_single_control",
+        executable="sabacan_single_control_node",
+        name="sabacan_single_control_angle_motion",
         parameters=[param_file],
         arguments=["--ros-args", "--log-level", "warn"],
     )
@@ -154,6 +178,7 @@ def generate_launch_description():
             r1_mecanum_node,
             r1_odometry_node,
             r1_linear_motion_node,
+            r1_angle_motion_node,
             r1_sabacan_msgs_converter_node,
             r1_state_machine_node,
             sabacan_robomas_node1,
@@ -163,7 +188,9 @@ def generate_launch_description():
             sabacan_single_control_mecanum_fr,
             sabacan_single_control_mecanum_rl,
             sabacan_single_control_mecanum_rr,
-            sabacan_single_control_linear_motion,
+            sabacan_single_control_linear_motion_x,
+            sabacan_single_control_linear_motion_y,
+            sabacan_single_control_angle_motion,
             # socket_can_bridge_launch,
         ]
     )

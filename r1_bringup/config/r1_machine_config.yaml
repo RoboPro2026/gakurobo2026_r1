@@ -40,7 +40,8 @@ r1_linear_motion_node:
   ros__parameters:
     torque_threshold: 0.5 # Nm
     origin_detect_threshold_time: 0.5 # 秒
-    output_detect_speed: 3.14 # rad/s
+    # 原点検出のときは、0の方向に戻るので、負の速度にする
+    output_detect_speed: -3.14 # rad/s
     pos_min: 0.0
     pos_max: 0.3
     # ギアが一周すると34pi=107 mm進むので、半径は17mm
@@ -49,6 +50,19 @@ r1_linear_motion_node:
     use_low_switch: true
     use_high_switch: false
     inverse_low_switch_logic: true
+    inverse_high_switch_logic: false
+
+r1_angle_motion_node:
+  ros__parameters:
+    torque_threshold: 0.5 # Nm
+    origin_detect_threshold_time: 0.5 # 秒
+    origin_detect_speed: -3.14 # rad/s
+    angle_min: 0.0
+    angle_max: 3.14
+    inverse_motor: false
+    use_low_switch: false
+    use_high_switch: false
+    inverse_low_switch_logic: false
     inverse_high_switch_logic: false
 
 sabacan_gpio_node_id1:
@@ -104,13 +118,26 @@ r1_sabacan_msgs_converter_node:
     odometry_x_motor_number: 2
     odometry_y_motor_number: 3
     # リニアモーション（ロボマス）
-    linear_motion_board_id: 2
-    linear_motion_motor_number: 0
+    linear_motion_x_board_id: 2
+    linear_motion_x_motor_number: 0
+    linear_motion_y_board_id: 2
+    linear_motion_y_motor_number: 1
     # リミットスイッチ（GPIO入力）
-    linear_motion_low_switch_board_id: 1
-    linear_motion_low_switch_gpio_number: 0
-    linear_motion_high_switch_board_id: 1
-    linear_motion_high_switch_gpio_number: 1
+    linear_motion_x_low_switch_board_id: 1
+    linear_motion_x_low_switch_gpio_number: 0
+    linear_motion_x_high_switch_board_id: 1
+    linear_motion_x_high_switch_gpio_number: 1
+    linear_motion_y_low_switch_board_id: 1
+    linear_motion_y_low_switch_gpio_number: 2
+    linear_motion_y_high_switch_board_id: 1
+    linear_motion_y_high_switch_gpio_number: 3
+    # 角度モーション
+    angle_motion_board_id: 2
+    angle_motion_motor_number: 2
+    angle_motion_low_switch_board_id: 1
+    angle_motion_low_switch_gpio_number: 4
+    angle_motion_high_switch_board_id: 1
+    angle_motion_high_switch_gpio_number: 5
 
 sabacan_single_control_mecanum_fl:
   ros__parameters:
@@ -140,9 +167,23 @@ sabacan_single_control_mecanum_rr:
     control_mode: "SABANE"
     control_type: "VELOCITY"
 
-sabacan_single_control_linear_motion:
+sabacan_single_control_linear_motion_x:
   ros__parameters:
     board_id: 2
     motor_number: 0
+    control_mode: "SABANE"
+    control_type: "POSITION"
+
+sabacan_single_control_linear_motion_y:
+  ros__parameters:
+    board_id: 2
+    motor_number: 1
+    control_mode: "SABANE"
+    control_type: "POSITION"
+
+sabacan_single_control_angle_motion:
+  ros__parameters:
+    board_id: 2
+    motor_number: 2
     control_mode: "SABANE"
     control_type: "POSITION"
