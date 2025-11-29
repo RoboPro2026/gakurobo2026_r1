@@ -44,7 +44,7 @@
 
   ```bash
   source ~/ros2_ws/install/setup.bash
-  ros2 run r1_machine r1_linear_motion_node --ros-args --params-file ~/ros2_ws/src/gakurobo2026_r1/r1_bringup/config/r1_machine_config.yaml
+  ros2 run r1_machine r1_linear_motion_node
   ```
 
 - 原点検出を開始する:

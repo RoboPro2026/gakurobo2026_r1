@@ -1,5 +1,7 @@
 # r1_machine
 
+[r1_angle_motion_node](./docs/r1_angle_motion_node.md)
+
 [r1_linear_motion_node](./docs/r1_linear_motion_node.md)
 
 [r1_mecanum_node](./docs/r1_mecanum_node.md)
