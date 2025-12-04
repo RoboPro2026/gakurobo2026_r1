@@ -1,0 +1,9 @@
+# r1_control
+## 使用ライブラリ
+- https://github.com/lava/matplotlib-cpp
+  - C++でmatplotlibを使えるようにするライブラリ
+- https://gitlab.com/libeigen/eigen
+  - Eigen、連立方程式の計算に使用
+## 実装をするときに参考にしたもの
+- https://github.com/surpace0924/simple_trajectory_generator_gui
+- https://www.kerislab.jp/posts/2018-04-29-accel-designer4/

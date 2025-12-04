@@ -6,6 +6,8 @@ TODO: setup手順ちゃんと書く
 ```
 sudo apt install ros-humble-magic-enum
 ros-humble-ament-cmake-gtest
+# for eigen
+sudo apt install libeigen3-dev
 ```
 
 実行
