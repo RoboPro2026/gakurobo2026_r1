@@ -262,7 +262,7 @@ public:
     double dy = sy_.get_dy(t);
     double d2x = sx_.get_d2y(t);
     double d2y = sy_.get_d2y(t);
-    return (d2y * dx - d2x * dy) / std::pow(dx * dx + dy * dy, 2.0 / 3.0);
+    return (d2y * dx - d2x * dy) / std::pow(dx * dx + dy * dy, 1.5);
   }
 
 private:
