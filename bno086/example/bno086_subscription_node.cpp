@@ -31,7 +31,7 @@ private:
       msg->orientation.x, msg->orientation.y, msg->orientation.z, msg->orientation.w);
     double yaw, pitch, roll;
     tf2::Matrix3x3(q).getRPY(roll, pitch, yaw);
-    RCLCPP_INFO(this->get_logger(), "Yaw: %.3f, Pitch: %.23, Roll: %.3f", yaw, pitch, roll);
+    RCLCPP_INFO(this->get_logger(), "Yaw: %.3f, Pitch: %.3f, Roll: %.3f", yaw, pitch, roll);
     RCLCPP_INFO(
       this->get_logger(), "Angular Velocity - x: %.3f, y: %.3f, z: %.3f", msg->angular_velocity.x,
       msg->angular_velocity.y, msg->angular_velocity.z);
