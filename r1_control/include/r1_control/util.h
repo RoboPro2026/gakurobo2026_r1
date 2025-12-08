@@ -22,3 +22,11 @@ std::vector<double> linspace(double start, double end, int num)
   }
   return x;
 }
+
+/**
+   * @brief xの符号を返す
+   * 
+   * @param x 
+   * @return double xが0.0以上なら1.0、負なら-1.0を返す
+   */
+double sign(double x) { return (x >= 0) ? 1.0 : -1.0; }
