@@ -11,7 +11,6 @@ find_package(std_msgs REQUIRED)
 find_package(geometry_msgs REQUIRED)
 find_package(rclcpp REQUIRED)
 find_package(Eigen3 REQUIRED)
-find_package(Python3 COMPONENTS Development NumPy REQUIRED)
 
 add_executable(trapezoid_designer src/trapezoid_designer.cpp)
 add_executable(test_spline_node example/test_spline_node.cpp)
@@ -32,24 +31,18 @@ ament_target_dependencies(test_trapezoid_node
 )
 
 target_include_directories(trapezoid_designer PUBLIC
-  ${Python3_INCLUDE_DIRS}
-  ${Python3_NumPy_INCLUDE_DIRS}
   $<BUILD_INTERFACE:${EIGEN3_INCLUDE_DIR}>
   $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
   $<INSTALL_INTERFACE:include>
 )
 
 target_include_directories(test_spline_node PUBLIC
-  ${Python3_INCLUDE_DIRS}
-  ${Python3_NumPy_INCLUDE_DIRS}
   $<BUILD_INTERFACE:${EIGEN3_INCLUDE_DIR}>
   $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
   $<INSTALL_INTERFACE:include>
 )
 
 target_include_directories(test_trapezoid_node PUBLIC
-  ${Python3_INCLUDE_DIRS}
-  ${Python3_NumPy_INCLUDE_DIRS}
   $<BUILD_INTERFACE:${EIGEN3_INCLUDE_DIR}>
   $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
   $<INSTALL_INTERFACE:include>

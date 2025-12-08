@@ -11,10 +11,7 @@
 
 #include <Eigen/Dense>
 
-#include "matplotlibcpp.h"
 #include "rclcpp/rclcpp.hpp"
-
-namespace plt = matplotlibcpp;
 
 class MyNode : public rclcpp::Node
 {

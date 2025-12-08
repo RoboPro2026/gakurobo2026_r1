@@ -1,7 +1,5 @@
 # r1_control
 ## 使用ライブラリ
-- https://github.com/lava/matplotlib-cpp
-  - C++でmatplotlibを使えるようにするライブラリ
 - https://gitlab.com/libeigen/eigen
   - Eigen、連立方程式の計算に使用
 - 台形加速
