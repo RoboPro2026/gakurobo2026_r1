@@ -83,7 +83,7 @@ private:
     motor_msg.abs_turn_cnt = msg->abs_turn_cnt;
     motor_msg.vesc_voltage = msg->vesc_voltage;
     motor_msg.vesc_current = msg->vesc_current;
-    motor_msg.vesc_erpm = msg->vesc_erpm;
+    motor_msg.vesc_speed = msg->vesc_speed;
 
     motor_pubs_[motor_number]->publish(motor_msg);
   }

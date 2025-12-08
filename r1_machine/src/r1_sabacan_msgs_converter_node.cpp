@@ -351,7 +351,7 @@ public:
     msg_status.abs_turn_cnt = msg->abs_turn_cnt;
     msg_status.vesc_voltage = msg->vesc_voltage;
     msg_status.vesc_current = msg->vesc_current;
-    msg_status.vesc_erpm = msg->vesc_erpm;
+    msg_status.vesc_speed = msg->vesc_speed;
 
     BoardInfo receive{baord_id, msg->motor_number};
 
