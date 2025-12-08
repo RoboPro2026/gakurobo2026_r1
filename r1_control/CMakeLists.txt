@@ -13,6 +13,7 @@ find_package(rclcpp REQUIRED)
 find_package(Eigen3 REQUIRED)
 
 add_executable(trapezoid_designer src/trapezoid_designer.cpp)
+add_executable(test_minimum_jerk_node example/test_minimum_jerk_node.cpp)
 add_executable(test_spline_node example/test_spline_node.cpp)
 add_executable(test_trapezoid_node example/test_trapezoid_node.cpp)
 
@@ -20,6 +21,10 @@ ament_target_dependencies(trapezoid_designer
   rclcpp
   std_msgs
   geometry_msgs
+)
+
+ament_target_dependencies(test_minimum_jerk_node
+  rclcpp
 )
 
 ament_target_dependencies(test_spline_node
@@ -31,6 +36,12 @@ ament_target_dependencies(test_trapezoid_node
 )
 
 target_include_directories(trapezoid_designer PUBLIC
+  $<BUILD_INTERFACE:${EIGEN3_INCLUDE_DIR}>
+  $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+  $<INSTALL_INTERFACE:include>
+)
+
+target_include_directories(test_minimum_jerk_node PUBLIC
   $<BUILD_INTERFACE:${EIGEN3_INCLUDE_DIR}>
   $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
   $<INSTALL_INTERFACE:include>
@@ -49,6 +60,10 @@ target_include_directories(test_trapezoid_node PUBLIC
 )
 
 install(TARGETS trapezoid_designer
+  DESTINATION lib/${PROJECT_NAME}
+)
+
+install(TARGETS test_minimum_jerk_node
   DESTINATION lib/${PROJECT_NAME}
 )
 

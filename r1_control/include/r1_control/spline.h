@@ -2,6 +2,7 @@
  * @file spline.h
  * @author Yamaguchi Yudai
  * @brief 3次スプライン補完を計算する
+ * @ref https://www5d.biglobe.ne.jp/stssk/maze/spline.html
  * @version 0.1
  * @date 2025-12-04
  * 
