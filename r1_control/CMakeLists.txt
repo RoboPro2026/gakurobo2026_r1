@@ -14,8 +14,8 @@ find_package(Eigen3 REQUIRED)
 find_package(Python3 COMPONENTS Development NumPy REQUIRED)
 
 add_executable(trapezoid_designer src/trapezoid_designer.cpp)
-add_executable(spline_test_node example/spline_test_node.cpp)
-add_executable(trapezoid_test_node example/trapezoid_test_node.cpp)
+add_executable(test_spline_node example/test_spline_node.cpp)
+add_executable(test_trapezoid_node example/test_trapezoid_node.cpp)
 
 ament_target_dependencies(trapezoid_designer
   rclcpp
@@ -23,11 +23,11 @@ ament_target_dependencies(trapezoid_designer
   geometry_msgs
 )
 
-ament_target_dependencies(spline_test_node
+ament_target_dependencies(test_spline_node
   rclcpp
 )
 
-ament_target_dependencies(trapezoid_test_node
+ament_target_dependencies(test_trapezoid_node
   rclcpp
 )
 
@@ -39,7 +39,7 @@ target_include_directories(trapezoid_designer PUBLIC
   $<INSTALL_INTERFACE:include>
 )
 
-target_include_directories(spline_test_node PUBLIC
+target_include_directories(test_spline_node PUBLIC
   ${Python3_INCLUDE_DIRS}
   ${Python3_NumPy_INCLUDE_DIRS}
   $<BUILD_INTERFACE:${EIGEN3_INCLUDE_DIR}>
@@ -47,7 +47,7 @@ target_include_directories(spline_test_node PUBLIC
   $<INSTALL_INTERFACE:include>
 )
 
-target_include_directories(trapezoid_test_node PUBLIC
+target_include_directories(test_trapezoid_node PUBLIC
   ${Python3_INCLUDE_DIRS}
   ${Python3_NumPy_INCLUDE_DIRS}
   $<BUILD_INTERFACE:${EIGEN3_INCLUDE_DIR}>
@@ -59,11 +59,11 @@ install(TARGETS trapezoid_designer
   DESTINATION lib/${PROJECT_NAME}
 )
 
-install(TARGETS spline_test_node
+install(TARGETS test_spline_node
   DESTINATION lib/${PROJECT_NAME}
 )
 
-install(TARGETS trapezoid_test_node
+install(TARGETS test_trapezoid_node
   DESTINATION lib/${PROJECT_NAME}
 )
 

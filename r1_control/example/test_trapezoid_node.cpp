@@ -1,5 +1,5 @@
 /**
- * @file trapezoid_test_node.cpp
+ * @file test_trapezoid_node.cpp
  * @author Yudai Yamaguchi
  * @brief 台形制御のテストノード
  * @version 0.1
@@ -17,7 +17,7 @@
 void test_trapezoid()
 {
   // パラメータを設定
-  const float j_max = 20;
+  const float j_max = 10;
   const float a_max = 5;
   const float v_max = 5;
   const float v_start = 0;
@@ -26,7 +26,7 @@ void test_trapezoid()
   // 曲線を生成
   AccelDesigner ad(j_max, a_max, v_max, v_start, v_target, distance);
 
-  FILE * fp = fopen("trapezoid_test_output.csv", "w");
+  FILE * fp = fopen("test_trapezoid_output.csv", "w");
   if (fp == NULL) {
     RCLCPP_ERROR(rclcpp::get_logger("trapezoid_test_node"), "Failed to open file.");
     return;

@@ -1,5 +1,5 @@
 /**
- * @file spline_test_node.cpp
+ * @file test_spline_node.cpp
  * @author Yudai Yamaguchi
  * @brief C2スプライン補完を計算するサンプルプログラム
  * @version 0.1

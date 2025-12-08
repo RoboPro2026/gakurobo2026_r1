@@ -8,7 +8,7 @@ x = []
 v = []
 a = []
 j = []
-with open("trapezoid_test_output.csv", "r") as f:
+with open("test_trapezoid_output.csv", "r") as f:
     reader = csv.reader(f)
     for row in reader:
         t.append(float(row[0]))
