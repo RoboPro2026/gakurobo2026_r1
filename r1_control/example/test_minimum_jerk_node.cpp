@@ -19,9 +19,10 @@ void test_minimum_jerk()
   // パラメータを設定
   const double x_start = 0.0;
   const double x_end = 10.0;
+  const double t_start = 0.0;
   const double t_end = 2.0;
 
-  MinimumJerk mj(x_start, x_end, t_end);
+  MinimumJerk mj(x_start, x_end, t_start, t_end);
 
   FILE * fp = fopen("test_minimum_jerk_output.csv", "w");
   if (fp == NULL) {

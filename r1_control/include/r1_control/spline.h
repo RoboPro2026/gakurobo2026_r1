@@ -266,6 +266,13 @@ public:
     return (d2y * dx - d2x * dy) / std::pow(dx * dx + dy * dy, 1.5);
   }
 
+  /**
+   * @brief 各waypointに対応する媒介変数tを取得する
+   * 
+   * @return std::vector<double> 
+   */
+  std::vector<double> get_t() { return t_; }
+
 private:
   Spline sx_ = Spline();
   Spline sy_ = Spline();

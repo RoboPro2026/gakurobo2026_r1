@@ -25,28 +25,31 @@ public:
    * 
    * @param x0 開始位置
    * @param xf 終了位置
+   * @param ts 開始時間
    * @param tf 終了時間
    */
-  MinimumJerk(double x0, double xf, double tf) : x0_(x0), xf_(xf), tf_(tf) {}
+  MinimumJerk(double x0, double xf, double ts, double tf) : x0_(x0), xf_(xf), ts_(ts), tf_(tf) {}
 
   /**
    * @brief パラメータを設定する
    * 
    * @param x0 開始位置
    * @param xf 終了位置
+   * @param ts 開始時間
    * @param tf 終了時間
    */
-  void setParam(double x0, double xf, double tf)
+  void setParam(double x0, double xf, double ts, double tf)
   {
     x0_ = x0;
     xf_ = xf;
+    ts_ = ts;
     tf_ = tf;
   }
 
   /**
    * @brief x 位置を計算する
    * x(t) = x0 + (xf - x0) * (10*tau^3 - 15*tau^4 + 6*tau^5)
-   * ただし、tau = t/tf
+   * ただし、tau = (t - ts) / tf
    * 
    * @param t 現在時刻
    * @return double 
@@ -95,21 +98,22 @@ public:
 
 private:
   /**
-   * @brief tau=t/tf を計算する
+   * @brief tau=(t - ts) / tf を計算する
    * 
    * @param t 現在時刻
    * @return double tauは0.0~1.0の範囲
    */
   double calc_tau(double t)
   {
-    if (t < 0)
-      t = 0.0;
+    if (t < ts_)
+      t = ts_;
     else if (t > tf_)
       t = tf_;
-    return t / tf_;
+    return (t - ts_) / tf_;
   }
 
   double x0_;
   double xf_;
+  double ts_;
   double tf_;
 };
