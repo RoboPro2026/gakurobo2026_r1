@@ -1,13 +1,26 @@
+import csv
+
 import matplotlib.patches as patches
 import matplotlib.pyplot as plt
 import numpy as np
 import trajectory_planner
+from matplotlib.transforms import Affine2D
+from matplotlib.widgets import Button
 
 fig, ax = plt.subplots(figsize=(12, 12))
 
 
+# memo
+# 5.5,11.5,1.5707963267948966,0.0
+# 5.5,8.0,1.5707963267948966,5.0
+# 4.0,1.5,1.5707963267948966,5.0
+# 2.5,1.0,2.08,2.0
+# 1.25,1.0,3.14,0.0
+
+
 def plot_field(zone):
     sign = 1.0
+    # TODO: 違うゾーンのときも動くようにする
     if zone == "red":
         sign = -1.0
     # フィールドの外枠
@@ -355,25 +368,116 @@ def plot_field(zone):
     ax.add_patch(forest12_square)
 
 
+x_wp = []
+y_wp = []
+theta_wp = []
+v_trans_wp = []
+
+
+def load_waypoint():
+    with open("waypoints.csv", "r") as f:
+        reader = csv.reader(f)
+        for row in reader:
+            x_wp.append(float(row[0]))
+            y_wp.append(float(row[1]))
+            theta_wp.append(float(row[2]))
+            v_trans_wp.append(float(row[3]))
+
+
+def save_waypoint():
+    with open("waypoints.csv", "w", newline="") as f:
+        writer = csv.writer(f)
+        for i in range(len(x_wp)):
+            writer.writerow([x_wp[i], y_wp[i], theta_wp[i], v_trans_wp[i]])
+
+
+def plot_robot(ax, x, y, theta, width, height):
+
+    # 中心を原点にした矩形
+    rect = patches.Rectangle(
+        (-width / 2, -height / 2),
+        width,
+        height,
+        facecolor="none",
+        edgecolor="blue",
+        linewidth=2,
+    )
+
+    # 回転 → 平行移動
+    trans = Affine2D().rotate(theta).translate(x, y) + ax.transData  # <-- ラジアン！
+
+    rect.set_transform(trans)
+    ax.add_patch(rect)
+
+    # 正面がわかるように三角マーカーを追加
+    nose = patches.Polygon(
+        [
+            (width / 2, 0.0),
+            (width / 2 - width * 0.3, height / 4),
+            (width / 2 - width * 0.3, -height / 4),
+        ],
+        closed=True,
+        facecolor="red",
+        edgecolor="red",
+    )
+    nose.set_transform(trans)
+    ax.add_patch(nose)
+
+    print(f"Robot position: x={x:.2f}, y={y:.2f}, theta={theta:.2f}")
+
+
+# フィールドを描画
 plot_field("red")
 plt.xlim(-1, 13)
 plt.ylim(-1, 13)
 
-x_wp = [5.5, 5.5, 5.5, 5.5, 5.5, 4.0, 2.5, 0.25]
-y_wp = [11.5, 10.0, 9.0, 8.0, 3.5, 1.5, 1.0, 1.0]
-theta_wp = [0.0, np.pi / 6, np.pi / 4, np.pi / 3, np.pi / 2]
-v_trans_wp = [0.0, 5.0, 5.0, 5.0, 0.0]
+# ax_save = plt.axes([0.25, 0.03, 0.2, 0.08])
+# ax_generate = plt.axes([0.55, 0.03, 0.2, 0.08])
+
+# btn_save = Button(ax_save, "保存 (CSV)")
+# btn_generate = Button(ax_generate, "生成 (Trajectory)")
+
+# btn_save.on_clicked(save_csv)
+# btn_generate.on_clicked(generate_trajectory)
+
+load_waypoint()
+
 dt = 0.01
 v_max = 5.0
 a_max = 5.0
 j_max = 10.0
+print_robot_dt = 0.5
+robot_x = []
+robot_y = []
+robot_theta = []
+robot_width = 0.8
+robot_height = 0.8
 
+save_waypoint()
+
+# 軌道の計算
 t, x, y, theta, distance, v_trans, a_trans, j_trans, omega, curvature = (
     trajectory_planner.calculate_trajectory(
         x_wp, y_wp, theta_wp, v_trans_wp, dt, v_max, a_max, j_max
     )
 )
 
+# 描画用のロボットの位置を取得
+for i in range(0, len(t), int(print_robot_dt / dt)):
+    robot_x.append(x[i])
+    robot_y.append(y[i])
+    robot_theta.append(theta[i])
+
+# 最後の位置も追加
+robot_x.append(x[-1])
+robot_y.append(y[-1])
+robot_theta.append(theta[-1])
+
+# ロボットをプロット
+for i in range(len(robot_x)):
+    plot_robot(ax, robot_x[i], robot_y[i], robot_theta[i], robot_width, robot_height)
+
+# 軌道をプロット
 # plt.figure(figsize=(8, 6))
 scatter = plt.scatter(x, y, c=v_trans, cmap="viridis", s=15, label="Trajectory")
 plt.scatter(x_wp, y_wp, color="red", marker="x", s=40, label="Waypoints", zorder=5)
@@ -383,32 +487,27 @@ plt.ylabel("Position (y)")
 plt.legend()
 plt.grid(True, linestyle="--", alpha=0.3)
 
+# 台形制御の詳細をプロット
 plt.figure(figsize=(10, 12))
 plt.subplot(6, 1, 1)
 plt.plot(t, x, label="Position (x)")
 plt.ylabel("Position (x)")
-# plt.grid()
 plt.subplot(6, 1, 2)
 plt.plot(t, y, label="Position (y)", color="orange")
 plt.ylabel("Position (y)")
-# plt.grid()
 plt.subplot(6, 1, 3)
 plt.plot(t, theta, label="Orientation (theta)", color="green")
 plt.ylabel("Orientation (theta)")
-# plt.grid()
 plt.subplot(6, 1, 4)
 plt.plot(t, distance, label="Distance", color="purple")
 plt.ylabel("Distance")
-# plt.grid()
 plt.subplot(6, 1, 5)
 plt.plot(t, v_trans, label="Translational Velocity (v_trans)", color="brown")
 plt.ylabel("Translational Velocity (v_trans)")
-# plt.grid()
 plt.subplot(6, 1, 6)
 plt.plot(t, omega, label="Angular Velocity (omega)", color="pink")
 plt.ylabel("Angular Velocity (omega)")
 plt.xlabel("Time (s)")
-# plt.grid()
 plt.tight_layout()
 plt.show()
 plt.show()
