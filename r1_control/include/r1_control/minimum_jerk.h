@@ -49,7 +49,7 @@ public:
   /**
    * @brief x 位置を計算する
    * x(t) = x0 + (xf - x0) * (10*tau^3 - 15*tau^4 + 6*tau^5)
-   * ただし、tau = (t - ts) / tf
+   * ただし、tau = (t - ts) / (tf - ts)
    * 
    * @param t 現在時刻
    * @return double 
@@ -96,9 +96,14 @@ public:
     return (xf_ - x0_) * (60.0 - 360.0 * tau + 360.0 * pow(tau, 2)) / (pow(tf_, 3));
   }
 
+  double get_x0() { return x0_; }
+  double get_xf() { return xf_; }
+  double get_ts() { return ts_; }
+  double get_tf() { return tf_; }
+
 private:
   /**
-   * @brief tau=(t - ts) / tf を計算する
+   * @brief tau=(t - ts) / (tf - ts) を計算する
    * 
    * @param t 現在時刻
    * @return double tauは0.0~1.0の範囲
@@ -109,7 +114,7 @@ private:
       t = ts_;
     else if (t > tf_)
       t = tf_;
-    return (t - ts_) / tf_;
+    return (t - ts_) / (tf_ - ts_);
   }
 
   double x0_;

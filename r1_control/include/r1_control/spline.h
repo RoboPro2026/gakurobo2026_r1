@@ -217,7 +217,22 @@ public:
   {
     x_ = x;
     y_ = y;
-    t_ = linspace(0.0, 1.0, x_.size());
+    t_.resize(x_.size());
+
+    // 媒介変数tを計算。waypoint間の距離を計算し、最後に正規化して0~1の範囲にする。
+    t_[0] = 0.0;
+    for (size_t i = 1; i < x_.size(); i++) {
+      double dx = x_[i] - x_[i - 1];
+      double dy = y_[i] - y_[i - 1];
+      double dist = hypot(dx, dy);
+      t_[i] = t_[i - 1] + dist;
+    }
+
+    // t を 0.0 ~ 1.0 に正規化 (オプションですが、後続の処理を変えないために推奨)
+    double total_length = t_.back();
+    for (size_t i = 0; i < t_.size(); i++) {
+      t_[i] /= total_length;
+    }
 
     if (x_.size() != y_.size() || x_.size() <= 3) {
       RCLCPP_ERROR(rclcpp::get_logger("rclcpp"), "Invalid input data for spline calculation.");

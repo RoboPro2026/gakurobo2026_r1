@@ -33,7 +33,7 @@ with open("test_trajectory_planner_output.csv", "r") as f:
         omega.append(float(row[8]))
         curvature.append(float(row[9]))
 
-with open("test_trajectory_planner_waypoints.csv", "r") as f:
+with open("test_trajectory_planner_waypoint_output.csv", "r") as f:
     reader = csv.reader(f)
     for row in reader:
         x_wp.append(float(row[0]))
@@ -41,30 +41,26 @@ with open("test_trajectory_planner_waypoints.csv", "r") as f:
         theta_wp.append(float(row[2]))
         v_trans_wp.append(float(row[3]))
 
+plt.figure(figsize=(8, 6))
+scatter = plt.scatter(x, y, c=v_trans, cmap="viridis", s=15, label="Trajectory")
+plt.scatter(x_wp, y_wp, color="red", marker="x", s=40, label="Waypoints", zorder=5)
+plt.colorbar(scatter, label="Translational Velocity (v_trans)")
+plt.xlabel("Position (x)")
+plt.ylabel("Position (y)")
+plt.legend()
+plt.grid(True, linestyle="--", alpha=0.3)
+
 plt.figure(figsize=(10, 12))
 plt.subplot(6, 1, 1)
 plt.plot(t, x, label="Position (x)")
-plt.scatter(
-    np.linspace(0, t[-1], len(x_wp)), x_wp, color="red", label="Waypoints", zorder=5
-)
 plt.ylabel("Position (x)")
 # plt.grid()
 plt.subplot(6, 1, 2)
 plt.plot(t, y, label="Position (y)", color="orange")
-plt.scatter(
-    np.linspace(0, t[-1], len(y_wp)), y_wp, color="red", label="Waypoints", zorder=5
-)
 plt.ylabel("Position (y)")
 # plt.grid()
 plt.subplot(6, 1, 3)
 plt.plot(t, theta, label="Orientation (theta)", color="green")
-plt.scatter(
-    np.linspace(0, t[-1], len(theta_wp)),
-    theta_wp,
-    color="red",
-    label="Waypoints",
-    zorder=5,
-)
 plt.ylabel("Orientation (theta)")
 # plt.grid()
 plt.subplot(6, 1, 4)
@@ -73,13 +69,6 @@ plt.ylabel("Distance")
 # plt.grid()
 plt.subplot(6, 1, 5)
 plt.plot(t, v_trans, label="Translational Velocity (v_trans)", color="brown")
-plt.scatter(
-    np.linspace(0, t[-1], len(v_trans_wp)),
-    v_trans_wp,
-    color="red",
-    label="Waypoints",
-    zorder=5,
-)
 plt.ylabel("Translational Velocity (v_trans)")
 # plt.grid()
 plt.subplot(6, 1, 6)

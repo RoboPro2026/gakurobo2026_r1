@@ -17,9 +17,9 @@
 void test_minimum_jerk()
 {
   // パラメータを設定
-  const double x_start = 0.0;
+  const double x_start = 5.0;
   const double x_end = 10.0;
-  const double t_start = 0.0;
+  const double t_start = 1.0;
   const double t_end = 2.0;
 
   MinimumJerk mj(x_start, x_end, t_start, t_end);
@@ -30,7 +30,7 @@ void test_minimum_jerk()
     return;
   }
 
-  for (double t = 0; t <= t_end; t += 0.01) {
+  for (double t = t_start; t <= t_end; t += 0.01) {
     fprintf(fp, "%lf,%lf,%lf,%lf,%lf\n", t, mj.x(t), mj.v(t), mj.a(t), mj.j(t));
   }
 

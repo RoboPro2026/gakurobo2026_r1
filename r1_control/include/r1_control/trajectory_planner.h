@@ -95,7 +95,7 @@ public:
         // 微小距離を計算
         double delta_d = hypot(ex - sx, ey - sy);
         // 微小距離を積分
-        dist_segment_[(i - 1) * (segment_num_ - 1) + (j - 1)] += delta_d;
+        dist_segment_[i - 1] += delta_d;
         dist_all_ += delta_d;
       }
     }
@@ -103,17 +103,19 @@ public:
     double xs = 0.0;
     double ts = 0.0;
 
-    for (int i = 0; i < wp_num_; i++) {
+    for (int i = 0; i < wp_num_ - 1; i++) {
       // 各区間ごとの速度を計算
       accel_designer_[i].reset(
         j_max_, a_max_, v_max_, v_trans_wp_[i], v_trans_wp_[i + 1], dist_segment_[i], xs, ts);
 
       // 次の始点位置、始点時刻の更新
       xs += dist_segment_[i];
-      ts += accel_designer_[i].t_end();
+      ts = accel_designer_[i].t_end();
     }
+
     // 軌道の終了時刻/分割数の配列を作成
     t_all_ = ts;
+
     array_size_ = (int)(t_all_ / dt_) + 1;
     t_.resize(array_size_);
     x_.resize(array_size_);
@@ -137,9 +139,9 @@ public:
 
     for (int i = 0; i < array_size_; i++) {
       // 時刻を計算
-      t_[i] = dt_ * i;
+      t_[i] = dt_ * (double)i;
       // 区間ごとのインデックス更新
-      while (j < wp_num_ - 1 && t_[i] > xs + accel_designer_[j].t_end()) {
+      while (j < wp_num_ - 1 && t_[i] > accel_designer_[j].t_end()) {
         j++;
       }
       distance_[i] = accel_designer_[j].x(t_[i]);
@@ -151,10 +153,11 @@ public:
 
       // 正規化して、媒介変数tを計算
       double t = distance_[i] / dist_all_;
+      // 位置を取得
       auto [x, y] = spline2d_.get_pos(t);
       x_[i] = x;
       y_[i] = y;
-      // 曲率
+      // 曲率を取得
       curvature_[i] = spline2d_.get_curvature(t);
       // 最小躍度軌道を用いて、角度と角速度を計算
       theta_[i] = minimum_jerk_[j].x(t_[i]);
@@ -163,7 +166,7 @@ public:
   }
 
   /**
-     * @brief CSVに生成した軌道を出力する
+     * @brief 生成した軌道をCSV形式で出力する
      * 
      * @param fp 
      */
@@ -171,13 +174,13 @@ public:
   {
     for (int i = 0; i < array_size_; i++) {
       fprintf(
-        fp, "%lf,%lf,%lf,%lf,%lf,%lf,%lf,%lf,%lf,%lf,%lf,%lf\n", t_[i], x_[i], y_[i], theta_[i],
+        fp, "%lf,%lf,%lf,%lf,%lf,%lf,%lf,%lf,%lf,%lf\n", t_[i], x_[i], y_[i], theta_[i],
         distance_[i], v_trans_[i], a_trans_[i], j_trans_[i], omega_[i], curvature_[i]);
     }
   }
 
   /**
-     * @brief CSVに与えられたwaypointを出力する
+     * @brief 与えられたwaypointをCSV形式で出力する
      * 
      * @param fp 
      */
