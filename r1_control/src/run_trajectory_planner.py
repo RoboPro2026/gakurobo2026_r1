@@ -9,7 +9,7 @@ from matplotlib.widgets import Button
 
 fig, ax = plt.subplots(figsize=(12, 12))
 
-zone = "red"  # "red" または "blue"
+zone = "blue"  # "red" または "blue"
 assert zone in ["red", "blue"], "zone must be 'red' or 'blue'"
 
 
@@ -21,10 +21,12 @@ assert zone in ["red", "blue"], "zone must be 'red' or 'blue'"
 # 1.25,1.0,3.14,0.0
 
 """オブジェクトをゾーンに応じてプロット"""
+
+
 def plot_object_with_zone(field_object):
-    # 青ゾーンの場合はY軸を中心に線対称に移動
+    # 赤ゾーンの場合はY軸を中心に線対称に移動
     # 数式で表すと、x' = -(x + w) となる
-    if zone == "blue":
+    if zone == "red":
         if isinstance(field_object, patches.Rectangle):
             # Rectangleはset_x/get_xで位置を更新する
             mirrored_x = -(field_object.get_x() + field_object.get_width())
@@ -32,7 +34,10 @@ def plot_object_with_zone(field_object):
     # プロット
     ax.add_patch(field_object)
 
-"""フィールドの描画""""
+
+"""フィールドの描画"""
+
+
 def plot_field():
     # フィールドの外枠
     field = patches.Rectangle(
@@ -453,10 +458,12 @@ def plot_robot(ax, x, y, theta, width, height):
 
 # フィールドを描画、ゾーンに応じて範囲を変える
 plot_field()
-if zone == "red":
+if zone == "blue":
+    # Xが正の部分をプロットする
     plt.xlim(-1, 13)
     plt.ylim(-1, 13)
 else:
+    # Xが負の部分をプロットする
     plt.xlim(-13, 1)
     plt.ylim(-1, 13)
 
@@ -483,6 +490,12 @@ robot_width = 0.8
 robot_height = 0.8
 
 save_waypoint()
+
+# 赤ゾーンの場合はY軸を中心に線対称に移動
+if zone == "red":
+    for i in range(len(x_wp)):
+        x_wp[i] = -x_wp[i]
+        theta_wp[i] = np.pi - theta_wp[i]
 
 # 軌道の計算
 t, x, y, theta, distance, v_trans, a_trans, j_trans, omega, curvature = (
