@@ -8,6 +8,8 @@ sudo apt install ros-humble-magic-enum
 ros-humble-ament-cmake-gtest
 # for eigen
 sudo apt install libeigen3-dev
+# for pybind11
+sudo apt install pybind11-dev
 ```
 
 実行
