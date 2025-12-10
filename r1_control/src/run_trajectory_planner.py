@@ -9,6 +9,9 @@ from matplotlib.widgets import Button
 
 fig, ax = plt.subplots(figsize=(12, 12))
 
+zone = "red"  # "red" または "blue"
+assert zone in ["red", "blue"], "zone must be 'red' or 'blue'"
+
 
 # memo
 # 5.5,11.5,1.5707963267948966,0.0
@@ -17,12 +20,20 @@ fig, ax = plt.subplots(figsize=(12, 12))
 # 2.5,1.0,2.08,2.0
 # 1.25,1.0,3.14,0.0
 
+"""オブジェクトをゾーンに応じてプロット"""
+def plot_object_with_zone(field_object):
+    # 青ゾーンの場合はY軸を中心に線対称に移動
+    # 数式で表すと、x' = -(x + w) となる
+    if zone == "blue":
+        if isinstance(field_object, patches.Rectangle):
+            # Rectangleはset_x/get_xで位置を更新する
+            mirrored_x = -(field_object.get_x() + field_object.get_width())
+            field_object.set_x(mirrored_x)
+    # プロット
+    ax.add_patch(field_object)
 
-def plot_field(zone):
-    sign = 1.0
-    # TODO: 違うゾーンのときも動くようにする
-    if zone == "red":
-        sign = -1.0
+"""フィールドの描画""""
+def plot_field():
     # フィールドの外枠
     field = patches.Rectangle(
         # xyは左下の座標
@@ -344,41 +355,42 @@ def plot_field(zone):
         facecolor="none",
     )
 
-    ax.add_patch(field)
-    ax.add_patch(r1_start_zone)
-    ax.add_patch(r2_start_zone)
-    ax.add_patch(retry_zone)
-    ax.add_patch(poll_rack)
-    ax.add_patch(head_rack)
-    ax.add_patch(hidensyo_rack)
-    ax.add_patch(hidensyo_rack1)
-    ax.add_patch(hidensyo_rack2)
-    ax.add_patch(yariokiba)
-    ax.add_patch(arena_entrance)
-    ax.add_patch(forest1)
-    ax.add_patch(forest2)
-    ax.add_patch(forest3)
-    ax.add_patch(forest4)
-    ax.add_patch(forest5)
-    ax.add_patch(forest6)
-    ax.add_patch(forest7)
-    ax.add_patch(forest8)
-    ax.add_patch(forest9)
-    ax.add_patch(forest10)
-    ax.add_patch(forest11)
-    ax.add_patch(forest12)
-    ax.add_patch(forest1_square)
-    ax.add_patch(forest2_square)
-    ax.add_patch(forest3_square)
-    ax.add_patch(forest4_square)
-    ax.add_patch(forest5_square)
-    ax.add_patch(forest6_square)
-    ax.add_patch(forest7_square)
-    ax.add_patch(forest8_square)
-    ax.add_patch(forest9_square)
-    ax.add_patch(forest10_square)
-    ax.add_patch(forest11_square)
-    ax.add_patch(forest12_square)
+    # オブジェクトをプロット
+    plot_object_with_zone(field)
+    plot_object_with_zone(r1_start_zone)
+    plot_object_with_zone(r2_start_zone)
+    plot_object_with_zone(retry_zone)
+    plot_object_with_zone(poll_rack)
+    plot_object_with_zone(head_rack)
+    plot_object_with_zone(hidensyo_rack)
+    plot_object_with_zone(hidensyo_rack1)
+    plot_object_with_zone(hidensyo_rack2)
+    plot_object_with_zone(yariokiba)
+    plot_object_with_zone(arena_entrance)
+    plot_object_with_zone(forest1)
+    plot_object_with_zone(forest2)
+    plot_object_with_zone(forest3)
+    plot_object_with_zone(forest4)
+    plot_object_with_zone(forest5)
+    plot_object_with_zone(forest6)
+    plot_object_with_zone(forest7)
+    plot_object_with_zone(forest8)
+    plot_object_with_zone(forest9)
+    plot_object_with_zone(forest10)
+    plot_object_with_zone(forest11)
+    plot_object_with_zone(forest12)
+    plot_object_with_zone(forest1_square)
+    plot_object_with_zone(forest2_square)
+    plot_object_with_zone(forest3_square)
+    plot_object_with_zone(forest4_square)
+    plot_object_with_zone(forest5_square)
+    plot_object_with_zone(forest6_square)
+    plot_object_with_zone(forest7_square)
+    plot_object_with_zone(forest8_square)
+    plot_object_with_zone(forest9_square)
+    plot_object_with_zone(forest10_square)
+    plot_object_with_zone(forest11_square)
+    plot_object_with_zone(forest12_square)
 
 
 x_wp = []
@@ -439,10 +451,14 @@ def plot_robot(ax, x, y, theta, width, height):
     print(f"Robot position: x={x:.2f}, y={y:.2f}, theta={theta:.2f}")
 
 
-# フィールドを描画
-plot_field("red")
-plt.xlim(-1, 13)
-plt.ylim(-1, 13)
+# フィールドを描画、ゾーンに応じて範囲を変える
+plot_field()
+if zone == "red":
+    plt.xlim(-1, 13)
+    plt.ylim(-1, 13)
+else:
+    plt.xlim(-13, 1)
+    plt.ylim(-1, 13)
 
 # ax_save = plt.axes([0.25, 0.03, 0.2, 0.08])
 # ax_generate = plt.axes([0.55, 0.03, 0.2, 0.08])
