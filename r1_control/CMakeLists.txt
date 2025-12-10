@@ -11,18 +11,15 @@ find_package(std_msgs REQUIRED)
 find_package(geometry_msgs REQUIRED)
 find_package(rclcpp REQUIRED)
 find_package(Eigen3 REQUIRED)
+find_package(Python3 COMPONENTS Interpreter Development MODULE REQUIRED)
+find_package(pybind11 REQUIRED)
 
-add_executable(trapezoid_designer src/trapezoid_designer.cpp)
 add_executable(test_minimum_jerk_node example/test_minimum_jerk_node.cpp)
 add_executable(test_spline_node example/test_spline_node.cpp)
 add_executable(test_trajectory_planner_node example/test_trajectory_planner_node.cpp)
 add_executable(test_trapezoid_node example/test_trapezoid_node.cpp)
 
-ament_target_dependencies(trapezoid_designer
-  rclcpp
-  std_msgs
-  geometry_msgs
-)
+pybind11_add_module(trajectory_planner src/trajectory_planner.cpp)
 
 ament_target_dependencies(test_minimum_jerk_node
   rclcpp
@@ -38,12 +35,6 @@ ament_target_dependencies(test_trajectory_planner_node
 
 ament_target_dependencies(test_trapezoid_node
   rclcpp
-)
-
-target_include_directories(trapezoid_designer PUBLIC
-  $<BUILD_INTERFACE:${EIGEN3_INCLUDE_DIR}>
-  $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
-  $<INSTALL_INTERFACE:include>
 )
 
 target_include_directories(test_minimum_jerk_node PUBLIC
@@ -70,8 +61,15 @@ target_include_directories(test_trapezoid_node PUBLIC
   $<INSTALL_INTERFACE:include>
 )
 
-install(TARGETS trapezoid_designer
-  DESTINATION lib/${PROJECT_NAME}
+target_include_directories(trajectory_planner PUBLIC
+  $<BUILD_INTERFACE:${EIGEN3_INCLUDE_DIR}>
+  $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+  $<INSTALL_INTERFACE:include>
+)
+
+target_link_libraries(trajectory_planner
+  PRIVATE
+    rclcpp::rclcpp
 )
 
 install(TARGETS test_minimum_jerk_node
@@ -88,6 +86,11 @@ install(TARGETS test_trajectory_planner_node
 
 install(TARGETS test_trapezoid_node
   DESTINATION lib/${PROJECT_NAME}
+)
+
+# 例 lib/python3.10/site-packages
+install(TARGETS trajectory_planner
+  DESTINATION lib/python${Python3_VERSION_MAJOR}.${Python3_VERSION_MINOR}/site-packages
 )
 
 if(BUILD_TESTING)

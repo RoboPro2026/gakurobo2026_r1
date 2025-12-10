@@ -191,6 +191,35 @@ public:
     }
   }
 
+  /**
+   * @brief 軌道を取得する
+   * 返り値は
+   * [0]: 時刻tの配列
+   * [1]: x座標の配列
+   * [2]: y座標の配列
+   * [3]: 角度thetaの配列
+   * [4]: 走行距離distanceの配列
+   * [5]: 並進速度v_transの配列
+   * [6]: 並進加速度a_transの配列
+   * [7]: 並進躍度j_transの配列
+   * [8]: 角速度omegaの配列
+   * [9]: 曲率curvatureの配列
+   * 
+   * @return std::tuple<
+   * std::vector<double>, std::vector<double>, std::vector<double>, std::vector<double>,
+   * std::vector<double>, std::vector<double>, std::vector<double>, std::vector<double>,
+   * std::vector<double>, std::vector<double>> 
+   */
+  std::tuple<
+    std::vector<double>, std::vector<double>, std::vector<double>, std::vector<double>,
+    std::vector<double>, std::vector<double>, std::vector<double>, std::vector<double>,
+    std::vector<double>, std::vector<double>>
+  get_trajectory()
+  {
+    return std::make_tuple(
+      t_, x_, y_, theta_, distance_, v_trans_, a_trans_, j_trans_, omega_, curvature_);
+  }
+
 private:
   Spline2D spline2d_;
   std::vector<AccelDesigner> accel_designer_;
