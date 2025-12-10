@@ -20,10 +20,9 @@ assert zone in ["red", "blue"], "zone must be 'red' or 'blue'"
 # 2.5,1.0,2.08,2.0
 # 1.25,1.0,3.14,0.0
 
-"""オブジェクトをゾーンに応じてプロット"""
-
 
 def plot_object_with_zone(field_object):
+    """オブジェクトをゾーンに応じてプロット"""
     # 赤ゾーンの場合はY軸を中心に線対称に移動
     # 数式で表すと、x' = -(x + w) となる
     if zone == "red":
@@ -35,10 +34,8 @@ def plot_object_with_zone(field_object):
     ax.add_patch(field_object)
 
 
-"""フィールドの描画"""
-
-
 def plot_field():
+    """フィールドの描画"""
     # フィールドの外枠
     field = patches.Rectangle(
         # xyは左下の座標
