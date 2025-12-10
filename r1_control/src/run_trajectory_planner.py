@@ -88,11 +88,22 @@ def plot_field(zone):
         edgecolor="black",
         facecolor="none",
     )
-    yariokiba = patches.Rectangle(
+    # 秘伝書の仕切り描画用
+    hidensyo_rack1 = patches.Rectangle(
         # xyは左下の座標
-        xy=(0.525, 2.2),
-        width=1.5,
-        height=0.3,
+        xy=(0.0, 0.437),
+        width=0.16,
+        height=0.542,
+        linewidth=1,
+        edgecolor="black",
+        facecolor="none",
+    )
+    # 秘伝書の仕切り描画用
+    hidensyo_rack2 = patches.Rectangle(
+        # xyは左下の座標
+        xy=(0.0, 0.437),
+        width=0.16,
+        height=1.084,
         linewidth=1,
         edgecolor="black",
         facecolor="none",
@@ -109,7 +120,7 @@ def plot_field(zone):
     # アリーナの柵
     arena_entrance = patches.Rectangle(
         # xyは左下の座標
-        xy=(0.0, 2.2),
+        xy=(0.0, 2.5),
         width=4.025,
         height=0.05,
         linewidth=1,
@@ -340,6 +351,8 @@ def plot_field(zone):
     ax.add_patch(poll_rack)
     ax.add_patch(head_rack)
     ax.add_patch(hidensyo_rack)
+    ax.add_patch(hidensyo_rack1)
+    ax.add_patch(hidensyo_rack2)
     ax.add_patch(yariokiba)
     ax.add_patch(arena_entrance)
     ax.add_patch(forest1)
