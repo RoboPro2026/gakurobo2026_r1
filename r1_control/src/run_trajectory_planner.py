@@ -404,18 +404,39 @@ v_trans_wp = []
 def load_waypoint():
     with open("/tmp/waypoints.csv", "r") as f:
         reader = csv.reader(f)
-        for row in reader:
+        for i, row in enumerate(reader):
             x_wp.append(float(row[0]))
             y_wp.append(float(row[1]))
-            theta_wp.append(float(row[2]))
-            v_trans_wp.append(float(row[3]))
+            if row[2] != "":
+                theta_wp.append((i, float(row[2])))
+            if row[3] != "":
+                v_trans_wp.append((i, float(row[3])))
 
 
 def save_waypoint():
     with open("/tmp/waypoints.csv", "w", newline="") as f:
         writer = csv.writer(f)
+        j = 0
+        k = 0
         for i in range(len(x_wp)):
-            writer.writerow([x_wp[i], y_wp[i], theta_wp[i], v_trans_wp[i]])
+            # データが空であればスキップ
+            theta = ""
+            if theta_wp[j][0] == i:
+                theta = theta_wp[j][1]
+                j += 1
+            v = ""
+            if v_trans_wp[k][0] == i:
+                v = v_trans_wp[k][1]
+                k += 1
+            writer.writerow([x_wp[i], y_wp[i], theta, v])
+
+
+def on_click(event):
+    """クリックされた位置に waypoint を追加"""
+    if event.inaxes != ax:
+        return
+
+    print(f"次の座標がクリックされました: ({event.xdata:.3f}, {event.ydata:.3f})")
 
 
 def plot_robot(ax, x, y, theta, width, height):
@@ -450,8 +471,6 @@ def plot_robot(ax, x, y, theta, width, height):
     nose.set_transform(trans)
     ax.add_patch(nose)
 
-    # print(f"Robot position: x={x:.2f}, y={y:.2f}, theta={theta:.2f}")
-
 
 # フィールドを描画、ゾーンに応じて範囲を変える
 plot_field()
@@ -464,14 +483,7 @@ else:
     plt.xlim(-13, 1)
     plt.ylim(-1, 13)
 
-# ax_save = plt.axes([0.25, 0.03, 0.2, 0.08])
-# ax_generate = plt.axes([0.55, 0.03, 0.2, 0.08])
-
-# btn_save = Button(ax_save, "保存 (CSV)")
-# btn_generate = Button(ax_generate, "生成 (Trajectory)")
-
-# btn_save.on_clicked(save_csv)
-# btn_generate.on_clicked(generate_trajectory)
+cid = fig.canvas.mpl_connect("button_press_event", on_click)
 
 load_waypoint()
 
@@ -479,6 +491,7 @@ dt = 0.01
 v_max = 5.0
 a_max = 5.0
 j_max = 10.0
+omega_max = 5 * (2 * np.pi)
 print_robot_dt = 0.5
 robot_x = []
 robot_y = []
@@ -486,7 +499,15 @@ robot_theta = []
 robot_width = 0.8
 robot_height = 0.8
 
-save_waypoint()
+print("Waypoints:")
+for i in range(len(x_wp)):
+    print(
+        f"  {i}: x={x_wp[i]:.3f}, y={y_wp[i]:.3f}, "
+        f"theta={theta_wp[i][1] if i < len(theta_wp) else 'N/A'}, "
+        f"v_trans={v_trans_wp[i][1] if i < len(v_trans_wp) else 'N/A'}"
+    )
+
+# save_waypoint()
 
 # 赤ゾーンの場合はY軸を中心に線対称に移動
 if zone == "red":
@@ -497,18 +518,21 @@ if zone == "red":
 # 軌道の計算
 status, t, x, y, theta, distance, v_trans, a_trans, j_trans, omega, curvature = (
     trajectory_planner.calculate_trajectory(
-        x_wp, y_wp, theta_wp, v_trans_wp, dt, v_max, a_max, j_max
+        x_wp, y_wp, theta_wp, v_trans_wp, dt, v_max, a_max, j_max, omega_max
     )
 )
-
 # ステータスの表示
+distance_total = distance[-1]
+time_total = t[-1]
+print(f"軌道全体の距離: {distance_total:.3f} [m], 軌道全体の時間: {time_total:.3f} [s]")
+print("各区間の軌道生成ステータス:")
 for i in range(len(status)):
     if status[i] == 0:
-        print(f"Segment {i}: Normal completion")
+        print(f"Segment {i}: 軌道生成に成功しました")
     elif status[i] == -1:
-        print(f"Segment {i}: Warning (some target speeds not reached)")
+        print(f"Segment {i}: 警告、目標速度に達していません")
     elif status[i] == -2:
-        print(f"Segment {i}: Failure")
+        print(f"Segment {i}: 失敗、軌道生成に失敗しました")
 
 # 描画用のロボットの位置を取得
 for i in range(0, len(t), int(print_robot_dt / dt)):

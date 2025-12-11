@@ -21,12 +21,20 @@ void test_trajectory_planner1()
   std::vector<double> y_wp = {0.0, 1.0, 0.5, 2.5, 2.0};
   std::vector<double> theta_wp = {0.0, M_PI / 6, M_PI / 4, M_PI / 3, M_PI / 2};
   std::vector<double> v_trans_wp = {0.0, 0.5, 1.0, 0.5, 0.0};
-  double dt = 0.01;    // 制御周期
-  double v_max = 1.0;  // 最大速度
-  double a_max = 0.5;  // 最大加速度
-  double j_max = 1.0;  // 最大躍度
+  double dt = 0.01;                 // 制御周期
+  double v_max = 1.0;               // 最大速度
+  double a_max = 0.5;               // 最大加速度
+  double j_max = 1.0;               // 最大躍度
+  double omega_max = 5 * 2 * M_PI;  // 最大角速度
   TrajectoryPlanner planner;
-  planner.calc(x_wp, y_wp, theta_wp, v_trans_wp, dt, v_max, a_max, j_max);
+  std::vector<std::pair<int, double>> theta_wp_pair, v_trans_wp_pair;
+  for (int i = 0; i < (int)theta_wp.size(); i++) {
+    theta_wp_pair.push_back(std::make_pair((int)i, theta_wp[i]));
+  }
+  for (int i = 0; i < (int)v_trans_wp.size(); i++) {
+    v_trans_wp_pair.push_back(std::make_pair((int)i, v_trans_wp[i]));
+  }
+  planner.calc(x_wp, y_wp, theta_wp_pair, v_trans_wp_pair, dt, v_max, a_max, j_max, omega_max);
   FILE * fp_traj = fopen("test_trajectory_planner_output.csv", "w");
   FILE * fp_wp = fopen("test_trajectory_planner_waypoint_output.csv", "w");
   if (fp_traj == NULL || fp_wp == NULL) {
@@ -46,12 +54,20 @@ void test_trajectory_planner2()
   std::vector<double> y_wp = {0.0, 5.0, 0.5, 2.5, 7.0};
   std::vector<double> theta_wp = {0.0, M_PI / 6, M_PI / 4, M_PI / 3, M_PI / 2};
   std::vector<double> v_trans_wp = {0.0, 5.0, 5.0, 5.0, 0.0};
-  double dt = 0.01;     // 制御周期
-  double v_max = 5.0;   // 最大速度
-  double a_max = 5.0;   // 最大加速度
-  double j_max = 10.0;  // 最大躍度
+  double dt = 0.01;                 // 制御周期
+  double v_max = 5.0;               // 最大速度
+  double a_max = 5.0;               // 最大加速度
+  double j_max = 10.0;              // 最大躍度
+  double omega_max = 5 * 2 * M_PI;  // 最大角速度
   TrajectoryPlanner planner;
-  planner.calc(x_wp, y_wp, theta_wp, v_trans_wp, dt, v_max, a_max, j_max);
+  std::vector<std::pair<int, double>> theta_wp_pair, v_trans_wp_pair;
+  for (int i = 0; i < (int)theta_wp.size(); i++) {
+    theta_wp_pair.push_back(std::make_pair((int)i, theta_wp[i]));
+  }
+  for (int i = 0; i < (int)v_trans_wp.size(); i++) {
+    v_trans_wp_pair.push_back(std::make_pair((int)i, v_trans_wp[i]));
+  }
+  planner.calc(x_wp, y_wp, theta_wp_pair, v_trans_wp_pair, dt, v_max, a_max, j_max, omega_max);
   FILE * fp_traj = fopen("test_trajectory_planner_output.csv", "w");
   FILE * fp_wp = fopen("test_trajectory_planner_waypoint_output.csv", "w");
   if (fp_traj == NULL || fp_wp == NULL) {
@@ -90,12 +106,20 @@ void test_trajectory_planner3()
   theta_wp.push_back(0.0);
   v_trans_wp.push_back(0.0);
 
-  double dt = 0.01;      // 制御周期
-  double v_max = 5.0;    // 最大速度
-  double a_max = 100.0;  // 最大加速度
-  double j_max = 100.0;  // 最大躍度
+  double dt = 0.01;                 // 制御周期
+  double v_max = 5.0;               // 最大速度
+  double a_max = 100.0;             // 最大加速度
+  double j_max = 100.0;             // 最大躍度
+  double omega_max = 5 * 2 * M_PI;  // 最大角速度
   TrajectoryPlanner planner;
-  planner.calc(x_wp, y_wp, theta_wp, v_trans_wp, dt, v_max, a_max, j_max);
+  std::vector<std::pair<int, double>> theta_wp_pair, v_trans_wp_pair;
+  for (int i = 0; i < (int)theta_wp.size(); i++) {
+    theta_wp_pair.push_back(std::make_pair((int)i, theta_wp[i]));
+  }
+  for (int i = 0; i < (int)v_trans_wp.size(); i++) {
+    v_trans_wp_pair.push_back(std::make_pair((int)i, v_trans_wp[i]));
+  }
+  planner.calc(x_wp, y_wp, theta_wp_pair, v_trans_wp_pair, dt, v_max, a_max, j_max, omega_max);
   FILE * fp_traj = fopen("test_trajectory_planner_output.csv", "w");
   FILE * fp_wp = fopen("test_trajectory_planner_waypoint_output.csv", "w");
   if (fp_traj == NULL || fp_wp == NULL) {
