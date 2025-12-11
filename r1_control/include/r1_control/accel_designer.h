@@ -74,11 +74,14 @@ public:
    * @param dist      移動距離 [m]
    * @param x_start   始点位置 [m] (オプション)
    * @param t_start   始点時刻 [s] (オプション)
+   * 
+   * @return int 計算状態（0: 正常終了、-1: warning(一部目標速度になっていない), -2: 失敗）
    */
-  void reset(
+  int reset(
     const double j_max, const double a_max, const double v_sat, const double v_start,
     const double v_target, const double dist, const double x_start = 0, const double t_start = 0)
   {
+    int status = 0;
     /* 最大速度の仮置き */
     double v_max =
       dist > 0 ? std::max({v_start, v_sat, v_target}) : std::min({v_start, -v_sat, v_target});
@@ -87,7 +90,8 @@ public:
     const auto dist_min = AccelCurve::calcMinDistance(j_max, a_max, v_start, v_end);
     // logd << "dist_min: " << dist_min << std::endl;
     if (std::abs(dist) < std::abs(dist_min)) {
-      RCLCPP_INFO(logger(), "vs -> ve != vt");
+      status = -1;
+      RCLCPP_WARN(logger(), "vs -> ve != vt");
       /* 目標速度$v_t$に向かい，走行距離$d$で到達し得る終点速度$v_e$を算出 */
       v_end = AccelCurve::calcVelocityEnd(j_max, a_max, v_start, v_target, dist);
       v_max = v_end;  //< 走行距離の拘束を満たすため，飽和速度まで加速できない
@@ -122,16 +126,19 @@ public:
     if (std::abs(v_start - v_end) > e + std::abs(v_start - v_target)) {
       RCLCPP_ERROR(logger(), "Error: Velocity Target!");
       show_info = true;
+      status = -2;
     }
     /* 最大速度 */
     if (std::abs(v_max) > e + std::max({v_sat, std::abs(v_start), std::abs(v_end)})) {
       RCLCPP_ERROR(logger(), "Error: Velocity Saturation!");
       show_info = true;
+      status = -2;
     }
     /* タイムスタンプ */
     if (!(t0 <= t1 + e && t1 <= t2 + e && t2 <= t3 + e)) {
       RCLCPP_ERROR(logger(), "Error: Time Point Relationship!");
       show_info = true;
+      status = -2;
     }
     /* 入力情報の表示 */
     if (show_info) {
@@ -149,6 +156,8 @@ public:
       RCLCPP_ERROR(
         logger(), "Velocity:\tv0: %f\tv1: %f\tv2: %f\tv3: %f", v_start, v(t1), v(t2), v_end);
     }
+
+    return status;
   }
   /**
    * @brief 時刻 $t$ における躍度 $j$

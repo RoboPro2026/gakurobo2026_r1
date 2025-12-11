@@ -21,26 +21,27 @@ namespace py = pybind11;
 /**
    * @brief 軌道を計算する
    * 返り値は
-   * [0]: 時刻tの配列
-   * [1]: x座標の配列
-   * [2]: y座標の配列
-   * [3]: 角度thetaの配列
-   * [4]: 走行距離distanceの配列
-   * [5]: 並進速度v_transの配列
-   * [6]: 並進加速度a_transの配列
-   * [7]: 並進躍度j_transの配列
-   * [8]: 角速度omegaの配列
-   * [9]: 曲率curvatureの配列
+   * [0]: 各区間の計算状態の配列、大きさはwaypoint数-1（0: 正常終了、-1: warning(一部目標速度になっていない), -2: 失敗）
+   * [1]: 時刻tの配列
+   * [2]: x座標の配列
+   * [3]: y座標の配列
+   * [4]: 角度thetaの配列
+   * [5]: 走行距離distanceの配列
+   * [6]: 並進速度v_transの配列
+   * [7]: 並進加速度a_transの配列
+   * [8]: 並進躍度j_transの配列
+   * [9]: 角速度omegaの配列
+   * [10]: 曲率curvatureの配列
    * 
    * @return std::tuple<
-   * std::vector<double>, std::vector<double>, std::vector<double>, std::vector<double>,
+   * std::vector<int>, std::vector<double>, std::vector<double>, std::vector<double>, std::vector<double>,
    * std::vector<double>, std::vector<double>, std::vector<double>, std::vector<double>,
    * std::vector<double>, std::vector<double>> 
    */
 std::tuple<
+  std::vector<int>, std::vector<double>, std::vector<double>, std::vector<double>,
   std::vector<double>, std::vector<double>, std::vector<double>, std::vector<double>,
-  std::vector<double>, std::vector<double>, std::vector<double>, std::vector<double>,
-  std::vector<double>, std::vector<double>>
+  std::vector<double>, std::vector<double>, std::vector<double>>
 trajectory_planner_calculate_trajectory(
   const std::vector<double> & x_wp, const std::vector<double> & y_wp,
   const std::vector<double> & theta_wp, const std::vector<double> & v_trans_wp, double dt,

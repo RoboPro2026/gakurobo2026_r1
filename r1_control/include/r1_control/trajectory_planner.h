@@ -54,11 +54,15 @@ public:
    * @param v_max 最大速度（絶対値）
    * @param a_max 最大加速度（絶対値）
    * @param j_max 最大躍度（絶対値）
+   * 
+   * @return std::vector<int> 各区間の計算状態、大きさはwaypoint数-1（0: 正常終了、-1: warning(一部目標速度になっていない), -2: 失敗）
    */
-  void calc(
+  std::vector<int> calc(
     std::vector<double> x_wp, std::vector<double> y_wp, std::vector<double> theta_wp,
     std::vector<double> v_trans_wp, double dt, double v_max, double a_max, double j_max)
   {
+    // 計算の状態を初期化
+    status_.clear();
     // パラメータの設定
     x_wp_ = x_wp;
     y_wp_ = y_wp;
@@ -72,6 +76,9 @@ public:
     // 各クラスのオブジェクトを生成
     accel_designer_.resize(wp_num_ - 1);
     minimum_jerk_.resize(wp_num_ - 1);
+    // 各区間分の生成結果の返り値を格納する配列
+    status_.resize(wp_num_ - 1);
+
     // spline 2Dの計算
     spline2d_.calc(x_wp_, y_wp_);
     // 各区間の距離計算
@@ -105,8 +112,9 @@ public:
 
     for (int i = 0; i < wp_num_ - 1; i++) {
       // 各区間ごとの速度を計算
-      accel_designer_[i].reset(
+      int status = accel_designer_[i].reset(
         j_max_, a_max_, v_max_, v_trans_wp_[i], v_trans_wp_[i + 1], dist_segment_[i], xs, ts);
+      status_[i] = status;
 
       // 次の始点位置、始点時刻の更新
       xs += dist_segment_[i];
@@ -163,6 +171,7 @@ public:
       theta_[i] = minimum_jerk_[j].x(t_[i]);
       omega_[i] = minimum_jerk_[j].v(t_[i]);
     }
+    return status_;
   }
 
   /**
@@ -194,30 +203,31 @@ public:
   /**
    * @brief 軌道を取得する
    * 返り値は
-   * [0]: 時刻tの配列
-   * [1]: x座標の配列
-   * [2]: y座標の配列
-   * [3]: 角度thetaの配列
-   * [4]: 走行距離distanceの配列
-   * [5]: 並進速度v_transの配列
-   * [6]: 並進加速度a_transの配列
-   * [7]: 並進躍度j_transの配列
-   * [8]: 角速度omegaの配列
-   * [9]: 曲率curvatureの配列
+   * [0]: 各区間の計算状態の配列、大きさはwaypoint数-1（0: 正常終了、-1: warning(一部目標速度になっていない), -2: 失敗）
+   * [1]: 時刻tの配列
+   * [2]: x座標の配列
+   * [3]: y座標の配列
+   * [4]: 角度thetaの配列
+   * [5]: 走行距離distanceの配列
+   * [6]: 並進速度v_transの配列
+   * [7]: 並進加速度a_transの配列
+   * [8]: 並進躍度j_transの配列
+   * [9]: 角速度omegaの配列
+   * [10]: 曲率curvatureの配列
    * 
    * @return std::tuple<
-   * std::vector<double>, std::vector<double>, std::vector<double>, std::vector<double>,
+   * std::vector<int>, std::vector<double>, std::vector<double>, std::vector<double>, std::vector<double>,
    * std::vector<double>, std::vector<double>, std::vector<double>, std::vector<double>,
    * std::vector<double>, std::vector<double>> 
    */
   std::tuple<
+    std::vector<int>, std::vector<double>, std::vector<double>, std::vector<double>,
     std::vector<double>, std::vector<double>, std::vector<double>, std::vector<double>,
-    std::vector<double>, std::vector<double>, std::vector<double>, std::vector<double>,
-    std::vector<double>, std::vector<double>>
+    std::vector<double>, std::vector<double>, std::vector<double>>
   get_trajectory()
   {
     return std::make_tuple(
-      t_, x_, y_, theta_, distance_, v_trans_, a_trans_, j_trans_, omega_, curvature_);
+      status_, t_, x_, y_, theta_, distance_, v_trans_, a_trans_, j_trans_, omega_, curvature_);
   }
 
 private:
@@ -251,4 +261,6 @@ private:
   std::vector<double> omega_;
   std::vector<double> curvature_;
   int array_size_;
+  // 各区間の計算状態（0: 正常終了、-1: warning(一部目標速度になっていない), -2: 失敗）
+  std::vector<int> status_;
 };

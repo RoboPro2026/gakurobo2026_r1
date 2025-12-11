@@ -402,7 +402,7 @@ v_trans_wp = []
 
 
 def load_waypoint():
-    with open("waypoints.csv", "r") as f:
+    with open("/tmp/waypoints.csv", "r") as f:
         reader = csv.reader(f)
         for row in reader:
             x_wp.append(float(row[0]))
@@ -412,7 +412,7 @@ def load_waypoint():
 
 
 def save_waypoint():
-    with open("waypoints.csv", "w", newline="") as f:
+    with open("/tmp/waypoints.csv", "w", newline="") as f:
         writer = csv.writer(f)
         for i in range(len(x_wp)):
             writer.writerow([x_wp[i], y_wp[i], theta_wp[i], v_trans_wp[i]])
@@ -431,7 +431,7 @@ def plot_robot(ax, x, y, theta, width, height):
     )
 
     # 回転 → 平行移動
-    trans = Affine2D().rotate(theta).translate(x, y) + ax.transData  # <-- ラジアン！
+    trans = Affine2D().rotate(theta).translate(x, y) + ax.transData  # radian
 
     rect.set_transform(trans)
     ax.add_patch(rect)
@@ -450,7 +450,7 @@ def plot_robot(ax, x, y, theta, width, height):
     nose.set_transform(trans)
     ax.add_patch(nose)
 
-    print(f"Robot position: x={x:.2f}, y={y:.2f}, theta={theta:.2f}")
+    # print(f"Robot position: x={x:.2f}, y={y:.2f}, theta={theta:.2f}")
 
 
 # フィールドを描画、ゾーンに応じて範囲を変える
@@ -495,11 +495,20 @@ if zone == "red":
         theta_wp[i] = np.pi - theta_wp[i]
 
 # 軌道の計算
-t, x, y, theta, distance, v_trans, a_trans, j_trans, omega, curvature = (
+status, t, x, y, theta, distance, v_trans, a_trans, j_trans, omega, curvature = (
     trajectory_planner.calculate_trajectory(
         x_wp, y_wp, theta_wp, v_trans_wp, dt, v_max, a_max, j_max
     )
 )
+
+# ステータスの表示
+for i in range(len(status)):
+    if status[i] == 0:
+        print(f"Segment {i}: Normal completion")
+    elif status[i] == -1:
+        print(f"Segment {i}: Warning (some target speeds not reached)")
+    elif status[i] == -2:
+        print(f"Segment {i}: Failure")
 
 # 描画用のロボットの位置を取得
 for i in range(0, len(t), int(print_robot_dt / dt)):
@@ -548,5 +557,4 @@ plt.plot(t, omega, label="Angular Velocity (omega)", color="pink")
 plt.ylabel("Angular Velocity (omega)")
 plt.xlabel("Time (s)")
 plt.tight_layout()
-plt.show()
 plt.show()
