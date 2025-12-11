@@ -95,7 +95,7 @@ public:
       /* 目標速度$v_t$に向かい，走行距離$d$で到達し得る終点速度$v_e$を算出 */
       v_end = AccelCurve::calcVelocityEnd(j_max, a_max, v_start, v_target, dist);
       v_max = v_end;  //< 走行距離の拘束を満たすため，飽和速度まで加速できない
-      // RCLCPP_INFO(logger(), "ve: %f", v_end);
+      RCLCPP_WARN(logger(), "ve: %f, vt: %f", v_end, v_target);
     }
     /* 曲線を生成 */
     ac.reset(j_max, a_max, v_start, v_max);  //< 加速
