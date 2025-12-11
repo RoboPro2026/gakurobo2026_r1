@@ -237,7 +237,7 @@ public:
       curvature_[i] = spline2d_.get_curvature(t);
 
       // 最小躍度軌道を用いて、角度と角速度を計算
-      while (k < minimum_jerk_.size() - 1 && t_[i] > minimum_jerk_[k].get_tf()) {
+      while (k < (int)minimum_jerk_.size() - 1 && t_[i] > minimum_jerk_[k].get_tf()) {
         k++;
       }
       theta_[i] = minimum_jerk_[k].x(t_[i]);

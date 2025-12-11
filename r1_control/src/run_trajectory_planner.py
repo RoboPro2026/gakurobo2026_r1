@@ -12,7 +12,6 @@ fig, ax = plt.subplots(figsize=(12, 12))
 zone = "blue"  # "red" または "blue"
 assert zone in ["red", "blue"], "zone must be 'red' or 'blue'"
 
-
 # memo
 # 5.5,11.5,1.5707963267948966,0.0
 # 5.5,8.0,1.5707963267948966,5.0
@@ -500,12 +499,24 @@ robot_width = 0.8
 robot_height = 0.8
 
 print("Waypoints:")
+j = 0
+k = 0
 for i in range(len(x_wp)):
-    print(
-        f"  {i}: x={x_wp[i]:.3f}, y={y_wp[i]:.3f}, "
-        f"theta={theta_wp[i][1] if i < len(theta_wp) else 'N/A'}, "
-        f"v_trans={v_trans_wp[i][1] if i < len(v_trans_wp) else 'N/A'}"
-    )
+    s = ""
+    s += f"  {i}: x={x_wp[i]:.3f}, y={y_wp[i]:.3f}"
+    if i == theta_wp[j][0]:
+        s += f", theta={theta_wp[j][1]}"
+        j += 1
+    else:
+        s += ", theta=N/A"
+
+    if i == v_trans_wp[k][0]:
+        s += f", v_trans={v_trans_wp[k][1]}"
+        k += 1
+    else:
+        s += ", v_trans=N/A"
+
+    print(s)
 
 # save_waypoint()
 
