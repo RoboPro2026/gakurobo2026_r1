@@ -33,3 +33,11 @@ source install/setup.bash
 sudo ./src/gakurobo2026_common/can_setup.bash
 ros2 launch r1_bringup r1_bringup.launch.py
 ```
+
+## 軌道生成GUI
+CSVファイルのパスはいい感じに通してください
+```
+cd ~/ros2_ws
+colcon build --symlink-install r1_control
+python src/gakurobo2026_r1/src/trajectory_planner_gui.py
+```
