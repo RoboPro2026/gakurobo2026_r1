@@ -9,4 +9,4 @@ float32 abs_speed
 int32 abs_turn_cnt
 float32 vesc_voltage
 float32 vesc_current
-float32 vesc_erpm
+float32 vesc_speed # rad/s

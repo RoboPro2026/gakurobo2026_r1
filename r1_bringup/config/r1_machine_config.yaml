@@ -54,7 +54,8 @@ r1_linear_motion_node:
 
 r1_angle_motion_node:
   ros__parameters:
-    torque_threshold: 0.5 # Nm
+    # torque_threshold: 0.5 # Nm
+    torque_threshold: 0.2 # Nm
     origin_detect_threshold_time: 0.5 # 秒
     origin_detect_speed: -3.14 # rad/s
     angle_min: 0.0
