@@ -81,6 +81,7 @@ public:
       RCLCPP_ERROR(
         this->logger_, "Error: The number of waypoints must be 3 or more. x_wp.size(): %zu",
         x_wp.size());
+      status_.push_back(FAILURE);
       return status_;
     }
     // xとyのwaypointの数が一致していることを確認
@@ -90,6 +91,42 @@ public:
         "Error: The number of x waypoints and y waypoints must be the same. x_wp.size(): %zu, "
         "y_wp.size(): %zu",
         x_wp.size(), y_wp.size());
+      status_.push_back(FAILURE);
+      return status_;
+    }
+    // theta_wpのサイズが適切か確認
+    if (theta_wp.size() < 2) {
+      RCLCPP_ERROR(
+        this->logger_,
+        "Error: The number of theta waypoints must be 2 or more (start and end points). "
+        "theta_wp.size(): %zu",
+        theta_wp.size());
+      status_.push_back(FAILURE);
+      return status_;
+    }
+    // theta_wpの始点と終点が存在していることを確認
+    if (theta_wp[0].first != 0 || theta_wp[theta_wp.size() - 1].first != (int)x_wp.size() - 1) {
+      RCLCPP_ERROR(
+        this->logger_,
+        "Error: The first and last theta waypoints must be set at the start and end points.");
+      status_.push_back(FAILURE);
+      return status_;
+    }
+    // v_trans_wpのサイズが適切か確認
+    if (v_trans_wp.size() < 2) {
+      RCLCPP_ERROR(
+        this->logger_,
+        "Error: The number of velocity waypoints must be 2 or more (start and end points). ");
+      status_.push_back(FAILURE);
+      return status_;
+    }
+    // v_trans_wpの始点と終点が適切であることを確認
+    if (
+      v_trans_wp[0].first != 0 || v_trans_wp[v_trans_wp.size() - 1].first != (int)x_wp.size() - 1) {
+      RCLCPP_ERROR(
+        this->logger_,
+        "Error: The first and last velocity waypoints must be set at the start and end points.");
+      status_.push_back(FAILURE);
       return status_;
     }
 

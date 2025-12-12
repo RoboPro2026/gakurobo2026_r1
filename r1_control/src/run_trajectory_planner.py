@@ -64,13 +64,18 @@ class RunTrajectoryPlanner:
         self.omega = None
         self.curvature = None
 
-    def run(self, reload_waypoints: bool = True) -> None:
-        """一連の処理を実行して軌道計算まで行う"""
+    def run(self, reload_waypoints: bool = True) -> bool:
+        """一連の処理を実行して軌道計算まで行う
+
+        戻り値:
+            True: 軌道生成に成功（失敗ステータスなし）
+            False: 軌道生成に失敗（少なくとも1区間でFAILURE）
+        """
         if reload_waypoints:
             self.load_waypoint()
             self._apply_zone_mirror()
         self._print_waypoints()
-        self._calculate_trajectory()
+        return self._calculate_trajectory()
 
     def plot(self) -> None:
         """計算済みの軌道をプロットする"""
@@ -633,10 +638,9 @@ class RunTrajectoryPlanner:
 
         self.fig.canvas.mpl_connect("button_press_event", on_click)
 
-    def _calculate_trajectory(self) -> None:
-        """軌道を計算"""
+    def _calculate_trajectory(self) -> bool:
+        """軌道を計算し、成功/失敗を返す"""
 
-        # C++の関数を呼び出して、計算実行
         (
             self.status,
             self.t,
@@ -661,12 +665,9 @@ class RunTrajectoryPlanner:
             self.omega_max,
         )
 
-        distance_total = self.distance[-1]
-        time_total = self.t[-1]
-        print(
-            f"軌道全体の距離: {distance_total:.3f} [m], "
-            f"軌道全体の時間: {time_total:.3f} [s]"
-        )
+        # C++側の FAILURE(-3) を検出したら以降の処理を止める
+        has_failure = any(st == -3 for st in self.status)
+
         print("各区間の軌道生成ステータス:")
         for i, st in enumerate(self.status):
             if st == 0:
@@ -674,7 +675,25 @@ class RunTrajectoryPlanner:
             elif st == -1:
                 print(f"Segment {i}: 警告、目標速度に達していません")
             elif st == -2:
+                print(f"Segment {i}: 警告、最大角速度を超えています")
+            elif st == -3:
                 print(f"Segment {i}: 失敗、軌道生成に失敗しました")
+
+        if has_failure:
+            print("軌道生成に失敗した区間があるため、以降の処理を中止します。")
+            # 失敗時は距離・時間などを参照しないように False を返す
+            return False
+
+        # 正常に生成できている場合のみ、距離・時間を計算
+        if self.distance and self.t:
+            distance_total = self.distance[-1]
+            time_total = self.t[-1]
+            print(
+                f"軌道全体の距離: {distance_total:.3f} [m], "
+                f"軌道全体の時間: {time_total:.3f} [s]"
+            )
+
+        return True
 
     def _plot_robot(
         self, x: float, y: float, theta: float, width: float, height: float
@@ -824,5 +843,5 @@ if __name__ == "__main__":
         fig=None,
         ax=None,
     )
-    runner.run()
-    runner.plot()
+    if runner.run():
+        runner.plot()

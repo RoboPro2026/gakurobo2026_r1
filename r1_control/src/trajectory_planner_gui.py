@@ -216,7 +216,13 @@ class MainWindow(QMainWindow):
         self.update_runner_prefixes_from_edits()
         # テーブル内容を runner に反映してから軌道計算
         self.update_runner_from_table()
-        self.runner.run(reload_waypoints=False)
+        ok = self.runner.run(reload_waypoints=False)
+
+        # 失敗した場合はグラフ描画・距離/時間表示を行わない
+        if not ok:
+            self.label_distance.setText("距離: N/A")
+            self.label_time.setText("時間: N/A")
+            return
 
         # Figure 全体をクリアしてから描画を更新
         self.fig.clear()
