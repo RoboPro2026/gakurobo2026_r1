@@ -47,12 +47,18 @@ class MainWindow(QMainWindow):
         info_layout = QHBoxLayout()
         self.label_distance = QLabel("距離: N/A")
         self.label_time = QLabel("時間: N/A")
-        self.button_detail = QPushButton("詳細グラフ表示")
+        self.button_vel_acc_jerk = QPushButton("速度/加速度/躍度")
+        self.button_vel_acc_jerk.clicked.connect(self.on_vel_acc_jerk_clicked)
+        self.button_curvature = QPushButton("曲率")
+        self.button_curvature.clicked.connect(self.on_curvature_clicked)
+        self.button_detail = QPushButton("概要グラフ")
         self.button_detail.clicked.connect(self.on_detail_clicked)
 
         info_layout.addWidget(self.label_distance)
         info_layout.addWidget(self.label_time)
         info_layout.addStretch()
+        info_layout.addWidget(self.button_vel_acc_jerk)
+        info_layout.addWidget(self.button_curvature)
         info_layout.addWidget(self.button_detail)
 
         # ズーム・移動用スクロールバー（スライダー）
@@ -260,6 +266,18 @@ class MainWindow(QMainWindow):
         # 保存後は現在の runner の値でパラメータを表示する
         self.update_param_table()
         self.param_table.show()
+
+    def on_vel_acc_jerk_clicked(self) -> None:
+        """速度・加速度・躍度グラフ表示ボタン"""
+        if self.runner.t is None or self.runner.v_trans is None:
+            return
+        self.runner.plot_vel_acc_jerk()
+
+    def on_curvature_clicked(self) -> None:
+        """曲率グラフ表示ボタン"""
+        if self.runner.t is None or self.runner.curvature is None:
+            return
+        self.runner.plot_curvature()
 
     def on_detail_clicked(self) -> None:
         """詳細グラフ表示ボタン: 速度・加速度などのグラフを表示"""

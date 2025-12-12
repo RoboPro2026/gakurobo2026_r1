@@ -50,31 +50,38 @@ plt.ylabel("Position (y)")
 plt.legend()
 plt.grid(True, linestyle="--", alpha=0.3)
 
-plt.figure(figsize=(10, 12))
-plt.subplot(6, 1, 1)
-plt.plot(t, x, label="Position (x)")
-plt.ylabel("Position (x)")
-# plt.grid()
-plt.subplot(6, 1, 2)
-plt.plot(t, y, label="Position (y)", color="orange")
-plt.ylabel("Position (y)")
-# plt.grid()
-plt.subplot(6, 1, 3)
-plt.plot(t, theta, label="Orientation (theta)", color="green")
-plt.ylabel("Orientation (theta)")
-# plt.grid()
-plt.subplot(6, 1, 4)
-plt.plot(t, distance, label="Distance", color="purple")
-plt.ylabel("Distance")
-# plt.grid()
-plt.subplot(6, 1, 5)
-plt.plot(t, v_trans, label="Translational Velocity (v_trans)", color="brown")
-plt.ylabel("Translational Velocity (v_trans)")
-# plt.grid()
-plt.subplot(6, 1, 6)
-plt.plot(t, omega, label="Angular Velocity (omega)", color="pink")
-plt.ylabel("Angular Velocity (omega)")
-plt.xlabel("Time (s)")
-# plt.grid()
-plt.tight_layout()
+fig, axes = plt.subplots(9, 1, sharex=True, figsize=(10, 16))
+
+axes[0].plot(t, x, label="Position (x)")
+axes[0].set_ylabel("x [m]")
+
+axes[1].plot(t, y, label="Position (y)", color="orange")
+axes[1].set_ylabel("y [m]")
+
+axes[2].plot(t, theta, label="Orientation (theta)", color="green")
+axes[2].set_ylabel("theta [rad]")
+
+axes[3].plot(t, distance, label="Distance", color="purple")
+axes[3].set_ylabel("dist [m]")
+
+axes[4].plot(t, v_trans, label="Translational Velocity (v_trans)", color="brown")
+axes[4].set_ylabel("v [m/s]")
+
+axes[5].plot(t, a_trans, label="Translational Acceleration (a_trans)", color="red")
+axes[5].set_ylabel("a [m/s^2]")
+
+axes[6].plot(t, j_trans, label="Translational Jerk (j_trans)", color="gray")
+axes[6].set_ylabel("j [m/s^3]")
+
+axes[7].plot(t, omega, label="Angular Velocity (omega)", color="pink")
+axes[7].set_ylabel("omega [rad/s]")
+
+axes[8].plot(t, curvature, label="Curvature", color="black")
+axes[8].set_ylabel("curv [1/m]")
+axes[8].set_xlabel("Time (s)")
+
+for ax in axes[:-1]:
+    ax.label_outer()  # 上8つは x ラベルを隠して間を詰める
+
+fig.tight_layout(h_pad=0.2)
 plt.show()

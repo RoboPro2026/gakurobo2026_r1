@@ -768,39 +768,72 @@ class RunTrajectoryPlanner:
 
     def _plot_detailed_time_series(self) -> None:
         """位置や速度などの時系列グラフを別 Figure に描画"""
-        fig, _ = plt.subplots(figsize=(10, 12), nrows=6, ncols=1, sharex=True)
+        fig, axes = plt.subplots(figsize=(10, 12), nrows=6, ncols=1, sharex=True)
 
-        plt.subplot(6, 1, 1)
-        plt.plot(self.t, self.x, label="Position (x)")
-        plt.ylabel("Position (x)")
+        axes[0].plot(self.t, self.x, label="Position (x)")
+        axes[0].set_ylabel("x [m]")
 
-        plt.subplot(6, 1, 2)
-        plt.plot(self.t, self.y, label="Position (y)", color="orange")
-        plt.ylabel("Position (y)")
+        axes[1].plot(self.t, self.y, label="Position (y)", color="orange")
+        axes[1].set_ylabel("y [m]")
 
-        plt.subplot(6, 1, 3)
-        plt.plot(self.t, self.theta, label="Orientation (theta)", color="green")
-        plt.ylabel("Orientation (theta)")
+        axes[2].plot(self.t, self.theta, label="Orientation (theta)", color="green")
+        axes[2].set_ylabel("theta [rad]")
 
-        plt.subplot(6, 1, 4)
-        plt.plot(self.t, self.distance, label="Distance", color="purple")
-        plt.ylabel("Distance")
+        axes[3].plot(self.t, self.distance, label="Distance", color="purple")
+        axes[3].set_ylabel("dist [m]")
 
-        plt.subplot(6, 1, 5)
-        plt.plot(
+        axes[4].plot(
             self.t,
             self.v_trans,
             label="Translational Velocity (v_trans)",
             color="brown",
         )
-        plt.ylabel("Translational Velocity (v_trans)")
+        axes[4].set_ylabel("v [m/s]")
 
-        plt.subplot(6, 1, 6)
-        plt.plot(self.t, self.omega, label="Angular Velocity (omega)", color="pink")
-        plt.ylabel("Angular Velocity (omega)")
-        plt.xlabel("Time (s)")
+        axes[5].plot(self.t, self.omega, label="Angular Velocity (omega)", color="pink")
+        axes[5].set_ylabel("omega [rad/s]")
+        axes[5].set_xlabel("Time (s)")
+
+        for ax in axes[:-1]:
+            ax.label_outer()
+
+        fig.tight_layout(h_pad=0.2)
+        plt.show()
+
+    def plot_vel_acc_jerk(self) -> None:
+        """速度・加速度・躍度をまとめて描画"""
+        if self.t is None or self.v_trans is None or self.a_trans is None or self.j_trans is None:
+            return
+
+        fig, axes = plt.subplots(3, 1, sharex=True, figsize=(10, 8))
+
+        axes[0].plot(self.t, self.v_trans, color="brown")
+        axes[0].set_ylabel("v [m/s]")
+
+        axes[1].plot(self.t, self.a_trans, color="red")
+        axes[1].set_ylabel("a [m/s^2]")
+
+        axes[2].plot(self.t, self.j_trans, color="gray")
+        axes[2].set_ylabel("j [m/s^3]")
+        axes[2].set_xlabel("Time (s)")
+
+        for ax in axes[:-1]:
+            ax.label_outer()
 
         fig.tight_layout()
+        plt.show()
+
+    def plot_curvature(self) -> None:
+        """曲率を描画"""
+        if self.t is None or self.curvature is None:
+            return
+
+        plt.figure(figsize=(10, 4))
+        plt.plot(self.t, self.curvature, color="black")
+        plt.ylabel("curv [1/m]")
+        plt.xlabel("Time (s)")
+        plt.grid(True, linestyle="--", alpha=0.3)
+        plt.tight_layout()
         plt.show()
 
 
