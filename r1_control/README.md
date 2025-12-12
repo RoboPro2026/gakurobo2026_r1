@@ -9,3 +9,7 @@
 ## 実装をするときに参考にしたもの
 - https://github.com/surpace0924/simple_trajectory_generator_gui
 - https://www.kerislab.jp/posts/2018-04-29-accel-designer4/
+
+## ドキュメント
+
+- [trajectory_planner](./docs/trajectory_planner.md)
