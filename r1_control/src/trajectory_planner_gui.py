@@ -3,16 +3,16 @@ import sys
 from matplotlib.backends.backend_qtagg import FigureCanvasQTAgg
 from matplotlib.figure import Figure
 from PyQt6.QtWidgets import QApplication, QMainWindow, QVBoxLayout, QWidget
-from run_trajectory_planner import get_fig
 
+from run_trajectory_planner import get_fig
 
 class MplCanvas(FigureCanvasQTAgg):
     """matplotlib Figure を PyQt6 に埋め込むキャンバスクラス"""
 
     def __init__(self, parent=None):
-        # fig = Figure(figsize=(5, 4), dpi=100)
-        # self.ax = fig.add_subplot(111)
-        super().__init__(get_fig())
+        fig = Figure(figsize=(5, 4), dpi=100)
+        self.ax = fig.add_subplot(111)
+        super().__init__(fig)
 
 
 class MainWindow(QMainWindow):

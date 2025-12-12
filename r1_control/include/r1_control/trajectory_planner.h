@@ -206,7 +206,9 @@ public:
       }
 
       // パラメータを設定
-      minimum_jerk_[i].setParam(theta_wp_[i].second, theta_wp_[i + 1].second, t_start, t_end);
+      // 角度が-piからpiへの移り変わりを考慮するのが面倒なので、始点は0、終点は差分で設定する
+      double theta_diff = angle_diff(theta_wp_[i + 1].second, theta_wp_[i].second);
+      minimum_jerk_[i].setParam(0, theta_diff, t_start, t_end);
     }
 
     // 区間ごとのインデックス用
@@ -240,7 +242,10 @@ public:
       while (k < (int)minimum_jerk_.size() - 1 && t_[i] > minimum_jerk_[k].get_tf()) {
         k++;
       }
-      theta_[i] = minimum_jerk_[k].x(t_[i]);
+      // 角度を計算、minimum_jerkは始点を0としているので、waypointの角度を足す
+      double theta = minimum_jerk_[k].x(t_[i]) + theta_wp_[k].second;
+      // 角度を-piからpiに正規化
+      theta_[i] = angle_normalize(theta);
       omega_[i] = minimum_jerk_[k].v(t_[i]);
 
       // 最大角速度を超えている場合はwarningを出す
