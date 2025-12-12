@@ -14,6 +14,7 @@ from PyQt6.QtWidgets import (
     QSlider,
     QTableWidget,
     QTableWidgetItem,
+    QTextEdit,
     QVBoxLayout,
     QWidget,
 )
@@ -135,6 +136,11 @@ class MainWindow(QMainWindow):
         self.input_prefix_edit.setPlaceholderText("入力ファイルベース（例: /tmp/trajectory）")
         self.output_prefix_edit.setPlaceholderText("出力ファイルベース（例: /tmp/trajectory）")
 
+        # ログ表示エリア
+        self.log_view = QTextEdit()
+        self.log_view.setReadOnly(True)
+        self.log_view.setPlaceholderText("ログ出力...")
+
         # RunTrajectoryPlanner インスタンス
         self.runner = RunTrajectoryPlanner(
             zone="blue",
@@ -147,6 +153,7 @@ class MainWindow(QMainWindow):
             omega_max=None,
             fig=self.fig,
             ax=self.ax,
+             log_func=self.append_log,
         )
         # 初期状態ではパラメータは未設定として非表示にしておく
         self.param_table.hide()
@@ -185,6 +192,7 @@ class MainWindow(QMainWindow):
         layout.addLayout(pan_layout)
         layout.addWidget(self.canvas)
         layout.addLayout(tables_layout)
+        layout.addWidget(self.log_view)
         self.setCentralWidget(widget)
 
         self.setWindowTitle("Trajectory Planner Viewer")
@@ -222,6 +230,8 @@ class MainWindow(QMainWindow):
         self.update_runner_prefixes_from_edits()
         # テーブル内容を runner に反映してから軌道計算
         self.update_runner_from_table()
+        # パラメータテーブルの内容も反映
+        self.update_runner_params_from_table()
         ok = self.runner.run(reload_waypoints=False)
 
         # 失敗した場合はグラフ描画・距離/時間表示を行わない
@@ -266,6 +276,10 @@ class MainWindow(QMainWindow):
         # 保存後は現在の runner の値でパラメータを表示する
         self.update_param_table()
         self.param_table.show()
+
+    def append_log(self, msg: str) -> None:
+        """RunTrajectoryPlanner からのログを GUI に表示"""
+        self.log_view.append(msg)
 
     def on_vel_acc_jerk_clicked(self) -> None:
         """速度・加速度・躍度グラフ表示ボタン"""
@@ -457,8 +471,15 @@ class MainWindow(QMainWindow):
         else:
             insert_index = min(selected_row + 1, len(self.runner.x_wp))
 
-        x_val = float(event.xdata)
-        y_val = float(event.ydata)
+        # フィールド座標系から基準座標系への変換
+        # 赤ゾーンのときは、描画時に x を反転しているので、追加時には逆変換して保存する
+        x_field = float(event.xdata)
+        y_field = float(event.ydata)
+        if self.runner.zone == "red":
+            x_val = -x_field
+        else:
+            x_val = x_field
+        y_val = y_field
 
         # x, y を指定位置に挿入（theta, v_trans は空のまま）
         self.runner.x_wp.insert(insert_index, x_val)
@@ -652,7 +673,8 @@ class MainWindow(QMainWindow):
             self.ax.set_ylim(cur_ylim)
             self.ax.set_aspect("equal", adjustable="box")
 
-        x_wp, y_wp, *_ = self.runner.get_waypoints()
+        # ゾーンに応じて変換した waypoint 座標で描画
+        x_wp, y_wp, *_ = self.runner._get_zone_adjusted_waypoints()
         if x_wp and y_wp:
             selected_row = self.table.currentRow()
 

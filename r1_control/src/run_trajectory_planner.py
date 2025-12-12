@@ -1,6 +1,7 @@
 import csv
 import os
 from datetime import datetime
+from typing import Callable
 
 import matplotlib.patches as patches
 import matplotlib.pyplot as plt
@@ -25,6 +26,7 @@ class RunTrajectoryPlanner:
         fig: plt.Figure | None,
         ax: plt.Axes | None,
         robot_dt: float = 0.2,
+        log_func: Callable[[str], None] | None = None,
     ) -> None:
         assert zone in ["red", "blue"], "zone must be 'red' or 'blue'"
         self.zone = zone
@@ -38,6 +40,8 @@ class RunTrajectoryPlanner:
         self.j_max = j_max
         self.omega_max = 5 * (2 * np.pi) if omega_max is None else omega_max
         self.robot_dt = robot_dt
+        # GUI から渡されたログハンドラ（None の場合はコンソールのみ）
+        self.log_func: Callable[[str], None] | None = log_func
 
         # matplotlib
         if fig is None or ax is None:
@@ -64,6 +68,14 @@ class RunTrajectoryPlanner:
         self.omega = None
         self.curvature = None
 
+    def _log(self, msg: str) -> None:
+        """ログ出力用ヘルパー（コンソール + GUI へ）"""
+        # 常にコマンドラインへ出力
+        print(msg)
+        # GUI 側のログビューにも出力（設定されていれば）
+        if self.log_func is not None:
+            self.log_func(msg)
+
     def run(self, reload_waypoints: bool = True) -> bool:
         """一連の処理を実行して軌道計算まで行う
 
@@ -73,7 +85,6 @@ class RunTrajectoryPlanner:
         """
         if reload_waypoints:
             self.load_waypoint()
-            self._apply_zone_mirror()
         self._print_waypoints()
         return self._calculate_trajectory()
 
@@ -256,16 +267,21 @@ class RunTrajectoryPlanner:
         return self.v_trans_wp
 
     # ========= internal helpers =========
-    def _apply_zone_mirror(self) -> None:
-        """赤ゾーンのとき Y 軸対称に変換"""
-        if self.zone != "red":
-            return
+    def _get_zone_adjusted_waypoints(
+        self,
+    ) -> tuple[list[float], list[float], list[tuple[int, float]], list[tuple[int, float]]]:
+        """ゾーンに応じて変換した waypoint を返す（元データは変更しない）"""
+        x_adj = list(self.x_wp)
+        theta_adj = list(self.theta_wp)
 
-        self.x_wp = [-x for x in self.x_wp]
-        self.theta_wp = [(i, np.pi - th) for i, th in self.theta_wp]
+        if self.zone == "red":
+            x_adj = [-x for x in self.x_wp]
+            theta_adj = [(i, np.pi - th) for i, th in self.theta_wp]
+
+        return x_adj, self.y_wp, theta_adj, self.v_trans_wp
 
     def _print_waypoints(self) -> None:
-        print("Waypoints:")
+        self._log("Waypoints:")
         j = 0
         k = 0
         for i in range(len(self.x_wp)):
@@ -283,7 +299,7 @@ class RunTrajectoryPlanner:
             else:
                 s += ", v_trans=N/A"
 
-            print(s)
+            self._log(s)
 
     def _plot_object_with_zone(self, field_object: patches.Patch) -> None:
         """オブジェクトをゾーンに応じてプロット"""
@@ -641,6 +657,9 @@ class RunTrajectoryPlanner:
     def _calculate_trajectory(self) -> bool:
         """軌道を計算し、成功/失敗を返す"""
 
+        # ゾーンに応じた waypoint で軌道計算
+        x_calc, y_calc, theta_calc, v_trans_calc = self._get_zone_adjusted_waypoints()
+
         (
             self.status,
             self.t,
@@ -654,10 +673,10 @@ class RunTrajectoryPlanner:
             self.omega,
             self.curvature,
         ) = trajectory_planner.calculate_trajectory(
-            self.x_wp,
-            self.y_wp,
-            self.theta_wp,
-            self.v_trans_wp,
+            x_calc,
+            y_calc,
+            theta_calc,
+            v_trans_calc,
             self.dt,
             self.v_max,
             self.a_max,
@@ -668,19 +687,19 @@ class RunTrajectoryPlanner:
         # C++側の FAILURE(-3) を検出したら以降の処理を止める
         has_failure = any(st == -3 for st in self.status)
 
-        print("各区間の軌道生成ステータス:")
+        self._log("各区間の軌道生成ステータス:")
         for i, st in enumerate(self.status):
             if st == 0:
-                print(f"Segment {i}: 軌道生成に成功しました")
+                self._log(f"Segment {i}: 軌道生成に成功しました")
             elif st == -1:
-                print(f"Segment {i}: 警告、目標速度に達していません")
+                self._log(f"Segment {i}: 警告、目標速度に達していません")
             elif st == -2:
-                print(f"Segment {i}: 警告、最大角速度を超えています")
+                self._log(f"Segment {i}: 警告、最大角速度を超えています")
             elif st == -3:
-                print(f"Segment {i}: 失敗、軌道生成に失敗しました")
+                self._log(f"Segment {i}: 失敗、軌道生成に失敗しました")
 
         if has_failure:
-            print("軌道生成に失敗した区間があるため、以降の処理を中止します。")
+            self._log("軌道生成に失敗した区間があるため、以降の処理を中止します。")
             # 失敗時は距離・時間などを参照しないように False を返す
             return False
 
@@ -688,7 +707,7 @@ class RunTrajectoryPlanner:
         if self.distance and self.t:
             distance_total = self.distance[-1]
             time_total = self.t[-1]
-            print(
+            self._log(
                 f"軌道全体の距離: {distance_total:.3f} [m], "
                 f"軌道全体の時間: {time_total:.3f} [s]"
             )
@@ -751,9 +770,11 @@ class RunTrajectoryPlanner:
         scatter = self.ax.scatter(
             self.x, self.y, c=self.v_trans, cmap="viridis", s=15, label="Trajectory"
         )
+        # ゾーンに応じて変換した waypoint を描画
+        x_wp_plot, y_wp_plot, _, _ = self._get_zone_adjusted_waypoints()
         self.ax.scatter(
-            self.x_wp,
-            self.y_wp,
+            x_wp_plot,
+            y_wp_plot,
             color="red",
             marker="x",
             s=40,
@@ -853,6 +874,7 @@ def get_fig(
         omega_max=None,
         fig=None,
         ax=None,
+        log_func=None,
     )
     runner.run()
     runner._plot_field()
@@ -875,6 +897,7 @@ if __name__ == "__main__":
         omega_max=None,
         fig=None,
         ax=None,
+        log_func=None,
     )
     if runner.run():
         runner.plot()
