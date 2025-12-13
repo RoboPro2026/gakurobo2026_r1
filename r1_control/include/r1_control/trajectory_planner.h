@@ -54,7 +54,7 @@ public:
    * 
    * @param x_wp X座標のwaypoint配列(必須)
    * @param y_wp Y座標のwaypoint配列(必須)
-   * @param theta_wp 角度のwaypoint配列(始点と終点は必須、中間点は任意だが、theta_wpを設定するときはv_trans_wpも設定すること)
+   * @param theta_wp 角度のwaypoint配列(始点と終点は必須、中間点は任意)
    * @param v_trans_wp 並進速度のwaypoint配列(始点と終点は必須、中間点は任意)
    * @param dt 制御周期
    * @param v_max 最大速度（絶対値）
@@ -94,6 +94,23 @@ public:
       status_.push_back(FAILURE);
       return status_;
     }
+    // v_trans_wpのサイズが適切か確認
+    if (v_trans_wp.size() < 2) {
+      RCLCPP_ERROR(
+        this->logger_,
+        "Error: The number of velocity waypoints must be 2 or more (start and end points). ");
+      status_.push_back(FAILURE);
+      return status_;
+    }
+    // v_trans_wpの始点と終点が適切であることを確認
+    if (
+      v_trans_wp[0].first != 0 || v_trans_wp[v_trans_wp.size() - 1].first != (int)x_wp.size() - 1) {
+      RCLCPP_ERROR(
+        this->logger_,
+        "Error: The first and last velocity waypoints must be set at the start and end points.");
+      status_.push_back(FAILURE);
+      return status_;
+    }
     // theta_wpのサイズが適切か確認
     if (theta_wp.size() < 2) {
       RCLCPP_ERROR(
@@ -109,23 +126,6 @@ public:
       RCLCPP_ERROR(
         this->logger_,
         "Error: The first and last theta waypoints must be set at the start and end points.");
-      status_.push_back(FAILURE);
-      return status_;
-    }
-    // v_trans_wpのサイズが適切か確認
-    if (v_trans_wp.size() < 2) {
-      RCLCPP_ERROR(
-        this->logger_,
-        "Error: The number of velocity waypoints must be 2 or more (start and end points). ");
-      status_.push_back(FAILURE);
-      return status_;
-    }
-    // v_trans_wpの始点と終点が適切であることを確認
-    if (
-      v_trans_wp[0].first != 0 || v_trans_wp[v_trans_wp.size() - 1].first != (int)x_wp.size() - 1) {
-      RCLCPP_ERROR(
-        this->logger_,
-        "Error: The first and last velocity waypoints must be set at the start and end points.");
       status_.push_back(FAILURE);
       return status_;
     }
@@ -157,14 +157,19 @@ public:
     // 各waypointに対応する媒介変数tを取得
     auto st = spline2d_.get_t();
     // 速度の拘束条件の数-1個分にresizeする
-    dist_segment_.resize((v_trans_wp_num_ - 1));
+    v_segment_dist_.resize((v_trans_wp_num_ - 1));
+    // 角度の拘束条件の数-1個分にresizeする
+    theta_segment_dist_.resize((theta_wp_num_ - 1));
     // 初期化
     dist_all_ = 0.0;
-    for (int i = 0; i < (int)dist_segment_.size(); i++) {
-      dist_segment_[i] = 0.0;
+    for (int i = 0; i < (int)v_segment_dist_.size(); i++) {
+      v_segment_dist_[i] = 0.0;
+    }
+    for (int i = 0; i < (int)theta_segment_dist_.size(); i++) {
+      theta_segment_dist_[i] = 0.0;
     }
 
-    int k = 0;
+    int k = 0, l = 0;
     for (int i = 1; i < (int)st.size(); i++) {
       for (int j = 1; j <= segment_num_; j++) {
         // 媒介変数をsegment_num_個だけ、分割して計算
@@ -176,27 +181,33 @@ public:
         // 微小距離を計算
         double delta_d = hypot(ex - sx, ey - sy);
         // 微小距離を積分
-        dist_segment_[k] += delta_d;
+        v_segment_dist_[k] += delta_d;
+        theta_segment_dist_[l] += delta_d;
         dist_all_ += delta_d;
       }
-      // dist_segment_のインデックスkを更新
-      if (k + 1 < (int)dist_segment_.size() && i == v_trans_wp_[k + 1].first) {
+      // v_segment_dist_のインデックスkを更新
+      if (k + 1 < (int)v_segment_dist_.size() && i == v_trans_wp_[k + 1].first) {
         k++;
+      }
+      // theta_segment_dist_のインデックスlを更新
+      if (l + 1 < (int)theta_segment_dist_.size() && i == theta_wp_[l + 1].first) {
+        l++;
       }
     }
 
+    // 始点位置と始点時刻
     double xs = 0.0;
     double ts = 0.0;
 
     for (int i = 0; i < v_trans_wp_num_ - 1; i++) {
       // 各区間ごとの速度を計算
       int status = accel_designer_[i].reset(
-        j_max_, a_max_, v_max_, v_trans_wp_[i].second, v_trans_wp_[i + 1].second, dist_segment_[i],
-        xs, ts);
+        j_max_, a_max_, v_max_, v_trans_wp_[i].second, v_trans_wp_[i + 1].second,
+        v_segment_dist_[i], xs, ts);
       status_[i] = status;
 
       // 次の始点位置、始点時刻の更新
-      xs += dist_segment_[i];
+      xs += v_segment_dist_[i];
       ts = accel_designer_[i].t_end();
     }
 
@@ -215,48 +226,17 @@ public:
     omega_.resize(array_size_);
     curvature_.resize(array_size_);
 
-    // 最小躍度軌道のパラメータを設定
-    for (int i = 0; i < theta_wp_num_ - 1; i++) {
-      int wp_idx_start = theta_wp_[i].first;
-      int wp_idx_end = theta_wp_[i + 1].first;
-
-      double t_start = 0.0;
-      double t_end = 0.0;
-
-      // 始点(wp_idx_start)に対応する時刻を探す
-      // v_trans_wp_からwp_idx_startと一致するインデックスを探し、その区間の開始時刻を取得
-      for (int k = 0; k < v_trans_wp_num_ - 1; k++) {
-        if (v_trans_wp_[k].first == wp_idx_start) {
-          t_start = accel_designer_[k].t_0();
-          break;
-        }
-      }
-
-      // 終点(wp_idx_end)に対応する時刻を探す
-      // v_trans_wp_ から wp_idx_end と一致するインデックスを探す
-      // その点は区間の「終わり」なので、一つ前の区間(k-1)の終了時刻を取得する
-      for (int k = 1; k < v_trans_wp_num_; k++) {
-        if (v_trans_wp_[k].first == wp_idx_end) {
-          t_end = accel_designer_[k - 1].t_end();
-          break;
-        }
-      }
-
-      // パラメータを設定
-      // 角度が-piからpiへの移り変わりを考慮するのが面倒なので、始点は0、終点は差分で設定する
-      double theta_diff = angle_diff(theta_wp_[i + 1].second, theta_wp_[i].second);
-      minimum_jerk_[i].setParam(0, theta_diff, t_start, t_end);
-    }
-
     // 区間ごとのインデックス用
     int j = 0;
     k = 0;
+    ts = 0.0;
+    double theta_dist = theta_segment_dist_[0];
 
     for (int i = 0; i < array_size_; i++) {
       // 時刻を計算
       t_[i] = dt_ * (double)i;
       // 区間ごとのインデックス更新
-      while (j < (int)accel_designer_.size() - 1 && t_[i] > accel_designer_[j].t_end()) {
+      if (j < (int)accel_designer_.size() - 1 && t_[i] > accel_designer_[j].t_end()) {
         j++;
       }
       distance_[i] = accel_designer_[j].x(t_[i]);
@@ -275,8 +255,35 @@ public:
       // 曲率を取得
       curvature_[i] = spline2d_.get_curvature(t);
 
-      // 最小躍度軌道を用いて、角度と角速度を計算
-      while (k < (int)minimum_jerk_.size() - 1 && t_[i] > minimum_jerk_[k].get_tf()) {
+      // thetaの区間が更新されたかを確認。ただし、最後の区間の判定は別途パラメータを指定するため行わない
+      bool is_theta_segment_update = false;
+      if (k < (int)minimum_jerk_.size() - 1 && distance_[i] > theta_dist) {
+        // 次の区間の距離を加算
+        theta_dist += theta_segment_dist_[k + 1];
+        // インデックスを更新
+        k++;
+        is_theta_segment_update = true;
+      }
+
+      if (is_theta_segment_update) {
+        // 区間が更新された場合はパラメータを設定
+        // 角度が-piからpiへの移り変わりを考慮するのが面倒なので、始点は0、終点は差分で設定する
+        double theta_diff = angle_diff(theta_wp_[k].second, theta_wp_[k - 1].second);
+        minimum_jerk_[k - 1].setParam(0, theta_diff, ts, t_[i]);
+        // 次の区間の始点時刻を更新
+        ts = t_[i];
+      }
+    }
+    // 最後の区間のパラメータはここで設定
+    // 別途設定する理由は積分の誤差でdistance_[i] > theta_distが成立しないことがあるため
+    k = (int)minimum_jerk_.size() - 1;
+    double theta_diff = angle_diff(theta_wp_[k + 1].second, theta_wp_[k].second);
+    minimum_jerk_[k].setParam(0, theta_diff, ts, t_.back());
+
+    // minimum_jerkを計算
+    k = 0;
+    for (int i = 0; i < array_size_; i++) {
+      if (k < (int)minimum_jerk_.size() - 1 && t_[i] > minimum_jerk_[k].get_tf()) {
         k++;
       }
       // 角度を計算、minimum_jerkは始点を0としているので、waypointの角度を足す
@@ -388,9 +395,13 @@ private:
   double j_max_;
   // 分割数
   int segment_num_ = 500;
-  // 各区間の距離
-  std::vector<double> dist_segment_;
+  // 速度の拘束条件の各区間の距離
+  std::vector<double> v_segment_dist_;
+  // 角度の拘束条件の各区間の距離
+  std::vector<double> theta_segment_dist_;
+  // 全区間の距離
   double dist_all_;
+  // 軌道全体の時間
   double t_all_;
   // 計算結果
   std::vector<double> t_;
