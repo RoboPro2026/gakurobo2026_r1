@@ -1,7 +1,12 @@
+import math
+import os
 import sys
 
+import matplotlib.patches as patches
+from matplotlib.animation import FuncAnimation
 from matplotlib.backends.backend_qtagg import FigureCanvasQTAgg
 from matplotlib.figure import Figure
+from matplotlib.transforms import Affine2D
 from PyQt6.QtCore import Qt
 from PyQt6.QtWidgets import (
     QApplication,
@@ -12,13 +17,13 @@ from PyQt6.QtWidgets import (
     QMainWindow,
     QPushButton,
     QSlider,
+    QSplitter,
     QTableWidget,
     QTableWidgetItem,
     QTextEdit,
     QVBoxLayout,
     QWidget,
 )
-
 from run_trajectory_planner import RunTrajectoryPlanner
 
 
@@ -54,6 +59,8 @@ class MainWindow(QMainWindow):
         self.button_curvature.clicked.connect(self.on_curvature_clicked)
         self.button_detail = QPushButton("概要グラフ")
         self.button_detail.clicked.connect(self.on_detail_clicked)
+        self.button_anim = QPushButton("アニメ再生")
+        self.button_anim.clicked.connect(self.on_anim_clicked)
 
         info_layout.addWidget(self.label_distance)
         info_layout.addWidget(self.label_time)
@@ -61,6 +68,13 @@ class MainWindow(QMainWindow):
         info_layout.addWidget(self.button_vel_acc_jerk)
         info_layout.addWidget(self.button_curvature)
         info_layout.addWidget(self.button_detail)
+        info_layout.addWidget(self.button_anim)
+
+        # アニメーション中の情報表示（matplotlib のすぐ上に配置）
+        self.label_anim_info = QLabel("t: N/A  x: N/A  y: N/A  theta: N/A  v: N/A")
+        anim_info_layout = QHBoxLayout()
+        anim_info_layout.addWidget(self.label_anim_info)
+        anim_info_layout.addStretch()
 
         # ズーム・移動用スクロールバー（スライダー）
         zoom_layout = QHBoxLayout()
@@ -111,7 +125,9 @@ class MainWindow(QMainWindow):
         self.table.setHorizontalHeaderLabels(
             ["Index", "x [m]", "y [m]", "theta [rad]", "v_trans [m/s]"]
         )
-        self.table.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeMode.Stretch)
+        self.table.horizontalHeader().setSectionResizeMode(
+            QHeaderView.ResizeMode.Stretch
+        )
         # Index 列は内部管理用なので表示しない
         self.table.setColumnHidden(0, True)
         # 行選択時にグラフ上の waypoint をハイライト
@@ -126,6 +142,8 @@ class MainWindow(QMainWindow):
         )
         # 横幅を取りすぎないように制限
         self.param_table.setMaximumWidth(350)
+        # 表示範囲を少し縦に広げる
+        self.param_table.setMinimumHeight(260)
 
         # ファイル名ベース入力（入出力）
         self.input_prefix_edit = QLineEdit()
@@ -133,13 +151,18 @@ class MainWindow(QMainWindow):
         default_prefix = "/tmp/trajectory"
         self.input_prefix_edit.setText(default_prefix)
         self.output_prefix_edit.setText(default_prefix)
-        self.input_prefix_edit.setPlaceholderText("入力ファイルベース（例: /tmp/trajectory）")
-        self.output_prefix_edit.setPlaceholderText("出力ファイルベース（例: /tmp/trajectory）")
+        self.input_prefix_edit.setPlaceholderText(
+            "入力ファイルベース（例: /tmp/trajectory）"
+        )
+        self.output_prefix_edit.setPlaceholderText(
+            "出力ファイルベース（例: /tmp/trajectory）"
+        )
 
         # ログ表示エリア
         self.log_view = QTextEdit()
         self.log_view.setReadOnly(True)
         self.log_view.setPlaceholderText("ログ出力...")
+        self.log_view.setMinimumHeight(180)
 
         # RunTrajectoryPlanner インスタンス
         self.runner = RunTrajectoryPlanner(
@@ -153,7 +176,7 @@ class MainWindow(QMainWindow):
             omega_max=None,
             fig=self.fig,
             ax=self.ax,
-             log_func=self.append_log,
+            log_func=self.append_log,
         )
         # 初期状態ではパラメータは未設定として非表示にしておく
         self.param_table.hide()
@@ -161,38 +184,49 @@ class MainWindow(QMainWindow):
         # グラフクリックで waypoint 追加
         self.canvas.mpl_connect("button_press_event", self.on_canvas_clicked)
 
-        # テーブル類は同じ高さのエリアにまとめる
-        tables_layout = QHBoxLayout()
+        # --- 右ペイン（パラメータ/waypoint） ---
+        param_panel = QWidget()
+        param_panel_layout = QVBoxLayout(param_panel)
+        param_panel_layout.addWidget(QLabel("入力ファイルベース"))
+        param_panel_layout.addWidget(self.input_prefix_edit)
+        param_panel_layout.addWidget(QLabel("出力ファイルベース"))
+        param_panel_layout.addWidget(self.output_prefix_edit)
+        param_panel_layout.addWidget(self.param_table, 1)
 
-        # 左: パラメータテーブル
-        left_tables = QVBoxLayout()
-        left_tables.addWidget(QLabel("入力ファイルベース"))
-        left_tables.addWidget(self.input_prefix_edit)
-        left_tables.addWidget(QLabel("出力ファイルベース"))
-        left_tables.addWidget(self.output_prefix_edit)
-        left_tables.addWidget(self.param_table)
+        waypoint_panel = QWidget()
+        waypoint_panel_layout = QVBoxLayout(waypoint_panel)
+        waypoint_panel_layout.addLayout(waypoint_button_layout)
+        waypoint_panel_layout.addWidget(self.table, 1)
 
-        # 右: waypoint 操作ボタン + waypoint テーブル
-        right_tables = QVBoxLayout()
-        right_tables.addLayout(waypoint_button_layout)
-        right_tables.addWidget(self.table)
+        self.right_splitter = QSplitter(Qt.Orientation.Vertical)
+        self.right_splitter.addWidget(param_panel)
+        self.right_splitter.addWidget(waypoint_panel)
+        self.right_splitter.setSizes([260, 500])
 
-        tables_layout.addLayout(left_tables)
-        tables_layout.addLayout(right_tables)
+        # --- 上部（グラフ + 右に waypoint/parameter） ---
+        self.plot_splitter = QSplitter(Qt.Orientation.Horizontal)
+        self.plot_splitter.addWidget(self.canvas)
+        self.plot_splitter.addWidget(self.right_splitter)
+        self.plot_splitter.setSizes([900, 450])
+
+        # --- 全体（上: plot_splitter / 下: log） ---
+        self.main_splitter = QSplitter(Qt.Orientation.Vertical)
+        self.main_splitter.addWidget(self.plot_splitter)
+        self.main_splitter.addWidget(self.log_view)
+        self.main_splitter.setSizes([800, 220])
 
         # レイアウト順:
         #  1. 設定ボタン
-        #  2. 距離・時間表示 + 詳細グラフボタン
+        #  2. 距離・時間表示 + グラフボタン
         #  3. ズーム・移動スライダー
-        #  4. グラフ（キャンバス）
-        #  5. パラメータテーブル + waypoint テーブル（横並び）
+        #  4. グラフ（左） + waypoint/parameter（右）
+        #  5. ログ（下）
         layout.addLayout(button_layout)
         layout.addLayout(info_layout)
         layout.addLayout(zoom_layout)
         layout.addLayout(pan_layout)
-        layout.addWidget(self.canvas)
-        layout.addLayout(tables_layout)
-        layout.addWidget(self.log_view)
+        layout.addLayout(anim_info_layout)
+        layout.addWidget(self.main_splitter)
         self.setCentralWidget(widget)
 
         self.setWindowTitle("Trajectory Planner Viewer")
@@ -202,42 +236,72 @@ class MainWindow(QMainWindow):
         self.base_xlim = None
         self.base_ylim = None
 
+        # アニメ/プレビュー用
+        self.anim = None
+        self.anim_rect = None
+        self.anim_nose = None
+        self.anim_frames = None
+        self.robot_preview_patches = []
+        self._anim_prev_label_text = None
+
         # 初期表示としてフィールドのみ描画（アスペクト比 1:1）
         self.draw_waypoints_only()
+
+    def log_action(self, msg: str) -> None:
+        """GUI操作のログを GUI とコマンドラインに出す"""
+        # RunTrajectoryPlanner._log は「コマンドライン + GUI(log_func)」に出力する
+        self.runner._log(f"[GUI] {msg}")
 
     # ===== ボタンクリックハンドラ =====
     def on_load_clicked(self) -> None:
         """設定読み込みボタン: パラメータと waypoint を読み込む"""
+        self.log_action("設定読み込み: 開始")
         # ファイル名ベースを runner に反映
         self.update_runner_prefixes_from_edits()
+        self.log_action(
+            f"入力={self.runner.input_prefix} / 出力={self.runner.output_prefix}"
+        )
 
         # パラメータ読み込み
+        self.log_action(f"パラメータ読込: {self.runner._get_input_parameter_path()}")
         if self.runner.load_parameters():
             self.update_param_table()
             self.param_table.show()
+            self.log_action("パラメータ読込: OK")
         else:
             # パラメータファイルが無い場合はテーブルを隠したままにする
             self.param_table.hide()
+            self.log_action("パラメータ読込: ファイルなし")
 
         # waypoint 読み込み
+        self.log_action(f"waypoint読込: {self.runner._get_input_waypoint_path()}")
         self.runner.load_waypoint()
         self.update_waypoint_table()
         self.draw_waypoints_only()
+        self.log_action(f"waypoint読込: {len(self.runner.x_wp)} 点")
+        self.log_action("設定読み込み: 完了")
 
     def on_generate_clicked(self) -> None:
         """軌道生成ボタン: 軌道計算と描画を行う"""
+        self.log_action("軌道生成: 開始")
+        self.stop_animation(log_message=None)
         # ファイル名ベースを runner に反映
         self.update_runner_prefixes_from_edits()
         # テーブル内容を runner に反映してから軌道計算
         self.update_runner_from_table()
         # パラメータテーブルの内容も反映
         self.update_runner_params_from_table()
+        self.log_action(
+            f"zone={self.runner.zone}, dt={self.runner.dt}, v_max={self.runner.v_max}, "
+            f"a_max={self.runner.a_max}, j_max={self.runner.j_max}, omega_max={self.runner.omega_max}"
+        )
         ok = self.runner.run(reload_waypoints=False)
 
         # 失敗した場合はグラフ描画・距離/時間表示を行わない
         if not ok:
             self.label_distance.setText("距離: N/A")
             self.label_time.setText("時間: N/A")
+            self.log_action("軌道生成: 失敗")
             return
 
         # Figure 全体をクリアしてから描画を更新
@@ -250,7 +314,13 @@ class MainWindow(QMainWindow):
         # ズーム基準範囲を更新
         self.base_xlim = self.ax.get_xlim()
         self.base_ylim = self.ax.get_ylim()
+        # 「未来のロボット青枠」プレビューを管理できるよう、追加された patch を記録する
+        before_patches = list(self.ax.patches)
         self.runner._plot_robot_along_trajectory()
+        after_patches = list(self.ax.patches)
+        self.robot_preview_patches = [
+            p for p in after_patches if p not in before_patches
+        ]
         self.runner._plot_trajectory()
         self.canvas.draw()
 
@@ -260,22 +330,32 @@ class MainWindow(QMainWindow):
             time_total = self.runner.t[-1]
             self.label_distance.setText(f"距離: {distance_total:.3f} [m]")
             self.label_time.setText(f"時間: {time_total:.3f} [s]")
+            self.log_action(
+                f"軌道生成: 完了 (距離={distance_total:.3f} m, 時間={time_total:.3f} s)"
+            )
 
     def on_save_clicked(self) -> None:
         """設定書き込みボタン: パラメータと waypoint を保存する"""
+        self.log_action("設定書き込み: 開始")
         # ファイル名ベースを runner に反映
         self.update_runner_prefixes_from_edits()
+        self.log_action(
+            f"入力={self.runner.input_prefix} / 出力={self.runner.output_prefix}"
+        )
         # テーブル内容を runner に反映してから保存
         self.update_runner_from_table()
         self.update_runner_params_from_table()
 
         # 保存
+        self.log_action(f"パラメータ保存: {self.runner._get_output_parameter_path()}")
         self.runner.save_parameters()
+        self.log_action(f"waypoint保存: {self.runner._get_output_waypoint_path()}")
         self.runner.save_waypoint()
 
         # 保存後は現在の runner の値でパラメータを表示する
         self.update_param_table()
         self.param_table.show()
+        self.log_action("設定書き込み: 完了")
 
     def append_log(self, msg: str) -> None:
         """RunTrajectoryPlanner からのログを GUI に表示"""
@@ -284,21 +364,192 @@ class MainWindow(QMainWindow):
     def on_vel_acc_jerk_clicked(self) -> None:
         """速度・加速度・躍度グラフ表示ボタン"""
         if self.runner.t is None or self.runner.v_trans is None:
+            self.log_action("速度/加速度/躍度: 軌道未生成のため表示できません")
             return
+        self.log_action("速度/加速度/躍度: 表示")
         self.runner.plot_vel_acc_jerk()
 
     def on_curvature_clicked(self) -> None:
         """曲率グラフ表示ボタン"""
         if self.runner.t is None or self.runner.curvature is None:
+            self.log_action("曲率: 軌道未生成のため表示できません")
             return
+        self.log_action("曲率: 表示")
         self.runner.plot_curvature()
 
     def on_detail_clicked(self) -> None:
         """詳細グラフ表示ボタン: 速度・加速度などのグラフを表示"""
         # 軌道がまだ生成されていない場合は何もしない
         if self.runner.t is None or self.runner.v_trans is None:
+            self.log_action("概要グラフ: 軌道未生成のため表示できません")
             return
+        self.log_action("概要グラフ: 表示")
         self.runner._plot_detailed_time_series()
+
+    def on_anim_clicked(self) -> None:
+        """アニメ再生/停止ボタン"""
+        if getattr(self, "anim", None) is not None:
+            self.log_action("アニメ: 停止")
+            self.stop_animation(log_message=None)
+            return
+        self.log_action("アニメ: 再生")
+        self.start_animation()
+
+    def start_animation(self) -> None:
+        """ロボット姿勢を matplotlib 上でアニメーション再生する"""
+        # 軌道がまだ生成されていない場合は何もしない
+        if (
+            self.runner.t is None
+            or self.runner.x is None
+            or self.runner.y is None
+            or self.runner.theta is None
+        ):
+            self.log_action("アニメ: 軌道未生成のため再生できません")
+            return
+
+        # 既存アニメが残っていたら停止
+        self.stop_animation(log_message=None)
+
+        # 再生開始前の表示を保存（終了後に戻す）
+        self._anim_prev_label_text = self.label_anim_info.text()
+
+        # 未来のロボット枠（プレビュー）は、再生中は非表示にする
+        for p in self.robot_preview_patches:
+            try:
+                p.set_visible(False)
+            except Exception:
+                pass
+
+        # 描画パッチを用意（1つだけ更新し続ける）
+        if not hasattr(self, "anim_rect") or self.anim_rect is None:
+            robot_width = 0.8
+            robot_height = 0.8
+
+            self.anim_rect = patches.Rectangle(
+                (-robot_width / 2, -robot_height / 2),
+                robot_width,
+                robot_height,
+                facecolor="none",
+                edgecolor="blue",
+                linewidth=2,
+            )
+            self.ax.add_patch(self.anim_rect)
+
+            self.anim_nose = patches.Polygon(
+                [
+                    (robot_width / 2, 0.0),
+                    (robot_width / 2 - robot_width * 0.3, robot_height / 4),
+                    (robot_width / 2 - robot_width * 0.3, -robot_height / 4),
+                ],
+                closed=True,
+                facecolor="red",
+                edgecolor="red",
+            )
+            self.ax.add_patch(self.anim_nose)
+        else:
+            self.anim_rect.set_visible(True)
+            self.anim_nose.set_visible(True)
+
+        # フレームインデックス
+        # - 再生時間を実時間と一致させるため、interval は「(step * dt)」にする
+        # - 負荷を下げるため、上限 FPS を 30 程度に制限する（必要なら step が増える）
+        dt = float(self.runner.dt)
+        if dt <= 0.0:
+            self.log_action("アニメ: dt が不正のため再生できません")
+            return
+        max_fps = 30.0
+        min_interval = 1.0 / max_fps
+        step = max(1, int(math.ceil(min_interval / dt)))
+        frames = list(range(0, len(self.runner.t), step))
+        if frames and frames[-1] != len(self.runner.t) - 1:
+            frames.append(len(self.runner.t) - 1)
+        self.anim_frames = frames
+
+        interval_ms = max(1, int(round(step * dt * 1000.0)))
+        self.anim = FuncAnimation(
+            self.fig,
+            self._update_animation_frame,
+            frames=frames,
+            interval=interval_ms,
+            repeat=False,
+            blit=False,
+        )
+
+        # ボタン表示更新
+        self.button_anim.setText("アニメ停止")
+        self.canvas.draw()
+        self.log_action(
+            f"アニメ: 開始 (dt={dt}, step={step}, interval_ms={interval_ms}, frames={len(frames)})"
+        )
+
+    def _update_animation_frame(self, idx: int):
+        x = self.runner.x[idx]
+        y = self.runner.y[idx]
+        theta = self.runner.theta[idx]
+        v = None
+        if self.runner.v_trans is not None and idx < len(self.runner.v_trans):
+            v = self.runner.v_trans[idx]
+
+        t = None
+        if self.runner.t is not None and idx < len(self.runner.t):
+            t = self.runner.t[idx]
+
+        if t is None:
+            self.label_anim_info.setText(
+                f"t: N/A  x: {x:.3f}  y: {y:.3f}  theta: {theta:.3f}  v: "
+                f"{'N/A' if v is None else f'{v:.3f}'}"
+            )
+        else:
+            self.label_anim_info.setText(
+                f"t: {t:.3f}  x: {x:.3f}  y: {y:.3f}  theta: {theta:.3f}  v: "
+                f"{'N/A' if v is None else f'{v:.3f}'}"
+            )
+
+        trans = Affine2D().rotate(theta).translate(x, y) + self.ax.transData
+        self.anim_rect.set_transform(trans)
+        self.anim_nose.set_transform(trans)
+
+        # 最終フレームで元の表示に戻す
+        if self.anim_frames is not None and idx == self.anim_frames[-1]:
+            self.stop_animation(log_message="アニメ: 完了")
+        return self.anim_rect, self.anim_nose
+
+    def stop_animation(self, log_message: str | None = None) -> None:
+        """再生中のアニメーションを停止する"""
+        anim = getattr(self, "anim", None)
+        if anim is not None:
+            try:
+                anim.event_source.stop()
+            except Exception:
+                pass
+        self.anim = None
+        self.anim_frames = None
+
+        if hasattr(self, "anim_rect") and self.anim_rect is not None:
+            self.anim_rect.set_visible(False)
+        if hasattr(self, "anim_nose") and self.anim_nose is not None:
+            self.anim_nose.set_visible(False)
+        # Axes の作り直しに備えて参照もクリア（再生時に作り直す）
+        self.anim_rect = None
+        self.anim_nose = None
+
+        # 未来のロボット枠（プレビュー）を再表示
+        for p in getattr(self, "robot_preview_patches", []):
+            try:
+                p.set_visible(True)
+            except Exception:
+                pass
+
+        # 再生前の表示に戻す
+        if self._anim_prev_label_text is not None:
+            self.label_anim_info.setText(self._anim_prev_label_text)
+            self._anim_prev_label_text = None
+
+        if hasattr(self, "button_anim"):
+            self.button_anim.setText("アニメ再生")
+        self.canvas.draw()
+        if log_message is not None:
+            self.log_action(log_message)
 
     def on_zoom_slider_changed(self, value: int) -> None:
         """ズームスライダー操作時に表示範囲を変更する"""
@@ -354,7 +605,9 @@ class MainWindow(QMainWindow):
         """選択された waypoint を削除する"""
         row = self.table.currentRow()
         if row < 0 or row >= len(self.runner.x_wp):
+            self.log_action("waypoint削除: 行が選択されていません")
             return
+        self.log_action(f"waypoint削除: row={row}")
 
         # x, y の削除
         del self.runner.x_wp[row]
@@ -388,7 +641,9 @@ class MainWindow(QMainWindow):
         """選択された waypoint を一つ上に移動する"""
         row = self.table.currentRow()
         if row <= 0 or row >= len(self.runner.x_wp):
+            self.log_action("waypoint上へ: 移動できません")
             return
+        self.log_action(f"waypoint上へ: row={row} -> {row-1}")
 
         # x, y の入れ替え
         self.runner.x_wp[row - 1], self.runner.x_wp[row] = (
@@ -411,7 +666,9 @@ class MainWindow(QMainWindow):
         """選択された waypoint を一つ下に移動する"""
         row = self.table.currentRow()
         if row < 0 or row >= len(self.runner.x_wp) - 1:
+            self.log_action("waypoint下へ: 移動できません")
             return
+        self.log_action(f"waypoint下へ: row={row} -> {row+1}")
 
         # x, y の入れ替え
         self.runner.x_wp[row + 1], self.runner.x_wp[row] = (
@@ -446,7 +703,9 @@ class MainWindow(QMainWindow):
             y_item = QTableWidgetItem(f"{y_wp[i]:.3f}")
             theta_val = theta_dict.get(i)
             v_val = v_dict.get(i)
-            theta_item = QTableWidgetItem("" if theta_val is None else f"{theta_val:.3f}")
+            theta_item = QTableWidgetItem(
+                "" if theta_val is None else f"{theta_val:.3f}"
+            )
             v_item = QTableWidgetItem("" if v_val is None else f"{v_val:.3f}")
 
             self.table.setItem(i, 0, idx_item)
@@ -484,6 +743,9 @@ class MainWindow(QMainWindow):
         # x, y を指定位置に挿入（theta, v_trans は空のまま）
         self.runner.x_wp.insert(insert_index, x_val)
         self.runner.y_wp.insert(insert_index, y_val)
+        self.log_action(
+            f"waypoint追加: insert={insert_index}, x={x_val:.3f}, y={y_val:.3f} (zone={self.runner.zone})"
+        )
 
         # 既存の theta, v_trans のインデックスをシフト
         shifted_theta: list[tuple[int, float]] = []
@@ -646,6 +908,8 @@ class MainWindow(QMainWindow):
 
     def draw_waypoints_only(self) -> None:
         """フィールドと waypoint のみを描画する"""
+        self.stop_animation(log_message=None)
+        self.robot_preview_patches = []
         # すでにズーム・パンが設定されている場合は、現在の表示範囲を保持して再描画する
         if self.base_xlim is None or self.base_ylim is None:
             # 初回: 基準表示範囲を設定

@@ -85,6 +85,9 @@ class RunTrajectoryPlanner:
         """
         if reload_waypoints:
             self.load_waypoint()
+            if len(self.x_wp) < 3 or len(self.y_wp) < 3:
+                self._log("waypoint の読み込みに失敗したため、軌道生成を中止します。")
+                return False
         self._print_waypoints()
         return self._calculate_trajectory()
 
@@ -113,15 +116,23 @@ class RunTrajectoryPlanner:
         self.theta_wp.clear()
         self.v_trans_wp.clear()
 
-        with open(self._get_input_waypoint_path(), "r") as f:
-            reader = csv.reader(f)
-            for i, row in enumerate(reader):
-                self.x_wp.append(float(row[0]))
-                self.y_wp.append(float(row[1]))
-                if row[2] != "":
-                    self.theta_wp.append((i, float(row[2])))
-                if row[3] != "":
-                    self.v_trans_wp.append((i, float(row[3])))
+        path = self._get_input_waypoint_path()
+        try:
+            with open(path, "r") as f:
+                reader = csv.reader(f)
+                for i, row in enumerate(reader):
+                    if len(row) < 2:
+                        continue
+                    self.x_wp.append(float(row[0]))
+                    self.y_wp.append(float(row[1]))
+                    if len(row) >= 3 and row[2] != "":
+                        self.theta_wp.append((i, float(row[2])))
+                    if len(row) >= 4 and row[3] != "":
+                        self.v_trans_wp.append((i, float(row[3])))
+        except FileNotFoundError:
+            self._log(f"waypoint ファイルが見つかりません: {path}")
+        except ValueError as e:
+            self._log(f"waypoint ファイルの読み込みに失敗しました: {path} ({e})")
 
         return self.x_wp, self.y_wp, self.theta_wp, self.v_trans_wp
 
@@ -129,7 +140,11 @@ class RunTrajectoryPlanner:
         """現在の waypoint を CSV に保存する"""
         # メインファイルの保存
         out_path = self._get_output_waypoint_path()
-        self._write_waypoints_to_path(out_path)
+        try:
+            self._write_waypoints_to_path(out_path)
+        except OSError as e:
+            self._log(f"waypoint の保存に失敗しました: {out_path} ({e})")
+            return
 
         # バックアップファイル名を作成（例: backup_waypoints_20251212_153045.csv）
         base_dir, base_name = os.path.split(out_path)
@@ -139,7 +154,10 @@ class RunTrajectoryPlanner:
         backup_path = os.path.join(base_dir, backup_name)
 
         # バックアップとして同じ内容を書き出す
-        self._write_waypoints_to_path(backup_path)
+        try:
+            self._write_waypoints_to_path(backup_path)
+        except OSError as e:
+            self._log(f"waypoint のバックアップ保存に失敗しました: {backup_path} ({e})")
 
     # ========= path helpers =========
     def _get_input_waypoint_path(self) -> str:
@@ -201,7 +219,11 @@ class RunTrajectoryPlanner:
         """現在のロボットパラメータを robot_parameter.csv に保存する"""
         path = self._get_output_parameter_path(parameter_path)
         # メインファイルの保存
-        self._write_parameters_to_path(path)
+        try:
+            self._write_parameters_to_path(path)
+        except OSError as e:
+            self._log(f"パラメータの保存に失敗しました: {path} ({e})")
+            return
 
         # バックアップファイル名を作成（例: backup_robot_parameter_20251212_153045.csv）
         base_dir, base_name = os.path.split(path)
@@ -211,10 +233,16 @@ class RunTrajectoryPlanner:
         backup_path = os.path.join(base_dir, backup_name)
 
         # バックアップとして同じ内容を書き出す
-        self._write_parameters_to_path(backup_path)
+        try:
+            self._write_parameters_to_path(backup_path)
+        except OSError as e:
+            self._log(f"パラメータのバックアップ保存に失敗しました: {backup_path} ({e})")
 
     def _write_parameters_to_path(self, path: str) -> None:
         """与えられたパスに現在のパラメータを書き出す内部ヘルパー"""
+        base_dir = os.path.dirname(path)
+        if base_dir:
+            os.makedirs(base_dir, exist_ok=True)
         with open(path, "w", newline="") as f:
             writer = csv.writer(f)
             writer.writerow(["zone", self.zone])
@@ -227,6 +255,9 @@ class RunTrajectoryPlanner:
 
     def _write_waypoints_to_path(self, path: str) -> None:
         """与えられたパスに現在の waypoint を書き出す内部ヘルパー"""
+        base_dir = os.path.dirname(path)
+        if base_dir:
+            os.makedirs(base_dir, exist_ok=True)
         with open(path, "w", newline="") as f:
             writer = csv.writer(f)
             j = 0
