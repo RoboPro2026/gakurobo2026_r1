@@ -19,6 +19,7 @@
 #include "geometry_msgs/msg/twist.hpp"
 #include "magic_enum.hpp"
 #include "r1_state_machine/ps4.h"
+#include "r1_state_machine/simple_trapezoid.h"
 #include "r1_state_machine/state_machine.h"
 #include "rclcpp/rclcpp.hpp"
 #include "sensor_msgs/msg/joy.hpp"
@@ -35,6 +36,10 @@ public:
 
     timer_publisher_ =
       this->create_wall_timer(10ms, std::bind(&R1StateMachineNode::timer_callback, this));
+
+    simple_trapezoid_vx_ = SimpleTrapezoid(3.0, 0.01);  // 加速度1.0m/s^2、制御周期10ms
+    simple_trapezoid_vy_ = SimpleTrapezoid(3.0, 0.01);
+    simple_trapezoid_omega_ = SimpleTrapezoid(3.0, 0.01);
 
     ps4_ = std::make_shared<PS4>("PS4");
 
@@ -98,9 +103,17 @@ public:
       } else {
         // TODO: 必要に応じて、符号の反転や係数をかける。
         double stick_max_velocity = 3.0;
-        target_vel_.linear.x = stick_max_velocity * ps4_->data.left_stick_x;
-        target_vel_.linear.y = stick_max_velocity * ps4_->data.left_stick_y;
-        target_vel_.angular.z = ps4_->data.right_stick_x;
+        double vx_ref = stick_max_velocity * ps4_->data.left_stick_x;
+        double vy_ref = stick_max_velocity * ps4_->data.left_stick_y;
+        double vz_ref = ps4_->data.right_stick_x;
+        // 台形制御で速度を滑らかに変化させる
+        target_vel_.linear.x = simple_trapezoid_vx_.update(vx_ref);
+        target_vel_.linear.y = simple_trapezoid_vy_.update(vy_ref);
+        target_vel_.angular.z = simple_trapezoid_omega_.update(vz_ref);
+        // RCLCPP_INFO(this->get_logger(), "vx: %.2f, vx_ref: %.2f", target_vel_.linear.x, vx_ref);
+        // target_vel_.linear.x = stick_max_velocity * ps4_->data.left_stick_x;
+        // target_vel_.linear.y = stick_max_velocity * ps4_->data.left_stick_y;
+        // target_vel_.angular.z = ps4_->data.right_stick_x;
       }
     } else {
       target_vel_.linear.x = 0.0;
@@ -129,6 +142,9 @@ public:
   // なんとなくshared_ptr。特に理由はない。
   std::shared_ptr<StateMachine> state_machine_;
   std::shared_ptr<PS4> ps4_;
+  SimpleTrapezoid simple_trapezoid_vx_;
+  SimpleTrapezoid simple_trapezoid_vy_;
+  SimpleTrapezoid simple_trapezoid_omega_;
 
   // publisherとsubscriber
   rclcpp::Publisher<geometry_msgs::msg::Twist>::SharedPtr cmd_vel_publisher_;
