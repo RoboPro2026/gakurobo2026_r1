@@ -1,5 +1,5 @@
 /**
- * @file r1_state_machine_node.cpp
+ * @file r1_main_node.cpp
  * @author Yamaguchi Yudai
  * @brief R1の状態遷移ノード
  * @version 0.1
@@ -18,24 +18,23 @@
 
 #include "geometry_msgs/msg/twist.hpp"
 #include "magic_enum.hpp"
-#include "r1_state_machine/ps4.h"
-#include "r1_state_machine/simple_trapezoid.h"
-#include "r1_state_machine/state_machine.h"
+#include "r1_main/ps4.h"
+#include "r1_main/simple_trapezoid.h"
+#include "r1_main/state_machine.h"
 #include "rclcpp/rclcpp.hpp"
 #include "sensor_msgs/msg/joy.hpp"
 
-class R1StateMachineNode : public rclcpp::Node
+class R1MainNode : public rclcpp::Node
 {
 public:
-  R1StateMachineNode() : Node("r1_state_machine_node")
+  R1MainNode() : Node("r1_main_node")
   {
     cmd_vel_publisher_ = this->create_publisher<geometry_msgs::msg::Twist>("/cmd_vel", 10);
 
     joy_subscriber_ = this->create_subscription<sensor_msgs::msg::Joy>(
-      "/joy", 10, std::bind(&R1StateMachineNode::joy_callback, this, std::placeholders::_1));
+      "/joy", 10, std::bind(&R1MainNode::joy_callback, this, std::placeholders::_1));
 
-    timer_publisher_ =
-      this->create_wall_timer(10ms, std::bind(&R1StateMachineNode::timer_callback, this));
+    timer_publisher_ = this->create_wall_timer(10ms, std::bind(&R1MainNode::timer_callback, this));
 
     simple_trapezoid_vx_ = SimpleTrapezoid(3.0, 0.01);  // 加速度1.0m/s^2、制御周期10ms
     simple_trapezoid_vy_ = SimpleTrapezoid(3.0, 0.01);
@@ -158,7 +157,7 @@ public:
 int main(int argc, char * argv[])
 {
   rclcpp::init(argc, argv);
-  auto node = std::make_shared<R1StateMachineNode>();
+  auto node = std::make_shared<R1MainNode>();
   rclcpp::spin(node);
   rclcpp::shutdown();
   return 0;

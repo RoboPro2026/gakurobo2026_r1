@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.8)
-project(r1_state_machine)
+project(r1_main)
 
 if(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
   add_compile_options(-Wall -Wextra -Wpedantic)
@@ -17,10 +17,10 @@ find_package(sabacan_msgs REQUIRED)
 find_package(sensor_msgs REQUIRED)
 find_package(std_msgs REQUIRED)
 
-add_executable(r1_state_machine_node src/r1_state_machine_node.cpp)
+add_executable(r1_main_node src/r1_main_node.cpp)
 add_executable(test_node src/test_node.cpp)
 
-ament_target_dependencies(r1_state_machine_node
+ament_target_dependencies(r1_main_node
   geometry_msgs
   rclcpp
   sensor_msgs
@@ -35,10 +35,10 @@ ament_target_dependencies(test_node
   std_msgs
 )
 
-target_link_libraries(r1_state_machine_node magic_enum::magic_enum)
+target_link_libraries(r1_main_node magic_enum::magic_enum)
 
 # インクルードディレクトリを設定
-target_include_directories(r1_state_machine_node PUBLIC
+target_include_directories(r1_main_node PUBLIC
   $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
   $<INSTALL_INTERFACE:include>
 )
@@ -49,7 +49,7 @@ target_include_directories(test_node PUBLIC
 )
 
 
-install(TARGETS r1_state_machine_node
+install(TARGETS r1_main_node
   DESTINATION lib/${PROJECT_NAME}
 )
 
