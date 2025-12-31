@@ -69,10 +69,10 @@ def generate_launch_description():
         arguments=["--ros-args", "--log-level", "info"],
     )
 
-    r1_state_machine_node = Node(
-        package="r1_state_machine",
-        executable="r1_state_machine_node",
-        name="r1_state_machine_node",
+    r1_main_node = Node(
+        package="r1_main",
+        executable="r1_main_node",
+        name="r1_main_node",
         parameters=[param_file],
         arguments=["--ros-args", "--log-level", "info"],
     )
@@ -180,7 +180,7 @@ def generate_launch_description():
             r1_linear_motion_node,
             r1_angle_motion_node,
             r1_sabacan_msgs_converter_node,
-            r1_state_machine_node,
+            r1_main_node,
             sabacan_robomas_node1,
             sabacan_robomas_node2,
             sabacan_gpio_node1,

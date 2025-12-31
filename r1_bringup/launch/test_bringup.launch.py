@@ -36,7 +36,7 @@ def generate_launch_description():
     )
 
     test_node = Node(
-        package="r1_state_machine",
+        package="r1_main",
         executable="test_node",
         name="test_node",
         parameters=[param_file],

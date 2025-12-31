@@ -89,6 +89,7 @@ sabacan_robomasv2_node_id1:
     speed_lim: [75.0, 75.0, 75.0, 75.0]
     # VESCのフィードバックは無効化
     monitor_reg2: [0, 0, 0, 0]
+    hoge: 1
 sabacan_robomasv2_node_id2:
   ros__parameters:
     board_id: 2
