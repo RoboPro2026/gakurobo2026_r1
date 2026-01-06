@@ -15,6 +15,7 @@ find_package(tf2_ros REQUIRED)
 add_executable(bno086_node src/bno086_node.cpp)
 # example code
 add_executable(bno086_subscription_node example/bno086_subscription_node.cpp)
+add_executable(npm_uart_test_node example/npm_uart_test_node.cpp)
 
 ament_target_dependencies(bno086_node
   rclcpp
@@ -30,6 +31,10 @@ ament_target_dependencies(bno086_subscription_node
   tf2_ros
 )
 
+ament_target_dependencies(npm_uart_test_node
+  rclcpp
+)
+
 # インクルードディレクトリを設定
 target_include_directories(bno086_node PUBLIC
   $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
@@ -39,12 +44,20 @@ target_include_directories(bno086_subscription_node PUBLIC
   $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
   $<INSTALL_INTERFACE:include>
 )
+target_include_directories(npm_uart_test_node PUBLIC
+  $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+  $<INSTALL_INTERFACE:include>
+)
 
 install(TARGETS bno086_node
   DESTINATION lib/${PROJECT_NAME}
 )
 
 install(TARGETS bno086_subscription_node
+  DESTINATION lib/${PROJECT_NAME}
+)
+
+install(TARGETS npm_uart_test_node
   DESTINATION lib/${PROJECT_NAME}
 )
 

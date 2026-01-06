@@ -30,7 +30,21 @@ sudo chmod 666 /dev/ttyACM0
 
 (ポートが異なる場合は `/dev/ttyACM0` の部分を適宜変更してください)
 
-## 2\. ノードの詳細
+## 2\. FTDIのドライバの場合
+FTDIのドライバの場合、データがデフォルトだと16ms周期でしか送信されません。  
+なので、レイテンシを1msに書き換えます。  
+レイテンシの確認方法
+```bash
+cat /sys/bus/usb-serial/devices/ttyUSB0/latency_timer
+```
+
+レイテンシの書き換え
+
+```bash
+echo 1 | sudo tee /sys/bus/usb-serial/devices/ttyUSB0/latency_timer
+```
+
+## 3\. ノードの詳細
 
 ### パブリッシュするトピック
 
@@ -59,7 +73,7 @@ sudo chmod 666 /dev/ttyACM0
   * `offset_y_axis_accel` (double、初期値は0.0)
   * `offset_z_axis_accel` (double、初期値は0.0)
 
-## 3\. 使い方と具体例
+## 4\. 使い方と具体例
 
 ### 例1: ノードの基本実行
 

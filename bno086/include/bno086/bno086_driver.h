@@ -145,10 +145,11 @@ public:
     current_data_.roll_angular_velocity = d_roll / dt + offset_data_.roll_angular_velocity;
   }
 
-  void decode(std::vector<uint8_t> rx_buff)
+  bool decode(std::vector<uint8_t> rx_buff)
   {
     static int i = 0;
     int j = 0;
+    bool is_update = false;
     // 受信データを受信状況に応じて処理
     while (j < (int)rx_buff.size()) {
       switch (i) {
@@ -172,6 +173,7 @@ public:
           if (buff_[18] == calc_check_sum()) {
             // 値を更新
             update_sensor_value();
+            is_update = true;
           } else {
           }
           i = 0;
@@ -183,6 +185,7 @@ public:
       }
       j++;
     }
+    return is_update;
   }
 
 public:
@@ -193,10 +196,11 @@ public:
     buff_.resize(BUFF_SIZE);
   }
 
-  void update()
+  bool update()
   {
     std::vector<uint8_t> rx_buff = serial_->read();
-    decode(rx_buff);
+    bool is_update = decode(rx_buff);
+    return is_update;
   }
 
   void print(Data data)
