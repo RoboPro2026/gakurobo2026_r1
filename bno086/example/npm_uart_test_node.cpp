@@ -1,7 +1,7 @@
 /**
  * @file npm_uart_test_node.cpp
  * @author Yamaguchi Yudai
- * @brief bno086のシーケンスIDを読んで、パケットロスがないことを確認するノード
+ * @brief bno086のシーケンス番号を読んで、パケットロスがないことを確認するノード
  * @version 0.1
  * @date 2025-10-18
  * 
@@ -79,16 +79,16 @@ public:
         // 受信成功率を表示
         double success_rate = (double)(PACKET_SIZE - loss_cnt) / PACKET_SIZE * 100.0;
         RCLCPP_INFO(
-          this->get_logger(), "Received %d packets, Loss: %d packets, Success rate: %.2f%%",
+          this->get_logger(), "UART Received %d packets, Loss: %d packets, Success rate: %.2f%%",
           PACKET_SIZE, loss_cnt, success_rate);
       }
       // インデックスを更新
       index = (index + 1) % PACKET_SIZE;
       auto data = bno086_driver_->get_data();
-      RCLCPP_INFO(this->get_logger(), "Index: %d", data.index);
+      // RCLCPP_INFO(this->get_logger(), "Index: %d", data.index);
     }
     if ((this->now() - last_time_).seconds() > 2.0) {
-      RCLCPP_ERROR(this->get_logger(), "No data received for more than 1 second.");
+      RCLCPP_ERROR(this->get_logger(), "No data received few second.");
     }
   }
 
