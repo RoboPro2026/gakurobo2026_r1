@@ -11,13 +11,19 @@
 
 /*
 実行方法
-# sudo chmod 666 /dev/ttyACM0
+# /dev/ttyUSB0は必要に応じて名前を変えること
+sudo chmod 666 /dev/ttyUSB0
 
 # FT234だと、デフォルトだと16msの間バッファにデータを貯めるので、1msで送信するようにする
 
 echo 1 | sudo tee /sys/bus/usb-serial/devices/ttyUSB0/latency_timer
 
-ros2 run bno086 npm_uart_test_node --ros-args -p port:="/dev/ttyACM0"
+ros2 run bno086 npm_uart_test_node --ros-args -p port:="/dev/ttyUSB0"
+
+解説
+PACKET_SIZE回分のシーケンス番号を保存し、最後のデータを受信したときにパケットロスをチェックする。
+シーケンス番号が連続していなければパケットロスとカウントし、受信成功率を計算して表示する。
+もし、2秒間データが受信できなければエラーメッセージを表示する。
 */
 
 #include <chrono>
@@ -72,6 +78,7 @@ public:
       if (index == PACKET_SIZE - 1) {
         int loss_cnt = 0;
         for (int i = 1; i < PACKET_SIZE; i++) {
+          // シーケンス番号が連続していなければ、パケットロスとカウントする。255の次は0なので、その場合も考慮している。
           if (rx_data[i] != (rx_data[i - 1] + 1) % 256) {
             loss_cnt++;
           }
