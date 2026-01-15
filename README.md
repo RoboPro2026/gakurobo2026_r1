@@ -1,6 +1,18 @@
 # gakurobo2026_r1
 
-TODO: setup手順ちゃんと書く
+## clone方法
+```
+cd ~/ros2_ws/src
+git clone --recurse-submodules https://github.com/RoboPro2026/gakurobo2026_r1.git
+```
+
+## submoduleの更新方法
+```
+# gakurobo2026_r1を更新
+git pull origin main
+# submoduleを更新
+git submodule update --init --recursive
+```
 
 ## インストール(apt)
 ```
