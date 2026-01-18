@@ -25,6 +25,7 @@ ament_target_dependencies(r1_main_node
   rclcpp
   sensor_msgs
   std_msgs
+  r1_msgs
 )
 
 ament_target_dependencies(test_node
