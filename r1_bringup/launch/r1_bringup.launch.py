@@ -11,6 +11,7 @@ from launch.launch_description_sources import (
 from launch.substitutions import LaunchConfiguration, PathJoinSubstitution
 from launch_ros.actions import Node
 from launch_ros.substitutions import FindPackageShare
+from launch_xml.launch_description_sources import XMLLaunchDescriptionSource
 
 
 def generate_launch_description():
@@ -267,75 +268,72 @@ def generate_launch_description():
     )
 
     socket_can_bridge_launch = IncludeLaunchDescription(
-        AnyLaunchDescriptionSource(
-            [
-                PathJoinSubstitution(
-                    [
-                        FindPackageShare("ros2_socketcan"),
-                        "launch",
-                        "socket_can_bridge.launch.xml",
-                    ]
-                )
-            ]
+        XMLLaunchDescriptionSource(
+            PathJoinSubstitution(
+                [
+                    FindPackageShare("ros2_socketcan"),
+                    "launch",
+                    "socket_can_bridge.launch.xml",
+                ]
+            )
         ),
         launch_arguments={"interface": "can0"}.items(),
     )
 
+    # ros2_socketcan以外のノードの起動を遅延させる
+    delayed_nodes = [
+        ps4_node,
+        # bno086_node,
+        r1_main_node,
+        r1_mecanum_node,
+        r1_odometry_node,
+        r1_sabacan_msgs_converter_node,
+        r1_kfs_fx_node,
+        r1_kfs_fz_node,
+        r1_kfs_fyaw_node,
+        r1_kfs_rx_node,
+        r1_kfs_rz_node,
+        r1_kfs_ryaw_node,
+        r1_front_expand_node,
+        r1_rear_expand_node,
+        sabacan_robomasv2_node_id1,
+        sabacan_robomasv2_node_id2,
+        sabacan_robomasv2_node_id3,
+        sabacan_robomasv2_node_id4,
+        sabacan_robomasv2_node_id5,
+        sabacan_single_control_id1_motor0,
+        sabacan_single_control_id1_motor1,
+        sabacan_single_control_id1_motor2,
+        sabacan_single_control_id1_motor3,
+        sabacan_single_control_id2_motor0,
+        sabacan_single_control_id2_motor1,
+        sabacan_single_control_id2_motor2,
+        sabacan_single_control_id2_motor3,
+        sabacan_single_control_id3_motor0,
+        sabacan_single_control_id3_motor1,
+        sabacan_single_control_id3_motor2,
+        sabacan_single_control_id3_motor3,
+        sabacan_single_control_id4_motor0,
+        sabacan_single_control_id4_motor1,
+        sabacan_single_control_id4_motor2,
+        sabacan_single_control_id4_motor3,
+        sabacan_single_control_id5_motor0,
+        sabacan_single_control_id5_motor1,
+        sabacan_single_control_id5_motor2,
+        sabacan_single_control_id5_motor3,
+        sabacan_gpio_node1,
+        sabacan_gpio_node2,
+        sabacan_gpio_node3,
+        sabacan_gpio_node4,
+        sabacan_power_node_id0,
+        sabacan_led_node_id1,
+    ]
+
     return LaunchDescription(
         [
-            ps4_node,
-            # bno086_node,
-            # r1_main
-            r1_main_node,
-            # r1_machine
-            r1_mecanum_node,
-            r1_odometry_node,
-            r1_sabacan_msgs_converter_node,
-            r1_kfs_fx_node,
-            r1_kfs_fz_node,
-            r1_kfs_fyaw_node,
-            r1_kfs_rx_node,
-            r1_kfs_rz_node,
-            r1_kfs_ryaw_node,
-            r1_front_expand_node,
-            r1_rear_expand_node,
-            # sabacan
-            # robomasv2
-            sabacan_robomasv2_node_id1,
-            sabacan_robomasv2_node_id2,
-            sabacan_robomasv2_node_id3,
-            sabacan_robomasv2_node_id4,
-            sabacan_robomasv2_node_id5,
-            # single
-            sabacan_single_control_id1_motor0,
-            sabacan_single_control_id1_motor1,
-            sabacan_single_control_id1_motor2,
-            sabacan_single_control_id1_motor3,
-            sabacan_single_control_id2_motor0,
-            sabacan_single_control_id2_motor1,
-            sabacan_single_control_id2_motor2,
-            sabacan_single_control_id2_motor3,
-            sabacan_single_control_id3_motor0,
-            sabacan_single_control_id3_motor1,
-            sabacan_single_control_id3_motor2,
-            sabacan_single_control_id3_motor3,
-            sabacan_single_control_id4_motor0,
-            sabacan_single_control_id4_motor1,
-            sabacan_single_control_id4_motor2,
-            sabacan_single_control_id4_motor3,
-            sabacan_single_control_id5_motor0,
-            sabacan_single_control_id5_motor1,
-            sabacan_single_control_id5_motor2,
-            sabacan_single_control_id5_motor3,
-            # gpio
-            sabacan_gpio_node1,
-            sabacan_gpio_node2,
-            sabacan_gpio_node3,
-            sabacan_gpio_node4,
-            # power
-            sabacan_power_node_id0,
-            # led
-            sabacan_led_node_id1,
-            # socket_can_bridge_launch,
+            # 1) まず ros2_socketcan だけ起動
+            socket_can_bridge_launch,
+            # 2) その後に他を2秒遅延させて起動
+            TimerAction(period=2, actions=delayed_nodes),
         ]
     )
