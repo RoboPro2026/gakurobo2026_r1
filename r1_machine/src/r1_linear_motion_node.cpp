@@ -30,6 +30,14 @@ public:
       "/linear_motion_status", 10,
       std::bind(&MyNode::linear_motion_status_callback, this, std::placeholders::_1));
 
+    low_switch_status_subscription_ = this->create_subscription<std_msgs::msg::Bool>(
+      "/low_switch_status", 10,
+      std::bind(&MyNode::low_switch_status_callback, this, std::placeholders::_1));
+
+    high_switch_status_subscription_ = this->create_subscription<std_msgs::msg::Bool>(
+      "/high_switch_status", 10,
+      std::bind(&MyNode::high_switch_status_callback, this, std::placeholders::_1));
+
     linear_motion_ref_publisher_ =
       this->create_publisher<r1_msgs::msg::MotorRef>("/linear_motion_motor_ref", 10);
 
@@ -143,11 +151,19 @@ public:
 
   void linear_motion_status_callback(const r1_msgs::msg::LinearMotion::SharedPtr msg)
   {
-    low_switch_ = msg->low_switch ^ inverse_low_switch_logic_;
-    high_switch_ = msg->high_switch ^ inverse_high_switch_logic_;
     current_torque_ = msg->torque;
     current_speed_ = msg->speed;
     current_pos_ = msg->pos;
+  }
+
+  void low_switch_status_callback(const std_msgs::msg::Bool::SharedPtr msg)
+  {
+    low_switch_ = msg->data ^ inverse_low_switch_logic_;
+  }
+
+  void high_switch_status_callback(const std_msgs::msg::Bool::SharedPtr msg)
+  {
+    high_switch_ = msg->data ^ inverse_high_switch_logic_;
   }
 
   void positon_ref_callback(const std_msgs::msg::Float64::SharedPtr msg)
@@ -231,6 +247,8 @@ public:
 
 private:
   rclcpp::Subscription<r1_msgs::msg::LinearMotion>::SharedPtr linear_motion_status_subscription_;
+  rclcpp::Subscription<std_msgs::msg::Bool>::SharedPtr low_switch_status_subscription_;
+  rclcpp::Subscription<std_msgs::msg::Bool>::SharedPtr high_switch_status_subscription_;
   rclcpp::Publisher<r1_msgs::msg::MotorRef>::SharedPtr linear_motion_ref_publisher_;
   rclcpp::Subscription<std_msgs::msg::Float64>::SharedPtr position_ref_subscription_;
   rclcpp::Subscription<std_msgs::msg::Bool>::SharedPtr detect_origin_subscription_;

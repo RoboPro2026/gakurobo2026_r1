@@ -31,6 +31,14 @@ public:
       "/angle_motion_status", 10,
       std::bind(&MyNode::angle_motion_status_callback, this, std::placeholders::_1));
 
+    low_switch_status_subscription_ = this->create_subscription<std_msgs::msg::Bool>(
+      "/low_switch_status", 10,
+      std::bind(&MyNode::low_switch_status_callback, this, std::placeholders::_1));
+
+    high_switch_status_subscription_ = this->create_subscription<std_msgs::msg::Bool>(
+      "/high_switch_status", 10,
+      std::bind(&MyNode::high_switch_status_callback, this, std::placeholders::_1));
+
     angle_motion_ref_publisher_ =
       this->create_publisher<r1_msgs::msg::MotorRef>("/angle_motion_motor_ref", 10);
 
@@ -147,11 +155,19 @@ private:
 
   void angle_motion_status_callback(const r1_msgs::msg::AngleMotion::SharedPtr msg)
   {
-    low_switch_ = msg->low_switch ^ inverse_low_switch_logic_;
-    high_switch_ = msg->high_switch ^ inverse_high_switch_logic_;
     current_torque_ = msg->torque;
     current_speed_ = msg->speed;
     current_angle_ = msg->pos;
+  }
+
+  void low_switch_status_callback(const std_msgs::msg::Bool::SharedPtr msg)
+  {
+    low_switch_ = msg->data ^ inverse_low_switch_logic_;
+  }
+
+  void high_switch_status_callback(const std_msgs::msg::Bool::SharedPtr msg)
+  {
+    high_switch_ = msg->data ^ inverse_high_switch_logic_;
   }
 
   void position_ref_callback(const std_msgs::msg::Float64::SharedPtr msg)
@@ -166,12 +182,10 @@ private:
     // 範囲内に収める
     if (msg->data < angle_min_) {
       target_angle = angle_min_ + angle_offset_;
-      RCLCPP_WARN(
-        this->get_logger(), "Target angle below minimum. Clamping to %.3f", target_angle);
+      RCLCPP_WARN(this->get_logger(), "Target angle below minimum. Clamping to %.3f", target_angle);
     } else if (msg->data > angle_max_) {
       target_angle = angle_max_ + angle_offset_;
-      RCLCPP_WARN(
-        this->get_logger(), "Target angle above maximum. Clamping to %.3f", target_angle);
+      RCLCPP_WARN(this->get_logger(), "Target angle above maximum. Clamping to %.3f", target_angle);
     } else {
       target_angle = msg->data + angle_offset_;
     }
@@ -232,6 +246,8 @@ private:
   }
 
   rclcpp::Subscription<r1_msgs::msg::AngleMotion>::SharedPtr angle_motion_status_subscription_;
+  rclcpp::Subscription<std_msgs::msg::Bool>::SharedPtr low_switch_status_subscription_;
+  rclcpp::Subscription<std_msgs::msg::Bool>::SharedPtr high_switch_status_subscription_;
   rclcpp::Publisher<r1_msgs::msg::MotorRef>::SharedPtr angle_motion_ref_publisher_;
   rclcpp::Subscription<std_msgs::msg::Float64>::SharedPtr position_ref_subscription_;
   rclcpp::Subscription<std_msgs::msg::Bool>::SharedPtr detect_origin_subscription_;

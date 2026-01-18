@@ -5,7 +5,9 @@
 ## トピック
 
 - **Subscribe**
-  - `/angle_motion_status` (`r1_msgs/msg/AngleMotion`): トルク [Nm], 速度 [rad/s], 角度 [rad] と上下リミットスイッチ状態を取得。スイッチ値は `inverse_*_logic` で XOR 反転されます。
+  - `/angle_motion_status` (`r1_msgs/msg/AngleMotion`): トルク [Nm], 速度 [rad/s], 角度 [rad] を取得。
+  - `/low_switch_status`(`std_msgs/msg/Bool`): スイッチの値。 `inverse_*data` で XOR 反転されます。
+  - `/high_switch_status`(`std_msgs/msg/Bool`): スイッチの値。 `inverse_*data` で XOR 反転されます。
   - `/angle_motion_position_ref` (`std_msgs/msg/Float64`): 目標角度 [rad]。原点検出中（速度モード）は無視されます。
   - `/angle_motion_detect_origin` (`std_msgs/msg/Bool`): `true` で原点検出モードへ移行し、`false` で位置モードに戻します。
 - **Publish**
