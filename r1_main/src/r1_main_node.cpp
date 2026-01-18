@@ -32,10 +32,10 @@ R1MainNode::R1MainNode() : Node("r1_main_node")
   kfs_ryaw_position_ref_publisher_ =
     this->create_publisher<std_msgs::msg::Float64>("/kfs_ryaw_position_ref", 10);
   // 展開補助
-  front_expand_assist_position_ref_publisher_ =
-    this->create_publisher<std_msgs::msg::Float64>("/front_expand_assist_position_ref", 10);
-  rear_expand_assist_position_ref_publisher_ =
-    this->create_publisher<std_msgs::msg::Float64>("/rear_expand_assist_position_ref", 10);
+  front_expand_position_ref_publisher_ =
+    this->create_publisher<std_msgs::msg::Float64>("/front_expand_position_ref", 10);
+  rear_expand_position_ref_publisher_ =
+    this->create_publisher<std_msgs::msg::Float64>("/rear_expand_position_ref", 10);
   // R2昇降
   r2_lift_motor_ref_publisher_ =
     this->create_publisher<r1_msgs::msg::MotorRef>("/r2_lift_motor_ref", 10);
@@ -59,12 +59,12 @@ R1MainNode::R1MainNode() : Node("r1_main_node")
     "/kfs_ryaw_mode_status", 10,
     std::bind(&R1MainNode::kfs_ryaw_mode_status_callback, this, std::placeholders::_1));
   // 展開補助のmode Subscription
-  front_expand_assist_mode_status_subscription_ = this->create_subscription<std_msgs::msg::Int32>(
-    "/front_expand_assist_mode_status", 10,
-    std::bind(&R1MainNode::front_expand_assist_mode_status_callback, this, std::placeholders::_1));
-  rear_expand_assist_mode_status_subscription_ = this->create_subscription<std_msgs::msg::Int32>(
-    "/rear_expand_assist_mode_status", 10,
-    std::bind(&R1MainNode::rear_expand_assist_mode_status_callback, this, std::placeholders::_1));
+  front_expand_mode_status_subscription_ = this->create_subscription<std_msgs::msg::Int32>(
+    "/front_expand_mode_status", 10,
+    std::bind(&R1MainNode::front_expand_mode_status_callback, this, std::placeholders::_1));
+  rear_expand_mode_status_subscription_ = this->create_subscription<std_msgs::msg::Int32>(
+    "/rear_expand_mode_status", 10,
+    std::bind(&R1MainNode::rear_expand_mode_status_callback, this, std::placeholders::_1));
 
   // リミットスイッチ
   kfs_front_switch_status_subscription_ = this->create_subscription<r1_msgs::msg::GpioInput>(
@@ -146,24 +146,24 @@ void R1MainNode::kfs_ryaw_mode_status_callback(const std_msgs::msg::Int32::Share
   is_kfs_ryaw_pos_mode_ = _is_pos_mode;
 }
 
-void R1MainNode::front_expand_assist_mode_status_callback(const std_msgs::msg::Int32::SharedPtr msg)
+void R1MainNode::front_expand_mode_status_callback(const std_msgs::msg::Int32::SharedPtr msg)
 {
   auto mode = msg->data;
   bool _is_pos_mode = (mode == 0);
-  if (_is_pos_mode == true && is_front_expand_assist_pos_mode_ == false) {
+  if (_is_pos_mode == true && is_front_expand_pos_mode_ == false) {
     RCLCPP_INFO(this->get_logger(), "front expand assist detected origin");
   }
-  is_front_expand_assist_pos_mode_ = _is_pos_mode;
+  is_front_expand_pos_mode_ = _is_pos_mode;
 }
 
-void R1MainNode::rear_expand_assist_mode_status_callback(const std_msgs::msg::Int32::SharedPtr msg)
+void R1MainNode::rear_expand_mode_status_callback(const std_msgs::msg::Int32::SharedPtr msg)
 {
   auto mode = msg->data;
   bool _is_pos_mode = (mode == 0);
-  if (_is_pos_mode == true && is_rear_expand_assist_pos_mode_ == false) {
+  if (_is_pos_mode == true && is_rear_expand_pos_mode_ == false) {
     RCLCPP_INFO(this->get_logger(), "rear expand assist detected origin");
   }
-  is_rear_expand_assist_pos_mode_ = _is_pos_mode;
+  is_rear_expand_pos_mode_ = _is_pos_mode;
 }
 
 void R1MainNode::kfs_front_switch_status_callback(const r1_msgs::msg::GpioInput::SharedPtr msg)
@@ -234,18 +234,18 @@ void R1MainNode::kfs_ryaw(double pos)
   kfs_ryaw_position_ref_publisher_->publish(msg);
 }
 
-void R1MainNode::front_expand_assist(double pos)
+void R1MainNode::front_expand(double pos)
 {
   std_msgs::msg::Float64 msg;
   msg.data = pos;
-  front_expand_assist_position_ref_publisher_->publish(msg);
+  front_expand_position_ref_publisher_->publish(msg);
 }
 
-void R1MainNode::rear_expand_assist(double pos)
+void R1MainNode::rear_expand(double pos)
 {
   std_msgs::msg::Float64 msg;
   msg.data = pos;
-  rear_expand_assist_position_ref_publisher_->publish(msg);
+  rear_expand_position_ref_publisher_->publish(msg);
 }
 
 void R1MainNode::r2_lift(double vel)

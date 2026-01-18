@@ -159,33 +159,33 @@ def generate_launch_description():
         ],
     )
 
-    r1_front_expand_assit_node = Node(
+    r1_front_expand_node = Node(
         package="r1_machine",
         executable="r1_linear_motion_node",
-        name="r1_front_expand_assit_node",
+        name="r1_front_expand_node",
         parameters=[param_file],
         arguments=["--ros-args", "--log-level", "warn"],
         remappings=[
-            ("linear_motion_status", "front_expand_assit_linear_motion_status"),
-            ("linear_motion_motor_ref", "front_expand_assit_motor_ref"),
-            ("linear_motion_position_ref", "front_expand_assit_position_ref"),
-            ("linear_motion_detect_origin", "front_expand_assit_detect_origin"),
-            ("linear_motion_mode_status", "front_expand_assit_mode_status"),
+            ("linear_motion_status", "front_expand_linear_motion_status"),
+            ("linear_motion_motor_ref", "front_expand_motor_ref"),
+            ("linear_motion_position_ref", "front_expand_position_ref"),
+            ("linear_motion_detect_origin", "front_expand_detect_origin"),
+            ("linear_motion_mode_status", "front_expand_mode_status"),
         ],
     )
 
-    r1_rear_expand_assit_node = Node(
+    r1_rear_expand_node = Node(
         package="r1_machine",
         executable="r1_linear_motion_node",
-        name="r1_rear_expand_assit_node",
+        name="r1_rear_expand_node",
         parameters=[param_file],
         arguments=["--ros-args", "--log-level", "warn"],
         remappings=[
-            ("linear_motion_status", "rear_expand_assit_linear_motion_status"),
-            ("linear_motion_motor_ref", "rear_expand_assit_motor_ref"),
-            ("linear_motion_position_ref", "rear_expand_assit_position_ref"),
-            ("linear_motion_detect_origin", "rear_expand_assit_detect_origin"),
-            ("linear_motion_mode_status", "rear_expand_assit_mode_status"),
+            ("linear_motion_status", "rear_expand_linear_motion_status"),
+            ("linear_motion_motor_ref", "rear_expand_motor_ref"),
+            ("linear_motion_position_ref", "rear_expand_position_ref"),
+            ("linear_motion_detect_origin", "rear_expand_detect_origin"),
+            ("linear_motion_mode_status", "rear_expand_mode_status"),
         ],
     )
 
@@ -297,8 +297,8 @@ def generate_launch_description():
             r1_kfs_rx_node,
             r1_kfs_rz_node,
             r1_kfs_ryaw_node,
-            r1_front_expand_assit_node,
-            r1_rear_expand_assit_node,
+            r1_front_expand_node,
+            r1_rear_expand_node,
             # sabacan
             # robomasv2
             sabacan_robomasv2_node_id1,

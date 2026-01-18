@@ -151,20 +151,18 @@ public:
     kfs_ryaw_angle_motion_status_publisher_ =
       this->create_publisher<r1_msgs::msg::AngleMotion>("/kfs_ryaw_angle_motion_status", 10);
 
-    // 展開補助の指令値
-    front_expand_assist_motor_ref_subscription_ = this->create_subscription<r1_msgs::msg::MotorRef>(
-      "/front_expand_assist_motor_ref", 10,
-      std::bind(&MyNode::front_expand_assist_motor_ref_callback, this, std::placeholders::_1));
-    rear_expand_assist_motor_ref_subscription_ = this->create_subscription<r1_msgs::msg::MotorRef>(
-      "/rear_expand_assist_motor_ref", 10,
-      std::bind(&MyNode::rear_expand_assist_motor_ref_callback, this, std::placeholders::_1));
-    // 展開補助のフィードバック
-    front_expand_assist_linear_motion_status_publisher_ =
-      this->create_publisher<r1_msgs::msg::LinearMotion>(
-        "/front_expand_assist_linear_motion_status", 10);
-    rear_expand_assist_linear_motion_status_publisher_ =
-      this->create_publisher<r1_msgs::msg::LinearMotion>(
-        "/rear_expand_assist_linear_motion_status", 10);
+    // 展開の指令値
+    front_expand_motor_ref_subscription_ = this->create_subscription<r1_msgs::msg::MotorRef>(
+      "/front_expand_motor_ref", 10,
+      std::bind(&MyNode::front_expand_motor_ref_callback, this, std::placeholders::_1));
+    rear_expand_motor_ref_subscription_ = this->create_subscription<r1_msgs::msg::MotorRef>(
+      "/rear_expand_motor_ref", 10,
+      std::bind(&MyNode::rear_expand_motor_ref_callback, this, std::placeholders::_1));
+    // 展開のフィードバック
+    front_expand_linear_motion_status_publisher_ =
+      this->create_publisher<r1_msgs::msg::LinearMotion>("/front_expand_linear_motion_status", 10);
+    rear_expand_linear_motion_status_publisher_ =
+      this->create_publisher<r1_msgs::msg::LinearMotion>("/rear_expand_linear_motion_status", 10);
 
     // R2昇降の指令値
     r2_lift_motor_ref_subscription_ = this->create_subscription<r1_msgs::msg::MotorRef>(
@@ -238,16 +236,16 @@ public:
         "/sabacan_robomas_ref" + std::to_string(kfs_ryaw_.board_id) + "/motor" +
           std::to_string(kfs_ryaw_.number),
         10);
-    // 展開補助
-    front_expand_assist_single_ref_publisher_ =
+    // 展開
+    front_expand_single_ref_publisher_ =
       this->create_publisher<sabacan_single_control_msgs::msg::SabacanRobomasSingleRef>(
-        "/sabacan_robomas_ref" + std::to_string(front_expand_assist_.board_id) + "/motor" +
-          std::to_string(front_expand_assist_.number),
+        "/sabacan_robomas_ref" + std::to_string(front_expand_.board_id) + "/motor" +
+          std::to_string(front_expand_.number),
         10);
-    rear_expand_assist_single_ref_publisher_ =
+    rear_expand_single_ref_publisher_ =
       this->create_publisher<sabacan_single_control_msgs::msg::SabacanRobomasSingleRef>(
-        "/sabacan_robomas_ref" + std::to_string(rear_expand_assist_.board_id) + "/motor" +
-          std::to_string(rear_expand_assist_.number),
+        "/sabacan_robomas_ref" + std::to_string(rear_expand_.board_id) + "/motor" +
+          std::to_string(rear_expand_.number),
         10);
     // R2昇降
     r2_lift_single_ref_publisher_ =
@@ -405,20 +403,20 @@ public:
       kfs_ryaw_angle_motion_status_publisher_->publish(angle_msg);
     }
 
-    if (receive == front_expand_assist_) {
+    if (receive == front_expand_) {
       auto linear_msg = r1_msgs::msg::LinearMotion();
       linear_msg.torque = msg->torque;
       linear_msg.speed = msg->speed;
       linear_msg.pos = msg->pos;
-      front_expand_assist_linear_motion_status_publisher_->publish(linear_msg);
+      front_expand_linear_motion_status_publisher_->publish(linear_msg);
     }
 
-    if (receive == rear_expand_assist_) {
+    if (receive == rear_expand_) {
       auto linear_msg = r1_msgs::msg::LinearMotion();
       linear_msg.torque = msg->torque;
       linear_msg.speed = msg->speed;
       linear_msg.pos = msg->pos;
-      rear_expand_assist_linear_motion_status_publisher_->publish(linear_msg);
+      rear_expand_linear_motion_status_publisher_->publish(linear_msg);
     }
 
     if (receive == r2_lift_) {
@@ -545,20 +543,20 @@ public:
     kfs_ryaw_single_ref_publisher_->publish(msg_ref);
   }
 
-  void front_expand_assist_motor_ref_callback(const r1_msgs::msg::MotorRef::SharedPtr msg)
+  void front_expand_motor_ref_callback(const r1_msgs::msg::MotorRef::SharedPtr msg)
   {
     auto msg_ref = sabacan_single_control_msgs::msg::SabacanRobomasSingleRef();
     msg_ref.control_type = msg->control_type;
     msg_ref.ref = msg->ref;
-    front_expand_assist_single_ref_publisher_->publish(msg_ref);
+    front_expand_single_ref_publisher_->publish(msg_ref);
   }
 
-  void rear_expand_assist_motor_ref_callback(const r1_msgs::msg::MotorRef::SharedPtr msg)
+  void rear_expand_motor_ref_callback(const r1_msgs::msg::MotorRef::SharedPtr msg)
   {
     auto msg_ref = sabacan_single_control_msgs::msg::SabacanRobomasSingleRef();
     msg_ref.control_type = msg->control_type;
     msg_ref.ref = msg->ref;
-    rear_expand_assist_single_ref_publisher_->publish(msg_ref);
+    rear_expand_single_ref_publisher_->publish(msg_ref);
   }
 
   void r2_lift_motor_ref_callback(const r1_msgs::msg::MotorRef::SharedPtr msg)
@@ -646,11 +644,11 @@ public:
     kfs_rz_single_ref_publisher_;
   rclcpp::Publisher<sabacan_single_control_msgs::msg::SabacanRobomasSingleRef>::SharedPtr
     kfs_ryaw_single_ref_publisher_;
-  // 展開補助
+  // 展開
   rclcpp::Publisher<sabacan_single_control_msgs::msg::SabacanRobomasSingleRef>::SharedPtr
-    front_expand_assist_single_ref_publisher_;
+    front_expand_single_ref_publisher_;
   rclcpp::Publisher<sabacan_single_control_msgs::msg::SabacanRobomasSingleRef>::SharedPtr
-    rear_expand_assist_single_ref_publisher_;
+    rear_expand_single_ref_publisher_;
   // R2昇降
   rclcpp::Publisher<sabacan_single_control_msgs::msg::SabacanRobomasSingleRef>::SharedPtr
     r2_lift_single_ref_publisher_;
@@ -677,16 +675,14 @@ public:
   rclcpp::Publisher<r1_msgs::msg::LinearMotion>::SharedPtr kfs_rx_linear_motion_status_publisher_;
   rclcpp::Publisher<r1_msgs::msg::LinearMotion>::SharedPtr kfs_rz_linear_motion_status_publisher_;
   rclcpp::Publisher<r1_msgs::msg::AngleMotion>::SharedPtr kfs_ryaw_angle_motion_status_publisher_;
-  // 展開補助の指令値
-  rclcpp::Subscription<r1_msgs::msg::MotorRef>::SharedPtr
-    front_expand_assist_motor_ref_subscription_;
-  rclcpp::Subscription<r1_msgs::msg::MotorRef>::SharedPtr
-    rear_expand_assist_motor_ref_subscription_;
-  // 展開補助のフィードバック
+  // 展開の指令値
+  rclcpp::Subscription<r1_msgs::msg::MotorRef>::SharedPtr front_expand_motor_ref_subscription_;
+  rclcpp::Subscription<r1_msgs::msg::MotorRef>::SharedPtr rear_expand_motor_ref_subscription_;
+  // 展開のフィードバック
   rclcpp::Publisher<r1_msgs::msg::LinearMotion>::SharedPtr
-    front_expand_assist_linear_motion_status_publisher_;
+    front_expand_linear_motion_status_publisher_;
   rclcpp::Publisher<r1_msgs::msg::LinearMotion>::SharedPtr
-    rear_expand_assist_linear_motion_status_publisher_;
+    rear_expand_linear_motion_status_publisher_;
   // R2昇降の指令値
   rclcpp::Subscription<r1_msgs::msg::MotorRef>::SharedPtr r2_lift_motor_ref_subscription_;
   // R2昇降のフィードバック
@@ -718,11 +714,11 @@ public:
   BoardInfo kfs_fx_ = {.board_id = 2, .number = 0};
   BoardInfo kfs_fz_ = {.board_id = 2, .number = 1};
   BoardInfo kfs_fyaw_ = {.board_id = 2, .number = 2};
-  BoardInfo front_expand_assist_ = {.board_id = 2, .number = 3};
+  BoardInfo front_expand_ = {.board_id = 2, .number = 3};
   BoardInfo kfs_rx_ = {.board_id = 3, .number = 0};
   BoardInfo kfs_rz_ = {.board_id = 3, .number = 1};
   BoardInfo kfs_ryaw_ = {.board_id = 3, .number = 2};
-  BoardInfo rear_expand_assist_ = {.board_id = 3, .number = 3};
+  BoardInfo rear_expand_ = {.board_id = 3, .number = 3};
   BoardInfo r2_lift_ = {.board_id = 4, .number = 0};
   // ---------- GPIO ----------
   BoardInfo kfs_front_pump_ = {.board_id = 1, .number = 0};

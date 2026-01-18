@@ -66,15 +66,13 @@ public:
   rclcpp::Subscription<std_msgs::msg::Int32>::SharedPtr kfs_rx_mode_status_subscription_;
   rclcpp::Subscription<std_msgs::msg::Int32>::SharedPtr kfs_rz_mode_status_subscription_;
   rclcpp::Subscription<std_msgs::msg::Int32>::SharedPtr kfs_ryaw_mode_status_subscription_;
-  // 展開補助
+  // 展開
   // 指令値Publisher
-  rclcpp::Publisher<std_msgs::msg::Float64>::SharedPtr front_expand_assist_position_ref_publisher_;
-  rclcpp::Publisher<std_msgs::msg::Float64>::SharedPtr rear_expand_assist_position_ref_publisher_;
+  rclcpp::Publisher<std_msgs::msg::Float64>::SharedPtr front_expand_position_ref_publisher_;
+  rclcpp::Publisher<std_msgs::msg::Float64>::SharedPtr rear_expand_position_ref_publisher_;
   // mode Subscription
-  rclcpp::Subscription<std_msgs::msg::Int32>::SharedPtr
-    front_expand_assist_mode_status_subscription_;
-  rclcpp::Subscription<std_msgs::msg::Int32>::SharedPtr
-    rear_expand_assist_mode_status_subscription_;
+  rclcpp::Subscription<std_msgs::msg::Int32>::SharedPtr front_expand_mode_status_subscription_;
+  rclcpp::Subscription<std_msgs::msg::Int32>::SharedPtr rear_expand_mode_status_subscription_;
   // R2昇降
   rclcpp::Publisher<r1_msgs::msg::MotorRef>::SharedPtr r2_lift_motor_ref_publisher_;
   // KFS真空ポンプ
@@ -101,8 +99,8 @@ public:
   bool is_kfs_rx_pos_mode_ = false;
   bool is_kfs_rz_pos_mode_ = false;
   bool is_kfs_ryaw_pos_mode_ = false;
-  bool is_front_expand_assist_pos_mode_ = false;
-  bool is_rear_expand_assist_pos_mode_ = false;
+  bool is_front_expand_pos_mode_ = false;
+  bool is_rear_expand_pos_mode_ = false;
 
   R1MainNode();
 
@@ -114,8 +112,8 @@ public:
   void kfs_rx_mode_status_callback(const std_msgs::msg::Int32::SharedPtr msg);
   void kfs_rz_mode_status_callback(const std_msgs::msg::Int32::SharedPtr msg);
   void kfs_ryaw_mode_status_callback(const std_msgs::msg::Int32::SharedPtr msg);
-  void front_expand_assist_mode_status_callback(const std_msgs::msg::Int32::SharedPtr msg);
-  void rear_expand_assist_mode_status_callback(const std_msgs::msg::Int32::SharedPtr msg);
+  void front_expand_mode_status_callback(const std_msgs::msg::Int32::SharedPtr msg);
+  void rear_expand_mode_status_callback(const std_msgs::msg::Int32::SharedPtr msg);
   // スイッチのcallback
   void kfs_front_switch_status_callback(const r1_msgs::msg::GpioInput::SharedPtr msg);
   void kfs_rear_switch_status_callback(const r1_msgs::msg::GpioInput::SharedPtr msg);
@@ -129,8 +127,8 @@ public:
   void kfs_rx(double pos);
   void kfs_rz(double pos);
   void kfs_ryaw(double pos);
-  void front_expand_assist(double pos);
-  void rear_expand_assist(double pos);
+  void front_expand(double pos);
+  void rear_expand(double pos);
   void r2_lift(double vel);
   void kfs_front_pump(double pwm);
   void kfs_rear_pump(double pwm);
