@@ -136,9 +136,9 @@ r1_kfs_ryaw_node:
     use_high_switch: false
     inverse_low_switch_logic: false
     inverse_high_switch_logic: false
-# ---------- 展開補助 ----------
+# ---------- 展開 ----------
 # linear motion node
-r1_front_expand_assit_node:
+r1_front_expand_node:
   ros__parameters:
     torque_threshold: 0.5 # Nm
     origin_detect_threshold_time: 0.5 # 秒
@@ -154,7 +154,7 @@ r1_front_expand_assit_node:
     inverse_low_switch_logic: false
     inverse_high_switch_logic: false
 # linear motion node
-r1_front_expand_assit_node:
+r1_front_expand_node:
   ros__parameters:
     torque_threshold: 0.5 # Nm
     origin_detect_threshold_time: 0.5 # 秒

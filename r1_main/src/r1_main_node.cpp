@@ -31,7 +31,7 @@ R1MainNode::R1MainNode() : Node("r1_main_node")
     this->create_publisher<std_msgs::msg::Float64>("/kfs_rz_position_ref", 10);
   kfs_ryaw_position_ref_publisher_ =
     this->create_publisher<std_msgs::msg::Float64>("/kfs_ryaw_position_ref", 10);
-  // 展開補助
+  // 展開
   front_expand_position_ref_publisher_ =
     this->create_publisher<std_msgs::msg::Float64>("/front_expand_position_ref", 10);
   rear_expand_position_ref_publisher_ =
@@ -58,7 +58,7 @@ R1MainNode::R1MainNode() : Node("r1_main_node")
   kfs_ryaw_mode_status_subscription_ = this->create_subscription<std_msgs::msg::Int32>(
     "/kfs_ryaw_mode_status", 10,
     std::bind(&R1MainNode::kfs_ryaw_mode_status_callback, this, std::placeholders::_1));
-  // 展開補助のmode Subscription
+  // 展開のmode Subscription
   front_expand_mode_status_subscription_ = this->create_subscription<std_msgs::msg::Int32>(
     "/front_expand_mode_status", 10,
     std::bind(&R1MainNode::front_expand_mode_status_callback, this, std::placeholders::_1));
