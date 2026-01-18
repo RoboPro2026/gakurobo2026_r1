@@ -50,9 +50,9 @@ r1_kfs_fx_node:
     # ギアが一周すると34pi=107 mm進むので、半径は17mm
     radius: 0.017
     inverse_motor: false
-    use_low_switch: true
+    use_low_switch: false
     use_high_switch: false
-    inverse_low_switch_logic: true
+    inverse_low_switch_logic: false
     inverse_high_switch_logic: false
 # linear motion node
 r1_kfs_fz_node:
@@ -66,9 +66,9 @@ r1_kfs_fz_node:
     # ギアが一周すると34pi=107 mm進むので、半径は17mm
     radius: 0.017
     inverse_motor: false
-    use_low_switch: true
+    use_low_switch: false
     use_high_switch: false
-    inverse_low_switch_logic: true
+    inverse_low_switch_logic: false
     inverse_high_switch_logic: false
 # angle motion node
 r1_kfs_fyaw_node:
@@ -99,9 +99,9 @@ r1_kfs_rx_node:
     # ギアが一周すると34pi=107 mm進むので、半径は17mm
     radius: 0.017
     inverse_motor: false
-    use_low_switch: true
+    use_low_switch: false
     use_high_switch: false
-    inverse_low_switch_logic: true
+    inverse_low_switch_logic: false
     inverse_high_switch_logic: false
 # linear motion node
 r1_kfs_rz_node:
@@ -115,9 +115,9 @@ r1_kfs_rz_node:
     # ギアが一周すると34pi=107 mm進むので、半径は17mm
     radius: 0.017
     inverse_motor: false
-    use_low_switch: true
+    use_low_switch: false
     use_high_switch: false
-    inverse_low_switch_logic: true
+    inverse_low_switch_logic: false
     inverse_high_switch_logic: false
 # angle motion node
 r1_kfs_ryaw_node:
@@ -131,6 +131,39 @@ r1_kfs_ryaw_node:
     # ギア比で割った値がモーターの角度指令値となる
     # 減速比は26 / 80 = 0.325
     gear_ratio: 0.325
+    inverse_motor: false
+    use_low_switch: false
+    use_high_switch: false
+    inverse_low_switch_logic: false
+    inverse_high_switch_logic: false
+# ---------- 展開補助 ----------
+# linear motion node
+r1_front_expand_assit_node:
+  ros__parameters:
+    torque_threshold: 0.5 # Nm
+    origin_detect_threshold_time: 0.5 # 秒
+    # 原点検出のときは、0の方向に戻るので、負の速度にする
+    output_detect_speed: -3.14 # rad/s
+    pos_min: 0.0
+    pos_max: 0.3
+    # ギアが一周すると34pi=107 mm進むので、半径は17mm
+    radius: 0.017
+    inverse_motor: false
+    use_low_switch: false
+    use_high_switch: false
+    inverse_low_switch_logic: false
+    inverse_high_switch_logic: false
+# linear motion node
+r1_front_expand_assit_node:
+  ros__parameters:
+    torque_threshold: 0.5 # Nm
+    origin_detect_threshold_time: 0.5 # 秒
+    # 原点検出のときは、0の方向に戻るので、負の速度にする
+    output_detect_speed: -3.14 # rad/s
+    pos_min: 0.0
+    pos_max: 0.3
+    # ギアが一周すると34pi=107 mm進むので、半径は17mm
+    radius: 0.017
     inverse_motor: false
     use_low_switch: false
     use_high_switch: false

@@ -75,6 +75,12 @@ def generate_launch_description():
         name="r1_kfs_fx_node",
         parameters=[param_file],
         arguments=["--ros-args", "--log-level", "warn"],
+        remappings=[
+            ("linear_motion_status", "kfs_fx_linear_motion_status"),
+            ("linear_motion_motor_ref", "kfs_fx_motor_ref"),
+            ("linear_motion_position_ref", "kfs_fx_position_ref"),
+            ("linear_motion_detect_origin", "kfs_fx_detect_origin"),
+        ],
     )
 
     r1_kfs_fz_node = Node(
@@ -83,6 +89,12 @@ def generate_launch_description():
         name="r1_kfs_fz_node",
         parameters=[param_file],
         arguments=["--ros-args", "--log-level", "warn"],
+        remappings=[
+            ("linear_motion_status", "kfs_fz_linear_motion_status"),
+            ("linear_motion_motor_ref", "kfs_fz_motor_ref"),
+            ("linear_motion_position_ref", "kfs_fz_position_ref"),
+            ("linear_motion_detect_origin", "kfs_fz_detect_origin"),
+        ],
     )
 
     r1_kfs_fyaw_node = Node(
@@ -91,6 +103,12 @@ def generate_launch_description():
         name="r1_kfs_fyaw_node",
         parameters=[param_file],
         arguments=["--ros-args", "--log-level", "warn"],
+        remappings=[
+            ("angle_motion_status", "kfs_fyaw_angle_motion_status"),
+            ("angle_motion_motor_ref", "kfs_fyaw_motor_ref"),
+            ("angle_motion_position_ref", "kfs_fyaw_position_ref"),
+            ("angle_motion_detect_origin", "kfs_fyaw_detect_origin"),
+        ],
     )
 
     r1_kfs_rx_node = Node(
@@ -99,6 +117,12 @@ def generate_launch_description():
         name="r1_kfs_rx_node",
         parameters=[param_file],
         arguments=["--ros-args", "--log-level", "warn"],
+        remappings=[
+            ("linear_motion_status", "kfs_rx_linear_motion_status"),
+            ("linear_motion_motor_ref", "kfs_rx_motor_ref"),
+            ("linear_motion_position_ref", "kfs_rx_position_ref"),
+            ("linear_motion_detect_origin", "kfs_rx_detect_origin"),
+        ],
     )
 
     r1_kfs_rz_node = Node(
@@ -107,6 +131,12 @@ def generate_launch_description():
         name="r1_kfs_rz_node",
         parameters=[param_file],
         arguments=["--ros-args", "--log-level", "warn"],
+        remappings=[
+            ("linear_motion_status", "kfs_rz_linear_motion_status"),
+            ("linear_motion_motor_ref", "kfs_rz_motor_ref"),
+            ("linear_motion_position_ref", "kfs_rz_position_ref"),
+            ("linear_motion_detect_origin", "kfs_rz_detect_origin"),
+        ],
     )
 
     r1_kfs_ryaw_node = Node(
@@ -115,6 +145,40 @@ def generate_launch_description():
         name="r1_kfs_ryaw_node",
         parameters=[param_file],
         arguments=["--ros-args", "--log-level", "warn"],
+        remappings=[
+            ("angle_motion_status", "kfs_ryaw_angle_motion_status"),
+            ("angle_motion_motor_ref", "kfs_ryaw_motor_ref"),
+            ("angle_motion_position_ref", "kfs_ryaw_position_ref"),
+            ("angle_motion_detect_origin", "kfs_ryaw_detect_origin"),
+        ],
+    )
+
+    r1_front_expand_assit_node = Node(
+        package="r1_machine",
+        executable="r1_linear_motion_node",
+        name="r1_front_expand_assit_node",
+        parameters=[param_file],
+        arguments=["--ros-args", "--log-level", "warn"],
+        remappings=[
+            ("linear_motion_status", "front_expand_assit_linear_motion_status"),
+            ("linear_motion_motor_ref", "front_expand_assit_motor_ref"),
+            ("linear_motion_position_ref", "front_expand_assit_position_ref"),
+            ("linear_motion_detect_origin", "front_expand_assit_detect_origin"),
+        ],
+    )
+
+    r1_rear_expand_assit_node = Node(
+        package="r1_machine",
+        executable="r1_linear_motion_node",
+        name="r1_rear_expand_assit_node",
+        parameters=[param_file],
+        arguments=["--ros-args", "--log-level", "warn"],
+        remappings=[
+            ("linear_motion_status", "rear_expand_assit_linear_motion_status"),
+            ("linear_motion_motor_ref", "rear_expand_assit_motor_ref"),
+            ("linear_motion_position_ref", "rear_expand_assit_position_ref"),
+            ("linear_motion_detect_origin", "rear_expand_assit_detect_origin"),
+        ],
     )
 
     def create_sabacan_robomasv2_node(board_id: int, log_level="warn") -> Node:
@@ -225,6 +289,8 @@ def generate_launch_description():
             r1_kfs_rx_node,
             r1_kfs_rz_node,
             r1_kfs_ryaw_node,
+            r1_front_expand_assit_node,
+            r1_rear_expand_assit_node,
             # sabacan
             # robomasv2
             sabacan_robomasv2_node_id1,
