@@ -18,6 +18,7 @@
 #include "rclcpp/rclcpp.hpp"
 #include "std_msgs/msg/bool.hpp"
 #include "std_msgs/msg/float64.hpp"
+#include "std_msgs/msg/int32.hpp"
 
 using namespace std::chrono_literals;
 
@@ -48,6 +49,9 @@ public:
     detect_origin_subscription_ = this->create_subscription<std_msgs::msg::Bool>(
       "/linear_motion_detect_origin", 10,
       std::bind(&MyNode::detect_origin_callback, this, std::placeholders::_1));
+
+    mode_status_publisher_ =
+      this->create_publisher<std_msgs::msg::Int32>("/linear_motion_mode_status", 10);
 
     parameter_callback_handler_ = this->add_on_set_parameters_callback(
       std::bind(&MyNode::parameter_callback, this, std::placeholders::_1));
@@ -243,6 +247,10 @@ public:
       linear_motion_ref_publisher_->publish(motor_ref_msg);
       // RCLCPP_INFO(this->get_logger(), "Publishing motor speed ref: %.3f", motor_ref_msg.ref);
     }
+    // モードをPublish
+    auto mode_msg = std_msgs::msg::Int32();
+    mode_msg.data = mode_;
+    mode_status_publisher_->publish(mode_msg);
   }
 
 private:
@@ -252,6 +260,7 @@ private:
   rclcpp::Publisher<r1_msgs::msg::MotorRef>::SharedPtr linear_motion_ref_publisher_;
   rclcpp::Subscription<std_msgs::msg::Float64>::SharedPtr position_ref_subscription_;
   rclcpp::Subscription<std_msgs::msg::Bool>::SharedPtr detect_origin_subscription_;
+  rclcpp::Publisher<std_msgs::msg::Int32>::SharedPtr mode_status_publisher_;
   rclcpp::node_interfaces::OnSetParametersCallbackHandle::SharedPtr parameter_callback_handler_;
 
   rclcpp::TimerBase::SharedPtr timer_;

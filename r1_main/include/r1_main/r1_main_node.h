@@ -34,6 +34,7 @@
 #include "sensor_msgs/msg/joy.hpp"
 #include "std_msgs/msg/bool.hpp"
 #include "std_msgs/msg/float64.hpp"
+#include "std_msgs/msg/int32.hpp"
 
 class R1MainNode : public rclcpp::Node
 {
@@ -51,15 +52,29 @@ public:
   rclcpp::Subscription<sensor_msgs::msg::Joy>::SharedPtr joy_subscription_;
 
   // KFS回収
+  // 指令値Publisher
   rclcpp::Publisher<std_msgs::msg::Float64>::SharedPtr kfs_fx_position_ref_publisher_;
   rclcpp::Publisher<std_msgs::msg::Float64>::SharedPtr kfs_fz_position_ref_publisher_;
   rclcpp::Publisher<std_msgs::msg::Float64>::SharedPtr kfs_fyaw_position_ref_publisher_;
   rclcpp::Publisher<std_msgs::msg::Float64>::SharedPtr kfs_rx_position_ref_publisher_;
   rclcpp::Publisher<std_msgs::msg::Float64>::SharedPtr kfs_rz_position_ref_publisher_;
   rclcpp::Publisher<std_msgs::msg::Float64>::SharedPtr kfs_ryaw_position_ref_publisher_;
+  // mode Subscription
+  rclcpp::Subscription<std_msgs::msg::Int32>::SharedPtr kfs_fx_mode_status_subscription_;
+  rclcpp::Subscription<std_msgs::msg::Int32>::SharedPtr kfs_fz_mode_status_subscription_;
+  rclcpp::Subscription<std_msgs::msg::Int32>::SharedPtr kfs_fyaw_mode_status_subscription_;
+  rclcpp::Subscription<std_msgs::msg::Int32>::SharedPtr kfs_rx_mode_status_subscription_;
+  rclcpp::Subscription<std_msgs::msg::Int32>::SharedPtr kfs_rz_mode_status_subscription_;
+  rclcpp::Subscription<std_msgs::msg::Int32>::SharedPtr kfs_ryaw_mode_status_subscription_;
   // 展開補助
+  // 指令値Publisher
   rclcpp::Publisher<std_msgs::msg::Float64>::SharedPtr front_expand_assist_position_ref_publisher_;
   rclcpp::Publisher<std_msgs::msg::Float64>::SharedPtr rear_expand_assist_position_ref_publisher_;
+  // mode Subscription
+  rclcpp::Subscription<std_msgs::msg::Int32>::SharedPtr
+    front_expand_assist_mode_status_subscription_;
+  rclcpp::Subscription<std_msgs::msg::Int32>::SharedPtr
+    rear_expand_assist_mode_status_subscription_;
   // R2昇降
   rclcpp::Publisher<r1_msgs::msg::MotorRef>::SharedPtr r2_lift_motor_ref_publisher_;
   // KFS真空ポンプ
@@ -71,7 +86,6 @@ public:
   // KFSリミットスイッチ
   rclcpp::Subscription<r1_msgs::msg::GpioInput>::SharedPtr kfs_front_switch_status_subscription_;
   rclcpp::Subscription<r1_msgs::msg::GpioInput>::SharedPtr kfs_rear_switch_status_subscription_;
-  // TODO: detect_originは後で書く、また現在の動作状況についても出力するようにする
 
   rclcpp::TimerBase::SharedPtr timer_publisher_;
 
@@ -81,9 +95,28 @@ public:
   bool kfs_front_switch_status_ = false;
   bool kfs_rear_switch_status_ = false;
 
+  bool is_kfs_fx_pos_mode_ = false;
+  bool is_kfs_fz_pos_mode_ = false;
+  bool is_kfs_fyaw_pos_mode_ = false;
+  bool is_kfs_rx_pos_mode_ = false;
+  bool is_kfs_rz_pos_mode_ = false;
+  bool is_kfs_ryaw_pos_mode_ = false;
+  bool is_front_expand_assist_pos_mode_ = false;
+  bool is_rear_expand_assist_pos_mode_ = false;
+
   R1MainNode();
 
   // ========== コールバック関数 =========
+  // modeのcalalback
+  void kfs_fx_mode_status_callback(const std_msgs::msg::Int32::SharedPtr msg);
+  void kfs_fz_mode_status_callback(const std_msgs::msg::Int32::SharedPtr msg);
+  void kfs_fyaw_mode_status_callback(const std_msgs::msg::Int32::SharedPtr msg);
+  void kfs_rx_mode_status_callback(const std_msgs::msg::Int32::SharedPtr msg);
+  void kfs_rz_mode_status_callback(const std_msgs::msg::Int32::SharedPtr msg);
+  void kfs_ryaw_mode_status_callback(const std_msgs::msg::Int32::SharedPtr msg);
+  void front_expand_assist_mode_status_callback(const std_msgs::msg::Int32::SharedPtr msg);
+  void rear_expand_assist_mode_status_callback(const std_msgs::msg::Int32::SharedPtr msg);
+  // スイッチのcallback
   void kfs_front_switch_status_callback(const r1_msgs::msg::GpioInput::SharedPtr msg);
   void kfs_rear_switch_status_callback(const r1_msgs::msg::GpioInput::SharedPtr msg);
   void joy_callback(const sensor_msgs::msg::Joy::SharedPtr msg);

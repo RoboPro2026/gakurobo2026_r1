@@ -80,6 +80,7 @@ def generate_launch_description():
             ("linear_motion_motor_ref", "kfs_fx_motor_ref"),
             ("linear_motion_position_ref", "kfs_fx_position_ref"),
             ("linear_motion_detect_origin", "kfs_fx_detect_origin"),
+            ("linear_motion_mode_status", "kfs_fx_mode_status"),
         ],
     )
 
@@ -94,6 +95,7 @@ def generate_launch_description():
             ("linear_motion_motor_ref", "kfs_fz_motor_ref"),
             ("linear_motion_position_ref", "kfs_fz_position_ref"),
             ("linear_motion_detect_origin", "kfs_fz_detect_origin"),
+            ("linear_motion_mode_status", "kfs_fz_mode_status"),
         ],
     )
 
@@ -108,6 +110,7 @@ def generate_launch_description():
             ("angle_motion_motor_ref", "kfs_fyaw_motor_ref"),
             ("angle_motion_position_ref", "kfs_fyaw_position_ref"),
             ("angle_motion_detect_origin", "kfs_fyaw_detect_origin"),
+            ("angle_motion_mode_status", "kfs_fyaw_mode_status"),
         ],
     )
 
@@ -122,6 +125,7 @@ def generate_launch_description():
             ("linear_motion_motor_ref", "kfs_rx_motor_ref"),
             ("linear_motion_position_ref", "kfs_rx_position_ref"),
             ("linear_motion_detect_origin", "kfs_rx_detect_origin"),
+            ("linear_motion_mode_status", "kfs_rx_mode_status"),
         ],
     )
 
@@ -136,6 +140,7 @@ def generate_launch_description():
             ("linear_motion_motor_ref", "kfs_rz_motor_ref"),
             ("linear_motion_position_ref", "kfs_rz_position_ref"),
             ("linear_motion_detect_origin", "kfs_rz_detect_origin"),
+            ("linear_motion_mode_status", "kfs_rz_mode_status"),
         ],
     )
 
@@ -150,6 +155,7 @@ def generate_launch_description():
             ("angle_motion_motor_ref", "kfs_ryaw_motor_ref"),
             ("angle_motion_position_ref", "kfs_ryaw_position_ref"),
             ("angle_motion_detect_origin", "kfs_ryaw_detect_origin"),
+            ("angle_motion_mode_status", "kfs_ryaw_mode_status"),
         ],
     )
 
@@ -164,6 +170,7 @@ def generate_launch_description():
             ("linear_motion_motor_ref", "front_expand_assit_motor_ref"),
             ("linear_motion_position_ref", "front_expand_assit_position_ref"),
             ("linear_motion_detect_origin", "front_expand_assit_detect_origin"),
+            ("linear_motion_mode_status", "front_expand_assit_mode_status"),
         ],
     )
 
@@ -178,6 +185,7 @@ def generate_launch_description():
             ("linear_motion_motor_ref", "rear_expand_assit_motor_ref"),
             ("linear_motion_position_ref", "rear_expand_assit_position_ref"),
             ("linear_motion_detect_origin", "rear_expand_assit_detect_origin"),
+            ("linear_motion_mode_status", "rear_expand_assit_mode_status"),
         ],
     )
 

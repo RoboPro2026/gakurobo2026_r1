@@ -39,11 +39,38 @@ R1MainNode::R1MainNode() : Node("r1_main_node")
   // R2昇降
   r2_lift_motor_ref_publisher_ =
     this->create_publisher<r1_msgs::msg::MotorRef>("/r2_lift_motor_ref", 10);
+  // modeのSubscription
+  kfs_fx_mode_status_subscription_ = this->create_subscription<std_msgs::msg::Int32>(
+    "/kfs_fx_mode_status", 10,
+    std::bind(&R1MainNode::kfs_fx_mode_status_callback, this, std::placeholders::_1));
+  kfs_fz_mode_status_subscription_ = this->create_subscription<std_msgs::msg::Int32>(
+    "/kfs_fz_mode_status", 10,
+    std::bind(&R1MainNode::kfs_fz_mode_status_callback, this, std::placeholders::_1));
+  kfs_fyaw_mode_status_subscription_ = this->create_subscription<std_msgs::msg::Int32>(
+    "/kfs_fyaw_mode_status", 10,
+    std::bind(&R1MainNode::kfs_fyaw_mode_status_callback, this, std::placeholders::_1));
+  kfs_rx_mode_status_subscription_ = this->create_subscription<std_msgs::msg::Int32>(
+    "/kfs_rx_mode_status", 10,
+    std::bind(&R1MainNode::kfs_rx_mode_status_callback, this, std::placeholders::_1));
+  kfs_rz_mode_status_subscription_ = this->create_subscription<std_msgs::msg::Int32>(
+    "/kfs_rz_mode_status", 10,
+    std::bind(&R1MainNode::kfs_rz_mode_status_callback, this, std::placeholders::_1));
+  kfs_ryaw_mode_status_subscription_ = this->create_subscription<std_msgs::msg::Int32>(
+    "/kfs_ryaw_mode_status", 10,
+    std::bind(&R1MainNode::kfs_ryaw_mode_status_callback, this, std::placeholders::_1));
+  // 展開補助のmode Subscription
+  front_expand_assist_mode_status_subscription_ = this->create_subscription<std_msgs::msg::Int32>(
+    "/front_expand_assist_mode_status", 10,
+    std::bind(&R1MainNode::front_expand_assist_mode_status_callback, this, std::placeholders::_1));
+  rear_expand_assist_mode_status_subscription_ = this->create_subscription<std_msgs::msg::Int32>(
+    "/rear_expand_assist_mode_status", 10,
+    std::bind(&R1MainNode::rear_expand_assist_mode_status_callback, this, std::placeholders::_1));
+
   // リミットスイッチ
-  kfs_front_switch_status_subscription_ = this->create_subscription<r1_msgs::msg::Bool>(
+  kfs_front_switch_status_subscription_ = this->create_subscription<r1_msgs::msg::GpioInput>(
     "/kfs_front_switch_status", 10,
     std::bind(&R1MainNode::kfs_front_switch_status_callback, this, std::placeholders::_1));
-  kfs_rear_switch_status_subscription_ = this->create_subscription<r1_msgs::msg::Bool>(
+  kfs_rear_switch_status_subscription_ = this->create_subscription<r1_msgs::msg::GpioInput>(
     "/kfs_rear_switch_status", 10,
     std::bind(&R1MainNode::kfs_rear_switch_status_callback, this, std::placeholders::_1));
 
@@ -59,14 +86,94 @@ R1MainNode::R1MainNode() : Node("r1_main_node")
   state_machine_->set_next_state({MainState::MANUAL, ManualSubState::NONE});
 }
 
+void R1MainNode::kfs_fx_mode_status_callback(const std_msgs::msg::Int32::SharedPtr msg)
+{
+  auto mode = msg->data;
+  bool _is_pos_mode = (mode == 0);
+  if (_is_pos_mode == true && is_kfs_fx_pos_mode_ == false) {
+    RCLCPP_INFO(this->get_logger(), "kfs fx detected origin");
+  }
+  is_kfs_fx_pos_mode_ = _is_pos_mode;
+}
+
+void R1MainNode::kfs_fz_mode_status_callback(const std_msgs::msg::Int32::SharedPtr msg)
+{
+  auto mode = msg->data;
+  bool _is_pos_mode = (mode == 0);
+  if (_is_pos_mode == true && is_kfs_fz_pos_mode_ == false) {
+    RCLCPP_INFO(this->get_logger(), "kfs fz detected origin");
+  }
+  is_kfs_fz_pos_mode_ = _is_pos_mode;
+}
+
+void R1MainNode::kfs_fyaw_mode_status_callback(const std_msgs::msg::Int32::SharedPtr msg)
+{
+  auto mode = msg->data;
+  bool _is_pos_mode = (mode == 0);
+  if (_is_pos_mode == true && is_kfs_fyaw_pos_mode_ == false) {
+    RCLCPP_INFO(this->get_logger(), "kfs fyaw detected origin");
+  }
+  is_kfs_fyaw_pos_mode_ = _is_pos_mode;
+}
+
+void R1MainNode::kfs_rx_mode_status_callback(const std_msgs::msg::Int32::SharedPtr msg)
+{
+  auto mode = msg->data;
+  bool _is_pos_mode = (mode == 0);
+  if (_is_pos_mode == true && is_kfs_rx_pos_mode_ == false) {
+    RCLCPP_INFO(this->get_logger(), "kfs rx detected origin");
+  }
+  is_kfs_rx_pos_mode_ = _is_pos_mode;
+}
+
+void R1MainNode::kfs_rz_mode_status_callback(const std_msgs::msg::Int32::SharedPtr msg)
+{
+  auto mode = msg->data;
+  bool _is_pos_mode = (mode == 0);
+  if (_is_pos_mode == true && is_kfs_rz_pos_mode_ == false) {
+    RCLCPP_INFO(this->get_logger(), "kfs rz detected origin");
+  }
+  is_kfs_rz_pos_mode_ = _is_pos_mode;
+}
+
+void R1MainNode::kfs_ryaw_mode_status_callback(const std_msgs::msg::Int32::SharedPtr msg)
+{
+  auto mode = msg->data;
+  bool _is_pos_mode = (mode == 0);
+  if (_is_pos_mode == true && is_kfs_ryaw_pos_mode_ == false) {
+    RCLCPP_INFO(this->get_logger(), "kfs ryaw detected origin");
+  }
+  is_kfs_ryaw_pos_mode_ = _is_pos_mode;
+}
+
+void R1MainNode::front_expand_assist_mode_status_callback(const std_msgs::msg::Int32::SharedPtr msg)
+{
+  auto mode = msg->data;
+  bool _is_pos_mode = (mode == 0);
+  if (_is_pos_mode == true && is_front_expand_assist_pos_mode_ == false) {
+    RCLCPP_INFO(this->get_logger(), "front expand assist detected origin");
+  }
+  is_front_expand_assist_pos_mode_ = _is_pos_mode;
+}
+
+void R1MainNode::rear_expand_assist_mode_status_callback(const std_msgs::msg::Int32::SharedPtr msg)
+{
+  auto mode = msg->data;
+  bool _is_pos_mode = (mode == 0);
+  if (_is_pos_mode == true && is_rear_expand_assist_pos_mode_ == false) {
+    RCLCPP_INFO(this->get_logger(), "rear expand assist detected origin");
+  }
+  is_rear_expand_assist_pos_mode_ = _is_pos_mode;
+}
+
 void R1MainNode::kfs_front_switch_status_callback(const r1_msgs::msg::GpioInput::SharedPtr msg)
 {
-  kfs_front_switch_status_ = msg->data;
+  kfs_front_switch_status_ = msg->status;
 }
 
 void R1MainNode::kfs_rear_switch_status_callback(const r1_msgs::msg::GpioInput::SharedPtr msg)
 {
-  kfs_rear_switch_status_ = msg->data;
+  kfs_rear_switch_status_ = msg->status;
 }
 
 // --- コールバック関数 ---
@@ -152,28 +259,28 @@ void R1MainNode::r2_lift(double vel)
 void R1MainNode::kfs_front_pump(double pwm)
 {
   r1_msgs::msg::GpioPwmRef msg;
-  msg.pwm = pwm;
+  msg.ref = pwm;
   kfs_front_pump_gpio_pwm_ref_publisher_->publish(msg);
 }
 
 void R1MainNode::kfs_rear_pump(double pwm)
 {
   r1_msgs::msg::GpioPwmRef msg;
-  msg.pwm = pwm;
+  msg.ref = pwm;
   kfs_rear_pump_gpio_pwm_ref_publisher_->publish(msg);
 }
 
 void R1MainNode::kfs_front_valve(bool on)
 {
   r1_msgs::msg::GpioPwmRef msg;
-  msg.pwm = on ? 1.0 : 0.0;
+  msg.ref = on ? 1.0 : 0.0;
   kfs_front_valve_gpio_pwm_ref_publisher_->publish(msg);
 }
 
 void R1MainNode::kfs_rear_valve(bool on)
 {
   r1_msgs::msg::GpioPwmRef msg;
-  msg.pwm = on ? 1.0 : 0.0;
+  msg.ref = on ? 1.0 : 0.0;
   kfs_rear_valve_gpio_pwm_ref_publisher_->publish(msg);
 }
 
