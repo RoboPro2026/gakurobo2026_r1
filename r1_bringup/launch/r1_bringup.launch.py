@@ -27,6 +27,22 @@ def generate_launch_description():
         arguments=["--ros-args", "--log-level", "warn"],
     )
 
+    bno086_node = Node(
+        package="bno086",
+        executable="bno086_node",
+        name="bno086_node",
+        parameters=[param_file],
+        arguments=["--ros-args", "--log-level", "warn"],
+    )
+
+    r1_main_node = Node(
+        package="r1_main",
+        executable="r1_main_node",
+        name="r1_main_node",
+        parameters=[param_file],
+        arguments=["--ros-args", "--log-level", "info"],
+    )
+
     # メカナムホイールの指令値を知りたいときはinfoにする
     r1_mecanum_node = Node(
         package="r1_machine",
@@ -53,106 +69,127 @@ def generate_launch_description():
         arguments=["--ros-args", "--log-level", "warn"],
     )
 
-    r1_linear_motion_node = Node(
+    r1_kfs_fx_node = Node(
         package="r1_machine",
         executable="r1_linear_motion_node",
-        name="r1_linear_motion_node",
+        name="r1_kfs_fx_node",
         parameters=[param_file],
-        arguments=["--ros-args", "--log-level", "info"],
+        arguments=["--ros-args", "--log-level", "warn"],
     )
 
-    r1_angle_motion_node = Node(
+    r1_kfs_fz_node = Node(
+        package="r1_machine",
+        executable="r1_linear_motion_node",
+        name="r1_kfs_fz_node",
+        parameters=[param_file],
+        arguments=["--ros-args", "--log-level", "warn"],
+    )
+
+    r1_kfs_fyaw_node = Node(
         package="r1_machine",
         executable="r1_angle_motion_node",
-        name="r1_angle_motion_node",
+        name="r1_kfs_fyaw_node",
         parameters=[param_file],
-        arguments=["--ros-args", "--log-level", "info"],
+        arguments=["--ros-args", "--log-level", "warn"],
     )
 
-    r1_main_node = Node(
-        package="r1_main",
-        executable="r1_main_node",
-        name="r1_main_node",
+    r1_kfs_rx_node = Node(
+        package="r1_machine",
+        executable="r1_linear_motion_node",
+        name="r1_kfs_rx_node",
         parameters=[param_file],
-        arguments=["--ros-args", "--log-level", "info"],
+        arguments=["--ros-args", "--log-level", "warn"],
     )
 
-    sabacan_robomas_node1 = Node(
+    r1_kfs_rz_node = Node(
+        package="r1_machine",
+        executable="r1_linear_motion_node",
+        name="r1_kfs_rz_node",
+        parameters=[param_file],
+        arguments=["--ros-args", "--log-level", "warn"],
+    )
+
+    r1_kfs_ryaw_node = Node(
+        package="r1_machine",
+        executable="r1_angle_motion_node",
+        name="r1_kfs_ryaw_node",
+        parameters=[param_file],
+        arguments=["--ros-args", "--log-level", "warn"],
+    )
+
+    def create_sabacan_robomasv2_node(board_id: int, log_level="warn") -> Node:
+        return Node(
+            package="sabacan",
+            executable="sabacan_robomasv2_node",
+            name=f"sabacan_robomasv2_node_id{board_id}",
+            parameters=[param_file],
+            arguments=["--ros-args", "--log-level", log_level],
+        )
+
+    sabacan_robomasv2_node_id1 = create_sabacan_robomasv2_node(1)
+    sabacan_robomasv2_node_id2 = create_sabacan_robomasv2_node(2)
+    sabacan_robomasv2_node_id3 = create_sabacan_robomasv2_node(3)
+    sabacan_robomasv2_node_id4 = create_sabacan_robomasv2_node(4)
+    sabacan_robomasv2_node_id5 = create_sabacan_robomasv2_node(5)
+
+    def create_sabacan_single_control_node(
+        board_id: int, motor_number: int, log_level="warn"
+    ) -> Node:
+        return Node(
+            package="sabacan_single_control",
+            executable="sabacan_single_control_node",
+            name=f"sabacan_single_control_node_id{board_id}_motor{motor_number}",
+            parameters=[param_file],
+            arguments=["--ros-args", "--log-level", log_level],
+        )
+
+    sabacan_single_control_id1_motor0 = create_sabacan_single_control_node(1, 0)
+    sabacan_single_control_id1_motor1 = create_sabacan_single_control_node(1, 1)
+    sabacan_single_control_id1_motor2 = create_sabacan_single_control_node(1, 2)
+    sabacan_single_control_id1_motor3 = create_sabacan_single_control_node(1, 3)
+    sabacan_single_control_id2_motor0 = create_sabacan_single_control_node(2, 0)
+    sabacan_single_control_id2_motor1 = create_sabacan_single_control_node(2, 1)
+    sabacan_single_control_id2_motor2 = create_sabacan_single_control_node(2, 2)
+    sabacan_single_control_id2_motor3 = create_sabacan_single_control_node(2, 3)
+    sabacan_single_control_id3_motor0 = create_sabacan_single_control_node(3, 0)
+    sabacan_single_control_id3_motor1 = create_sabacan_single_control_node(3, 1)
+    sabacan_single_control_id3_motor2 = create_sabacan_single_control_node(3, 2)
+    sabacan_single_control_id3_motor3 = create_sabacan_single_control_node(3, 3)
+    sabacan_single_control_id4_motor0 = create_sabacan_single_control_node(4, 0)
+    sabacan_single_control_id4_motor1 = create_sabacan_single_control_node(4, 1)
+    sabacan_single_control_id4_motor2 = create_sabacan_single_control_node(4, 2)
+    sabacan_single_control_id4_motor3 = create_sabacan_single_control_node(4, 3)
+    sabacan_single_control_id5_motor0 = create_sabacan_single_control_node(5, 0)
+    sabacan_single_control_id5_motor1 = create_sabacan_single_control_node(5, 1)
+    sabacan_single_control_id5_motor2 = create_sabacan_single_control_node(5, 2)
+    sabacan_single_control_id5_motor3 = create_sabacan_single_control_node(5, 3)
+
+    def create_sabacan_gpio_node(board_id: int, log_level="warn") -> Node:
+        return Node(
+            package="sabacan",
+            executable="sabacan_gpio_node",
+            name=f"sabacan_gpio_node_id{board_id}",
+            parameters=[param_file],
+            arguments=["--ros-args", "--log-level", log_level],
+        )
+
+    sabacan_gpio_node1 = create_sabacan_gpio_node(1)
+    sabacan_gpio_node2 = create_sabacan_gpio_node(2)
+    sabacan_gpio_node3 = create_sabacan_gpio_node(3)
+    sabacan_gpio_node4 = create_sabacan_gpio_node(4)
+
+    sabacan_power_node_id0 = Node(
         package="sabacan",
-        executable="sabacan_robomasv2_node",
-        name="sabacan_robomasv2_node_id1",
+        executable="sabacan_power_node",
+        name="sabacan_power_node_id0",
         parameters=[param_file],
         arguments=["--ros-args", "--log-level", "warn"],
     )
 
-    sabacan_robomas_node2 = Node(
+    sabacan_led_node_id1 = Node(
         package="sabacan",
-        executable="sabacan_robomasv2_node",
-        name="sabacan_robomasv2_node_id2",
-        parameters=[param_file],
-        arguments=["--ros-args", "--log-level", "warn"],
-    )
-
-    sabacan_gpio_node1 = Node(
-        package="sabacan",
-        executable="sabacan_gpio_node",
-        name="sabacan_gpio_node_id1",
-        parameters=[param_file],
-        arguments=["--ros-args", "--log-level", "warn"],
-    )
-
-    sabacan_single_control_mecanum_fl = Node(
-        package="sabacan_single_control",
-        executable="sabacan_single_control_node",
-        name="sabacan_single_control_mecanum_fl",
-        parameters=[param_file],
-        arguments=["--ros-args", "--log-level", "warn"],
-    )
-
-    sabacan_single_control_mecanum_fr = Node(
-        package="sabacan_single_control",
-        executable="sabacan_single_control_node",
-        name="sabacan_single_control_mecanum_fr",
-        parameters=[param_file],
-        arguments=["--ros-args", "--log-level", "warn"],
-    )
-
-    sabacan_single_control_mecanum_rl = Node(
-        package="sabacan_single_control",
-        executable="sabacan_single_control_node",
-        name="sabacan_single_control_mecanum_rl",
-        parameters=[param_file],
-        arguments=["--ros-args", "--log-level", "warn"],
-    )
-
-    sabacan_single_control_mecanum_rr = Node(
-        package="sabacan_single_control",
-        executable="sabacan_single_control_node",
-        name="sabacan_single_control_mecanum_rr",
-        parameters=[param_file],
-        arguments=["--ros-args", "--log-level", "warn"],
-    )
-
-    sabacan_single_control_linear_motion_x = Node(
-        package="sabacan_single_control",
-        executable="sabacan_single_control_node",
-        name="sabacan_single_control_linear_motion_x",
-        parameters=[param_file],
-        arguments=["--ros-args", "--log-level", "warn"],
-    )
-
-    sabacan_single_control_linear_motion_y = Node(
-        package="sabacan_single_control",
-        executable="sabacan_single_control_node",
-        name="sabacan_single_control_linear_motion_y",
-        parameters=[param_file],
-        arguments=["--ros-args", "--log-level", "warn"],
-    )
-
-    sabacan_single_control_angle_motion = Node(
-        package="sabacan_single_control",
-        executable="sabacan_single_control_node",
-        name="sabacan_single_control_angle_motion",
+        executable="sabacan_led_node",
+        name="sabacan_led_node_id1",
         parameters=[param_file],
         arguments=["--ros-args", "--log-level", "warn"],
     )
@@ -175,22 +212,56 @@ def generate_launch_description():
     return LaunchDescription(
         [
             ps4_node,
+            # bno086_node,
+            # r1_main
+            r1_main_node,
+            # r1_machine
             r1_mecanum_node,
             r1_odometry_node,
-            r1_linear_motion_node,
-            r1_angle_motion_node,
             r1_sabacan_msgs_converter_node,
-            r1_main_node,
-            sabacan_robomas_node1,
-            sabacan_robomas_node2,
+            r1_kfs_fx_node,
+            r1_kfs_fz_node,
+            r1_kfs_fyaw_node,
+            r1_kfs_rx_node,
+            r1_kfs_rz_node,
+            r1_kfs_ryaw_node,
+            # sabacan
+            # robomasv2
+            sabacan_robomasv2_node_id1,
+            sabacan_robomasv2_node_id2,
+            sabacan_robomasv2_node_id3,
+            sabacan_robomasv2_node_id4,
+            sabacan_robomasv2_node_id5,
+            # single
+            sabacan_single_control_id1_motor0,
+            sabacan_single_control_id1_motor1,
+            sabacan_single_control_id1_motor2,
+            sabacan_single_control_id1_motor3,
+            sabacan_single_control_id2_motor0,
+            sabacan_single_control_id2_motor1,
+            sabacan_single_control_id2_motor2,
+            sabacan_single_control_id2_motor3,
+            sabacan_single_control_id3_motor0,
+            sabacan_single_control_id3_motor1,
+            sabacan_single_control_id3_motor2,
+            sabacan_single_control_id3_motor3,
+            sabacan_single_control_id4_motor0,
+            sabacan_single_control_id4_motor1,
+            sabacan_single_control_id4_motor2,
+            sabacan_single_control_id4_motor3,
+            sabacan_single_control_id5_motor0,
+            sabacan_single_control_id5_motor1,
+            sabacan_single_control_id5_motor2,
+            sabacan_single_control_id5_motor3,
+            # gpio
             sabacan_gpio_node1,
-            sabacan_single_control_mecanum_fl,
-            sabacan_single_control_mecanum_fr,
-            sabacan_single_control_mecanum_rl,
-            sabacan_single_control_mecanum_rr,
-            sabacan_single_control_linear_motion_x,
-            sabacan_single_control_linear_motion_y,
-            sabacan_single_control_angle_motion,
+            sabacan_gpio_node2,
+            sabacan_gpio_node3,
+            sabacan_gpio_node4,
+            # power
+            sabacan_power_node_id0,
+            # led
+            sabacan_led_node_id1,
             # socket_can_bridge_launch,
         ]
     )

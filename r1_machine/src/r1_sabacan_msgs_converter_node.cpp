@@ -1,7 +1,7 @@
 /**
  * @file r1_sabacan_msgs_converter_node.cpp
  * @author Yamaguchi Yudai
- * @brief sabacan_msgsとr1_machineのノード間でのメッセージ変換を行うノード。いわゆる汚い処理を一箇所にまとめたもの。
+ * @brief sabacan_msgsとr1_machineのノード間でのメッセージ変換を行うノード。
  * @version 0.1
  * @date 2025-10-04
  * 
@@ -494,6 +494,8 @@ public:
       mecanum_single_ref_publisher_[i]->publish(msg_ref);
     }
   }
+
+  // TODO: callbackのところはcallback関数をいじって、処理を共通化する
 
   void kfs_fx_motor_ref_callback(const r1_msgs::msg::MotorRef::SharedPtr msg)
   {
