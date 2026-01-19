@@ -344,6 +344,89 @@ void R1MainNode::manual_task(void)
     target_vel_.linear.y = 0.0;
     target_vel_.angular.z = 0.0;
   }
+  // デバッグ処理
+
+  static bool kfs_fx_pushed = false;
+  static bool kfs_fz_pushed = false;
+  static bool kfs_fyaw_pushed = false;
+  static bool kfs_rx_pushed = false;
+  static bool kfs_rz_pushed = false;
+  static bool kfs_ryaw_pushed = false;
+  static bool front_expand_pushed = false;
+  static bool rear_expand_pushed = false;
+
+  if (ps4_->is_pushed_triangle()) {
+    if (kfs_fx_pushed) {
+      kfs_fx(0.0);
+    } else {
+      kfs_fx(0.1);
+    }
+    kfs_fx_pushed = !kfs_fx_pushed;
+  }
+
+  if (ps4_->is_pushed_circle()) {
+    if (kfs_fz_pushed) {
+      kfs_fz(0.0);
+    } else {
+      kfs_fz(0.1);
+    }
+    kfs_fz_pushed = !kfs_fz_pushed;
+  }
+
+  if (ps4_->is_pushed_cross()) {
+    if (kfs_fyaw_pushed) {
+      kfs_fyaw(0.0);
+    } else {
+      kfs_fyaw(0.1);
+    }
+    kfs_fyaw_pushed = !kfs_fyaw_pushed;
+  }
+
+  if (ps4_->is_pushed_square()) {
+    if (kfs_rx_pushed) {
+      kfs_rx(0.0);
+    } else {
+      kfs_rx(0.1);
+    }
+    kfs_rx_pushed = !kfs_rx_pushed;
+  }
+
+  if (ps4_->is_pushed_up()) {
+    if (kfs_rz_pushed) {
+      kfs_rz(0.0);
+    } else {
+      kfs_rz(0.1);
+    }
+    kfs_rz_pushed = !kfs_rz_pushed;
+  }
+
+  if (ps4_->is_pushed_right()) {
+    if (kfs_ryaw_pushed) {
+      kfs_ryaw(0.0);
+    } else {
+      kfs_ryaw(0.1);
+    }
+    kfs_ryaw_pushed = !kfs_ryaw_pushed;
+  }
+
+  if (ps4_->is_pushed_down()) {
+    if (front_expand_pushed) {
+      front_expand(0.0);
+    } else {
+      front_expand(0.1);
+    }
+    front_expand_pushed = !front_expand_pushed;
+  }
+
+  if (ps4_->is_pushed_left()) {
+    if (rear_expand_pushed) {
+      rear_expand(0.0);
+    } else {
+      rear_expand(0.1);
+    }
+    rear_expand_pushed = !rear_expand_pushed;
+  }
+
   cmd_vel_publisher_->publish(target_vel_);
 }
 

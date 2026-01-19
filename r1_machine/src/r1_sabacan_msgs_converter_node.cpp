@@ -208,7 +208,7 @@ public:
     // KFS回収機構
     kfs_fx_single_ref_publisher_ =
       this->create_publisher<sabacan_single_control_msgs::msg::SabacanRobomasSingleRef>(
-        "/sabacan_robomas_ref" + std::to_string(kfs_fx_.board_id) + "/motor" +
+        "sabacan_robomas_ref" + std::to_string(kfs_fx_.board_id) + "/motor" +
           std::to_string(kfs_fx_.number),
         10);
     kfs_fz_single_ref_publisher_ =
@@ -472,9 +472,9 @@ public:
 
   void mecanum_wheel_speeds_ref_callback(const r1_msgs::msg::Mecanum::ConstSharedPtr msg)
   {
-    RCLCPP_INFO(
-      this->get_logger(), "wheel_speeds_ref: FL=%f, FR=%f, RL=%f, RR=%f", msg->fl_wheel_speed,
-      msg->fr_wheel_speed, msg->rl_wheel_speed, msg->rr_wheel_speed);
+    // RCLCPP_INFO(
+    //   this->get_logger(), "wheel_speeds_ref: FL=%f, FR=%f, RL=%f, RR=%f", msg->fl_wheel_speed,
+    //   msg->fr_wheel_speed, msg->rl_wheel_speed, msg->rr_wheel_speed);
     for (int i = 0; i < MECANUM_NUM; i++) {
       auto msg_ref = sabacan_single_control_msgs::msg::SabacanRobomasSingleRef();
       msg_ref.control_type = "VELOCITY";
@@ -501,6 +501,12 @@ public:
     msg_ref.control_type = msg->control_type;
     msg_ref.ref = msg->ref;
     kfs_fx_single_ref_publisher_->publish(msg_ref);
+    RCLCPP_INFO(
+      this->get_logger(), "kfs_fx_motor_ref_callback: control_type=%s, ref=%f",
+      msg_ref.control_type.c_str(), msg_ref.ref);
+    std::string topic_name = "sabacan_robomas_ref" + std::to_string(kfs_fx_.board_id) + "/motor" +
+                             std::to_string(kfs_fx_.number);
+    RCLCPP_INFO(this->get_logger(), "Published to topic: %s", topic_name.c_str());
   }
 
   void kfs_fz_motor_ref_callback(const r1_msgs::msg::MotorRef::SharedPtr msg)

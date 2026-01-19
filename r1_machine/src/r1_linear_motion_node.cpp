@@ -43,7 +43,7 @@ public:
       this->create_publisher<r1_msgs::msg::MotorRef>("/linear_motion_motor_ref", 10);
 
     position_ref_subscription_ = this->create_subscription<std_msgs::msg::Float64>(
-      "/linear_motion_positon_ref", 10,
+      "/linear_motion_position_ref", 10,
       std::bind(&MyNode::positon_ref_callback, this, std::placeholders::_1));
 
     detect_origin_subscription_ = this->create_subscription<std_msgs::msg::Bool>(

@@ -3,7 +3,13 @@ import time
 
 from ament_index_python.packages import get_package_share_directory
 from launch import LaunchDescription
-from launch.actions import DeclareLaunchArgument, IncludeLaunchDescription, TimerAction
+from launch.actions import (
+    DeclareLaunchArgument,
+    GroupAction,
+    IncludeLaunchDescription,
+    SetEnvironmentVariable,
+    TimerAction,
+)
 from launch.launch_description_sources import (
     AnyLaunchDescriptionSource,
     PythonLaunchDescriptionSource,
@@ -212,7 +218,10 @@ def generate_launch_description():
             package="sabacan_single_control",
             executable="sabacan_single_control_node",
             name=f"sabacan_single_control_node_id{board_id}_motor{motor_number}",
-            parameters=[param_file],
+            parameters=[
+                # param_file,
+                {"board_id": board_id, "motor_number": motor_number},
+            ],
             arguments=["--ros-args", "--log-level", log_level],
         )
 
@@ -267,17 +276,21 @@ def generate_launch_description():
         arguments=["--ros-args", "--log-level", "warn"],
     )
 
-    socket_can_bridge_launch = IncludeLaunchDescription(
-        XMLLaunchDescriptionSource(
-            PathJoinSubstitution(
-                [
-                    FindPackageShare("ros2_socketcan"),
-                    "launch",
-                    "socket_can_bridge.launch.xml",
-                ]
-            )
-        ),
-        launch_arguments={"interface": "can0"}.items(),
+    socket_can_bridge_launch = GroupAction(
+        [
+            IncludeLaunchDescription(
+                XMLLaunchDescriptionSource(
+                    PathJoinSubstitution(
+                        [
+                            FindPackageShare("ros2_socketcan"),
+                            "launch",
+                            "socket_can_bridge.launch.xml",
+                        ]
+                    )
+                ),
+                launch_arguments={"interface": "can0"}.items(),
+            ),
+        ]
     )
 
     # ros2_socketcan以外のノードの起動を遅延させる
@@ -332,8 +345,8 @@ def generate_launch_description():
     return LaunchDescription(
         [
             # 1) まず ros2_socketcan だけ起動
-            socket_can_bridge_launch,
+            # socket_can_bridge_launch,
             # 2) その後に他を2秒遅延させて起動
-            TimerAction(period=2, actions=delayed_nodes),
+            TimerAction(period=2.0, actions=delayed_nodes),
         ]
     )
