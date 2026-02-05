@@ -45,12 +45,12 @@ r1_kfs_fx_node:
     torque_threshold: 0.5 # Nm
     origin_detect_threshold_time: 0.5 # 秒
     # 原点検出のときは、0の方向に戻るので、負の速度にする
-    output_detect_speed: -3.14 # rad/s
+    output_detect_speed: -6.28 # rad/s
     pos_min: 0.0
-    pos_max: 0.3
-    # ギアが一周すると34pi=107 mm進むので、半径は17mm
-    radius: 0.017
-    inverse_motor: false
+    pos_max: 1.0
+    # ギアが一周すると2*pi*15mm進むので、半径は15mm
+    radius: 0.015
+    inverse_motor: true
     use_low_switch: false
     use_high_switch: false
     inverse_low_switch_logic: false
@@ -63,10 +63,10 @@ r1_kfs_fz_node:
     # 原点検出のときは、0の方向に戻るので、負の速度にする
     output_detect_speed: -3.14 # rad/s
     pos_min: 0.0
-    pos_max: 0.3
-    # ギアが一周すると34pi=107 mm進むので、半径は17mm
-    radius: 0.017
-    inverse_motor: false
+    pos_max: 1.0
+    # ギアが一周すると2*pi*15mm進むので、半径は15mm
+    radius: 0.015
+    inverse_motor: true
     use_low_switch: false
     use_high_switch: false
     inverse_low_switch_logic: false
@@ -96,9 +96,9 @@ r1_kfs_rx_node:
     # 原点検出のときは、0の方向に戻るので、負の速度にする
     output_detect_speed: -3.14 # rad/s
     pos_min: 0.0
-    pos_max: 0.3
-    # ギアが一周すると34pi=107 mm進むので、半径は17mm
-    radius: 0.017
+    pos_max: 1.0
+    # ギアが一周すると2*pi*15mm進むので、半径は15mm
+    radius: 0.015
     inverse_motor: false
     use_low_switch: false
     use_high_switch: false
@@ -112,9 +112,9 @@ r1_kfs_rz_node:
     # 原点検出のときは、0の方向に戻るので、負の速度にする
     output_detect_speed: -3.14 # rad/s
     pos_min: 0.0
-    pos_max: 0.3
-    # ギアが一周すると34pi=107 mm進むので、半径は17mm
-    radius: 0.017
+    pos_max: 1.0
+    # ギアが一周すると2*pi*15mm進むので、半径は15mm
+    radius: 0.015
     inverse_motor: false
     use_low_switch: false
     use_high_switch: false
@@ -132,7 +132,7 @@ r1_kfs_ryaw_node:
     # ギア比で割った値がモーターの角度指令値となる
     # 減速比は26 / 80 = 0.325
     gear_ratio: 0.325
-    inverse_motor: false
+    inverse_motor: true
     use_low_switch: false
     use_high_switch: false
     inverse_low_switch_logic: false
@@ -146,9 +146,9 @@ r1_front_expand_node:
     # 原点検出のときは、0の方向に戻るので、負の速度にする
     output_detect_speed: -3.14 # rad/s
     pos_min: 0.0
-    pos_max: 0.3
-    # ギアが一周すると34pi=107 mm進むので、半径は17mm
-    radius: 0.017
+    pos_max: 1.0
+    # ギアが一周すると2*pi*15mm進むので、半径は15mm
+    radius: 0.015
     inverse_motor: false
     use_low_switch: false
     use_high_switch: false
@@ -162,9 +162,9 @@ r1_front_expand_node:
     # 原点検出のときは、0の方向に戻るので、負の速度にする
     output_detect_speed: -3.14 # rad/s
     pos_min: 0.0
-    pos_max: 0.3
-    # ギアが一周すると34pi=107 mm進むので、半径は17mm
-    radius: 0.017
+    pos_max: 1.0
+    # ギアが一周すると2*pi*15mm進むので、半径は15mm
+    radius: 0.015
     inverse_motor: false
     use_low_switch: false
     use_high_switch: false
@@ -202,6 +202,7 @@ sabacan_robomasv2_node_id2:
     pos_gain_p: [6.0, 6.0, 6.0, 6.0]
     pos_gain_i: [3.0, 3.0, 3.0, 3.0]
     pos_gain_d: [0.0, 0.0, 0.0, 0.0]
+    # speed_lim: [20.0, 20.0, 20.0, 20.0]
     speed_lim: [10.0, 10.0, 10.0, 10.0]
     # TRQ+SPD+POS+MOTOR_STATEをフィードバック
     monitor_reg1: [0x0001000100010002, 0x0001000100010002, 0x0001000100010002, 0x0001000100010002]

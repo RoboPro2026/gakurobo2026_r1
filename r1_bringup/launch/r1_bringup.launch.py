@@ -255,10 +255,10 @@ def generate_launch_description():
             arguments=["--ros-args", "--log-level", log_level],
         )
 
-    sabacan_gpio_node1 = create_sabacan_gpio_node(1)
-    sabacan_gpio_node2 = create_sabacan_gpio_node(2)
-    sabacan_gpio_node3 = create_sabacan_gpio_node(3)
-    sabacan_gpio_node4 = create_sabacan_gpio_node(4)
+    sabacan_gpio_node_id1 = create_sabacan_gpio_node(1)
+    sabacan_gpio_node_id2 = create_sabacan_gpio_node(2)
+    sabacan_gpio_node_id3 = create_sabacan_gpio_node(3)
+    sabacan_gpio_node_id4 = create_sabacan_gpio_node(4)
 
     sabacan_power_node_id0 = Node(
         package="sabacan",
@@ -334,10 +334,10 @@ def generate_launch_description():
         sabacan_single_control_id5_motor1,
         sabacan_single_control_id5_motor2,
         sabacan_single_control_id5_motor3,
-        sabacan_gpio_node1,
-        sabacan_gpio_node2,
-        sabacan_gpio_node3,
-        sabacan_gpio_node4,
+        sabacan_gpio_node_id1,
+        sabacan_gpio_node_id2,
+        sabacan_gpio_node_id3,
+        sabacan_gpio_node_id4,
         sabacan_power_node_id0,
         sabacan_led_node_id1,
     ]

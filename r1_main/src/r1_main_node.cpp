@@ -18,7 +18,8 @@ R1MainNode::R1MainNode() : Node("r1_main_node")
   // joy
   joy_subscription_ = this->create_subscription<sensor_msgs::msg::Joy>(
     "/joy", 10, std::bind(&R1MainNode::joy_callback, this, std::placeholders::_1));
-  // KFS回収
+  // ========== KFS回収 ==========
+  // 指令値Publisher
   kfs_fx_position_ref_publisher_ =
     this->create_publisher<std_msgs::msg::Float64>("/kfs_fx_position_ref", 10);
   kfs_fz_position_ref_publisher_ =
@@ -31,12 +32,31 @@ R1MainNode::R1MainNode() : Node("r1_main_node")
     this->create_publisher<std_msgs::msg::Float64>("/kfs_rz_position_ref", 10);
   kfs_ryaw_position_ref_publisher_ =
     this->create_publisher<std_msgs::msg::Float64>("/kfs_ryaw_position_ref", 10);
-  // 展開
+  // 原点検出Publisher
+  kfs_fx_detect_origin_publisher_ =
+    this->create_publisher<std_msgs::msg::Bool>("/kfs_fx_detect_origin", 10);
+  kfs_fz_detect_origin_publisher_ =
+    this->create_publisher<std_msgs::msg::Bool>("/kfs_fz_detect_origin", 10);
+  kfs_fyaw_detect_origin_publisher_ =
+    this->create_publisher<std_msgs::msg::Bool>("/kfs_fyaw_detect_origin", 10);
+  kfs_rx_detect_origin_publisher_ =
+    this->create_publisher<std_msgs::msg::Bool>("/kfs_rx_detect_origin", 10);
+  kfs_rz_detect_origin_publisher_ =
+    this->create_publisher<std_msgs::msg::Bool>("/kfs_rz_detect_origin", 10);
+  kfs_ryaw_detect_origin_publisher_ =
+    this->create_publisher<std_msgs::msg::Bool>("/kfs_ryaw_detect_origin", 10);
+  // ========== 展開 ==========
+  // 指令値Publisher
   front_expand_position_ref_publisher_ =
     this->create_publisher<std_msgs::msg::Float64>("/front_expand_position_ref", 10);
   rear_expand_position_ref_publisher_ =
     this->create_publisher<std_msgs::msg::Float64>("/rear_expand_position_ref", 10);
-  // R2昇降
+  // 原点検出Publisher
+  front_expand_detect_origin_publisher_ =
+    this->create_publisher<std_msgs::msg::Bool>("/front_expand_detect_origin", 10);
+  rear_expand_detect_origin_publisher_ =
+    this->create_publisher<std_msgs::msg::Bool>("/rear_expand_detect_origin", 10);
+  // ========== R2昇降指令値 ==========
   r2_lift_motor_ref_publisher_ =
     this->create_publisher<r1_msgs::msg::MotorRef>("/r2_lift_motor_ref", 10);
   // modeのSubscription
@@ -66,6 +86,16 @@ R1MainNode::R1MainNode() : Node("r1_main_node")
     "/rear_expand_mode_status", 10,
     std::bind(&R1MainNode::rear_expand_mode_status_callback, this, std::placeholders::_1));
 
+  // ポンプ
+  kfs_front_pump_gpio_pwm_ref_publisher_ =
+    this->create_publisher<r1_msgs::msg::GpioPwmRef>("/kfs_front_pump_gpio_pwm_ref", 10);
+  kfs_rear_pump_gpio_pwm_ref_publisher_ =
+    this->create_publisher<r1_msgs::msg::GpioPwmRef>("/kfs_rear_pump_gpio_pwm_ref", 10);
+  // 電磁弁
+  kfs_front_valve_gpio_pwm_ref_publisher_ =
+    this->create_publisher<r1_msgs::msg::GpioPwmRef>("/kfs_front_valve_gpio_pwm_ref", 10);
+  kfs_rear_valve_gpio_pwm_ref_publisher_ =
+    this->create_publisher<r1_msgs::msg::GpioPwmRef>("/kfs_rear_valve_gpio_pwm_ref", 10);
   // リミットスイッチ
   kfs_front_switch_status_subscription_ = this->create_subscription<r1_msgs::msg::GpioInput>(
     "/kfs_front_switch_status", 10,
@@ -164,6 +194,62 @@ void R1MainNode::rear_expand_mode_status_callback(const std_msgs::msg::Int32::Sh
     RCLCPP_INFO(this->get_logger(), "rear expand assist detected origin");
   }
   is_rear_expand_pos_mode_ = _is_pos_mode;
+}
+
+void R1MainNode::kfs_fx_detect_origin(void)
+{
+  std_msgs::msg::Bool msg;
+  msg.data = true;
+  kfs_fx_detect_origin_publisher_->publish(msg);
+}
+
+void R1MainNode::kfs_fz_detect_origin(void)
+{
+  std_msgs::msg::Bool msg;
+  msg.data = true;
+  kfs_fz_detect_origin_publisher_->publish(msg);
+}
+
+void R1MainNode::kfs_fyaw_detect_origin(void)
+{
+  std_msgs::msg::Bool msg;
+  msg.data = true;
+  kfs_fyaw_detect_origin_publisher_->publish(msg);
+}
+
+void R1MainNode::kfs_rx_detect_origin(void)
+{
+  std_msgs::msg::Bool msg;
+  msg.data = true;
+  kfs_rx_detect_origin_publisher_->publish(msg);
+}
+
+void R1MainNode::kfs_rz_detect_origin(void)
+{
+  std_msgs::msg::Bool msg;
+  msg.data = true;
+  kfs_rz_detect_origin_publisher_->publish(msg);
+}
+
+void R1MainNode::kfs_ryaw_detect_origin(void)
+{
+  std_msgs::msg::Bool msg;
+  msg.data = true;
+  kfs_ryaw_detect_origin_publisher_->publish(msg);
+}
+
+void R1MainNode::front_expand_detect_origin(void)
+{
+  std_msgs::msg::Bool msg;
+  msg.data = true;
+  front_expand_detect_origin_publisher_->publish(msg);
+}
+
+void R1MainNode::rear_expand_detect_origin(void)
+{
+  std_msgs::msg::Bool msg;
+  msg.data = true;
+  rear_expand_detect_origin_publisher_->publish(msg);
 }
 
 void R1MainNode::kfs_front_switch_status_callback(const r1_msgs::msg::GpioInput::SharedPtr msg)
@@ -330,83 +416,176 @@ void R1MainNode::manual_task(void)
   static bool kfs_fx_pushed = false;
   static bool kfs_fz_pushed = false;
   static bool kfs_fyaw_pushed = false;
+  static bool kfs_fpump_pushed = false;
   static bool kfs_rx_pushed = false;
   static bool kfs_rz_pushed = false;
+  static bool kfs_rpump_pushed = false;
   static bool kfs_ryaw_pushed = false;
   static bool front_expand_pushed = false;
   static bool rear_expand_pushed = false;
 
+  // // ========== KFS回収前 ==========
+  // if (ps4_->is_pushed_triangle()) {
+  //   if (kfs_fx_pushed) {
+  //     kfs_fx(0.0);
+  //     RCLCPP_INFO(this->get_logger(), "kfs fx pos 0.0");
+  //   } else {
+  //     kfs_fx(0.3);
+  //     RCLCPP_INFO(this->get_logger(), "kfs fx pos 0.3");
+  //   }
+  //   kfs_fx_pushed = !kfs_fx_pushed;
+  // }
+
+  // if (ps4_->is_pushed_circle()) {
+  //   if (kfs_fz_pushed) {
+  //     kfs_fz(0.0);
+  //     RCLCPP_INFO(this->get_logger(), "kfs fz pos 0.0");
+  //   } else {
+  //     kfs_fz(0.3);
+  //     RCLCPP_INFO(this->get_logger(), "kfs fz pos 0.4");
+  //   }
+  //   kfs_fz_pushed = !kfs_fz_pushed;
+  // }
+
+  // if (ps4_->is_pushed_cross()) {
+  //   if (kfs_fyaw_pushed) {
+  //     kfs_fyaw(0.0);
+  //     RCLCPP_INFO(this->get_logger(), "kfs fyaw pos 0.0");
+  //   } else {
+  //     kfs_fyaw(1.57);
+  //     RCLCPP_INFO(this->get_logger(), "kfs fyaw pos 1.57");
+  //   }
+  //   kfs_fyaw_pushed = !kfs_fyaw_pushed;
+  // }
+
+  // if (ps4_->is_pushed_square()) {
+  //   if (kfs_fpump_pushed) {
+  //     kfs_front_pump(0.0);
+  //     kfs_front_valve(false);
+  //     RCLCPP_INFO(this->get_logger(), "kfs front pump off");
+  //   } else {
+  //     kfs_front_pump(1.0);
+  //     kfs_front_valve(true);
+  //     RCLCPP_INFO(this->get_logger(), "kfs front pump on");
+  //   }
+  //   kfs_fpump_pushed = !kfs_fpump_pushed;
+  // }
+
+  // if (ps4_->is_pushed_up()) {
+  //   kfs_fx_detect_origin();
+  // }
+
+  // if (ps4_->is_pushed_right()) {
+  //   kfs_fz_detect_origin();
+  // }
+
+  // if (ps4_->is_pushed_down()) {
+  //   kfs_fyaw_detect_origin();
+  // }
+
+  // ========== KFS回収後 ==========
   if (ps4_->is_pushed_triangle()) {
-    if (kfs_fx_pushed) {
-      kfs_fx(0.0);
-    } else {
-      kfs_fx(0.1);
-    }
-    kfs_fx_pushed = !kfs_fx_pushed;
-  }
-
-  if (ps4_->is_pushed_circle()) {
-    if (kfs_fz_pushed) {
-      kfs_fz(0.0);
-    } else {
-      kfs_fz(0.1);
-    }
-    kfs_fz_pushed = !kfs_fz_pushed;
-  }
-
-  if (ps4_->is_pushed_cross()) {
-    if (kfs_fyaw_pushed) {
-      kfs_fyaw(0.0);
-    } else {
-      kfs_fyaw(0.1);
-    }
-    kfs_fyaw_pushed = !kfs_fyaw_pushed;
-  }
-
-  if (ps4_->is_pushed_square()) {
     if (kfs_rx_pushed) {
       kfs_rx(0.0);
+      RCLCPP_INFO(this->get_logger(), "kfs rx pos 0.0");
     } else {
-      kfs_rx(0.1);
+      kfs_rx(0.3);
+      RCLCPP_INFO(this->get_logger(), "kfs rx pos 0.3");
     }
     kfs_rx_pushed = !kfs_rx_pushed;
   }
 
-  if (ps4_->is_pushed_up()) {
+  if (ps4_->is_pushed_circle()) {
     if (kfs_rz_pushed) {
       kfs_rz(0.0);
+      RCLCPP_INFO(this->get_logger(), "kfs rz pos 0.0");
     } else {
-      kfs_rz(0.1);
+      kfs_rz(0.3);
+      RCLCPP_INFO(this->get_logger(), "kfs rz pos 0.4");
     }
     kfs_rz_pushed = !kfs_rz_pushed;
   }
 
-  if (ps4_->is_pushed_right()) {
+  if (ps4_->is_pushed_cross()) {
     if (kfs_ryaw_pushed) {
       kfs_ryaw(0.0);
+      RCLCPP_INFO(this->get_logger(), "kfs ryaw pos 0.0");
     } else {
-      kfs_ryaw(0.1);
+      kfs_ryaw(1.57);
+      RCLCPP_INFO(this->get_logger(), "kfs ryaw pos 1.57");
     }
     kfs_ryaw_pushed = !kfs_ryaw_pushed;
   }
 
-  if (ps4_->is_pushed_down()) {
-    if (front_expand_pushed) {
-      front_expand(0.0);
+  if (ps4_->is_pushed_square()) {
+    if (kfs_rpump_pushed) {
+      kfs_rear_pump(0.0);
+      kfs_rear_valve(false);
+      RCLCPP_INFO(this->get_logger(), "kfs rear pump off");
     } else {
-      front_expand(0.1);
+      kfs_rear_pump(1.0);
+      kfs_rear_valve(true);
+      RCLCPP_INFO(this->get_logger(), "kfs rear pump on");
     }
-    front_expand_pushed = !front_expand_pushed;
+    kfs_rpump_pushed = !kfs_rpump_pushed;
   }
 
-  if (ps4_->is_pushed_left()) {
-    if (rear_expand_pushed) {
-      rear_expand(0.0);
-    } else {
-      rear_expand(0.1);
-    }
-    rear_expand_pushed = !rear_expand_pushed;
+  if (ps4_->is_pushed_up()) {
+    kfs_rx_detect_origin();
   }
+
+  if (ps4_->is_pushed_right()) {
+    kfs_rz_detect_origin();
+  }
+
+  if (ps4_->is_pushed_down()) {
+    kfs_ryaw_detect_origin();
+  }
+
+  // if (ps4_->is_pushed_square()) {
+  //   if (kfs_rx_pushed) {
+  //     kfs_rx(0.0);
+  //   } else {
+  //     kfs_rx(0.1);
+  //   }
+  //   kfs_rx_pushed = !kfs_rx_pushed;
+  // }
+
+  // if (ps4_->is_pushed_up()) {
+  //   if (kfs_rz_pushed) {
+  //     kfs_rz(0.0);
+  //   } else {
+  //     kfs_rz(0.1);
+  //   }
+  //   kfs_rz_pushed = !kfs_rz_pushed;
+  // }
+
+  // if (ps4_->is_pushed_right()) {
+  //   if (kfs_ryaw_pushed) {
+  //     kfs_ryaw(0.0);
+  //   } else {
+  //     kfs_ryaw(0.1);
+  //   }
+  //   kfs_ryaw_pushed = !kfs_ryaw_pushed;
+  // }
+
+  // if (ps4_->is_pushed_down()) {
+  //   if (front_expand_pushed) {
+  //     front_expand(0.0);
+  //   } else {
+  //     front_expand(0.1);
+  //   }
+  //   front_expand_pushed = !front_expand_pushed;
+  // }
+
+  // if (ps4_->is_pushed_left()) {
+  //   if (rear_expand_pushed) {
+  //     rear_expand(0.0);
+  //   } else {
+  //     rear_expand(0.1);
+  //   }
+  //   rear_expand_pushed = !rear_expand_pushed;
+  // }
 
   cmd_vel_publisher_->publish(target_vel_);
 }

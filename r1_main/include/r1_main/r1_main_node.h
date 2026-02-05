@@ -59,6 +59,13 @@ public:
   rclcpp::Publisher<std_msgs::msg::Float64>::SharedPtr kfs_rx_position_ref_publisher_;
   rclcpp::Publisher<std_msgs::msg::Float64>::SharedPtr kfs_rz_position_ref_publisher_;
   rclcpp::Publisher<std_msgs::msg::Float64>::SharedPtr kfs_ryaw_position_ref_publisher_;
+  // 原点検出Publisher
+  rclcpp::Publisher<std_msgs::msg::Bool>::SharedPtr kfs_fx_detect_origin_publisher_;
+  rclcpp::Publisher<std_msgs::msg::Bool>::SharedPtr kfs_fz_detect_origin_publisher_;
+  rclcpp::Publisher<std_msgs::msg::Bool>::SharedPtr kfs_fyaw_detect_origin_publisher_;
+  rclcpp::Publisher<std_msgs::msg::Bool>::SharedPtr kfs_rx_detect_origin_publisher_;
+  rclcpp::Publisher<std_msgs::msg::Bool>::SharedPtr kfs_rz_detect_origin_publisher_;
+  rclcpp::Publisher<std_msgs::msg::Bool>::SharedPtr kfs_ryaw_detect_origin_publisher_;
   // mode Subscription
   rclcpp::Subscription<std_msgs::msg::Int32>::SharedPtr kfs_fx_mode_status_subscription_;
   rclcpp::Subscription<std_msgs::msg::Int32>::SharedPtr kfs_fz_mode_status_subscription_;
@@ -70,6 +77,9 @@ public:
   // 指令値Publisher
   rclcpp::Publisher<std_msgs::msg::Float64>::SharedPtr front_expand_position_ref_publisher_;
   rclcpp::Publisher<std_msgs::msg::Float64>::SharedPtr rear_expand_position_ref_publisher_;
+  // 原点検出Publisher
+  rclcpp::Publisher<std_msgs::msg::Bool>::SharedPtr front_expand_detect_origin_publisher_;
+  rclcpp::Publisher<std_msgs::msg::Bool>::SharedPtr rear_expand_detect_origin_publisher_;
   // mode Subscription
   rclcpp::Subscription<std_msgs::msg::Int32>::SharedPtr front_expand_mode_status_subscription_;
   rclcpp::Subscription<std_msgs::msg::Int32>::SharedPtr rear_expand_mode_status_subscription_;
@@ -134,6 +144,15 @@ public:
   void kfs_rear_pump(double pwm);
   void kfs_front_valve(bool on);
   void kfs_rear_valve(bool on);
+  // ========== 原点検出関数 ==========
+  void kfs_fx_detect_origin(void);
+  void kfs_fz_detect_origin(void);
+  void kfs_fyaw_detect_origin(void);
+  void kfs_rx_detect_origin(void);
+  void kfs_rz_detect_origin(void);
+  void kfs_ryaw_detect_origin(void);
+  void front_expand_detect_origin(void);
+  void rear_expand_detect_origin(void);
   // ========== センサーの取得 ==========
   bool get_kfs_front_switch_status(void) { return kfs_front_switch_status_; }
   bool get_kfs_rear_switch_status(void) { return kfs_rear_switch_status_; }
