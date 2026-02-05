@@ -307,38 +307,19 @@ void R1MainNode::manual_task(void)
 {
   if (ps4_->is_connected()) {
     // スティックの状態に応じて、足回りを動かす
-    double VEL = 1.0;
-    if (ps4_->data.right) {
-      target_vel_.linear.x = -VEL;
-      target_vel_.linear.y = 0;
-      target_vel_.angular.z = 0;
-    } else if (ps4_->data.left) {
-      target_vel_.linear.x = VEL;
-      target_vel_.linear.y = 0;
-      target_vel_.angular.z = 0;
-    } else if (ps4_->data.up) {
-      target_vel_.linear.x = 0;
-      target_vel_.linear.y = VEL;
-      target_vel_.angular.z = 0;
-    } else if (ps4_->data.down) {
-      target_vel_.linear.x = 0;
-      target_vel_.linear.y = -VEL;
-      target_vel_.angular.z = 0;
-    } else {
-      // TODO: 必要に応じて、符号の反転や係数をかける。
-      double stick_max_velocity = 3.0;
-      double vx_ref = stick_max_velocity * ps4_->data.left_stick_x;
-      double vy_ref = stick_max_velocity * ps4_->data.left_stick_y;
-      double vz_ref = ps4_->data.right_stick_x;
-      // 台形制御で速度を滑らかに変化させる
-      target_vel_.linear.x = simple_trapezoid_vx_.update(vx_ref);
-      target_vel_.linear.y = simple_trapezoid_vy_.update(vy_ref);
-      target_vel_.angular.z = simple_trapezoid_omega_.update(vz_ref);
-      // RCLCPP_INFO(this->get_logger(), "vx: %.2f, vx_ref: %.2f", target_vel_.linear.x, vx_ref);
-      // target_vel_.linear.x = stick_max_velocity * ps4_->data.left_stick_x;
-      // target_vel_.linear.y = stick_max_velocity * ps4_->data.left_stick_y;
-      // target_vel_.angular.z = ps4_->data.right_stick_x;
-    }
+    // TODO: 必要に応じて、符号の反転や係数をかける。
+    double stick_max_velocity = 0.5;
+    double vx_ref = stick_max_velocity * ps4_->data.left_stick_x;
+    double vy_ref = stick_max_velocity * ps4_->data.left_stick_y;
+    double vz_ref = ps4_->data.right_stick_x;
+    // 台形制御で速度を滑らかに変化させる
+    target_vel_.linear.x = simple_trapezoid_vx_.update(vx_ref);
+    target_vel_.linear.y = simple_trapezoid_vy_.update(vy_ref);
+    target_vel_.angular.z = simple_trapezoid_omega_.update(vz_ref);
+    // RCLCPP_INFO(this->get_logger(), "vx: %.2f, vx_ref: %.2f", target_vel_.linear.x, vx_ref);
+    // target_vel_.linear.x = stick_max_velocity * ps4_->data.left_stick_x;
+    // target_vel_.linear.y = stick_max_velocity * ps4_->data.left_stick_y;
+    // target_vel_.angular.z = ps4_->data.right_stick_x;
   } else {
     target_vel_.linear.x = 0.0;
     target_vel_.linear.y = 0.0;

@@ -25,7 +25,8 @@ r1_mecanum_node:
     # 減速比は37 / 28 = 1.3214285714285714
     # ギア比で割った値がモーターの出力となる
     gear_ratio: 1.3214285714285714
-    motor_inverse: [true, true, false, false]
+    # motor_inverse: [false, true, true, false]
+    motor_inverse: [true, false, false, true]
     use_imu: false
 r1_odometry_node:
   ros__parameters:
