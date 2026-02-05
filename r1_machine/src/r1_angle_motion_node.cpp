@@ -19,6 +19,7 @@
 #include "rclcpp/rclcpp.hpp"
 #include "std_msgs/msg/bool.hpp"
 #include "std_msgs/msg/float64.hpp"
+#include "std_msgs/msg/int32.hpp"
 
 using namespace std::chrono_literals;
 
@@ -31,6 +32,14 @@ public:
       "/angle_motion_status", 10,
       std::bind(&MyNode::angle_motion_status_callback, this, std::placeholders::_1));
 
+    low_switch_status_subscription_ = this->create_subscription<std_msgs::msg::Bool>(
+      "/low_switch_status", 10,
+      std::bind(&MyNode::low_switch_status_callback, this, std::placeholders::_1));
+
+    high_switch_status_subscription_ = this->create_subscription<std_msgs::msg::Bool>(
+      "/high_switch_status", 10,
+      std::bind(&MyNode::high_switch_status_callback, this, std::placeholders::_1));
+
     angle_motion_ref_publisher_ =
       this->create_publisher<r1_msgs::msg::MotorRef>("/angle_motion_motor_ref", 10);
 
@@ -41,6 +50,9 @@ public:
     detect_origin_subscription_ = this->create_subscription<std_msgs::msg::Bool>(
       "/angle_motion_detect_origin", 10,
       std::bind(&MyNode::detect_origin_callback, this, std::placeholders::_1));
+
+    mode_status_publisher_ =
+      this->create_publisher<std_msgs::msg::Int32>("/angle_motion_mode_status", 10);
 
     parameter_callback_handler_ = this->add_on_set_parameters_callback(
       std::bind(&MyNode::parameter_callback, this, std::placeholders::_1));
@@ -147,11 +159,19 @@ private:
 
   void angle_motion_status_callback(const r1_msgs::msg::AngleMotion::SharedPtr msg)
   {
-    low_switch_ = msg->low_switch ^ inverse_low_switch_logic_;
-    high_switch_ = msg->high_switch ^ inverse_high_switch_logic_;
     current_torque_ = msg->torque;
     current_speed_ = msg->speed;
     current_angle_ = msg->pos;
+  }
+
+  void low_switch_status_callback(const std_msgs::msg::Bool::SharedPtr msg)
+  {
+    low_switch_ = msg->data ^ inverse_low_switch_logic_;
+  }
+
+  void high_switch_status_callback(const std_msgs::msg::Bool::SharedPtr msg)
+  {
+    high_switch_ = msg->data ^ inverse_high_switch_logic_;
   }
 
   void position_ref_callback(const std_msgs::msg::Float64::SharedPtr msg)
@@ -166,12 +186,10 @@ private:
     // 範囲内に収める
     if (msg->data < angle_min_) {
       target_angle = angle_min_ + angle_offset_;
-      RCLCPP_WARN(
-        this->get_logger(), "Target angle below minimum. Clamping to %.3f", target_angle);
+      RCLCPP_WARN(this->get_logger(), "Target angle below minimum. Clamping to %.3f", target_angle);
     } else if (msg->data > angle_max_) {
       target_angle = angle_max_ + angle_offset_;
-      RCLCPP_WARN(
-        this->get_logger(), "Target angle above maximum. Clamping to %.3f", target_angle);
+      RCLCPP_WARN(this->get_logger(), "Target angle above maximum. Clamping to %.3f", target_angle);
     } else {
       target_angle = msg->data + angle_offset_;
     }
@@ -229,12 +247,19 @@ private:
       }
       angle_motion_ref_publisher_->publish(motor_ref_msg);
     }
+    // モードをPublish
+    auto mode_msg = std_msgs::msg::Int32();
+    mode_msg.data = mode_;
+    mode_status_publisher_->publish(mode_msg);
   }
 
   rclcpp::Subscription<r1_msgs::msg::AngleMotion>::SharedPtr angle_motion_status_subscription_;
+  rclcpp::Subscription<std_msgs::msg::Bool>::SharedPtr low_switch_status_subscription_;
+  rclcpp::Subscription<std_msgs::msg::Bool>::SharedPtr high_switch_status_subscription_;
   rclcpp::Publisher<r1_msgs::msg::MotorRef>::SharedPtr angle_motion_ref_publisher_;
   rclcpp::Subscription<std_msgs::msg::Float64>::SharedPtr position_ref_subscription_;
   rclcpp::Subscription<std_msgs::msg::Bool>::SharedPtr detect_origin_subscription_;
+  rclcpp::Publisher<std_msgs::msg::Int32>::SharedPtr mode_status_publisher_;
   rclcpp::node_interfaces::OnSetParametersCallbackHandle::SharedPtr parameter_callback_handler_;
 
   rclcpp::TimerBase::SharedPtr timer_;

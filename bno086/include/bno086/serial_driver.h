@@ -169,7 +169,7 @@ public:
         sprintf(buff, "[%d] = %d, ", i, rx_buff[i]);
         msg += buff;
       }
-      RCLCPP_INFO(rclcpp::get_logger(logger_name_), "%s", msg.c_str());
+      // RCLCPP_INFO(rclcpp::get_logger(logger_name_), "%s", msg.c_str());
     }
     return ret;
   }

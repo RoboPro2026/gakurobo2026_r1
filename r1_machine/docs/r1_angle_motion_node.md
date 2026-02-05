@@ -5,11 +5,14 @@
 ## トピック
 
 - **Subscribe**
-  - `/angle_motion_status` (`r1_msgs/msg/AngleMotion`): トルク [Nm], 速度 [rad/s], 角度 [rad] と上下リミットスイッチ状態を取得。スイッチ値は `inverse_*_logic` で XOR 反転されます。
+  - `/angle_motion_status` (`r1_msgs/msg/AngleMotion`): トルク [Nm], 速度 [rad/s], 角度 [rad] を取得。
+  - `/low_switch_status`(`std_msgs/msg/Bool`): スイッチの値。 `inverse_*data` で XOR 反転されます。
+  - `/high_switch_status`(`std_msgs/msg/Bool`): スイッチの値。 `inverse_*data` で XOR 反転されます。
   - `/angle_motion_position_ref` (`std_msgs/msg/Float64`): 目標角度 [rad]。原点検出中（速度モード）は無視されます。
   - `/angle_motion_detect_origin` (`std_msgs/msg/Bool`): `true` で原点検出モードへ移行し、`false` で位置モードに戻します。
 - **Publish**
   - `/angle_motion_motor_ref` (`r1_msgs/msg/MotorRef`): Robomas へ渡す制御指令。`control_type` は `"POSITION"` または `"VELOCITY"`、`ref` は角度 [rad] もしくは角速度 [rad/s]。
+  - `/angle_motion_mode_status` (`std_msgs/msg/Int32`): モードを送信。mode=0のとき、通常動作（位置制御モード）。mode=1のとき、原点復帰中（速度制御モード）。
 
 ## 主なパラメータ
 

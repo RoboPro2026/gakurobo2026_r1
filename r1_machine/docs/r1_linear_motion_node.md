@@ -5,11 +5,14 @@
 ## トピック
 
 - **Subscribe**
-  - `/linear_motion_status` (`r1_msgs/msg/LinearMotion`): トルク [Nm], 速度 [rad/s], 位置 [rad] と上下リミットスイッチ状態を取得。
+  - `/linear_motion_status` (`r1_msgs/msg/LinearMotion`): トルク [Nm], 速度 [rad/s], 位置 [rad] を取得。
+  - `/low_switch_status`(`std_msgs/msg/Bool`): スイッチの値。 `inverse_*data` で XOR 反転されます。
+  - `/high_switch_status`(`std_msgs/msg/Bool`): スイッチの値。 `inverse_*data` で XOR 反転されます。
   - `/linear_motion_positon_ref` (`std_msgs/msg/Float64`): 目標位置 [m]。原点検出中（速度モード）は無視されます。
   - `/linear_motion_detect_origin` (`std_msgs/msg/Bool`): `true` で原点検出モードに移行し、`false` で通常の位置モードに戻ります。
 - **Publish**
   - `/linear_motion_motor_ref` (`r1_msgs/msg/MotorRef`): Robomas へ渡す制御指令。`control_type` は `"POSITION"` または `"VELOCITY"`、`ref` は角度 [rad] もしくは角速度 [rad/s]。
+  - `/angle_motion_mode_status` (`std_msgs/msg/Int32`): モードを送信。mode=0のとき、通常動作（位置制御モード）。mode=1のとき、原点復帰中（速度制御モード）。
 
 ## 主なパラメータ
 
