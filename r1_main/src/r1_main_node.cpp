@@ -394,7 +394,7 @@ void R1MainNode::manual_task(void)
   if (ps4_->is_connected()) {
     // スティックの状態に応じて、足回りを動かす
     // TODO: 必要に応じて、符号の反転や係数をかける。
-    double stick_max_velocity = 0.5;
+    double stick_max_velocity = 1.5;
     double vx_ref = stick_max_velocity * ps4_->data.left_stick_x;
     double vy_ref = stick_max_velocity * ps4_->data.left_stick_y;
     double vz_ref = ps4_->data.right_stick_x;
@@ -417,10 +417,12 @@ void R1MainNode::manual_task(void)
   static bool kfs_fz_pushed = false;
   static bool kfs_fyaw_pushed = false;
   static bool kfs_fpump_pushed = false;
+  static bool kfs_fvalve_pushed = false;
   static bool kfs_rx_pushed = false;
   static bool kfs_rz_pushed = false;
   static bool kfs_rpump_pushed = false;
   static bool kfs_ryaw_pushed = false;
+  static bool kfs_rvalve_pushed = false;
   static bool front_expand_pushed = false;
   static bool rear_expand_pushed = false;
 
@@ -430,7 +432,7 @@ void R1MainNode::manual_task(void)
   //     kfs_fx(0.0);
   //     RCLCPP_INFO(this->get_logger(), "kfs fx pos 0.0");
   //   } else {
-  //     kfs_fx(0.3);
+  //     kfs_fx(0.5);
   //     RCLCPP_INFO(this->get_logger(), "kfs fx pos 0.3");
   //   }
   //   kfs_fx_pushed = !kfs_fx_pushed;
@@ -461,11 +463,9 @@ void R1MainNode::manual_task(void)
   // if (ps4_->is_pushed_square()) {
   //   if (kfs_fpump_pushed) {
   //     kfs_front_pump(0.0);
-  //     kfs_front_valve(false);
   //     RCLCPP_INFO(this->get_logger(), "kfs front pump off");
   //   } else {
   //     kfs_front_pump(1.0);
-  //     kfs_front_valve(true);
   //     RCLCPP_INFO(this->get_logger(), "kfs front pump on");
   //   }
   //   kfs_fpump_pushed = !kfs_fpump_pushed;
@@ -481,6 +481,17 @@ void R1MainNode::manual_task(void)
 
   // if (ps4_->is_pushed_down()) {
   //   kfs_fyaw_detect_origin();
+  // }
+
+  // if (ps4_->is_pushed_left()) {
+  //   if (kfs_fvalve_pushed) {
+  //     kfs_front_valve(false);
+  //     RCLCPP_INFO(this->get_logger(), "kfs front valve off");
+  //   } else {
+  //     kfs_front_valve(true);
+  //     RCLCPP_INFO(this->get_logger(), "kfs front valve on");
+  //   }
+  //   kfs_fvalve_pushed = !kfs_fvalve_pushed;
   // }
 
   // ========== KFS回収後 ==========
@@ -520,11 +531,9 @@ void R1MainNode::manual_task(void)
   if (ps4_->is_pushed_square()) {
     if (kfs_rpump_pushed) {
       kfs_rear_pump(0.0);
-      kfs_rear_valve(false);
       RCLCPP_INFO(this->get_logger(), "kfs rear pump off");
     } else {
       kfs_rear_pump(1.0);
-      kfs_rear_valve(true);
       RCLCPP_INFO(this->get_logger(), "kfs rear pump on");
     }
     kfs_rpump_pushed = !kfs_rpump_pushed;
@@ -540,6 +549,17 @@ void R1MainNode::manual_task(void)
 
   if (ps4_->is_pushed_down()) {
     kfs_ryaw_detect_origin();
+  }
+
+  if (ps4_->is_pushed_left()) {
+    if (kfs_rvalve_pushed) {
+      kfs_rear_valve(false);
+      RCLCPP_INFO(this->get_logger(), "kfs rear valve off");
+    } else {
+      kfs_rear_valve(true);
+      RCLCPP_INFO(this->get_logger(), "kfs rear valve on");
+    }
+    kfs_rvalve_pushed = !kfs_rvalve_pushed;
   }
 
   // if (ps4_->is_pushed_square()) {

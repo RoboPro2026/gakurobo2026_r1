@@ -155,7 +155,7 @@ r1_front_expand_node:
     inverse_low_switch_logic: false
     inverse_high_switch_logic: false
 # linear motion node
-r1_front_expand_node:
+r1_rear_expand_node:
   ros__parameters:
     torque_threshold: 0.5 # Nm
     origin_detect_threshold_time: 0.5 # 秒
