@@ -49,7 +49,7 @@ def generate_launch_description():
         parameters=[param_file],
         arguments=["--ros-args", "--log-level", "info"],
     )
-
+    # ========== 足回り ==========
     # メカナムホイールの指令値を知りたいときはinfoにする
     r1_mecanum_node = Node(
         package="r1_machine",
@@ -76,6 +76,7 @@ def generate_launch_description():
         arguments=["--ros-args", "--log-level", "warn"],
     )
 
+    # ========== KFS回収 ==========
     r1_kfs_fx_node = Node(
         package="r1_machine",
         executable="r1_linear_motion_node",
@@ -166,6 +167,7 @@ def generate_launch_description():
         ],
     )
 
+    # ========== 展開 ==========
     r1_front_expand_node = Node(
         package="r1_machine",
         executable="r1_linear_motion_node",
@@ -193,6 +195,114 @@ def generate_launch_description():
             ("linear_motion_position_ref", "rear_expand_position_ref"),
             ("linear_motion_detect_origin", "rear_expand_detect_origin"),
             ("linear_motion_mode_status", "rear_expand_mode_status"),
+        ],
+    )
+
+    # ========== ポール ==========
+    r1_pole_x_node = Node(
+        package="r1_machine",
+        executable="r1_linear_motion_node",
+        name="r1_pole_x_node",
+        parameters=[param_file],
+        arguments=["--ros-args", "--log-level", "warn"],
+        remappings=[
+            ("linear_motion_status", "pole_x_linear_motion_status"),
+            ("linear_motion_motor_ref", "pole_x_motor_ref"),
+            ("linear_motion_position_ref", "pole_x_position_ref"),
+            ("linear_motion_detect_origin", "pole_x_detect_origin"),
+            ("linear_motion_mode_status", "pole_x_mode_status"),
+        ],
+    )
+
+    r1_pole_y_node = Node(
+        package="r1_machine",
+        executable="r1_linear_motion_node",
+        name="r1_pole_y_node",
+        parameters=[param_file],
+        arguments=["--ros-args", "--log-level", "warn"],
+        remappings=[
+            ("linear_motion_status", "pole_y_linear_motion_status"),
+            ("linear_motion_motor_ref", "pole_y_motor_ref"),
+            ("linear_motion_position_ref", "pole_y_position_ref"),
+            ("linear_motion_detect_origin", "pole_y_detect_origin"),
+            ("linear_motion_mode_status", "pole_y_mode_status"),
+        ],
+    )
+
+    r1_pole_roger_node = Node(
+        package="r1_machine",
+        executable="r1_linear_motion_node",
+        name="r1_pole_roger_node",
+        parameters=[param_file],
+        arguments=["--ros-args", "--log-level", "warn"],
+        remappings=[
+            ("linear_motion_status", "pole_roger_motion_status"),
+            ("linear_motion_motor_ref", "pole_roger_motor_ref"),
+            ("linear_motion_position_ref", "pole_roger_position_ref"),
+            ("linear_motion_detect_origin", "pole_roger_detect_origin"),
+            ("linear_motion_mode_status", "pole_roger_mode_status"),
+        ],
+    )
+
+    r1_spear_roger1_node = Node(
+        package="r1_machine",
+        executable="r1_linear_motion_node",
+        name="r1_spear_roger1_node",
+        parameters=[param_file],
+        arguments=["--ros-args", "--log-level", "warn"],
+        remappings=[
+            ("linear_motion_status", "spear_roger1_motion_status"),
+            ("linear_motion_motor_ref", "spear_roger1_motor_ref"),
+            ("linear_motion_position_ref", "spear_roger1_position_ref"),
+            ("linear_motion_detect_origin", "spear_roger1_detect_origin"),
+            ("linear_motion_mode_status", "spear_roger1_mode_status"),
+        ],
+    )
+
+    r1_spear_roger2_node = Node(
+        package="r1_machine",
+        executable="r1_linear_motion_node",
+        name="r1_spear_roger2_node",
+        parameters=[param_file],
+        arguments=["--ros-args", "--log-level", "warn"],
+        remappings=[
+            ("linear_motion_status", "spear_roger2_motion_status"),
+            ("linear_motion_motor_ref", "spear_roger2_motor_ref"),
+            ("linear_motion_position_ref", "spear_roger2_position_ref"),
+            ("linear_motion_detect_origin", "spear_roger2_detect_origin"),
+            ("linear_motion_mode_status", "spear_roger2_mode_status"),
+        ],
+    )
+
+    r1_spear_move_node = Node(
+        package="r1_machine",
+        executable="r1_linear_motion_node",
+        name="r1_spear_move_node",
+        parameters=[param_file],
+        arguments=["--ros-args", "--log-level", "warn"],
+        remappings=[
+            ("linear_motion_status", "spear_move_motion_status"),
+            ("linear_motion_motor_ref", "spear_move_motor_ref"),
+            ("linear_motion_position_ref", "spear_move_position_ref"),
+            ("linear_motion_detect_origin", "spear_move_detect_origin"),
+            ("linear_motion_mode_status", "spear_move_mode_status"),
+            ("low_switch_status", "spear_move_switch_status"),
+        ],
+    )
+
+    r1_spear_rotate_node = Node(
+        package="r1_machine",
+        executable="r1_angle_motion_node",
+        name="r1_spear_rotate_node",
+        parameters=[param_file],
+        arguments=["--ros-args", "--log-level", "warn"],
+        remappings=[
+            ("angle_motion_status", "spear_rotate_motion_status"),
+            ("angle_motion_motor_ref", "spear_rotate_motor_ref"),
+            ("angle_motion_position_ref", "spear_rotate_position_ref"),
+            ("angle_motion_detect_origin", "spear_rotate_detect_origin"),
+            ("angle_motion_mode_status", "spear_rotate_mode_status"),
+            ("low_switch_status", "spear_rotate_switch_status"),
         ],
     )
 
@@ -258,7 +368,6 @@ def generate_launch_description():
     sabacan_gpio_node_id1 = create_sabacan_gpio_node(1)
     sabacan_gpio_node_id2 = create_sabacan_gpio_node(2)
     sabacan_gpio_node_id3 = create_sabacan_gpio_node(3)
-    sabacan_gpio_node_id4 = create_sabacan_gpio_node(4)
 
     sabacan_power_node_id0 = Node(
         package="sabacan",
@@ -309,11 +418,13 @@ def generate_launch_description():
         r1_kfs_ryaw_node,
         r1_front_expand_node,
         r1_rear_expand_node,
-        # sabacan_robomasv2_node_id1,
-        # sabacan_robomasv2_node_id2,
-        # sabacan_robomasv2_node_id3,
-        # sabacan_robomasv2_node_id4,
-        # sabacan_robomasv2_node_id5,
+        r1_pole_x_node,
+        r1_pole_y_node,
+        r1_pole_roger_node,
+        r1_spear_roger1_node,
+        r1_spear_roger2_node,
+        r1_spear_move_node,
+        r1_spear_rotate_node,
         sabacan_single_control_id1_motor0,
         sabacan_single_control_id1_motor1,
         sabacan_single_control_id1_motor2,
@@ -334,10 +445,6 @@ def generate_launch_description():
         sabacan_single_control_id5_motor1,
         sabacan_single_control_id5_motor2,
         sabacan_single_control_id5_motor3,
-        # sabacan_gpio_node_id1,
-        # sabacan_gpio_node_id2,
-        # sabacan_gpio_node_id3,
-        # sabacan_gpio_node_id4,
         # sabacan_power_node_id0,
         # sabacan_led_node_id1,
     ]
@@ -353,7 +460,6 @@ def generate_launch_description():
             TimerAction(period=2.0, actions=[sabacan_gpio_node_id1]),
             TimerAction(period=3.0, actions=[sabacan_gpio_node_id2]),
             TimerAction(period=3.0, actions=[sabacan_gpio_node_id3]),
-            TimerAction(period=4.0, actions=[sabacan_gpio_node_id4]),
-            TimerAction(period=5.0, actions=normal_nodes),
+            TimerAction(period=4.0, actions=normal_nodes),
         ]
     )

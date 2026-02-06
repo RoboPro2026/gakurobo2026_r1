@@ -13,6 +13,7 @@
 #include <cmath>
 
 #include "r1_msgs/msg/angle_motion.hpp"
+#include "r1_msgs/msg/gpio_input.hpp"
 #include "r1_msgs/msg/motor_ref.hpp"
 #include "rcl_interfaces/msg/floating_point_range.hpp"
 #include "rcl_interfaces/msg/parameter_descriptor.hpp"
@@ -32,11 +33,11 @@ public:
       "/angle_motion_status", 10,
       std::bind(&MyNode::angle_motion_status_callback, this, std::placeholders::_1));
 
-    low_switch_status_subscription_ = this->create_subscription<std_msgs::msg::Bool>(
+    low_switch_status_subscription_ = this->create_subscription<r1_msgs::msg::GpioInput>(
       "/low_switch_status", 10,
       std::bind(&MyNode::low_switch_status_callback, this, std::placeholders::_1));
 
-    high_switch_status_subscription_ = this->create_subscription<std_msgs::msg::Bool>(
+    high_switch_status_subscription_ = this->create_subscription<r1_msgs::msg::GpioInput>(
       "/high_switch_status", 10,
       std::bind(&MyNode::high_switch_status_callback, this, std::placeholders::_1));
 
@@ -164,14 +165,14 @@ private:
     current_angle_ = msg->pos;
   }
 
-  void low_switch_status_callback(const std_msgs::msg::Bool::SharedPtr msg)
+  void low_switch_status_callback(const r1_msgs::msg::GpioInput::SharedPtr msg)
   {
-    low_switch_ = msg->data ^ inverse_low_switch_logic_;
+    low_switch_ = msg->status ^ inverse_low_switch_logic_;
   }
 
-  void high_switch_status_callback(const std_msgs::msg::Bool::SharedPtr msg)
+  void high_switch_status_callback(const r1_msgs::msg::GpioInput::SharedPtr msg)
   {
-    high_switch_ = msg->data ^ inverse_high_switch_logic_;
+    high_switch_ = msg->status ^ inverse_high_switch_logic_;
   }
 
   void position_ref_callback(const std_msgs::msg::Float64::SharedPtr msg)
@@ -254,8 +255,8 @@ private:
   }
 
   rclcpp::Subscription<r1_msgs::msg::AngleMotion>::SharedPtr angle_motion_status_subscription_;
-  rclcpp::Subscription<std_msgs::msg::Bool>::SharedPtr low_switch_status_subscription_;
-  rclcpp::Subscription<std_msgs::msg::Bool>::SharedPtr high_switch_status_subscription_;
+  rclcpp::Subscription<r1_msgs::msg::GpioInput>::SharedPtr low_switch_status_subscription_;
+  rclcpp::Subscription<r1_msgs::msg::GpioInput>::SharedPtr high_switch_status_subscription_;
   rclcpp::Publisher<r1_msgs::msg::MotorRef>::SharedPtr angle_motion_ref_publisher_;
   rclcpp::Subscription<std_msgs::msg::Float64>::SharedPtr position_ref_subscription_;
   rclcpp::Subscription<std_msgs::msg::Bool>::SharedPtr detect_origin_subscription_;

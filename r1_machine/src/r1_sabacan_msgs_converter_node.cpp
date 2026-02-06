@@ -172,6 +172,47 @@ public:
     r2_lift_motor_status_publisher_ =
       this->create_publisher<r1_msgs::msg::Motor>("/r2_lift_motor_status", 10);
 
+    // ポール回収の指令値
+    pole_x_motor_ref_subscription_ = this->create_subscription<r1_msgs::msg::MotorRef>(
+      "/pole_x_motor_ref", 10,
+      std::bind(&MyNode::pole_x_motor_ref_callback, this, std::placeholders::_1));
+    pole_y_motor_ref_subscription_ = this->create_subscription<r1_msgs::msg::MotorRef>(
+      "/pole_y_motor_ref", 10,
+      std::bind(&MyNode::pole_y_motor_ref_callback, this, std::placeholders::_1));
+    pole_roger_motor_ref_subscription_ = this->create_subscription<r1_msgs::msg::MotorRef>(
+      "/pole_roger_motor_ref", 10,
+      std::bind(&MyNode::pole_roger_motor_ref_callback, this, std::placeholders::_1));
+    // ポール回収のフィードバック
+    pole_x_linear_motion_status_publisher_ =
+      this->create_publisher<r1_msgs::msg::LinearMotion>("/pole_x_linear_motion_status", 10);
+    pole_y_linear_motion_status_publisher_ =
+      this->create_publisher<r1_msgs::msg::LinearMotion>("/pole_y_linear_motion_status", 10);
+    pole_roger_linear_motion_status_publisher_ =
+      this->create_publisher<r1_msgs::msg::LinearMotion>("/pole_roger_linear_motion_status", 10);
+
+    // やりの指令値
+    spear_roger1_motor_ref_subscription_ = this->create_subscription<r1_msgs::msg::MotorRef>(
+      "/spear_roger1_motor_ref", 10,
+      std::bind(&MyNode::spear_roger1_motor_ref_callback, this, std::placeholders::_1));
+    spear_roger2_motor_ref_subscription_ = this->create_subscription<r1_msgs::msg::MotorRef>(
+      "/spear_roger2_motor_ref", 10,
+      std::bind(&MyNode::spear_roger2_motor_ref_callback, this, std::placeholders::_1));
+    spear_move_motor_ref_subscription_ = this->create_subscription<r1_msgs::msg::MotorRef>(
+      "/spear_move_motor_ref", 10,
+      std::bind(&MyNode::spear_move_motor_ref_callback, this, std::placeholders::_1));
+    spear_rotate_motor_ref_subscription_ = this->create_subscription<r1_msgs::msg::MotorRef>(
+      "/spear_rotate_motor_ref", 10,
+      std::bind(&MyNode::spear_rotate_motor_ref_callback, this, std::placeholders::_1));
+    // やりのフィードバック
+    spear_roger1_linear_motion_status_publisher_ =
+      this->create_publisher<r1_msgs::msg::LinearMotion>("/spear_roger1_linear_motion_status", 10);
+    spear_roger2_linear_motion_status_publisher_ =
+      this->create_publisher<r1_msgs::msg::LinearMotion>("/spear_roger2_linear_motion_status", 10);
+    spear_move_linear_motion_status_publisher_ =
+      this->create_publisher<r1_msgs::msg::LinearMotion>("/spear_move_linear_motion_status", 10);
+    spear_rotate_angle_motion_status_publisher_ =
+      this->create_publisher<r1_msgs::msg::AngleMotion>("/spear_rotate_angle_motion_status", 10);
+
     //KFS真空ポンプ
     kfs_front_pump_gpio_pwm_ref_subscription_ = this->create_subscription<r1_msgs::msg::GpioPwmRef>(
       "/kfs_front_pump_gpio_pwm_ref", 10,
@@ -194,6 +235,47 @@ public:
       this->create_publisher<r1_msgs::msg::GpioInput>("/kfs_front_switch_status", 10);
     kfs_rear_switch_status_publisher_ =
       this->create_publisher<r1_msgs::msg::GpioInput>("/kfs_rear_switch_status", 10);
+
+    // ポール回収サーボ
+    pole_servo1_gpio_servo_ref_subscription_ =
+      this->create_subscription<r1_msgs::msg::GpioServoRef>(
+        "/pole_servo1_gpio_servo_ref", 10,
+        std::bind(&MyNode::pole_servo1_gpio_servo_ref_callback, this, std::placeholders::_1));
+    pole_servo2_gpio_servo_ref_subscription_ =
+      this->create_subscription<r1_msgs::msg::GpioServoRef>(
+        "/pole_servo2_gpio_servo_ref", 10,
+        std::bind(&MyNode::pole_servo2_gpio_servo_ref_callback, this, std::placeholders::_1));
+    pole_servo3_gpio_servo_ref_subscription_ =
+      this->create_subscription<r1_msgs::msg::GpioServoRef>(
+        "/pole_servo3_gpio_servo_ref", 10,
+        std::bind(&MyNode::pole_servo3_gpio_servo_ref_callback, this, std::placeholders::_1));
+    pole_servo4_gpio_servo_ref_subscription_ =
+      this->create_subscription<r1_msgs::msg::GpioServoRef>(
+        "/pole_servo4_gpio_servo_ref", 10,
+        std::bind(&MyNode::pole_servo4_gpio_servo_ref_callback, this, std::placeholders::_1));
+    // ポール回収電磁弁
+    pole_valve1_gpio_pwm_ref_subscription_ = this->create_subscription<r1_msgs::msg::GpioPwmRef>(
+      "/pole_valve1_gpio_pwm_ref", 10,
+      std::bind(&MyNode::pole_valve1_gpio_pwm_ref_callback, this, std::placeholders::_1));
+    pole_valve2_gpio_pwm_ref_subscription_ = this->create_subscription<r1_msgs::msg::GpioPwmRef>(
+      "/pole_valve2_gpio_pwm_ref", 10,
+      std::bind(&MyNode::pole_valve2_gpio_pwm_ref_callback, this, std::placeholders::_1));
+    pole_valve3_gpio_pwm_ref_subscription_ = this->create_subscription<r1_msgs::msg::GpioPwmRef>(
+      "/pole_valve3_gpio_pwm_ref", 10,
+      std::bind(&MyNode::pole_valve3_gpio_pwm_ref_callback, this, std::placeholders::_1));
+    pole_valve4_gpio_pwm_ref_subscription_ = this->create_subscription<r1_msgs::msg::GpioPwmRef>(
+      "/pole_valve4_gpio_pwm_ref", 10,
+      std::bind(&MyNode::pole_valve4_gpio_pwm_ref_callback, this, std::placeholders::_1));
+    // やり電磁弁
+    spear_hand_valve_gpio_pwm_ref_subscription_ =
+      this->create_subscription<r1_msgs::msg::GpioPwmRef>(
+        "/spear_hand_valve_gpio_pwm_ref", 10,
+        std::bind(&MyNode::spear_hand_valve_gpio_pwm_ref_callback, this, std::placeholders::_1));
+    // やりリミットスイッチ
+    spear_move_switch_status_publisher_ =
+      this->create_publisher<r1_msgs::msg::GpioInput>("/spear_move_switch_status", 10);
+    spear_rotate_switch_status_publisher_ =
+      this->create_publisher<r1_msgs::msg::GpioInput>("/spear_rotate_switch_status", 10);
 
     // ========== sabacan_single_control_msgsのpublisherを作成 =========
     // メカナム
@@ -253,8 +335,46 @@ public:
         "/sabacan_robomas_ref" + std::to_string(r2_lift_.board_id) + "/motor" +
           std::to_string(r2_lift_.number),
         10);
-
+    // ポール
+    pole_x_single_ref_publisher_ =
+      this->create_publisher<sabacan_single_control_msgs::msg::SabacanRobomasSingleRef>(
+        "/sabacan_robomas_ref" + std::to_string(pole_x_.board_id) + "/motor" +
+          std::to_string(pole_x_.number),
+        10);
+    pole_y_single_ref_publisher_ =
+      this->create_publisher<sabacan_single_control_msgs::msg::SabacanRobomasSingleRef>(
+        "/sabacan_robomas_ref" + std::to_string(pole_y_.board_id) + "/motor" +
+          std::to_string(pole_y_.number),
+        10);
+    pole_roger_single_ref_publisher_ =
+      this->create_publisher<sabacan_single_control_msgs::msg::SabacanRobomasSingleRef>(
+        "/sabacan_robomas_ref" + std::to_string(pole_roger_.board_id) + "/motor" +
+          std::to_string(pole_roger_.number),
+        10);
+    // やり
+    spear_roger1_single_ref_publisher_ =
+      this->create_publisher<sabacan_single_control_msgs::msg::SabacanRobomasSingleRef>(
+        "/sabacan_robomas_ref" + std::to_string(spear_roger1_.board_id) + "/motor" +
+          std::to_string(spear_roger1_.number),
+        10);
+    spear_roger2_single_ref_publisher_ =
+      this->create_publisher<sabacan_single_control_msgs::msg::SabacanRobomasSingleRef>(
+        "/sabacan_robomas_ref" + std::to_string(spear_roger2_.board_id) + "/motor" +
+          std::to_string(spear_roger2_.number),
+        10);
+    spear_move_single_ref_publisher_ =
+      this->create_publisher<sabacan_single_control_msgs::msg::SabacanRobomasSingleRef>(
+        "/sabacan_robomas_ref" + std::to_string(spear_move_.board_id) + "/motor" +
+          std::to_string(spear_move_.number),
+        10);
+    spear_rotate_single_ref_publisher_ =
+      this->create_publisher<sabacan_single_control_msgs::msg::SabacanRobomasSingleRef>(
+        "/sabacan_robomas_ref" + std::to_string(spear_rotate_.board_id) + "/motor" +
+          std::to_string(spear_rotate_.number),
+        10);
     // デバッグ用のpublisherを追加
+    // ---------- ロボマス制御 ----------
+    // 足回り
     debug_motor_.push_back(
       DebugMotorInfo{
         mecanum_[FL],
@@ -271,6 +391,7 @@ public:
       DebugMotorInfo{
         mecanum_[RR],
         this->create_publisher<r1_msgs::msg::Motor>("/debug_mecanum_rr_motor_status", 10)});
+    // KFS回収機構
     debug_motor_.push_back(
       DebugMotorInfo{
         kfs_fx_, this->create_publisher<r1_msgs::msg::Motor>("/debug_kfs_fx_motor_status", 10)});
@@ -291,10 +412,41 @@ public:
       DebugMotorInfo{
         kfs_ryaw_,
         this->create_publisher<r1_msgs::msg::Motor>("/debug_kfs_ryaw_motor_status", 10)});
+    // R2昇降
     debug_motor_.push_back(
       DebugMotorInfo{
         r2_lift_, this->create_publisher<r1_msgs::msg::Motor>("/debug_r2_lift_motor_status", 10)});
+    // ポール
+    debug_motor_.push_back(
+      DebugMotorInfo{
+        pole_x_, this->create_publisher<r1_msgs::msg::Motor>("/debug_pole_x_motor_status", 10)});
+    debug_motor_.push_back(
+      DebugMotorInfo{
+        pole_y_, this->create_publisher<r1_msgs::msg::Motor>("/debug_pole_y_motor_status", 10)});
+    debug_motor_.push_back(
+      DebugMotorInfo{
+        pole_roger_,
+        this->create_publisher<r1_msgs::msg::Motor>("/debug_pole_roger_motor_status", 10)});
+    // やり
+    debug_motor_.push_back(
+      DebugMotorInfo{
+        spear_roger1_,
+        this->create_publisher<r1_msgs::msg::Motor>("/debug_spear_roger1_motor_status", 10)});
+    debug_motor_.push_back(
+      DebugMotorInfo{
+        spear_roger2_,
+        this->create_publisher<r1_msgs::msg::Motor>("/debug_spear_roger2_motor_status", 10)});
+    debug_motor_.push_back(
+      DebugMotorInfo{
+        spear_move_,
+        this->create_publisher<r1_msgs::msg::Motor>("/debug_spear_move_motor_status", 10)});
+    debug_motor_.push_back(
+      DebugMotorInfo{
+        spear_rotate_,
+        this->create_publisher<r1_msgs::msg::Motor>("/debug_spear_rotate_motor_status", 10)});
 
+    // ---------- GPIO ----------
+    // KFSリミットスイッチ
     debug_gpio_input_.push_back(
       DebugGPIOInputInfo{
         kfs_front_switch_,
@@ -303,6 +455,15 @@ public:
       DebugGPIOInputInfo{
         kfs_rear_switch_,
         this->create_publisher<r1_msgs::msg::GpioInput>("/debug_kfs_rear_switch_status", 10)});
+    // やりリミットスイッチ
+    debug_gpio_input_.push_back(
+      DebugGPIOInputInfo{
+        spear_move_switch_,
+        this->create_publisher<r1_msgs::msg::GpioInput>("/debug_spear_move_switch_status", 10)});
+    debug_gpio_input_.push_back(
+      DebugGPIOInputInfo{
+        spear_rotate_switch_,
+        this->create_publisher<r1_msgs::msg::GpioInput>("/debug_spear_rotate_switch_status", 10)});
 
     // 100Hzのタイマーを作成
     timer_ = this->create_wall_timer(10ms, std::bind(&MyNode::timer_callback, this));
@@ -354,7 +515,6 @@ public:
       odometry_encoder_pos_values_[Y] = msg->abs_pos;
       odometry_encoder_speed_values_[Y] = msg->abs_speed;
     }
-
     if (receive == kfs_fx_) {
       auto linear_msg = r1_msgs::msg::LinearMotion();
       linear_msg.torque = msg->torque;
@@ -362,7 +522,6 @@ public:
       linear_msg.pos = msg->pos;
       kfs_fx_linear_motion_status_publisher_->publish(linear_msg);
     }
-
     if (receive == kfs_fz_) {
       auto linear_msg = r1_msgs::msg::LinearMotion();
       linear_msg.torque = msg->torque;
@@ -370,7 +529,6 @@ public:
       linear_msg.pos = msg->pos;
       kfs_fz_linear_motion_status_publisher_->publish(linear_msg);
     }
-
     if (receive == kfs_fyaw_) {
       auto angle_msg = r1_msgs::msg::AngleMotion();
       angle_msg.torque = msg->torque;
@@ -378,7 +536,6 @@ public:
       angle_msg.pos = msg->pos;
       kfs_fyaw_angle_motion_status_publisher_->publish(angle_msg);
     }
-
     if (receive == kfs_rx_) {
       auto linear_msg = r1_msgs::msg::LinearMotion();
       linear_msg.torque = msg->torque;
@@ -386,7 +543,6 @@ public:
       linear_msg.pos = msg->pos;
       kfs_rx_linear_motion_status_publisher_->publish(linear_msg);
     }
-
     if (receive == kfs_rz_) {
       auto linear_msg = r1_msgs::msg::LinearMotion();
       linear_msg.torque = msg->torque;
@@ -394,7 +550,6 @@ public:
       linear_msg.pos = msg->pos;
       kfs_rz_linear_motion_status_publisher_->publish(linear_msg);
     }
-
     if (receive == kfs_ryaw_) {
       auto angle_msg = r1_msgs::msg::AngleMotion();
       angle_msg.torque = msg->torque;
@@ -402,7 +557,6 @@ public:
       angle_msg.pos = msg->pos;
       kfs_ryaw_angle_motion_status_publisher_->publish(angle_msg);
     }
-
     if (receive == front_expand_) {
       auto linear_msg = r1_msgs::msg::LinearMotion();
       linear_msg.torque = msg->torque;
@@ -410,7 +564,6 @@ public:
       linear_msg.pos = msg->pos;
       front_expand_linear_motion_status_publisher_->publish(linear_msg);
     }
-
     if (receive == rear_expand_) {
       auto linear_msg = r1_msgs::msg::LinearMotion();
       linear_msg.torque = msg->torque;
@@ -418,11 +571,58 @@ public:
       linear_msg.pos = msg->pos;
       rear_expand_linear_motion_status_publisher_->publish(linear_msg);
     }
-
     if (receive == r2_lift_) {
       r2_lift_motor_status_publisher_->publish(msg_status);
     }
-
+    if (receive == pole_x_) {
+      auto linear_msg = r1_msgs::msg::LinearMotion();
+      linear_msg.torque = msg->torque;
+      linear_msg.speed = msg->speed;
+      linear_msg.pos = msg->pos;
+      pole_x_linear_motion_status_publisher_->publish(linear_msg);
+    }
+    if (receive == pole_y_) {
+      auto linear_msg = r1_msgs::msg::LinearMotion();
+      linear_msg.torque = msg->torque;
+      linear_msg.speed = msg->speed;
+      linear_msg.pos = msg->pos;
+      pole_y_linear_motion_status_publisher_->publish(linear_msg);
+    }
+    if (receive == pole_roger_) {
+      auto linear_msg = r1_msgs::msg::LinearMotion();
+      linear_msg.torque = msg->torque;
+      linear_msg.speed = msg->speed;
+      linear_msg.pos = msg->pos;
+      pole_roger_linear_motion_status_publisher_->publish(linear_msg);
+    }
+    if (receive == spear_roger1_) {
+      auto linear_msg = r1_msgs::msg::LinearMotion();
+      linear_msg.torque = msg->torque;
+      linear_msg.speed = msg->speed;
+      linear_msg.pos = msg->pos;
+      spear_roger1_linear_motion_status_publisher_->publish(linear_msg);
+    }
+    if (receive == spear_roger2_) {
+      auto linear_msg = r1_msgs::msg::LinearMotion();
+      linear_msg.torque = msg->torque;
+      linear_msg.speed = msg->speed;
+      linear_msg.pos = msg->pos;
+      spear_roger2_linear_motion_status_publisher_->publish(linear_msg);
+    }
+    if (receive == spear_move_) {
+      auto linear_msg = r1_msgs::msg::LinearMotion();
+      linear_msg.torque = msg->torque;
+      linear_msg.speed = msg->speed;
+      linear_msg.pos = msg->pos;
+      spear_move_linear_motion_status_publisher_->publish(linear_msg);
+    }
+    if (receive == spear_rotate_) {
+      auto angle_msg = r1_msgs::msg::AngleMotion();
+      angle_msg.torque = msg->torque;
+      angle_msg.speed = msg->speed;
+      angle_msg.pos = msg->pos;
+      spear_rotate_angle_motion_status_publisher_->publish(angle_msg);
+    }
     if (odometry_encoder_update_[X] && odometry_encoder_update_[Y]) {
       auto odom_msg = r1_msgs::msg::OdometryEncoder();
       odom_msg.encoder_pos_x = odometry_encoder_pos_values_[X];
@@ -457,6 +657,16 @@ public:
       r1_msgs::msg::GpioInput gpio_msg;
       gpio_msg.status = msg->input;
       kfs_rear_switch_status_publisher_->publish(gpio_msg);
+    }
+    if (receive == spear_move_switch_) {
+      r1_msgs::msg::GpioInput gpio_msg;
+      gpio_msg.status = msg->input;
+      spear_move_switch_status_publisher_->publish(gpio_msg);
+    }
+    if (receive == spear_rotate_switch_) {
+      r1_msgs::msg::GpioInput gpio_msg;
+      gpio_msg.status = msg->input;
+      spear_rotate_switch_status_publisher_->publish(gpio_msg);
     }
 
     // デバッグ用パブリッシュ（GPIO入力）
@@ -573,6 +783,62 @@ public:
     r2_lift_single_ref_publisher_->publish(msg_ref);
   }
 
+  void pole_x_motor_ref_callback(const r1_msgs::msg::MotorRef::SharedPtr msg)
+  {
+    auto msg_ref = sabacan_single_control_msgs::msg::SabacanRobomasSingleRef();
+    msg_ref.control_type = msg->control_type;
+    msg_ref.ref = msg->ref;
+    pole_x_single_ref_publisher_->publish(msg_ref);
+  }
+
+  void pole_y_motor_ref_callback(const r1_msgs::msg::MotorRef::SharedPtr msg)
+  {
+    auto msg_ref = sabacan_single_control_msgs::msg::SabacanRobomasSingleRef();
+    msg_ref.control_type = msg->control_type;
+    msg_ref.ref = msg->ref;
+    pole_y_single_ref_publisher_->publish(msg_ref);
+  }
+
+  void pole_roger_motor_ref_callback(const r1_msgs::msg::MotorRef::SharedPtr msg)
+  {
+    auto msg_ref = sabacan_single_control_msgs::msg::SabacanRobomasSingleRef();
+    msg_ref.control_type = msg->control_type;
+    msg_ref.ref = msg->ref;
+    pole_roger_single_ref_publisher_->publish(msg_ref);
+  }
+
+  void spear_roger1_motor_ref_callback(const r1_msgs::msg::MotorRef::SharedPtr msg)
+  {
+    auto msg_ref = sabacan_single_control_msgs::msg::SabacanRobomasSingleRef();
+    msg_ref.control_type = msg->control_type;
+    msg_ref.ref = msg->ref;
+    spear_roger1_single_ref_publisher_->publish(msg_ref);
+  }
+
+  void spear_roger2_motor_ref_callback(const r1_msgs::msg::MotorRef::SharedPtr msg)
+  {
+    auto msg_ref = sabacan_single_control_msgs::msg::SabacanRobomasSingleRef();
+    msg_ref.control_type = msg->control_type;
+    msg_ref.ref = msg->ref;
+    spear_roger2_single_ref_publisher_->publish(msg_ref);
+  }
+
+  void spear_move_motor_ref_callback(const r1_msgs::msg::MotorRef::SharedPtr msg)
+  {
+    auto msg_ref = sabacan_single_control_msgs::msg::SabacanRobomasSingleRef();
+    msg_ref.control_type = msg->control_type;
+    msg_ref.ref = msg->ref;
+    spear_move_single_ref_publisher_->publish(msg_ref);
+  }
+
+  void spear_rotate_motor_ref_callback(const r1_msgs::msg::MotorRef::SharedPtr msg)
+  {
+    auto msg_ref = sabacan_single_control_msgs::msg::SabacanRobomasSingleRef();
+    msg_ref.control_type = msg->control_type;
+    msg_ref.ref = msg->ref;
+    spear_rotate_single_ref_publisher_->publish(msg_ref);
+  }
+
   void kfs_front_pump_gpio_pwm_ref_callback(const r1_msgs::msg::GpioPwmRef::SharedPtr msg)
   {
     auto info = kfs_front_pump_;
@@ -603,6 +869,87 @@ public:
   void kfs_rear_valve_gpio_pwm_ref_callback(const r1_msgs::msg::GpioPwmRef::SharedPtr msg)
   {
     auto info = kfs_rear_valve_;
+    auto sabacan_msg = sabacan_msgs::msg::SabacanGPIORefFloat();
+    sabacan_msg.pin_number = info.number;
+    sabacan_msg.ref_float = msg->ref;
+    sabacan_gpio_ref_float_publisher_[info.board_id]->publish(sabacan_msg);
+  }
+
+  void pole_servo1_gpio_servo_ref_callback(const r1_msgs::msg::GpioServoRef::SharedPtr msg)
+  {
+    auto info = pole_servo1_;
+    auto sabacan_msg = sabacan_msgs::msg::SabacanGPIORefInt();
+    sabacan_msg.pin_number = info.number;
+    sabacan_msg.ref_int = msg->ref;
+    sabacan_gpio_ref_int_publisher_[info.board_id]->publish(sabacan_msg);
+  }
+
+  void pole_servo2_gpio_servo_ref_callback(const r1_msgs::msg::GpioServoRef::SharedPtr msg)
+  {
+    auto info = pole_servo2_;
+    auto sabacan_msg = sabacan_msgs::msg::SabacanGPIORefInt();
+    sabacan_msg.pin_number = info.number;
+    sabacan_msg.ref_int = msg->ref;
+    sabacan_gpio_ref_int_publisher_[info.board_id]->publish(sabacan_msg);
+  }
+
+  void pole_servo3_gpio_servo_ref_callback(const r1_msgs::msg::GpioServoRef::SharedPtr msg)
+  {
+    auto info = pole_servo3_;
+    auto sabacan_msg = sabacan_msgs::msg::SabacanGPIORefInt();
+    sabacan_msg.pin_number = info.number;
+    sabacan_msg.ref_int = msg->ref;
+    sabacan_gpio_ref_int_publisher_[info.board_id]->publish(sabacan_msg);
+  }
+
+  void pole_servo4_gpio_servo_ref_callback(const r1_msgs::msg::GpioServoRef::SharedPtr msg)
+  {
+    auto info = pole_servo4_;
+    auto sabacan_msg = sabacan_msgs::msg::SabacanGPIORefInt();
+    sabacan_msg.pin_number = info.number;
+    sabacan_msg.ref_int = msg->ref;
+    sabacan_gpio_ref_int_publisher_[info.board_id]->publish(sabacan_msg);
+  }
+
+  void pole_valve1_gpio_pwm_ref_callback(const r1_msgs::msg::GpioPwmRef::SharedPtr msg)
+  {
+    auto info = pole_valve1_;
+    auto sabacan_msg = sabacan_msgs::msg::SabacanGPIORefFloat();
+    sabacan_msg.pin_number = info.number;
+    sabacan_msg.ref_float = msg->ref;
+    sabacan_gpio_ref_float_publisher_[info.board_id]->publish(sabacan_msg);
+  }
+
+  void pole_valve2_gpio_pwm_ref_callback(const r1_msgs::msg::GpioPwmRef::SharedPtr msg)
+  {
+    auto info = pole_valve2_;
+    auto sabacan_msg = sabacan_msgs::msg::SabacanGPIORefFloat();
+    sabacan_msg.pin_number = info.number;
+    sabacan_msg.ref_float = msg->ref;
+    sabacan_gpio_ref_float_publisher_[info.board_id]->publish(sabacan_msg);
+  }
+
+  void pole_valve3_gpio_pwm_ref_callback(const r1_msgs::msg::GpioPwmRef::SharedPtr msg)
+  {
+    auto info = pole_valve3_;
+    auto sabacan_msg = sabacan_msgs::msg::SabacanGPIORefFloat();
+    sabacan_msg.pin_number = info.number;
+    sabacan_msg.ref_float = msg->ref;
+    sabacan_gpio_ref_float_publisher_[info.board_id]->publish(sabacan_msg);
+  }
+
+  void pole_valve4_gpio_pwm_ref_callback(const r1_msgs::msg::GpioPwmRef::SharedPtr msg)
+  {
+    auto info = pole_valve4_;
+    auto sabacan_msg = sabacan_msgs::msg::SabacanGPIORefFloat();
+    sabacan_msg.pin_number = info.number;
+    sabacan_msg.ref_float = msg->ref;
+    sabacan_gpio_ref_float_publisher_[info.board_id]->publish(sabacan_msg);
+  }
+
+  void spear_hand_valve_gpio_pwm_ref_callback(const r1_msgs::msg::GpioPwmRef::SharedPtr msg)
+  {
+    auto info = spear_hand_valve_;
     auto sabacan_msg = sabacan_msgs::msg::SabacanGPIORefFloat();
     sabacan_msg.pin_number = info.number;
     sabacan_msg.ref_float = msg->ref;
@@ -658,6 +1005,22 @@ public:
   // R2昇降
   rclcpp::Publisher<sabacan_single_control_msgs::msg::SabacanRobomasSingleRef>::SharedPtr
     r2_lift_single_ref_publisher_;
+  // ポール
+  rclcpp::Publisher<sabacan_single_control_msgs::msg::SabacanRobomasSingleRef>::SharedPtr
+    pole_x_single_ref_publisher_;
+  rclcpp::Publisher<sabacan_single_control_msgs::msg::SabacanRobomasSingleRef>::SharedPtr
+    pole_y_single_ref_publisher_;
+  rclcpp::Publisher<sabacan_single_control_msgs::msg::SabacanRobomasSingleRef>::SharedPtr
+    pole_roger_single_ref_publisher_;
+  // やり
+  rclcpp::Publisher<sabacan_single_control_msgs::msg::SabacanRobomasSingleRef>::SharedPtr
+    spear_roger1_single_ref_publisher_;
+  rclcpp::Publisher<sabacan_single_control_msgs::msg::SabacanRobomasSingleRef>::SharedPtr
+    spear_roger2_single_ref_publisher_;
+  rclcpp::Publisher<sabacan_single_control_msgs::msg::SabacanRobomasSingleRef>::SharedPtr
+    spear_move_single_ref_publisher_;
+  rclcpp::Publisher<sabacan_single_control_msgs::msg::SabacanRobomasSingleRef>::SharedPtr
+    spear_rotate_single_ref_publisher_;
 
   // ======== R1 Machine Publisher and Subscription ========
   // -------- ロボマス ----------
@@ -693,6 +1056,29 @@ public:
   rclcpp::Subscription<r1_msgs::msg::MotorRef>::SharedPtr r2_lift_motor_ref_subscription_;
   // R2昇降のフィードバック
   rclcpp::Publisher<r1_msgs::msg::Motor>::SharedPtr r2_lift_motor_status_publisher_;
+  // ポールの指令値
+  rclcpp::Subscription<r1_msgs::msg::MotorRef>::SharedPtr pole_x_motor_ref_subscription_;
+  rclcpp::Subscription<r1_msgs::msg::MotorRef>::SharedPtr pole_y_motor_ref_subscription_;
+  rclcpp::Subscription<r1_msgs::msg::MotorRef>::SharedPtr pole_roger_motor_ref_subscription_;
+  // ポールのフィードバック
+  rclcpp::Publisher<r1_msgs::msg::LinearMotion>::SharedPtr pole_x_linear_motion_status_publisher_;
+  rclcpp::Publisher<r1_msgs::msg::LinearMotion>::SharedPtr pole_y_linear_motion_status_publisher_;
+  rclcpp::Publisher<r1_msgs::msg::LinearMotion>::SharedPtr
+    pole_roger_linear_motion_status_publisher_;
+  // やりの指令値
+  rclcpp::Subscription<r1_msgs::msg::MotorRef>::SharedPtr spear_roger1_motor_ref_subscription_;
+  rclcpp::Subscription<r1_msgs::msg::MotorRef>::SharedPtr spear_roger2_motor_ref_subscription_;
+  rclcpp::Subscription<r1_msgs::msg::MotorRef>::SharedPtr spear_move_motor_ref_subscription_;
+  rclcpp::Subscription<r1_msgs::msg::MotorRef>::SharedPtr spear_rotate_motor_ref_subscription_;
+  // やりのフィードバック
+  rclcpp::Publisher<r1_msgs::msg::LinearMotion>::SharedPtr
+    spear_roger1_linear_motion_status_publisher_;
+  rclcpp::Publisher<r1_msgs::msg::LinearMotion>::SharedPtr
+    spear_roger2_linear_motion_status_publisher_;
+  rclcpp::Publisher<r1_msgs::msg::LinearMotion>::SharedPtr
+    spear_move_linear_motion_status_publisher_;
+  rclcpp::Publisher<r1_msgs::msg::AngleMotion>::SharedPtr
+    spear_rotate_angle_motion_status_publisher_;
   // --------- GPIO ----------
   // KFS真空ポンプ
   rclcpp::Subscription<r1_msgs::msg::GpioPwmRef>::SharedPtr
@@ -707,16 +1093,38 @@ public:
   // KFSリミットスイッチ
   rclcpp::Publisher<r1_msgs::msg::GpioInput>::SharedPtr kfs_front_switch_status_publisher_;
   rclcpp::Publisher<r1_msgs::msg::GpioInput>::SharedPtr kfs_rear_switch_status_publisher_;
-
+  // ポール回収サーボモータ
+  rclcpp::Subscription<r1_msgs::msg::GpioServoRef>::SharedPtr
+    pole_servo1_gpio_servo_ref_subscription_;
+  rclcpp::Subscription<r1_msgs::msg::GpioServoRef>::SharedPtr
+    pole_servo2_gpio_servo_ref_subscription_;
+  rclcpp::Subscription<r1_msgs::msg::GpioServoRef>::SharedPtr
+    pole_servo3_gpio_servo_ref_subscription_;
+  rclcpp::Subscription<r1_msgs::msg::GpioServoRef>::SharedPtr
+    pole_servo4_gpio_servo_ref_subscription_;
+  // ポール回収電磁弁
+  rclcpp::Subscription<r1_msgs::msg::GpioPwmRef>::SharedPtr pole_valve1_gpio_pwm_ref_subscription_;
+  rclcpp::Subscription<r1_msgs::msg::GpioPwmRef>::SharedPtr pole_valve2_gpio_pwm_ref_subscription_;
+  rclcpp::Subscription<r1_msgs::msg::GpioPwmRef>::SharedPtr pole_valve3_gpio_pwm_ref_subscription_;
+  rclcpp::Subscription<r1_msgs::msg::GpioPwmRef>::SharedPtr pole_valve4_gpio_pwm_ref_subscription_;
+  // やり電磁弁
+  rclcpp::Subscription<r1_msgs::msg::GpioPwmRef>::SharedPtr
+    spear_hand_valve_gpio_pwm_ref_subscription_;
+  // やりリミットスイッチ
+  rclcpp::Publisher<r1_msgs::msg::GpioInput>::SharedPtr spear_move_switch_status_publisher_;
+  rclcpp::Publisher<r1_msgs::msg::GpioInput>::SharedPtr spear_rotate_switch_status_publisher_;
   // ========= Board id ==========
-  // ---------- ロボマス ----------
+  // ---------- ロボマス制御 ----------
+  // 足回り
   std::vector<BoardInfo> mecanum_ = {
     {.board_id = 1, .number = 0},
     {.board_id = 1, .number = 1},
     {.board_id = 1, .number = 2},
     {.board_id = 1, .number = 3}};
+  // オドメトリエンコーダ
   std::vector<BoardInfo> odometry_encoder_ = {
     {.board_id = 1, .number = 0}, {.board_id = 1, .number = 1}};
+  // KFS回収機構
   BoardInfo kfs_fx_ = {.board_id = 2, .number = 0};
   BoardInfo kfs_fz_ = {.board_id = 2, .number = 1};
   BoardInfo kfs_fyaw_ = {.board_id = 2, .number = 2};
@@ -725,14 +1133,38 @@ public:
   BoardInfo kfs_rz_ = {.board_id = 3, .number = 1};
   BoardInfo kfs_ryaw_ = {.board_id = 3, .number = 2};
   BoardInfo rear_expand_ = {.board_id = 3, .number = 3};
+  // R2昇降
   BoardInfo r2_lift_ = {.board_id = 4, .number = 0};
+  // ポール回収
+  BoardInfo pole_x_ = {.board_id = 4, .number = 1};
+  BoardInfo pole_y_ = {.board_id = 4, .number = 2};
+  BoardInfo pole_roger_ = {.board_id = 4, .number = 3};
+  // やり
+  BoardInfo spear_roger1_ = {.board_id = 5, .number = 0};
+  BoardInfo spear_roger2_ = {.board_id = 5, .number = 1};
+  BoardInfo spear_move_ = {.board_id = 5, .number = 2};
+  BoardInfo spear_rotate_ = {.board_id = 5, .number = 3};
   // ---------- GPIO ----------
+  // KFS回収
   BoardInfo kfs_front_pump_ = {.board_id = 1, .number = 0};
   BoardInfo kfs_rear_pump_ = {.board_id = 1, .number = 1};
   BoardInfo kfs_front_valve_ = {.board_id = 1, .number = 2};
   BoardInfo kfs_rear_valve_ = {.board_id = 1, .number = 3};
   BoardInfo kfs_front_switch_ = {.board_id = 2, .number = 0};
   BoardInfo kfs_rear_switch_ = {.board_id = 2, .number = 1};
+  // ポール回収
+  BoardInfo pole_servo1_ = {.board_id = 2, .number = 0};
+  BoardInfo pole_servo2_ = {.board_id = 2, .number = 1};
+  BoardInfo pole_servo3_ = {.board_id = 2, .number = 2};
+  BoardInfo pole_servo4_ = {.board_id = 2, .number = 3};
+  BoardInfo pole_valve1_ = {.board_id = 2, .number = 4};
+  BoardInfo pole_valve2_ = {.board_id = 2, .number = 5};
+  BoardInfo pole_valve3_ = {.board_id = 2, .number = 6};
+  BoardInfo pole_valve4_ = {.board_id = 2, .number = 7};
+  // やり
+  BoardInfo spear_hand_valve_ = {.board_id = 1, .number = 8};
+  BoardInfo spear_move_switch_ = {.board_id = 2, .number = 2};
+  BoardInfo spear_rotate_switch_ = {.board_id = 2, .number = 3};
 
   std::vector<double> odometry_encoder_pos_values_ = std::vector<double>(ODOMETRY_NUM);
   std::vector<double> odometry_encoder_speed_values_ = std::vector<double>(ODOMETRY_NUM);

@@ -38,7 +38,7 @@ r1_odometry_node:
     encoder_y_inverse: true
     use_imu: false
 
-# ---------- 回収機構 ----------
+# ---------- KFS回収機構 ----------
 # linear motion node
 r1_kfs_fx_node:
   ros__parameters:
@@ -171,6 +171,120 @@ r1_rear_expand_node:
     inverse_low_switch_logic: false
     inverse_high_switch_logic: false
 
+# ---------- ポール回収 ----------
+# linear motion node
+r1_pole_x_node:
+  ros__parameters:
+    torque_threshold: 0.5 # Nm
+    origin_detect_threshold_time: 0.5 # 秒
+    # 原点検出のときは、0の方向に戻るので、負の速度にする
+    output_detect_speed: -3.14 # rad/s
+    pos_min: 0.0
+    pos_max: 1.0
+    # ギアが一周すると2*pi*20mm進むので、半径は20mm
+    radius: 0.02
+    inverse_motor: false
+    use_low_switch: false
+    use_high_switch: false
+    inverse_low_switch_logic: false
+    inverse_high_switch_logic: false
+# linear motion node
+r1_pole_y_node:
+  ros__parameters:
+    torque_threshold: 0.5 # Nm
+    origin_detect_threshold_time: 0.5 # 秒
+    # 原点検出のときは、0の方向に戻るので、負の速度にする
+    output_detect_speed: -3.14 # rad/s
+    pos_min: 0.0
+    pos_max: 1.0
+    # ギアが一周すると2*pi*20mm進むので、半径は20mm
+    radius: 0.02
+    inverse_motor: false
+    use_low_switch: false
+    use_high_switch: false
+    inverse_low_switch_logic: false
+    inverse_high_switch_logic: false
+# linear motion node
+r1_pole_roger_node:
+  ros__parameters:
+    torque_threshold: 0.5 # Nm
+    origin_detect_threshold_time: 0.5 # 秒
+    # 原点検出のときは、0の方向に戻るので、負の速度にする
+    output_detect_speed: -3.14 # rad/s
+    pos_min: 0.0
+    pos_max: 1.0
+    # 1回転すると70mm進むので、半径は11.140846mm
+    radius: 0.011140846
+    inverse_motor: false
+    use_low_switch: false
+    use_high_switch: false
+    inverse_low_switch_logic: false
+    inverse_high_switch_logic: false
+# ---------- やり ----------
+# linear motion node
+r1_spear_roger1_node:
+  ros__parameters:
+    torque_threshold: 0.5 # Nm
+    origin_detect_threshold_time: 0.5 # 秒
+    # 原点検出のときは、0の方向に戻るので、負の速度にする
+    output_detect_speed: -3.14 # rad/s
+    pos_min: 0.0
+    pos_max: 1.0
+    # 1回転すると70mm進む。ロジャーなので、倍進むので、半径0.05570423mm
+    radius: 0.05570423
+    inverse_motor: true
+    use_low_switch: false
+    use_high_switch: false
+    inverse_low_switch_logic: false
+    inverse_high_switch_logic: false
+# linear motion node
+r1_spear_roger2_node:
+  ros__parameters:
+    torque_threshold: 0.5 # Nm
+    origin_detect_threshold_time: 0.5 # 秒
+    # 原点検出のときは、0の方向に戻るので、負の速度にする
+    output_detect_speed: -3.14 # rad/s
+    pos_min: 0.0
+    pos_max: 1.0
+    # 1回転すると70mm進む。ロジャーなので、倍進むので、半径0.05570423mm
+    radius: 0.05570423
+    inverse_motor: true
+    use_low_switch: false
+    use_high_switch: false
+    inverse_low_switch_logic: false
+    inverse_high_switch_logic: false
+# linear motion node
+r1_spear_move_node:
+  ros__parameters:
+    # torque_threshold: 0.5 # Nm
+    origin_detect_threshold_time: 0.2 # 秒
+    # 原点検出のときは、0の方向に戻るので、負の速度にする
+    output_detect_speed: -3.14 # rad/s
+    pos_min: 0.0
+    pos_max: 1.0
+    # 1回転すると95mm進むので、半径は15.119719mm
+    radius: 0.015119719
+    inverse_motor: false
+    use_low_switch: true
+    use_high_switch: false
+    inverse_low_switch_logic: false
+    inverse_high_switch_logic: false
+# angle motion node
+r1_spear_rotate_node:
+  ros__parameters:
+    # torque_threshold: 0.5 # Nm
+    origin_detect_threshold_time: 0.2 # 秒
+    origin_detect_speed: -3.14 # rad/s
+    angle_min: 0.0
+    angle_max: 3.14
+    # ギア比は1.0
+    gear_ratio: 1.0
+    inverse_motor: false
+    use_low_switch: true
+    use_high_switch: false
+    inverse_low_switch_logic: false
+    inverse_high_switch_logic: false
+
 # IMU
 bno086_node:
   ros__parameters:
@@ -228,12 +342,31 @@ sabacan_robomasv2_node_id3:
     # VESCのフィードバックは無効化
     monitor_reg2: [0, 0, 0, 0]
     monitor_period: 100
-# TODO: よくわからないので仮
+# R2昇降、ポール回収
 sabacan_robomasv2_node_id4:
   ros__parameters:
     board_id: 4
     motor_type: ["C620", "C620", "C620", "C620"]
     control_type: ["VELOCITY", "POS", "POS", "POS"]
+    speed_gain_p: [0.5, 0.5, 0.5, 0.5]
+    speed_gain_i: [0.2, 0.2, 0.2, 0.2]
+    speed_gain_d: [0.0, 0.0, 0.0, 0.0]
+    torque_lim: [5.0, 5.0, 5.0, 5.0]
+    pos_gain_p: [6.0, 6.0, 6.0, 6.0]
+    pos_gain_i: [3.0, 3.0, 3.0, 3.0]
+    pos_gain_d: [0.0, 0.0, 0.0, 0.0]
+    speed_lim: [50.0, 10.0, 10.0, 10.0]
+    # TRQ+SPD+POS+MOTOR_STATEをフィードバック
+    monitor_reg1: [0x0001000100010002, 0x0001000100010002, 0x0001000100010002, 0x0001000100010002]
+    # VESCのフィードバックは無効化
+    monitor_reg2: [0, 0, 0, 0]
+    monitor_period: 100
+# やり
+sabacan_robomasv2_node_id5:
+  ros__parameters:
+    board_id: 5
+    motor_type: ["C610", "C610", "C610", "C610"]
+    control_type: ["POS", "POS", "POS", "POS"]
     speed_gain_p: [0.5, 0.5, 0.5, 0.5]
     speed_gain_i: [0.2, 0.2, 0.2, 0.2]
     speed_gain_d: [0.0, 0.0, 0.0, 0.0]
@@ -247,21 +380,17 @@ sabacan_robomasv2_node_id4:
     # VESCのフィードバックは無効化
     monitor_reg2: [0, 0, 0, 0]
     monitor_period: 100
-sabacan_robomasv2_node_id5:
-  ros__parameters:
-    board_id: 5
-    monitor_period: 100
 
+# PWM出力
 sabacan_gpio_node_id1:
   ros__parameters:
     board_id: 1
-    # 0と1は真空ポンプなので、PWM出力
     pin_type: ["OUTPUT_PWM", "OUTPUT_PWM", "OUTPUT_PWM", "OUTPUT_PWM", "OUTPUT_PWM", "OUTPUT_PWM", "OUTPUT_PWM", "OUTPUT_PWM", "OUTPUT_PWM"]
     pwm_freq: [1000, 1000, 1000, 1000, 1000, 1000, 1000, 1000, 1000]
     # monitor_regは無効
     monitor_reg: 0
     monitor_period: 0
-
+# センサー入力
 sabacan_gpio_node_id2:
   ros__parameters:
     board_id: 2
@@ -269,16 +398,17 @@ sabacan_gpio_node_id2:
     # monitor_regはPORT_READを有効化
     monitor_reg: 0x4
     monitor_period: 50
-
+# ポール用
 sabacan_gpio_node_id3:
   ros__parameters:
     board_id: 3
-    monitor_period: 50
-
-sabacan_gpio_node_id4:
-  ros__parameters:
-    board_id: 4
-    monitor_period: 50
+    # 0~3はサーボ、4~7は電磁弁
+    pin_type: ["OUTPUT_SERVO", "OUTPUT_SERVO", "OUTPUT_SERVO", "OUTPUT_SERVO", "OUTPUT_PWM", "OUTPUT_PWM", "OUTPUT_PWM", "OUTPUT_PWM", "OUTPUT_PWM"]
+    pwm_freq: [0, 0, 0, 0, 1000, 1000, 1000, 1000, 1000]
+    servo_max_angle: [270, 270, 270, 270, 270, 270, 270, 270, 270]
+    # monitor_regは無効
+    monitor_reg: 0
+    monitor_period: 0
 
 sabacan_power_node_id0:
   ros__parameters:

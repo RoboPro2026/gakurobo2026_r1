@@ -59,6 +59,41 @@ R1MainNode::R1MainNode() : Node("r1_main_node")
   // ========== R2昇降指令値 ==========
   r2_lift_motor_ref_publisher_ =
     this->create_publisher<r1_msgs::msg::MotorRef>("/r2_lift_motor_ref", 10);
+  // ========== ポール回収 ==========
+  // 指令値Publisher
+  pole_x_position_ref_publisher_ =
+    this->create_publisher<std_msgs::msg::Float64>("/pole_x_position_ref", 10);
+  pole_y_position_ref_publisher_ =
+    this->create_publisher<std_msgs::msg::Float64>("/pole_y_position_ref", 10);
+  pole_roger_position_ref_publisher_ =
+    this->create_publisher<std_msgs::msg::Float64>("/pole_roger_position_ref", 10);
+  // 原点検出Publisher
+  pole_x_detect_origin_publisher_ =
+    this->create_publisher<std_msgs::msg::Bool>("/pole_x_detect_origin", 10);
+  pole_y_detect_origin_publisher_ =
+    this->create_publisher<std_msgs::msg::Bool>("/pole_y_detect_origin", 10);
+  pole_roger_detect_origin_publisher_ =
+    this->create_publisher<std_msgs::msg::Bool>("/pole_roger_detect_origin", 10);
+  // ========== やり ==========
+  // 指令値Publisher
+  spear_roger1_position_ref_publisher_ =
+    this->create_publisher<std_msgs::msg::Float64>("/spear_roger1_position_ref", 10);
+  spear_roger2_position_ref_publisher_ =
+    this->create_publisher<std_msgs::msg::Float64>("/spear_roger2_position_ref", 10);
+  spear_move_position_ref_publisher_ =
+    this->create_publisher<std_msgs::msg::Float64>("/spear_move_position_ref", 10);
+  spear_rotate_position_ref_publisher_ =
+    this->create_publisher<std_msgs::msg::Float64>("/spear_rotate_position_ref", 10);
+  // 原点検出Publisher
+  spear_roger1_detect_origin_publisher_ =
+    this->create_publisher<std_msgs::msg::Bool>("/spear_roger1_detect_origin", 10);
+  spear_roger2_detect_origin_publisher_ =
+    this->create_publisher<std_msgs::msg::Bool>("/spear_roger2_detect_origin", 10);
+  spear_move_detect_origin_publisher_ =
+    this->create_publisher<std_msgs::msg::Bool>("/spear_move_detect_origin", 10);
+  spear_rotate_detect_origin_publisher_ =
+    this->create_publisher<std_msgs::msg::Bool>("/spear_rotate_detect_origin", 10);
+
   // modeのSubscription
   kfs_fx_mode_status_subscription_ = this->create_subscription<std_msgs::msg::Int32>(
     "/kfs_fx_mode_status", 10,
@@ -85,24 +120,73 @@ R1MainNode::R1MainNode() : Node("r1_main_node")
   rear_expand_mode_status_subscription_ = this->create_subscription<std_msgs::msg::Int32>(
     "/rear_expand_mode_status", 10,
     std::bind(&R1MainNode::rear_expand_mode_status_callback, this, std::placeholders::_1));
+  pole_x_mode_status_subscription_ = this->create_subscription<std_msgs::msg::Int32>(
+    "/pole_x_mode_status", 10,
+    std::bind(&R1MainNode::pole_x_mode_status_callback, this, std::placeholders::_1));
+  pole_y_mode_status_subscription_ = this->create_subscription<std_msgs::msg::Int32>(
+    "/pole_y_mode_status", 10,
+    std::bind(&R1MainNode::pole_y_mode_status_callback, this, std::placeholders::_1));
+  pole_roger_mode_status_subscription_ = this->create_subscription<std_msgs::msg::Int32>(
+    "/pole_roger_mode_status", 10,
+    std::bind(&R1MainNode::pole_roger_mode_status_callback, this, std::placeholders::_1));
+  spear_roger1_mode_status_subscription_ = this->create_subscription<std_msgs::msg::Int32>(
+    "/spear_roger1_mode_status", 10,
+    std::bind(&R1MainNode::spear_roger1_mode_status_callback, this, std::placeholders::_1));
+  spear_roger2_mode_status_subscription_ = this->create_subscription<std_msgs::msg::Int32>(
+    "/spear_roger2_mode_status", 10,
+    std::bind(&R1MainNode::spear_roger2_mode_status_callback, this, std::placeholders::_1));
+  spear_move_mode_status_subscription_ = this->create_subscription<std_msgs::msg::Int32>(
+    "/spear_move_mode_status", 10,
+    std::bind(&R1MainNode::spear_move_mode_status_callback, this, std::placeholders::_1));
+  spear_rotate_mode_status_subscription_ = this->create_subscription<std_msgs::msg::Int32>(
+    "/spear_rotate_mode_status", 10,
+    std::bind(&R1MainNode::spear_rotate_mode_status_callback, this, std::placeholders::_1));
 
-  // ポンプ
+  // KFS回収用真空ポンプ
   kfs_front_pump_gpio_pwm_ref_publisher_ =
     this->create_publisher<r1_msgs::msg::GpioPwmRef>("/kfs_front_pump_gpio_pwm_ref", 10);
   kfs_rear_pump_gpio_pwm_ref_publisher_ =
     this->create_publisher<r1_msgs::msg::GpioPwmRef>("/kfs_rear_pump_gpio_pwm_ref", 10);
-  // 電磁弁
+  // KFS真空電磁弁
   kfs_front_valve_gpio_pwm_ref_publisher_ =
     this->create_publisher<r1_msgs::msg::GpioPwmRef>("/kfs_front_valve_gpio_pwm_ref", 10);
   kfs_rear_valve_gpio_pwm_ref_publisher_ =
     this->create_publisher<r1_msgs::msg::GpioPwmRef>("/kfs_rear_valve_gpio_pwm_ref", 10);
-  // リミットスイッチ
+  // KFSリミットスイッチ
   kfs_front_switch_status_subscription_ = this->create_subscription<r1_msgs::msg::GpioInput>(
     "/kfs_front_switch_status", 10,
     std::bind(&R1MainNode::kfs_front_switch_status_callback, this, std::placeholders::_1));
   kfs_rear_switch_status_subscription_ = this->create_subscription<r1_msgs::msg::GpioInput>(
     "/kfs_rear_switch_status", 10,
     std::bind(&R1MainNode::kfs_rear_switch_status_callback, this, std::placeholders::_1));
+  // ポール回収サーボ
+  pole_servo1_gpio_servo_ref_publisher_ =
+    this->create_publisher<r1_msgs::msg::GpioServoRef>("/pole_servo1_gpio_servo_ref", 10);
+  pole_servo2_gpio_servo_ref_publisher_ =
+    this->create_publisher<r1_msgs::msg::GpioServoRef>("/pole_servo2_gpio_servo_ref", 10);
+  pole_servo3_gpio_servo_ref_publisher_ =
+    this->create_publisher<r1_msgs::msg::GpioServoRef>("/pole_servo3_gpio_servo_ref", 10);
+  pole_servo4_gpio_servo_ref_publisher_ =
+    this->create_publisher<r1_msgs::msg::GpioServoRef>("/pole_servo4_gpio_servo_ref", 10);
+  //  ポール回収電磁弁
+  pole_valve1_gpio_pwm_ref_publisher_ =
+    this->create_publisher<r1_msgs::msg::GpioPwmRef>("/pole_valve1_gpio_pwm_ref", 10);
+  pole_valve2_gpio_pwm_ref_publisher_ =
+    this->create_publisher<r1_msgs::msg::GpioPwmRef>("/pole_valve2_gpio_pwm_ref", 10);
+  pole_valve3_gpio_pwm_ref_publisher_ =
+    this->create_publisher<r1_msgs::msg::GpioPwmRef>("/pole_valve3_gpio_pwm_ref", 10);
+  pole_valve4_gpio_pwm_ref_publisher_ =
+    this->create_publisher<r1_msgs::msg::GpioPwmRef>("/pole_valve4_gpio_pwm_ref", 10);
+  // やりハンド電磁弁
+  spear_hand_valve_gpio_pwm_ref_publisher_ =
+    this->create_publisher<r1_msgs::msg::GpioPwmRef>("/spear_hand_valve_gpio_pwm_ref", 10);
+  // やりリミットスイッチ
+  spear_move_switch_status_subscription_ = this->create_subscription<r1_msgs::msg::GpioInput>(
+    "/spear_move_switch_status", 10,
+    std::bind(&R1MainNode::spear_move_switch_status_callback, this, std::placeholders::_1));
+  spear_rotate_switch_status_subscription_ = this->create_subscription<r1_msgs::msg::GpioInput>(
+    "/spear_rotate_switch_status", 10,
+    std::bind(&R1MainNode::spear_rotate_switch_status_callback, this, std::placeholders::_1));
 
   timer_publisher_ = this->create_wall_timer(10ms, std::bind(&R1MainNode::timer_callback, this));
 
@@ -196,6 +280,96 @@ void R1MainNode::rear_expand_mode_status_callback(const std_msgs::msg::Int32::Sh
   is_rear_expand_pos_mode_ = _is_pos_mode;
 }
 
+void R1MainNode::pole_x_mode_status_callback(const std_msgs::msg::Int32::SharedPtr msg)
+{
+  auto mode = msg->data;
+  bool _is_pos_mode = (mode == 0);
+  if (_is_pos_mode == true && is_pole_x_pos_mode_ == false) {
+    RCLCPP_INFO(this->get_logger(), "pole x detected origin");
+  }
+  is_pole_x_pos_mode_ = _is_pos_mode;
+}
+
+void R1MainNode::pole_y_mode_status_callback(const std_msgs::msg::Int32::SharedPtr msg)
+{
+  auto mode = msg->data;
+  bool _is_pos_mode = (mode == 0);
+  if (_is_pos_mode == true && is_pole_y_pos_mode_ == false) {
+    RCLCPP_INFO(this->get_logger(), "pole y detected origin");
+  }
+  is_pole_y_pos_mode_ = _is_pos_mode;
+}
+
+void R1MainNode::pole_roger_mode_status_callback(const std_msgs::msg::Int32::SharedPtr msg)
+{
+  auto mode = msg->data;
+  bool _is_pos_mode = (mode == 0);
+  if (_is_pos_mode == true && is_pole_roger_pos_mode_ == false) {
+    RCLCPP_INFO(this->get_logger(), "pole roger detected origin");
+  }
+  is_pole_roger_pos_mode_ = _is_pos_mode;
+}
+
+void R1MainNode::spear_roger1_mode_status_callback(const std_msgs::msg::Int32::SharedPtr msg)
+{
+  auto mode = msg->data;
+  bool _is_pos_mode = (mode == 0);
+  if (_is_pos_mode == true && is_spear_roger1_pos_mode_ == false) {
+    RCLCPP_INFO(this->get_logger(), "spear roger1 detected origin");
+  }
+  is_spear_roger1_pos_mode_ = _is_pos_mode;
+}
+
+void R1MainNode::spear_roger2_mode_status_callback(const std_msgs::msg::Int32::SharedPtr msg)
+{
+  auto mode = msg->data;
+  bool _is_pos_mode = (mode == 0);
+  if (_is_pos_mode == true && is_spear_roger2_pos_mode_ == false) {
+    RCLCPP_INFO(this->get_logger(), "spear roger2 detected origin");
+  }
+  is_spear_roger2_pos_mode_ = _is_pos_mode;
+}
+
+void R1MainNode::spear_move_mode_status_callback(const std_msgs::msg::Int32::SharedPtr msg)
+{
+  auto mode = msg->data;
+  bool _is_pos_mode = (mode == 0);
+  if (_is_pos_mode == true && is_spear_move_pos_mode_ == false) {
+    RCLCPP_INFO(this->get_logger(), "spear move detected origin");
+  }
+  is_spear_move_pos_mode_ = _is_pos_mode;
+}
+
+void R1MainNode::spear_rotate_mode_status_callback(const std_msgs::msg::Int32::SharedPtr msg)
+{
+  auto mode = msg->data;
+  bool _is_pos_mode = (mode == 0);
+  if (_is_pos_mode == true && is_spear_rotate_pos_mode_ == false) {
+    RCLCPP_INFO(this->get_logger(), "spear rotate detected origin");
+  }
+  is_spear_rotate_pos_mode_ = _is_pos_mode;
+}
+
+void R1MainNode::kfs_front_switch_status_callback(const r1_msgs::msg::GpioInput::SharedPtr msg)
+{
+  kfs_front_switch_status_ = msg->status;
+}
+
+void R1MainNode::kfs_rear_switch_status_callback(const r1_msgs::msg::GpioInput::SharedPtr msg)
+{
+  kfs_rear_switch_status_ = msg->status;
+}
+
+void R1MainNode::spear_move_switch_status_callback(const r1_msgs::msg::GpioInput::SharedPtr msg)
+{
+  spear_move_switch_status_ = msg->status;
+}
+
+void R1MainNode::spear_rotate_switch_status_callback(const r1_msgs::msg::GpioInput::SharedPtr msg)
+{
+  spear_rotate_switch_status_ = msg->status;
+}
+
 void R1MainNode::kfs_fx_detect_origin(void)
 {
   std_msgs::msg::Bool msg;
@@ -252,14 +426,53 @@ void R1MainNode::rear_expand_detect_origin(void)
   rear_expand_detect_origin_publisher_->publish(msg);
 }
 
-void R1MainNode::kfs_front_switch_status_callback(const r1_msgs::msg::GpioInput::SharedPtr msg)
+void R1MainNode::pole_x_detect_origin(void)
 {
-  kfs_front_switch_status_ = msg->status;
+  std_msgs::msg::Bool msg;
+  msg.data = true;
+  pole_x_detect_origin_publisher_->publish(msg);
 }
 
-void R1MainNode::kfs_rear_switch_status_callback(const r1_msgs::msg::GpioInput::SharedPtr msg)
+void R1MainNode::pole_y_detect_origin(void)
 {
-  kfs_rear_switch_status_ = msg->status;
+  std_msgs::msg::Bool msg;
+  msg.data = true;
+  pole_y_detect_origin_publisher_->publish(msg);
+}
+
+void R1MainNode::pole_roger_detect_origin(void)
+{
+  std_msgs::msg::Bool msg;
+  msg.data = true;
+  pole_roger_detect_origin_publisher_->publish(msg);
+}
+
+void R1MainNode::spear_roger1_detect_origin(void)
+{
+  std_msgs::msg::Bool msg;
+  msg.data = true;
+  spear_roger1_detect_origin_publisher_->publish(msg);
+}
+
+void R1MainNode::spear_roger2_detect_origin(void)
+{
+  std_msgs::msg::Bool msg;
+  msg.data = true;
+  spear_roger2_detect_origin_publisher_->publish(msg);
+}
+
+void R1MainNode::spear_move_detect_origin(void)
+{
+  std_msgs::msg::Bool msg;
+  msg.data = true;
+  spear_move_detect_origin_publisher_->publish(msg);
+}
+
+void R1MainNode::spear_rotate_detect_origin(void)
+{
+  std_msgs::msg::Bool msg;
+  msg.data = true;
+  spear_rotate_detect_origin_publisher_->publish(msg);
 }
 
 // --- コールバック関数 ---
@@ -283,6 +496,7 @@ void R1MainNode::kfs_fx(double pos)
   std_msgs::msg::Float64 msg;
   msg.data = pos;
   kfs_fx_position_ref_publisher_->publish(msg);
+  RCLCPP_INFO(this->get_logger(), "kfs fx pos %f", pos);
 }
 
 void R1MainNode::kfs_fz(double pos)
@@ -290,6 +504,7 @@ void R1MainNode::kfs_fz(double pos)
   std_msgs::msg::Float64 msg;
   msg.data = pos;
   kfs_fz_position_ref_publisher_->publish(msg);
+  RCLCPP_INFO(this->get_logger(), "kfs fz pos %f", pos);
 }
 
 void R1MainNode::kfs_fyaw(double pos)
@@ -297,6 +512,7 @@ void R1MainNode::kfs_fyaw(double pos)
   std_msgs::msg::Float64 msg;
   msg.data = pos;
   kfs_fyaw_position_ref_publisher_->publish(msg);
+  RCLCPP_INFO(this->get_logger(), "kfs fyaw pos %f", pos);
 }
 
 void R1MainNode::kfs_rx(double pos)
@@ -304,6 +520,7 @@ void R1MainNode::kfs_rx(double pos)
   std_msgs::msg::Float64 msg;
   msg.data = pos;
   kfs_rx_position_ref_publisher_->publish(msg);
+  RCLCPP_INFO(this->get_logger(), "kfs rx pos %f", pos);
 }
 
 void R1MainNode::kfs_rz(double pos)
@@ -311,6 +528,7 @@ void R1MainNode::kfs_rz(double pos)
   std_msgs::msg::Float64 msg;
   msg.data = pos;
   kfs_rz_position_ref_publisher_->publish(msg);
+  RCLCPP_INFO(this->get_logger(), "kfs rz pos %f", pos);
 }
 
 void R1MainNode::kfs_ryaw(double pos)
@@ -318,6 +536,7 @@ void R1MainNode::kfs_ryaw(double pos)
   std_msgs::msg::Float64 msg;
   msg.data = pos;
   kfs_ryaw_position_ref_publisher_->publish(msg);
+  RCLCPP_INFO(this->get_logger(), "kfs ryaw pos %f", pos);
 }
 
 void R1MainNode::front_expand(double pos)
@@ -325,6 +544,7 @@ void R1MainNode::front_expand(double pos)
   std_msgs::msg::Float64 msg;
   msg.data = pos;
   front_expand_position_ref_publisher_->publish(msg);
+  RCLCPP_INFO(this->get_logger(), "front expand pos %f", pos);
 }
 
 void R1MainNode::rear_expand(double pos)
@@ -332,6 +552,7 @@ void R1MainNode::rear_expand(double pos)
   std_msgs::msg::Float64 msg;
   msg.data = pos;
   rear_expand_position_ref_publisher_->publish(msg);
+  RCLCPP_INFO(this->get_logger(), "rear expand pos %f", pos);
 }
 
 void R1MainNode::r2_lift(double vel)
@@ -342,11 +563,68 @@ void R1MainNode::r2_lift(double vel)
   r2_lift_motor_ref_publisher_->publish(msg);
 }
 
+void R1MainNode::pole_x(double pos)
+{
+  std_msgs::msg::Float64 msg;
+  msg.data = pos;
+  pole_x_position_ref_publisher_->publish(msg);
+  RCLCPP_INFO(this->get_logger(), "pole x pos %f", pos);
+}
+
+void R1MainNode::pole_y(double pos)
+{
+  std_msgs::msg::Float64 msg;
+  msg.data = pos;
+  pole_y_position_ref_publisher_->publish(msg);
+  RCLCPP_INFO(this->get_logger(), "pole y pos %f", pos);
+}
+
+void R1MainNode::pole_roger(double pos)
+{
+  std_msgs::msg::Float64 msg;
+  msg.data = pos;
+  pole_roger_position_ref_publisher_->publish(msg);
+  RCLCPP_INFO(this->get_logger(), "pole roger pos %f", pos);
+}
+
+void R1MainNode::spear_roger1(double pos)
+{
+  std_msgs::msg::Float64 msg;
+  msg.data = pos;
+  spear_roger1_position_ref_publisher_->publish(msg);
+  RCLCPP_INFO(this->get_logger(), "spear roger1 pos %f", pos);
+}
+
+void R1MainNode::spear_roger2(double pos)
+{
+  std_msgs::msg::Float64 msg;
+  msg.data = pos;
+  spear_roger2_position_ref_publisher_->publish(msg);
+  RCLCPP_INFO(this->get_logger(), "spear roger2 pos %f", pos);
+}
+
+void R1MainNode::spear_move(double pos)
+{
+  std_msgs::msg::Float64 msg;
+  msg.data = pos;
+  spear_move_position_ref_publisher_->publish(msg);
+  RCLCPP_INFO(this->get_logger(), "spear move pos %f", pos);
+}
+
+void R1MainNode::spear_rotate(double pos)
+{
+  std_msgs::msg::Float64 msg;
+  msg.data = pos;
+  spear_rotate_position_ref_publisher_->publish(msg);
+  RCLCPP_INFO(this->get_logger(), "spear rotate pos %f", pos);
+}
+
 void R1MainNode::kfs_front_pump(double pwm)
 {
   r1_msgs::msg::GpioPwmRef msg;
   msg.ref = pwm;
   kfs_front_pump_gpio_pwm_ref_publisher_->publish(msg);
+  RCLCPP_INFO(this->get_logger(), "kfs front pump pwm %f", pwm);
 }
 
 void R1MainNode::kfs_rear_pump(double pwm)
@@ -354,6 +632,7 @@ void R1MainNode::kfs_rear_pump(double pwm)
   r1_msgs::msg::GpioPwmRef msg;
   msg.ref = pwm;
   kfs_rear_pump_gpio_pwm_ref_publisher_->publish(msg);
+  RCLCPP_INFO(this->get_logger(), "kfs rear pump pwm %f", pwm);
 }
 
 void R1MainNode::kfs_front_valve(bool on)
@@ -361,6 +640,7 @@ void R1MainNode::kfs_front_valve(bool on)
   r1_msgs::msg::GpioPwmRef msg;
   msg.ref = on ? 1.0 : 0.0;
   kfs_front_valve_gpio_pwm_ref_publisher_->publish(msg);
+  RCLCPP_INFO(this->get_logger(), "kfs front valve %d", on);
 }
 
 void R1MainNode::kfs_rear_valve(bool on)
@@ -368,6 +648,79 @@ void R1MainNode::kfs_rear_valve(bool on)
   r1_msgs::msg::GpioPwmRef msg;
   msg.ref = on ? 1.0 : 0.0;
   kfs_rear_valve_gpio_pwm_ref_publisher_->publish(msg);
+  RCLCPP_INFO(this->get_logger(), "kfs rear valve %d", on);
+}
+
+void R1MainNode::pole_servo1(int angle)
+{
+  r1_msgs::msg::GpioServoRef msg;
+  msg.ref = angle;
+  pole_servo1_gpio_servo_ref_publisher_->publish(msg);
+  RCLCPP_INFO(this->get_logger(), "pole servo1 angle %d", angle);
+}
+
+void R1MainNode::pole_servo2(int angle)
+{
+  r1_msgs::msg::GpioServoRef msg;
+  msg.ref = angle;
+  pole_servo2_gpio_servo_ref_publisher_->publish(msg);
+  RCLCPP_INFO(this->get_logger(), "pole servo2 angle %d", angle);
+}
+
+void R1MainNode::pole_servo3(int angle)
+{
+  r1_msgs::msg::GpioServoRef msg;
+  msg.ref = angle;
+  pole_servo3_gpio_servo_ref_publisher_->publish(msg);
+  RCLCPP_INFO(this->get_logger(), "pole servo3 angle %d", angle);
+}
+
+void R1MainNode::pole_servo4(int angle)
+{
+  r1_msgs::msg::GpioServoRef msg;
+  msg.ref = angle;
+  pole_servo4_gpio_servo_ref_publisher_->publish(msg);
+  RCLCPP_INFO(this->get_logger(), "pole servo4 angle %d", angle);
+}
+
+void R1MainNode::pole_valve1(bool on)
+{
+  r1_msgs::msg::GpioPwmRef msg;
+  msg.ref = on ? 1.0 : 0.0;
+  pole_valve1_gpio_pwm_ref_publisher_->publish(msg);
+  RCLCPP_INFO(this->get_logger(), "pole valve1 %d", on);
+}
+
+void R1MainNode::pole_valve2(bool on)
+{
+  r1_msgs::msg::GpioPwmRef msg;
+  msg.ref = on ? 1.0 : 0.0;
+  pole_valve2_gpio_pwm_ref_publisher_->publish(msg);
+  RCLCPP_INFO(this->get_logger(), "pole valve2 %d", on);
+}
+
+void R1MainNode::pole_valve3(bool on)
+{
+  r1_msgs::msg::GpioPwmRef msg;
+  msg.ref = on ? 1.0 : 0.0;
+  pole_valve3_gpio_pwm_ref_publisher_->publish(msg);
+  RCLCPP_INFO(this->get_logger(), "pole valve3 %d", on);
+}
+
+void R1MainNode::pole_valve4(bool on)
+{
+  r1_msgs::msg::GpioPwmRef msg;
+  msg.ref = on ? 1.0 : 0.0;
+  pole_valve4_gpio_pwm_ref_publisher_->publish(msg);
+  RCLCPP_INFO(this->get_logger(), "pole valve4 %d", on);
+}
+
+void R1MainNode::spear_hand_valve(bool on)
+{
+  r1_msgs::msg::GpioPwmRef msg;
+  msg.ref = on ? 1.0 : 0.0;
+  spear_hand_valve_gpio_pwm_ref_publisher_->publish(msg);
+  RCLCPP_INFO(this->get_logger(), "spear hand valve %d", on);
 }
 
 // --- 各状態のタスク ---
@@ -402,106 +755,113 @@ void R1MainNode::manual_task(void)
     target_vel_.linear.x = simple_trapezoid_vx_.update(vx_ref);
     target_vel_.linear.y = simple_trapezoid_vy_.update(vy_ref);
     target_vel_.angular.z = simple_trapezoid_omega_.update(vz_ref);
-    // RCLCPP_INFO(this->get_logger(), "vx: %.2f, vx_ref: %.2f", target_vel_.linear.x, vx_ref);
-    // target_vel_.linear.x = stick_max_velocity * ps4_->data.left_stick_x;
-    // target_vel_.linear.y = stick_max_velocity * ps4_->data.left_stick_y;
-    // target_vel_.angular.z = ps4_->data.right_stick_x;
+
+    // test_front_kfs();
+    test_spear();
   } else {
     target_vel_.linear.x = 0.0;
     target_vel_.linear.y = 0.0;
     target_vel_.angular.z = 0.0;
   }
-  // デバッグ処理
+  cmd_vel_publisher_->publish(target_vel_);
+}
 
+void R1MainNode::auto_task(void) {}
+
+void R1MainNode::main_task(void)
+{
+  auto current_state = state_machine_->get_current_state();
+  if (current_state.main == MainState::IDLE) {
+    idle_task();
+  } else if (current_state.main == MainState::EMERGENCY) {
+    emergency_task();
+  } else if (current_state.main == MainState::MANUAL) {
+    manual_task();
+  } else if (current_state.main == MainState::AUTO) {
+    auto_task();
+  }
+}
+
+void R1MainNode::test_front_kfs(void)
+{
   static bool kfs_fx_pushed = false;
   static bool kfs_fz_pushed = false;
   static bool kfs_fyaw_pushed = false;
   static bool kfs_fpump_pushed = false;
   static bool kfs_fvalve_pushed = false;
+
+  if (ps4_->is_pushed_triangle()) {
+    if (kfs_fx_pushed) {
+      kfs_fx(0.0);
+    } else {
+      kfs_fx(0.5);
+    }
+    kfs_fx_pushed = !kfs_fx_pushed;
+  }
+
+  if (ps4_->is_pushed_circle()) {
+    if (kfs_fz_pushed) {
+      kfs_fz(0.0);
+    } else {
+      kfs_fz(0.3);
+    }
+    kfs_fz_pushed = !kfs_fz_pushed;
+  }
+
+  if (ps4_->is_pushed_cross()) {
+    if (kfs_fyaw_pushed) {
+      kfs_fyaw(0.0);
+    } else {
+      kfs_fyaw(1.57);
+    }
+    kfs_fyaw_pushed = !kfs_fyaw_pushed;
+  }
+
+  if (ps4_->is_pushed_square()) {
+    if (kfs_fpump_pushed) {
+      kfs_front_pump(0.0);
+    } else {
+      kfs_front_pump(1.0);
+    }
+    kfs_fpump_pushed = !kfs_fpump_pushed;
+  }
+
+  if (ps4_->is_pushed_up()) {
+    kfs_fx_detect_origin();
+  }
+
+  if (ps4_->is_pushed_right()) {
+    kfs_fz_detect_origin();
+  }
+
+  if (ps4_->is_pushed_down()) {
+    kfs_fyaw_detect_origin();
+  }
+
+  if (ps4_->is_pushed_left()) {
+    if (kfs_fvalve_pushed) {
+      kfs_front_valve(false);
+    } else {
+      kfs_front_valve(true);
+    }
+    kfs_fvalve_pushed = !kfs_fvalve_pushed;
+  }
+}
+
+void R1MainNode::test_rear_kfs(void)
+{
   static bool kfs_rx_pushed = false;
   static bool kfs_rz_pushed = false;
   static bool kfs_rpump_pushed = false;
   static bool kfs_ryaw_pushed = false;
   static bool kfs_rvalve_pushed = false;
-  static bool front_expand_pushed = false;
-  static bool rear_expand_pushed = false;
-
-  // // ========== KFS回収前 ==========
-  // if (ps4_->is_pushed_triangle()) {
-  //   if (kfs_fx_pushed) {
-  //     kfs_fx(0.0);
-  //     RCLCPP_INFO(this->get_logger(), "kfs fx pos 0.0");
-  //   } else {
-  //     kfs_fx(0.5);
-  //     RCLCPP_INFO(this->get_logger(), "kfs fx pos 0.3");
-  //   }
-  //   kfs_fx_pushed = !kfs_fx_pushed;
-  // }
-
-  // if (ps4_->is_pushed_circle()) {
-  //   if (kfs_fz_pushed) {
-  //     kfs_fz(0.0);
-  //     RCLCPP_INFO(this->get_logger(), "kfs fz pos 0.0");
-  //   } else {
-  //     kfs_fz(0.3);
-  //     RCLCPP_INFO(this->get_logger(), "kfs fz pos 0.4");
-  //   }
-  //   kfs_fz_pushed = !kfs_fz_pushed;
-  // }
-
-  // if (ps4_->is_pushed_cross()) {
-  //   if (kfs_fyaw_pushed) {
-  //     kfs_fyaw(0.0);
-  //     RCLCPP_INFO(this->get_logger(), "kfs fyaw pos 0.0");
-  //   } else {
-  //     kfs_fyaw(1.57);
-  //     RCLCPP_INFO(this->get_logger(), "kfs fyaw pos 1.57");
-  //   }
-  //   kfs_fyaw_pushed = !kfs_fyaw_pushed;
-  // }
-
-  // if (ps4_->is_pushed_square()) {
-  //   if (kfs_fpump_pushed) {
-  //     kfs_front_pump(0.0);
-  //     RCLCPP_INFO(this->get_logger(), "kfs front pump off");
-  //   } else {
-  //     kfs_front_pump(1.0);
-  //     RCLCPP_INFO(this->get_logger(), "kfs front pump on");
-  //   }
-  //   kfs_fpump_pushed = !kfs_fpump_pushed;
-  // }
-
-  // if (ps4_->is_pushed_up()) {
-  //   kfs_fx_detect_origin();
-  // }
-
-  // if (ps4_->is_pushed_right()) {
-  //   kfs_fz_detect_origin();
-  // }
-
-  // if (ps4_->is_pushed_down()) {
-  //   kfs_fyaw_detect_origin();
-  // }
-
-  // if (ps4_->is_pushed_left()) {
-  //   if (kfs_fvalve_pushed) {
-  //     kfs_front_valve(false);
-  //     RCLCPP_INFO(this->get_logger(), "kfs front valve off");
-  //   } else {
-  //     kfs_front_valve(true);
-  //     RCLCPP_INFO(this->get_logger(), "kfs front valve on");
-  //   }
-  //   kfs_fvalve_pushed = !kfs_fvalve_pushed;
-  // }
 
   // ========== KFS回収後 ==========
   if (ps4_->is_pushed_triangle()) {
     if (kfs_rx_pushed) {
       kfs_rx(0.0);
-      RCLCPP_INFO(this->get_logger(), "kfs rx pos 0.0");
     } else {
-      kfs_rx(0.3);
-      RCLCPP_INFO(this->get_logger(), "kfs rx pos 0.3");
+      kfs_rx(0.5);
     }
     kfs_rx_pushed = !kfs_rx_pushed;
   }
@@ -509,10 +869,8 @@ void R1MainNode::manual_task(void)
   if (ps4_->is_pushed_circle()) {
     if (kfs_rz_pushed) {
       kfs_rz(0.0);
-      RCLCPP_INFO(this->get_logger(), "kfs rz pos 0.0");
     } else {
       kfs_rz(0.3);
-      RCLCPP_INFO(this->get_logger(), "kfs rz pos 0.4");
     }
     kfs_rz_pushed = !kfs_rz_pushed;
   }
@@ -520,10 +878,8 @@ void R1MainNode::manual_task(void)
   if (ps4_->is_pushed_cross()) {
     if (kfs_ryaw_pushed) {
       kfs_ryaw(0.0);
-      RCLCPP_INFO(this->get_logger(), "kfs ryaw pos 0.0");
     } else {
       kfs_ryaw(1.57);
-      RCLCPP_INFO(this->get_logger(), "kfs ryaw pos 1.57");
     }
     kfs_ryaw_pushed = !kfs_ryaw_pushed;
   }
@@ -531,10 +887,8 @@ void R1MainNode::manual_task(void)
   if (ps4_->is_pushed_square()) {
     if (kfs_rpump_pushed) {
       kfs_rear_pump(0.0);
-      RCLCPP_INFO(this->get_logger(), "kfs rear pump off");
     } else {
       kfs_rear_pump(1.0);
-      RCLCPP_INFO(this->get_logger(), "kfs rear pump on");
     }
     kfs_rpump_pushed = !kfs_rpump_pushed;
   }
@@ -554,75 +908,81 @@ void R1MainNode::manual_task(void)
   if (ps4_->is_pushed_left()) {
     if (kfs_rvalve_pushed) {
       kfs_rear_valve(false);
-      RCLCPP_INFO(this->get_logger(), "kfs rear valve off");
     } else {
       kfs_rear_valve(true);
-      RCLCPP_INFO(this->get_logger(), "kfs rear valve on");
     }
     kfs_rvalve_pushed = !kfs_rvalve_pushed;
   }
-
-  // if (ps4_->is_pushed_square()) {
-  //   if (kfs_rx_pushed) {
-  //     kfs_rx(0.0);
-  //   } else {
-  //     kfs_rx(0.1);
-  //   }
-  //   kfs_rx_pushed = !kfs_rx_pushed;
-  // }
-
-  // if (ps4_->is_pushed_up()) {
-  //   if (kfs_rz_pushed) {
-  //     kfs_rz(0.0);
-  //   } else {
-  //     kfs_rz(0.1);
-  //   }
-  //   kfs_rz_pushed = !kfs_rz_pushed;
-  // }
-
-  // if (ps4_->is_pushed_right()) {
-  //   if (kfs_ryaw_pushed) {
-  //     kfs_ryaw(0.0);
-  //   } else {
-  //     kfs_ryaw(0.1);
-  //   }
-  //   kfs_ryaw_pushed = !kfs_ryaw_pushed;
-  // }
-
-  // if (ps4_->is_pushed_down()) {
-  //   if (front_expand_pushed) {
-  //     front_expand(0.0);
-  //   } else {
-  //     front_expand(0.1);
-  //   }
-  //   front_expand_pushed = !front_expand_pushed;
-  // }
-
-  // if (ps4_->is_pushed_left()) {
-  //   if (rear_expand_pushed) {
-  //     rear_expand(0.0);
-  //   } else {
-  //     rear_expand(0.1);
-  //   }
-  //   rear_expand_pushed = !rear_expand_pushed;
-  // }
-
-  cmd_vel_publisher_->publish(target_vel_);
 }
 
-void R1MainNode::auto_task(void) {}
+void R1MainNode::test_pole(void) {}
 
-void R1MainNode::main_task(void)
+void R1MainNode::test_spear(void)
 {
-  auto current_state = state_machine_->get_current_state();
-  if (current_state.main == MainState::IDLE) {
-    idle_task();
-  } else if (current_state.main == MainState::EMERGENCY) {
-    emergency_task();
-  } else if (current_state.main == MainState::MANUAL) {
-    manual_task();
-  } else if (current_state.main == MainState::AUTO) {
-    auto_task();
+  static bool spear_roger1_pushed = false;
+  static bool spear_roger2_pushed = false;
+  static bool spear_move_pushed = false;
+  static bool spear_rotate_pushed = false;
+  static bool spear_hand_valve_pushed = false;
+  if (ps4_->is_pushed_triangle()) {
+    if (spear_roger1_pushed) {
+      spear_roger1(0.0);
+    } else {
+      spear_roger1(0.2);
+    }
+    spear_roger1_pushed = !spear_roger1_pushed;
+  }
+
+  if (ps4_->is_pushed_circle()) {
+    if (spear_roger2_pushed) {
+      spear_roger2(0.0);
+    } else {
+      spear_roger2(0.2);
+    }
+    spear_roger2_pushed = !spear_roger2_pushed;
+  }
+
+  if (ps4_->is_pushed_cross()) {
+    if (spear_move_pushed) {
+      spear_move(0.0);
+    } else {
+      spear_move(0.3);
+    }
+    spear_move_pushed = !spear_move_pushed;
+  }
+
+  if (ps4_->is_pushed_square()) {
+    if (spear_rotate_pushed) {
+      spear_rotate(0.0);
+    } else {
+      spear_rotate(1.57);
+    }
+    spear_rotate_pushed = !spear_rotate_pushed;
+  }
+
+  if (ps4_->is_pushed_r1()) {
+    if (spear_hand_valve_pushed) {
+      spear_hand_valve(false);
+    } else {
+      spear_hand_valve(true);
+    }
+    spear_hand_valve_pushed = !spear_hand_valve_pushed;
+  }
+
+  if (ps4_->is_pushed_up()) {
+    spear_roger1_detect_origin();
+  }
+
+  if (ps4_->is_pushed_right()) {
+    spear_roger2_detect_origin();
+  }
+
+  if (ps4_->is_pushed_down()) {
+    spear_move_detect_origin();
+  }
+
+  if (ps4_->is_pushed_left()) {
+    spear_rotate_detect_origin();
   }
 }
 
