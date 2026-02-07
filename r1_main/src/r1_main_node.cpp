@@ -758,7 +758,8 @@ void R1MainNode::manual_task(void)
 
     // test_front_kfs();
     // test_spear();
-    test_pole();
+    // test_pole();
+    test_r2_lift();
   } else {
     target_vel_.linear.x = 0.0;
     target_vel_.linear.y = 0.0;
@@ -1107,6 +1108,48 @@ void R1MainNode::test_spear(void)
 
   if (ps4_->is_pushed_left()) {
     spear_rotate_detect_origin();
+  }
+}
+
+void R1MainNode::test_r2_lift(void)
+{
+  static bool front_expand_pushed = false;
+  static bool rear_expand_pushed = false;
+  // 三角を押している間モータが正回転、バツを押している間モータが逆回転する
+  if (ps4_->data.triangle) {
+    r2_lift(15);
+    RCLCPP_INFO(this->get_logger(), "r2 lift up");
+  } else if (ps4_->data.cross) {
+    r2_lift(-15);
+    RCLCPP_INFO(this->get_logger(), "r2 lift down");
+  } else {
+    r2_lift(0);
+  }
+
+  if (ps4_->is_pushed_square()) {
+    if (front_expand_pushed) {
+      front_expand(0.0);
+    } else {
+      front_expand(0.1);
+    }
+    front_expand_pushed = !front_expand_pushed;
+  }
+
+  if (ps4_->is_pushed_circle()) {
+    if (rear_expand_pushed) {
+      rear_expand(0.0);
+    } else {
+      rear_expand(0.1);
+    }
+    rear_expand_pushed = !rear_expand_pushed;
+  }
+
+  if (ps4_->is_pushed_right()) {
+    front_expand_detect_origin();
+  }
+
+  if (ps4_->is_pushed_left()) {
+    rear_expand_detect_origin();
   }
 }
 

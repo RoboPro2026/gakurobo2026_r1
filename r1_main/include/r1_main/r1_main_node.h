@@ -269,4 +269,5 @@ public:
   void test_rear_kfs(void);
   void test_pole(void);
   void test_spear(void);
+  void test_r2_lift(void);
 };
