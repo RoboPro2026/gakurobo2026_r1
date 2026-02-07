@@ -1153,14 +1153,14 @@ public:
   BoardInfo kfs_front_switch_ = {.board_id = 2, .number = 0};
   BoardInfo kfs_rear_switch_ = {.board_id = 2, .number = 1};
   // ポール回収
-  BoardInfo pole_servo1_ = {.board_id = 2, .number = 0};
-  BoardInfo pole_servo2_ = {.board_id = 2, .number = 1};
-  BoardInfo pole_servo3_ = {.board_id = 2, .number = 2};
-  BoardInfo pole_servo4_ = {.board_id = 2, .number = 3};
-  BoardInfo pole_valve1_ = {.board_id = 2, .number = 4};
-  BoardInfo pole_valve2_ = {.board_id = 2, .number = 5};
-  BoardInfo pole_valve3_ = {.board_id = 2, .number = 6};
-  BoardInfo pole_valve4_ = {.board_id = 2, .number = 7};
+  BoardInfo pole_servo1_ = {.board_id = 3, .number = 0};
+  BoardInfo pole_servo2_ = {.board_id = 3, .number = 1};
+  BoardInfo pole_servo3_ = {.board_id = 3, .number = 2};
+  BoardInfo pole_servo4_ = {.board_id = 3, .number = 3};
+  BoardInfo pole_valve1_ = {.board_id = 3, .number = 4};
+  BoardInfo pole_valve2_ = {.board_id = 3, .number = 5};
+  BoardInfo pole_valve3_ = {.board_id = 3, .number = 6};
+  BoardInfo pole_valve4_ = {.board_id = 3, .number = 7};
   // やり
   BoardInfo spear_hand_valve_ = {.board_id = 1, .number = 8};
   BoardInfo spear_move_switch_ = {.board_id = 2, .number = 2};

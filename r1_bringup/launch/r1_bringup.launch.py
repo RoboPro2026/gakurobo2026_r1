@@ -295,7 +295,7 @@ def generate_launch_description():
         executable="r1_angle_motion_node",
         name="r1_spear_rotate_node",
         parameters=[param_file],
-        arguments=["--ros-args", "--log-level", "info"],
+        arguments=["--ros-args", "--log-level", "warn"],
         remappings=[
             ("angle_motion_status", "spear_rotate_angle_motion_status"),
             ("angle_motion_motor_ref", "spear_rotate_motor_ref"),

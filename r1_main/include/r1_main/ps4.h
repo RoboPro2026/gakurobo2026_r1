@@ -36,8 +36,8 @@ struct PS4Data
   bool r1 = false;
   bool l2 = false;
   bool r2 = false;
-  bool l3 = false;
-  bool r3 = false;
+  bool share = false;
+  bool options = false;
   bool ps = false;
 };
 
@@ -118,8 +118,8 @@ public:
       data.r1 = msg->buttons[5];
       data.l2 = msg->buttons[6];
       data.r2 = msg->buttons[7];
-      data.l3 = msg->buttons[8];
-      data.r3 = msg->buttons[9];
+      data.share = msg->buttons[8];
+      data.options = msg->buttons[9];
       data.ps = msg->buttons[10];
     } else if (!is_connected_) {
       // 未接続の場合はスティックのデータを0にする
@@ -156,8 +156,8 @@ public:
       data.r1 ? "true" : "false", data.l2 ? "true" : "false", data.r2 ? "true" : "false");
     RCLCPP_INFO(logger, "Other Buttons:");
     RCLCPP_INFO(
-      logger, "  L3: %s, R3: %s, PS: %s", data.l3 ? "true" : "false", data.r3 ? "true" : "false",
-      data.ps ? "true" : "false");
+      logger, "  share: %s, options: %s, PS: %s", data.share ? "true" : "false",
+      data.options ? "true" : "false", data.ps ? "true" : "false");
     RCLCPP_INFO(logger, "----------------");
   }
 
@@ -213,11 +213,11 @@ public:
   bool is_pushed_r2() { return data.r2 && !prev_data.r2; }
   bool is_released_r2() { return !data.r2 && prev_data.r2; }
 
-  // --- Stick Press Buttons (L3, R3) ---
-  bool is_pushed_l3() { return data.l3 && !prev_data.l3; }
-  bool is_released_l3() { return !data.l3 && prev_data.l3; }
-  bool is_pushed_r3() { return data.r3 && !prev_data.r3; }
-  bool is_released_r3() { return !data.r3 && prev_data.r3; }
+  // --- Stick Press Buttons (share, options) ---
+  bool is_pushed_share() { return data.share && !prev_data.share; }
+  bool is_released_share() { return !data.share && prev_data.share; }
+  bool is_pushed_options() { return data.options && !prev_data.options; }
+  bool is_released_options() { return !data.options && prev_data.options; }
 
   // --- PS Button ---
   bool is_pushed_ps() { return data.ps && !prev_data.ps; }

@@ -757,7 +757,8 @@ void R1MainNode::manual_task(void)
     target_vel_.angular.z = simple_trapezoid_omega_.update(vz_ref);
 
     // test_front_kfs();
-    test_spear();
+    // test_spear();
+    test_pole();
   } else {
     target_vel_.linear.x = 0.0;
     target_vel_.linear.y = 0.0;
@@ -915,7 +916,130 @@ void R1MainNode::test_rear_kfs(void)
   }
 }
 
-void R1MainNode::test_pole(void) {}
+void R1MainNode::test_pole(void)
+{
+  static bool pole_x_pushed = false;
+  static bool pole_y_pushed = false;
+  static bool pole_roger_pushed = false;
+  static bool pole_valve1_pushed = false;
+  static bool pole_valve2_pushed = false;
+  static bool pole_valve3_pushed = false;
+  static bool pole_valve4_pushed = false;
+  static bool pole_servo1_pushed = false;
+  static bool pole_servo2_pushed = false;
+  static bool pole_servo3_pushed = false;
+  static bool pole_servo4_pushed = false;
+
+  // サーボは約90度から約180度に回転させる。
+  if (ps4_->is_pushed_triangle()) {
+    if (pole_servo1_pushed) {
+      pole_servo1(80);
+    } else {
+      pole_servo1(180);
+    }
+    pole_servo1_pushed = !pole_servo1_pushed;
+  }
+  if (ps4_->is_pushed_circle()) {
+    if (pole_servo2_pushed) {
+      pole_servo2(70);
+    } else {
+      pole_servo2(170);
+    }
+    pole_servo2_pushed = !pole_servo2_pushed;
+  }
+  if (ps4_->is_pushed_cross()) {
+    if (pole_servo3_pushed) {
+      pole_servo3(70);
+    } else {
+      pole_servo3(180);
+    }
+    pole_servo3_pushed = !pole_servo3_pushed;
+  }
+
+  if (ps4_->is_pushed_square()) {
+    if (pole_servo4_pushed) {
+      pole_servo4(70);
+    } else {
+      pole_servo4(185);
+    }
+    pole_servo4_pushed = !pole_servo4_pushed;
+  }
+
+  if (ps4_->is_pushed_up()) {
+    if (pole_valve1_pushed) {
+      pole_valve1(false);
+    } else {
+      pole_valve1(true);
+    }
+    pole_valve1_pushed = !pole_valve1_pushed;
+  }
+
+  if (ps4_->is_pushed_right()) {
+    if (pole_valve2_pushed) {
+      pole_valve2(false);
+    } else {
+      pole_valve2(true);
+    }
+    pole_valve2_pushed = !pole_valve2_pushed;
+  }
+
+  if (ps4_->is_pushed_down()) {
+    if (pole_valve3_pushed) {
+      pole_valve3(false);
+    } else {
+      pole_valve3(true);
+    }
+    pole_valve3_pushed = !pole_valve3_pushed;
+  }
+
+  if (ps4_->is_pushed_left()) {
+    if (pole_valve4_pushed) {
+      pole_valve4(false);
+    } else {
+      pole_valve4(true);
+    }
+    pole_valve4_pushed = !pole_valve4_pushed;
+  }
+
+  if (ps4_->is_pushed_r1()) {
+    if (pole_x_pushed) {
+      pole_x(0.0);
+    } else {
+      pole_x(0.1);
+    }
+    pole_x_pushed = !pole_x_pushed;
+  }
+
+  if (ps4_->is_pushed_r2()) {
+    if (pole_y_pushed) {
+      pole_y(0.0);
+    } else {
+      pole_y(0.3);
+    }
+    pole_y_pushed = !pole_y_pushed;
+  }
+
+  if (ps4_->is_pushed_options()) {
+    if (pole_roger_pushed) {
+      pole_roger(0.0);
+    } else {
+      pole_roger(0.45);
+    }
+    pole_roger_pushed = !pole_roger_pushed;
+  }
+
+  if (ps4_->is_pushed_l1()) {
+    pole_x_detect_origin();
+  }
+
+  if (ps4_->is_pushed_l2()) {
+    pole_y_detect_origin();
+  }
+
+  if (ps4_->is_pushed_share()) {
+    pole_roger_detect_origin();
+  }
+}
 
 void R1MainNode::test_spear(void)
 {

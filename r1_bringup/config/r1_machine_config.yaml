@@ -213,9 +213,9 @@ r1_pole_roger_node:
     output_detect_speed: -3.14 # rad/s
     pos_min: 0.0
     pos_max: 1.0
-    # 1回転すると70mm進むので、半径は11.140846mm
-    radius: 0.011140846
-    inverse_motor: false
+    # 1回転すると70mm進む。ロジャーなので、倍進むので、半径0.05570423mm
+    radius: 0.05570423
+    inverse_motor: true
     use_low_switch: false
     use_high_switch: false
     inverse_low_switch_logic: false
