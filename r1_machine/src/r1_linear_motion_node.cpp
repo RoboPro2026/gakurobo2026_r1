@@ -173,7 +173,6 @@ public:
 
   void positon_ref_callback(const std_msgs::msg::Float64::SharedPtr msg)
   {
-    // TODO: 気が向いたら、リミットスイッチが反応したときの動作を追加する
     double target_pos;
 
     if (mode_ == MODE_SPEED) {
@@ -183,21 +182,20 @@ public:
 
     // 範囲内に収める
     if (msg->data < pos_min_) {
-      target_pos = pos_min_ + pos_offset_;
+      target_pos = pos_min_;
       RCLCPP_WARN(
         this->get_logger(), "Target position below minimum. Clamping to %.3f", target_pos);
     } else if (msg->data > pos_max_) {
-      target_pos = pos_max_ + pos_offset_;
+      target_pos = pos_max_;
       RCLCPP_WARN(
         this->get_logger(), "Target position above maximum. Clamping to %.3f", target_pos);
     } else {
-      target_pos = msg->data + pos_offset_;
+      target_pos = msg->data;
     }
 
     auto motor_msg = r1_msgs::msg::MotorRef();
     motor_msg.control_type = "POSITION";
-    double target_angle = target_pos / radius_;
-    motor_msg.ref = motor_dir_ * target_angle;
+    motor_msg.ref = (motor_dir_ * target_pos + pos_offset_) / radius_;
     linear_motion_ref_publisher_->publish(motor_msg);
     RCLCPP_INFO(this->get_logger(), "Publishing motor position ref: %.3f", motor_msg.ref);
   }
@@ -208,6 +206,9 @@ public:
       mode_ = MODE_SPEED;
       // 最後に通常のトルクを検出した時刻を更新
       last_normal_torque_time_ = this->now();
+      // 最後にリミットスイッチが反応していない時刻を更新
+      last_low_switch_not_detect_time_ = this->now();
+      last_high_switch_not_detect_time_ = this->now();
       RCLCPP_INFO(this->get_logger(), "Switched to speed control mode.");
     } else {
       mode_ = MODE_POSITON;
@@ -219,18 +220,31 @@ public:
   {
     if (mode_ == MODE_SPEED) {
       bool detect_origin = false;
-      // リミットスイッチが反応している場合
-      // TODO: 必要であれば、リミットスイッチの反応時間のしきい値を設ける
-      detect_origin |= (use_low_switch_ && low_switch_);
-      detect_origin |= (use_high_switch_ && high_switch_);
-
-      // トルク制限を超えた場合（一定時間トルクのしきい値を超えた場合）
+      // 現在のトルクがしきい値以下のとき
       if (std::abs(current_torque_) <= torque_threshold_) {
-        // 通常のトルクが検出されたので、最後に通常のトルクを検出した時刻を更新
+        // 最後に通常のトルクを検出した時刻を更新
         last_normal_torque_time_ = this->now();
       }
+      // リミットスイッチが反応していないとき
+      if (use_low_switch_ && low_switch_ == false) {
+        // 最後にリミットスイッチが反応していない時刻を更新
+        last_low_switch_not_detect_time_ = this->now();
+      }
+      if (use_high_switch_ && high_switch_ == false) {
+        // 最後にリミットスイッチが反応していない時刻を更新
+        last_high_switch_not_detect_time_ = this->now();
+      }
+
+      // 一定時間トルクのしきい値を超えた場合、原点検出とみなす
       detect_origin |=
         ((this->now() - last_normal_torque_time_).seconds() > origin_detect_threshold_time_);
+      // 一定時間リミットスイッチが反応した場合、原点検出とみなす
+      detect_origin |=
+        (use_low_switch_ && (this->now() - last_low_switch_not_detect_time_).seconds() >
+                              origin_detect_threshold_time_);
+      detect_origin |=
+        (use_high_switch_ && (this->now() - last_high_switch_not_detect_time_).seconds() >
+                               origin_detect_threshold_time_);
 
       auto motor_ref_msg = r1_msgs::msg::MotorRef();
       if (detect_origin) {
@@ -246,7 +260,9 @@ public:
         motor_ref_msg.ref = motor_dir_ * origin_detect_speed_;
       }
       linear_motion_ref_publisher_->publish(motor_ref_msg);
-      // RCLCPP_INFO(this->get_logger(), "Publishing motor speed ref: %.3f", motor_ref_msg.ref);
+      // RCLCPP_INFO(
+      //   this->get_logger(), "Publishing %s ref: %.3f", motor_ref_msg.control_type.c_str(),
+      //   motor_ref_msg.ref);
     }
     // モードをPublish
     auto mode_msg = std_msgs::msg::Int32();
@@ -265,8 +281,9 @@ private:
   rclcpp::node_interfaces::OnSetParametersCallbackHandle::SharedPtr parameter_callback_handler_;
 
   rclcpp::TimerBase::SharedPtr timer_;
-  rclcpp::Time detect_time_start_ = rclcpp::Time(0);
   rclcpp::Time last_normal_torque_time_ = rclcpp::Time(0);
+  rclcpp::Time last_low_switch_not_detect_time_ = rclcpp::Time(0);
+  rclcpp::Time last_high_switch_not_detect_time_ = rclcpp::Time(0);
   bool use_low_switch_ = true;
   bool use_high_switch_ = true;
   double origin_detect_speed_ = 0.0;

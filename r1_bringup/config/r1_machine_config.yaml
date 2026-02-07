@@ -312,7 +312,7 @@ sabacan_robomasv2_node_id2:
     speed_gain_p: [0.5, 0.5, 0.5, 0.5]
     speed_gain_i: [0.2, 0.2, 0.2, 0.2]
     speed_gain_d: [0.0, 0.0, 0.0, 0.0]
-    torque_lim: [5.0, 5.0, 5.0, 5.0]
+    torque_lim: [1.0, 1.0, 1.0, 1.0]
     pos_gain_p: [6.0, 6.0, 6.0, 6.0]
     pos_gain_i: [3.0, 3.0, 3.0, 3.0]
     pos_gain_d: [0.0, 0.0, 0.0, 0.0]
@@ -322,7 +322,7 @@ sabacan_robomasv2_node_id2:
     monitor_reg1: [0x0001000100010002, 0x0001000100010002, 0x0001000100010002, 0x0001000100010002]
     # VESCのフィードバックは無効化
     monitor_reg2: [0, 0, 0, 0]
-    monitor_period: 100
+    monitor_period: 50
 # KFS回収後、展開補助後
 sabacan_robomasv2_node_id3:
   ros__parameters:
@@ -332,7 +332,7 @@ sabacan_robomasv2_node_id3:
     speed_gain_p: [0.5, 0.5, 0.5, 0.5]
     speed_gain_i: [0.2, 0.2, 0.2, 0.2]
     speed_gain_d: [0.0, 0.0, 0.0, 0.0]
-    torque_lim: [5.0, 5.0, 5.0, 5.0]
+    torque_lim: [1.0, 1.0, 1.0, 1.0]
     pos_gain_p: [6.0, 6.0, 6.0, 6.0]
     pos_gain_i: [3.0, 3.0, 3.0, 3.0]
     pos_gain_d: [0.0, 0.0, 0.0, 0.0]
@@ -341,17 +341,17 @@ sabacan_robomasv2_node_id3:
     monitor_reg1: [0x0001000100010002, 0x0001000100010002, 0x0001000100010002, 0x0001000100010002]
     # VESCのフィードバックは無効化
     monitor_reg2: [0, 0, 0, 0]
-    monitor_period: 100
+    monitor_period: 50
 # R2昇降、ポール回収
 sabacan_robomasv2_node_id4:
   ros__parameters:
     board_id: 4
-    motor_type: ["C620", "C620", "C620", "C620"]
+    motor_type: ["C620", "C610", "C610", "C610"]
     control_type: ["VELOCITY", "POS", "POS", "POS"]
     speed_gain_p: [0.5, 0.5, 0.5, 0.5]
     speed_gain_i: [0.2, 0.2, 0.2, 0.2]
     speed_gain_d: [0.0, 0.0, 0.0, 0.0]
-    torque_lim: [5.0, 5.0, 5.0, 5.0]
+    torque_lim: [5.0, 1.0, 1.0, 1.0]
     pos_gain_p: [6.0, 6.0, 6.0, 6.0]
     pos_gain_i: [3.0, 3.0, 3.0, 3.0]
     pos_gain_d: [0.0, 0.0, 0.0, 0.0]
@@ -360,7 +360,7 @@ sabacan_robomasv2_node_id4:
     monitor_reg1: [0x0001000100010002, 0x0001000100010002, 0x0001000100010002, 0x0001000100010002]
     # VESCのフィードバックは無効化
     monitor_reg2: [0, 0, 0, 0]
-    monitor_period: 100
+    monitor_period: 50
 # やり
 sabacan_robomasv2_node_id5:
   ros__parameters:
@@ -370,7 +370,7 @@ sabacan_robomasv2_node_id5:
     speed_gain_p: [0.5, 0.5, 0.5, 0.5]
     speed_gain_i: [0.2, 0.2, 0.2, 0.2]
     speed_gain_d: [0.0, 0.0, 0.0, 0.0]
-    torque_lim: [5.0, 5.0, 5.0, 5.0]
+    torque_lim: [1.0, 1.0, 1.0, 1.0]
     pos_gain_p: [6.0, 6.0, 6.0, 6.0]
     pos_gain_i: [3.0, 3.0, 3.0, 3.0]
     pos_gain_d: [0.0, 0.0, 0.0, 0.0]
@@ -379,7 +379,7 @@ sabacan_robomasv2_node_id5:
     monitor_reg1: [0x0001000100010002, 0x0001000100010002, 0x0001000100010002, 0x0001000100010002]
     # VESCのフィードバックは無効化
     monitor_reg2: [0, 0, 0, 0]
-    monitor_period: 100
+    monitor_period: 50
 
 # PWM出力
 sabacan_gpio_node_id1:

@@ -64,7 +64,7 @@ public:
     this->declare_parameter("use_low_switch", true);
     this->declare_parameter("use_high_switch", true);
     this->declare_parameter("torque_threshold", 1.0);              // Nm
-    this->declare_parameter("origin_detect_threshold_time", 0.1);  // s
+    this->declare_parameter("origin_detect_threshold_time", 0.2);  // s
     // 原点検出時の速度は負の符号でも可、原点としたい方向に回転させる
     this->declare_parameter("origin_detect_speed", -3.14);  // rad/s
     this->declare_parameter("angle_min", -3.14);            // rad
@@ -197,8 +197,7 @@ private:
 
     auto motor_msg = r1_msgs::msg::MotorRef();
     motor_msg.control_type = "POSITION";
-    double motor_angle = target_angle / gear_ratio_;
-    motor_msg.ref = motor_dir_ * motor_angle;
+    motor_msg.ref = (motor_dir_ * target_angle + angle_offset_) / gear_ratio_;
     angle_motion_ref_publisher_->publish(motor_msg);
     RCLCPP_INFO(this->get_logger(), "Publishing motor angle ref: %.3f", motor_msg.ref);
   }
@@ -209,6 +208,8 @@ private:
       mode_ = MODE_SPEED;
       // 最後に通常のトルクを検出した時刻を更新
       last_normal_torque_time_ = this->now();
+      last_low_switch_not_detect_time_ = this->now();
+      last_high_switch_not_detect_time_ = this->now();
       RCLCPP_INFO(this->get_logger(), "Switched to speed control mode for origin detection.");
     } else {
       mode_ = MODE_POSITION;
@@ -221,17 +222,31 @@ private:
     if (mode_ == MODE_SPEED) {
       bool detect_origin = false;
 
-      // リミットスイッチが反応している場合
-      detect_origin |= (use_low_switch_ && low_switch_);
-      detect_origin |= (use_high_switch_ && high_switch_);
-
-      // トルク制限を超えた場合（一定時間トルクのしきい値を超えた場合）
+      // 現在のトルクがしきい値以下のとき
       if (std::abs(current_torque_) <= torque_threshold_) {
-        // 通常のトルクが検出されたので、最後に通常のトルクを検出した時刻を更新
+        // 最後に通常のトルクを検出した時刻を更新
         last_normal_torque_time_ = this->now();
       }
+      // リミットスイッチが反応していないとき
+      if (use_low_switch_ && low_switch_ == false) {
+        // 最後にリミットスイッチが反応していない時刻を更新
+        last_low_switch_not_detect_time_ = this->now();
+      }
+      if (use_high_switch_ && high_switch_ == false) {
+        // 最後にリミットスイッチが反応していない時刻を更新
+        last_high_switch_not_detect_time_ = this->now();
+      }
+
+      // 一定時間トルクのしきい値を超えた場合、原点検出とみなす
       detect_origin |=
         ((this->now() - last_normal_torque_time_).seconds() > origin_detect_threshold_time_);
+      // 一定時間リミットスイッチが反応した場合、原点検出とみなす
+      detect_origin |=
+        (use_low_switch_ && (this->now() - last_low_switch_not_detect_time_).seconds() >
+                              origin_detect_threshold_time_);
+      detect_origin |=
+        (use_high_switch_ && (this->now() - last_high_switch_not_detect_time_).seconds() >
+                               origin_detect_threshold_time_);
 
       auto motor_ref_msg = r1_msgs::msg::MotorRef();
       if (detect_origin) {
@@ -247,6 +262,9 @@ private:
         motor_ref_msg.ref = motor_dir_ * origin_detect_speed_;
       }
       angle_motion_ref_publisher_->publish(motor_ref_msg);
+      // RCLCPP_INFO(
+      //   this->get_logger(), "Publishing %s ref: %.3f", motor_ref_msg.control_type.c_str(),
+      //   motor_ref_msg.ref);
     }
     // モードをPublish
     auto mode_msg = std_msgs::msg::Int32();
@@ -265,6 +283,8 @@ private:
 
   rclcpp::TimerBase::SharedPtr timer_;
   rclcpp::Time last_normal_torque_time_ = rclcpp::Time(0);
+  rclcpp::Time last_low_switch_not_detect_time_ = rclcpp::Time(0);
+  rclcpp::Time last_high_switch_not_detect_time_ = rclcpp::Time(0);
   bool use_low_switch_ = true;
   bool use_high_switch_ = true;
   double origin_detect_speed_ = 0.0;

@@ -23,7 +23,7 @@
 | `use_low_switch` | bool | `true` | 低側リミットスイッチを原点検出判定に使うか。 |
 | `use_high_switch` | bool | `true` | 高側リミットスイッチを原点検出判定に使うか。 |
 | `torque_threshold` | double | `1.0` | 許容トルク [Nm]。この絶対値を超え続けたら原点とみなします。 |
-| `origin_detect_threshold_time` | double | `0.1` | トルクしきい値超過を原点とみなすまでの継続時間 [s]。 |
+| `origin_detect_threshold_time` | double | `0.2` | トルクしきい値超過を原点とみなすまでの継続時間 [s]。 |
 | `origin_detect_speed` | double | `-3.14` | 原点検出中に流す一定角速度 [rad/s]。符号は `inverse_motor` に応じて反転します。 |
 | `angle_min` | double | `-3.14` | 指令として受け付ける角度の下限 [rad]。外れた場合はクランプされます。 |
 | `angle_max` | double | `3.14` | 指令として受け付ける角度の上限 [rad]。 |

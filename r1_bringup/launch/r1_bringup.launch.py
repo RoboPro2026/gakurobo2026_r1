@@ -236,7 +236,7 @@ def generate_launch_description():
         parameters=[param_file],
         arguments=["--ros-args", "--log-level", "warn"],
         remappings=[
-            ("linear_motion_status", "pole_roger_motion_status"),
+            ("linear_motion_status", "pole_roger_linear_motion_status"),
             ("linear_motion_motor_ref", "pole_roger_motor_ref"),
             ("linear_motion_position_ref", "pole_roger_position_ref"),
             ("linear_motion_detect_origin", "pole_roger_detect_origin"),
@@ -251,7 +251,7 @@ def generate_launch_description():
         parameters=[param_file],
         arguments=["--ros-args", "--log-level", "warn"],
         remappings=[
-            ("linear_motion_status", "spear_roger1_motion_status"),
+            ("linear_motion_status", "spear_roger1_linear_motion_status"),
             ("linear_motion_motor_ref", "spear_roger1_motor_ref"),
             ("linear_motion_position_ref", "spear_roger1_position_ref"),
             ("linear_motion_detect_origin", "spear_roger1_detect_origin"),
@@ -266,7 +266,7 @@ def generate_launch_description():
         parameters=[param_file],
         arguments=["--ros-args", "--log-level", "warn"],
         remappings=[
-            ("linear_motion_status", "spear_roger2_motion_status"),
+            ("linear_motion_status", "spear_roger2_linear_motion_status"),
             ("linear_motion_motor_ref", "spear_roger2_motor_ref"),
             ("linear_motion_position_ref", "spear_roger2_position_ref"),
             ("linear_motion_detect_origin", "spear_roger2_detect_origin"),
@@ -281,7 +281,7 @@ def generate_launch_description():
         parameters=[param_file],
         arguments=["--ros-args", "--log-level", "warn"],
         remappings=[
-            ("linear_motion_status", "spear_move_motion_status"),
+            ("linear_motion_status", "spear_move_linear_motion_status"),
             ("linear_motion_motor_ref", "spear_move_motor_ref"),
             ("linear_motion_position_ref", "spear_move_position_ref"),
             ("linear_motion_detect_origin", "spear_move_detect_origin"),
@@ -295,9 +295,9 @@ def generate_launch_description():
         executable="r1_angle_motion_node",
         name="r1_spear_rotate_node",
         parameters=[param_file],
-        arguments=["--ros-args", "--log-level", "warn"],
+        arguments=["--ros-args", "--log-level", "info"],
         remappings=[
-            ("angle_motion_status", "spear_rotate_motion_status"),
+            ("angle_motion_status", "spear_rotate_angle_motion_status"),
             ("angle_motion_motor_ref", "spear_rotate_motor_ref"),
             ("angle_motion_position_ref", "spear_rotate_position_ref"),
             ("angle_motion_detect_origin", "spear_rotate_detect_origin"),
