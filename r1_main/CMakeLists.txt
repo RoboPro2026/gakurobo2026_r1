@@ -23,6 +23,7 @@ add_executable(test_node src/test_node.cpp)
 ament_target_dependencies(r1_main_node
   geometry_msgs
   rclcpp
+  sabacan_msgs
   sensor_msgs
   std_msgs
   r1_msgs
