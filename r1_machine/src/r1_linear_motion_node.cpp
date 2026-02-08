@@ -67,7 +67,8 @@ public:
     this->declare_parameter("origin_detect_speed", -3.14);  // rad/s
     this->declare_parameter("pos_min", 0.0);                // m
     this->declare_parameter("pos_max", 1.0);                // m
-    this->declare_parameter("radius", 0.05);                // m
+    this->declare_parameter("normal_pos", 0.05);
+    this->declare_parameter("radius", 0.05);  // m
     this->declare_parameter("inverse_motor", false);
     this->declare_parameter("inverse_low_switch_logic", false);
     this->declare_parameter("inverse_high_switch_logic", false);
@@ -79,6 +80,7 @@ public:
     this->get_parameter("origin_detect_speed", origin_detect_speed_);
     this->get_parameter("pos_min", pos_min_);
     this->get_parameter("pos_max", pos_max_);
+    this->get_parameter("normal_pos", normal_pos_);
     this->get_parameter("radius", radius_);
     bool inverse_motor;
     this->get_parameter("inverse_motor", inverse_motor);
@@ -125,6 +127,9 @@ public:
       } else if (name == "pos_max") {
         pos_max_ = parameter.as_double();
         RCLCPP_INFO(this->get_logger(), "Updated parameter: pos_max = %.3f", pos_max_);
+      } else if (name == "normal_pos") {
+        normal_pos_ = parameter.as_double();
+        RCLCPP_INFO(this->get_logger(), "Updated parameter: normal_pos = %.3f", normal_pos_);
       } else if (name == "radius") {
         radius_ = parameter.as_double();
         RCLCPP_INFO(this->get_logger(), "Updated parameter: radius = %.3f", radius_);
@@ -252,9 +257,10 @@ public:
         // オフセットを更新し、位置制御モードへ切り替え
         mode_ = MODE_POSITON;
         pos_offset_ = radius_ * current_pos_;
-        motor_ref_msg.control_type = "POSITION";
-        motor_ref_msg.ref = current_pos_;
         RCLCPP_INFO(this->get_logger(), "Origin detected at position: %.3f", pos_offset_);
+        motor_ref_msg.control_type = "POSITION";
+        motor_ref_msg.ref = (motor_dir_ * normal_pos_ + pos_offset_) / radius_;
+        RCLCPP_INFO(this->get_logger(), "Moving to normal position: %.3f", normal_pos_);
       } else {
         motor_ref_msg.control_type = "VELOCITY";
         motor_ref_msg.ref = motor_dir_ * origin_detect_speed_;
@@ -292,6 +298,7 @@ private:
   double motor_dir_ = 1.0;
   double pos_min_ = 0.0;
   double pos_max_ = 1.0;
+  double normal_pos_ = 0.0;
   // オフセット補正用
   double pos_offset_ = 0.0;
   bool low_switch_ = false;

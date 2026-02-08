@@ -27,6 +27,7 @@
 | `origin_detect_speed` | double | `-3.14` | 原点検出中に流す一定角速度 [rad/s]。符号は `inverse_motor` に応じて反転します。 |
 | `angle_min` | double | `-3.14` | 指令として受け付ける角度の下限 [rad]。外れた場合はクランプされます。 |
 | `angle_max` | double | `3.14` | 指令として受け付ける角度の上限 [rad]。 |
+| `normal_angle` | double | `0.0` | 原点検出後の通常時の角度。 [rad]。 |
 | `gear_ratio` | double | `0.05` | 減速比。出力角度は計算値を `gear_ratio` で割った後に配信されます。 |
 | `inverse_motor` | bool | `false` | モータ正転方向を反転するフラグ。`true` で `ref` に -1 を掛けます。 |
 | `inverse_low_switch_logic` | bool | `false` | 低側リミットスイッチの論理を反転します。 |

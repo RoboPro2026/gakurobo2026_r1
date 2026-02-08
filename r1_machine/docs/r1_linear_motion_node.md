@@ -27,6 +27,7 @@
 | `origin_detect_speed` | double | `-3.14` | 原点検出中に流す一定角速度 [rad/s]。負の符号でも可。  符号は `inverse_motor` に応じて反転します。 |
 | `pos_min` | double | `0.0` | 指令として受け付ける位置の下限 [m]。外れた場合はクランプされます。 |
 | `pos_max` | double | `1.0` | 指令として受け付ける位置の上限 [m]。 |
+| `normal_pos` | double | `0.0` | 原点検出後の通常時の位置。 [m]。 |
 | `radius` | double | `0.05` | 巻取りドラムの半径 [m]。位置[m] をモータ角度[rad]に換算するときに使用。 |
 | `inverse_motor` | bool | `false` | モータ正転方向を反転するフラグ。`true` で `ref` に -1 を掛けます。 |
 | `inverse_low_switch_logic` | bool | `false` | 低側リミットスイッチの論理を反転します。 |

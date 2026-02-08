@@ -756,10 +756,10 @@ void R1MainNode::manual_task(void)
     target_vel_.linear.y = simple_trapezoid_vy_.update(vy_ref);
     target_vel_.angular.z = simple_trapezoid_omega_.update(vz_ref);
 
-    // test_front_kfs();
+    test_front_kfs();
     // test_spear();
     // test_pole();
-    test_r2_lift();
+    // test_r2_lift();
   } else {
     target_vel_.linear.x = 0.0;
     target_vel_.linear.y = 0.0;

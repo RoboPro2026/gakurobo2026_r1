@@ -69,6 +69,7 @@ public:
     this->declare_parameter("origin_detect_speed", -3.14);  // rad/s
     this->declare_parameter("angle_min", -3.14);            // rad
     this->declare_parameter("angle_max", 3.14);             // rad
+    this->declare_parameter("normal_angle", 0.0);           // rad
     this->declare_parameter("gear_ratio", 0.05);
     this->declare_parameter("inverse_motor", false);
     this->declare_parameter("inverse_low_switch_logic", false);
@@ -82,6 +83,7 @@ public:
     this->get_parameter("origin_detect_speed", origin_detect_speed_);
     this->get_parameter("angle_min", angle_min_);
     this->get_parameter("angle_max", angle_max_);
+    this->get_parameter("normal_angle", normal_angle_);
     this->get_parameter("gear_ratio", gear_ratio_);
     bool inverse_motor;
     this->get_parameter("inverse_motor", inverse_motor);
@@ -129,6 +131,9 @@ private:
       } else if (name == "angle_max") {
         angle_max_ = parameter.as_double();
         RCLCPP_INFO(this->get_logger(), "Updated parameter: angle_max = %.3f", angle_max_);
+      } else if (name == "normal_angle") {
+        normal_angle_ = parameter.as_double();
+        RCLCPP_INFO(this->get_logger(), "Updated parameter: normal_angle = %.3f", normal_angle_);
       } else if (name == "gear_ratio") {
         gear_ratio_ = parameter.as_double();
         RCLCPP_INFO(this->get_logger(), "Updated parameter: gear_ratio = %.3f", gear_ratio_);
@@ -253,9 +258,11 @@ private:
         // 原点検出時: オフセットを更新し、位置制御モードへ切り替え
         mode_ = MODE_POSITION;
         angle_offset_ = gear_ratio_ * current_angle_;
-        motor_ref_msg.control_type = "POSITION";
-        motor_ref_msg.ref = current_angle_;
         RCLCPP_INFO(this->get_logger(), "Origin detected at angle: %.3f", angle_offset_);
+        // 原点検出後はnormal_angleに移動
+        motor_ref_msg.control_type = "POSITION";
+        motor_ref_msg.ref = (motor_dir_ * normal_angle_ + angle_offset_) / gear_ratio_;
+        RCLCPP_INFO(this->get_logger(), "Moving to normal angle position: %.3f", motor_ref_msg.ref);
       } else {
         // 原点検出中は負の方向にモータを回転させる
         motor_ref_msg.control_type = "VELOCITY";
@@ -293,6 +300,7 @@ private:
   double motor_dir_ = 1.0;
   double angle_min_ = -3.14;
   double angle_max_ = 3.14;
+  double normal_angle_ = 0.0;
   // オフセット補正用
   double angle_offset_ = 0.0;
   bool low_switch_ = false;
