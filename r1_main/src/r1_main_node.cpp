@@ -1599,18 +1599,19 @@ void R1MainNode::manual_task(void)
       } else if (*manual_sub == ManualSubState::TEST) {
         // test_front_kfs();
         test_spear();
-        double stick_max_velocity = 1.5;
-        double vx_ref = stick_max_velocity * ps4_->data.left_stick_x;
-        double vy_ref = stick_max_velocity * ps4_->data.left_stick_y;
-        double vz_ref = ps4_->data.right_stick_x;
-        // 台形制御で速度を滑らかに変化させる
-        double vx = simple_trapezoid_vx_.update(vx_ref);
-        double vy = simple_trapezoid_vy_.update(vy_ref);
-        double vz = simple_trapezoid_omega_.update(vz_ref);
-        chassis_move_vel(vx, vy, vz);
       }
     }
     // 共通タスク
+    double stick_max_velocity = 1.5;
+    double vx_ref = stick_max_velocity * ps4_->data.left_stick_x;
+    double vy_ref = stick_max_velocity * ps4_->data.left_stick_y;
+    double vz_ref = ps4_->data.right_stick_x;
+    // 台形制御で速度を滑らかに変化させる
+    double vx = simple_trapezoid_vx_.update(vx_ref);
+    double vy = simple_trapezoid_vy_.update(vy_ref);
+    double vz = simple_trapezoid_omega_.update(vz_ref);
+    chassis_move_vel(vx, vy, vz);
+
     // optionsが押されたときは電源をOFFにする
     if (ps4_->is_pushed_options()) {
       sabacan_power_ref(!sabacan_is_ems_);

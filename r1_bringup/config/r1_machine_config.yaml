@@ -10,9 +10,9 @@ r1_main_node:
     kfs_fx_expand_pos: 0.5
     # fz
     kfs_fz_normal_pos: 0.00
-    kfs_fz_low_pos: 0.05
-    kfs_fz_middle_pos: 0.3
-    kfs_fz_high_pos: 0.5
+    kfs_fz_low_pos: 0.10
+    kfs_fz_middle_pos: 0.30
+    kfs_fz_high_pos: 0.50
     # fyaw
     kfs_fyaw_normal_angle: 0.0
     kfs_fyaw_front_angle: 0.0
@@ -23,9 +23,9 @@ r1_main_node:
     kfs_rx_expand_pos: 0.5
     # rz
     kfs_rz_normal_pos: 0.00
-    kfs_rz_low_pos: 0.05
-    kfs_rz_middle_pos: 0.3
-    kfs_rz_high_pos: 0.5
+    kfs_rz_low_pos: 0.10
+    kfs_rz_middle_pos: 0.30
+    kfs_rz_high_pos: 0.50
     # ryaw
     kfs_ryaw_normal_angle: 0.0
     kfs_ryaw_front_angle: 0.0
@@ -417,12 +417,11 @@ sabacan_robomasv2_node_id2:
     speed_gain_p: [0.5, 0.5, 0.5, 0.5]
     speed_gain_i: [0.2, 0.2, 0.2, 0.2]
     speed_gain_d: [0.0, 0.0, 0.0, 0.0]
-    torque_lim: [1.0, 1.0, 1.0, 1.0]
+    torque_lim: [0.75, 0.75, 0.75, 1.0]
     pos_gain_p: [6.0, 6.0, 6.0, 6.0]
     pos_gain_i: [3.0, 3.0, 3.0, 3.0]
     pos_gain_d: [0.0, 0.0, 0.0, 0.0]
-    # speed_lim: [20.0, 20.0, 20.0, 20.0]
-    speed_lim: [10.0, 10.0, 10.0, 10.0]
+    speed_lim: [15.0, 15.0, 15.0, 10.0]
     # TRQ+SPD+POS+MOTOR_STATEをフィードバック
     monitor_reg1: [0x0001000100010002, 0x0001000100010002, 0x0001000100010002, 0x0001000100010002]
     # VESCのフィードバックは無効化
@@ -437,11 +436,11 @@ sabacan_robomasv2_node_id3:
     speed_gain_p: [0.5, 0.5, 0.5, 0.5]
     speed_gain_i: [0.2, 0.2, 0.2, 0.2]
     speed_gain_d: [0.0, 0.0, 0.0, 0.0]
-    torque_lim: [1.0, 1.0, 1.0, 1.0]
+    torque_lim: [0.75, 0.75, 0.75, 1.0]
     pos_gain_p: [6.0, 6.0, 6.0, 6.0]
     pos_gain_i: [3.0, 3.0, 3.0, 3.0]
     pos_gain_d: [0.0, 0.0, 0.0, 0.0]
-    speed_lim: [10.0, 10.0, 10.0, 10.0]
+    speed_lim: [15.0, 15.0, 15.0, 10.0]
     # TRQ+SPD+POS+MOTOR_STATEをフィードバック
     monitor_reg1: [0x0001000100010002, 0x0001000100010002, 0x0001000100010002, 0x0001000100010002]
     # VESCのフィードバックは無効化
