@@ -225,6 +225,10 @@ public:
   static constexpr int SABACAN_RESET_NOW = 1;
   static constexpr int SABACAN_RESET_SENDING = 2;
   int sabacan_reset_status_ = SABACAN_AVAILABLE;
+  // actuator
+  static constexpr int ACTUATOR_AVAILABLE = 0;
+  static constexpr int ACTUATOR_INITIALIZING = 1;
+  int actuator_status_ = ACTUATOR_AVAILABLE;
 
   // 指令値関係
   // ========== 足回り ==========
@@ -384,6 +388,9 @@ public:
   // 位置制御は止められないので、そのまま
   // TODO: 位置制御系も止められるようにする
   void stop_actuator(void);
+  // 位置制御系のアクチュエータを初期位置に移動する
+  void init_actuator(void);
+  void actuator_update(void);
   void set_emergency(bool enable);
   // ========== 原点検出関数 ==========
   // KFS回収

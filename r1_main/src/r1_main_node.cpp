@@ -665,15 +665,13 @@ void R1MainNode::sabacan_reset_update(void)
     case 8:
       try_send(sabacan_gpio_reset_client_id3_, "/sabacan_gpio_reset_id3");
       break;
-    default:
-      sabacan_reset_status_ = SABACAN_AVAILABLE;
-      return;
   }
 
   sabacan_reset_last_send_time_ = now;
   sabacan_reset_last_send_valid_ = true;
   sabacan_reset_step_++;
-  if (sabacan_reset_step_ >= 9) {
+  // stepは最後の処理が終わるのにかかる時間も考慮し、1つ多く設定する
+  if (sabacan_reset_step_ >= 10) {
     sabacan_reset_status_ = SABACAN_AVAILABLE;
     RCLCPP_INFO(this->get_logger(), "sabacan reset completed");
   }
@@ -719,6 +717,7 @@ void R1MainNode::timer_callback(void)
   ps4_->update();
   sabacan_reset_update();
   sabacan_led_update();
+  actuator_update();
   // 状態を更新
   state_machine_->update();
   // タスクを実行
@@ -994,6 +993,36 @@ void R1MainNode::stop_actuator(void)
   spear_hand_valve(false);
 }
 
+void R1MainNode::init_actuator(void) { actuator_status_ = ACTUATOR_INITIALIZING; }
+
+void R1MainNode::actuator_update(void)
+{
+  // sabacanのresetが完了したら、actuatorを初期化する
+  if (sabacan_reset_status_ == SABACAN_AVAILABLE && actuator_status_ == ACTUATOR_INITIALIZING) {
+    // 位置制御系のアクチュエータを初期位置に移動
+    // TODO: 将来的にはこの関数で原点検出も行う
+    kfs_fx(KFS_FX_NORMAL_POS);
+    kfs_fz(KFS_FZ_NORMAL_POS);
+    kfs_fyaw(KFS_FYAW_NORMAL_ANGLE);
+    kfs_rx(KFS_RX_NORMAL_POS);
+    kfs_rz(KFS_RZ_NORMAL_POS);
+    kfs_ryaw(KFS_RYAW_NORMAL_ANGLE);
+    front_expand(FRONT_EXPAND_NORMAL_POS);
+    rear_expand(REAR_EXPAND_NORMAL_POS);
+    pole_x(POLE_X_NORMAL_POS);
+    pole_y(POLE_Y_NORMAL_POS);
+    pole_roger(POLE_ROGER_NORMAL_POS);
+    spear_roger1(SPEAR_ROGER1_NORMAL_POS);
+    spear_roger2(SPEAR_ROGER2_NORMAL_POS);
+    spear_move(SPEAR_MOVE_NORMAL_POS);
+    spear_rotate(SPEAR_ROTATE_NORMAL_POS);
+    // 位置制御系以外のアクチュエータは停止状態にする
+    stop_actuator();
+    actuator_status_ = ACTUATOR_AVAILABLE;
+    RCLCPP_INFO(this->get_logger(), "robot initialized");
+  }
+}
+
 // --- 各状態のタスク ---
 void R1MainNode::idle_task(void)
 {
@@ -1057,6 +1086,7 @@ void R1MainNode::manual_mode1_detect_origin(void)
 void R1MainNode::manual_mode2_make_spear_task(int n)
 {
   static int step = 1;
+  RCLCPP_INFO(this->get_logger(), "manual_mode2_make_spear_task step: %d", step);
   if (step == 1) {
     // pole_yを受け渡し位置に移動
     if (n == 1) {
@@ -1099,6 +1129,7 @@ void R1MainNode::manual_mode2_make_spear_task(int n)
     } else if (n == 4) {
       pole_valve(4, true);
     }
+    step++;
   } else if (step == 4) {
     // R2とのやり合体位置に、やりハンドを移動する。
     spear_move(SPEAR_MOVE_COMBINE_POS);
@@ -1162,6 +1193,7 @@ void R1MainNode::manual_mode2_make_spear_task(int n)
     } else if (n == 4) {
       pole_servo(4, POLE_SERVO4_NORMAL_ANGLE);
     }
+    RCLCPP_INFO(this->get_logger(), "spear make task completed for pole %d", n);
     step = 1;
   }
 }
@@ -1169,6 +1201,7 @@ void R1MainNode::manual_mode2_make_spear_task(int n)
 void R1MainNode::manual_mode2_collect_pole_task(void)
 {
   static int step = 1;
+  RCLCPP_INFO(this->get_logger(), "manual_mode2_collect_pole_task step: %d", step);
   if (step == 1) {
     pole_x(POLE_X_EXPAND_POS);
     step++;
@@ -1191,6 +1224,7 @@ void R1MainNode::manual_mode2_collect_pole_task(void)
     pole_x(POLE_X_NORMAL_POS);
   } else if (step == 6) {
     pole_roger(POLE_ROGER_NORMAL_POS);
+    RCLCPP_INFO(this->get_logger(), "pole collect task completed");
     step = 1;
   }
 }
@@ -1265,6 +1299,7 @@ void R1MainNode::manual_mode3_kfs(void)
     if (fz_step > 3) {
       fz_step = 3;
     }
+    RCLCPP_INFO(this->get_logger(), "fz_step: %d", fz_step);
     if (fz_step == 1) {
       kfs_fz(KFS_FZ_LOW_POS);
     } else if (fz_step == 2) {
@@ -1291,6 +1326,7 @@ void R1MainNode::manual_mode3_kfs(void)
     if (fz_step < 1) {
       fz_step = 1;
     }
+    RCLCPP_INFO(this->get_logger(), "fz_step: %d", fz_step);
     if (fz_step == 1) {
       kfs_fz(KFS_FZ_LOW_POS);
     } else if (fz_step == 2) {
@@ -1304,6 +1340,7 @@ void R1MainNode::manual_mode3_kfs(void)
     // front_pumpを動かす。止めるときは電磁弁も一緒に動く
     if (front_pump_step == 1) {
       kfs_front_pump(1.0);
+      kfs_front_valve(false);
       front_pump_step = 2;
     } else {
       kfs_front_pump(0.0);
@@ -1323,6 +1360,7 @@ void R1MainNode::manual_mode3_kfs(void)
     if (rz_step > 3) {
       rz_step = 3;
     }
+    RCLCPP_INFO(this->get_logger(), "rz_step: %d", rz_step);
     if (rz_step == 1) {
       kfs_rz(KFS_RZ_LOW_POS);
     } else if (rz_step == 2) {
@@ -1349,6 +1387,7 @@ void R1MainNode::manual_mode3_kfs(void)
     if (rz_step < 1) {
       rz_step = 1;
     }
+    RCLCPP_INFO(this->get_logger(), "rz_step: %d", rz_step);
     if (rz_step == 1) {
       kfs_rz(KFS_RZ_LOW_POS);
     } else if (rz_step == 2) {
@@ -1362,6 +1401,7 @@ void R1MainNode::manual_mode3_kfs(void)
     // rear_pumpを動かす。止めるときは電磁弁も一緒に動く
     if (rear_pump_step == 1) {
       kfs_rear_pump(1.0);
+      kfs_rear_valve(false);
       rear_pump_step = 2;
     } else {
       kfs_rear_pump(0.0);
@@ -1381,6 +1421,7 @@ void R1MainNode::manual_mode3_kfs(void)
     if (fyaw_step < 1) {
       fyaw_step = 1;
     }
+    RCLCPP_INFO(this->get_logger(), "fyaw_step: %d", fyaw_step);
     if (fyaw_step == 1) {
       kfs_fyaw(KFS_FYAW_FRONT_ANGLE);
     } else if (fyaw_step == 2) {
@@ -1396,6 +1437,7 @@ void R1MainNode::manual_mode3_kfs(void)
     if (fyaw_step > 3) {
       fyaw_step = 3;
     }
+    RCLCPP_INFO(this->get_logger(), "fyaw_step: %d", fyaw_step);
     if (fyaw_step == 1) {
       kfs_fyaw(KFS_FYAW_FRONT_ANGLE);
     } else if (fyaw_step == 2) {
@@ -1411,6 +1453,7 @@ void R1MainNode::manual_mode3_kfs(void)
     if (ryaw_step < 1) {
       ryaw_step = 1;
     }
+    RCLCPP_INFO(this->get_logger(), "ryaw_step: %d", ryaw_step);
     if (ryaw_step == 1) {
       kfs_ryaw(KFS_RYAW_FRONT_ANGLE);
     } else if (ryaw_step == 2) {
@@ -1426,6 +1469,7 @@ void R1MainNode::manual_mode3_kfs(void)
     if (ryaw_step > 3) {
       ryaw_step = 3;
     }
+    RCLCPP_INFO(this->get_logger(), "ryaw_step: %d", ryaw_step);
     if (ryaw_step == 1) {
       kfs_ryaw(KFS_RYAW_FRONT_ANGLE);
     } else if (ryaw_step == 2) {
@@ -1440,15 +1484,26 @@ void R1MainNode::manual_mode4_r2_lift(void)
 {
   static int front_expand_step = 1;
   static int rear_expand_step = 1;
+  static int r2_lift_step = 0;
 
   if (ps4_->data.triangle) {
-    r2_lift(R2_LIFT_MAX_VELOCITY);
-    RCLCPP_INFO(this->get_logger(), "r2 lift up");
+    if (r2_lift_step != 1) {
+      r2_lift(R2_LIFT_MAX_VELOCITY);
+      RCLCPP_INFO(this->get_logger(), "r2 lift up");
+      r2_lift_step = 1;
+    }
   } else if (ps4_->data.cross) {
-    r2_lift(-R2_LIFT_MAX_VELOCITY);
-    RCLCPP_INFO(this->get_logger(), "r2 lift down");
+    if (r2_lift_step != -1) {
+      r2_lift(-R2_LIFT_MAX_VELOCITY);
+      RCLCPP_INFO(this->get_logger(), "r2 lift down");
+      r2_lift_step = -1;
+    }
   } else {
-    r2_lift(0.0);
+    if (r2_lift_step != 0) {
+      r2_lift(0.0);
+      RCLCPP_INFO(this->get_logger(), "r2 lift stop");
+      r2_lift_step = 0;
+    }
   }
 
   if (ps4_->is_pushed_up()) {
@@ -1504,12 +1559,17 @@ void R1MainNode::manual_mode4_r2_lift(void)
 
 void R1MainNode::manual_task(void)
 {
+  static bool stop_actuator_flag = false;
   auto current_state = state_machine_->get_current_state();
   if (ps4_->is_connected() == false) {
     // 未接続のときはアクチュエータ停止
-    stop_actuator();
+    if (stop_actuator_flag == false) {
+      stop_actuator();
+      stop_actuator_flag = true;
+    }
 
   } else {
+    stop_actuator_flag = false;
     // 状態に応じて、各タスクを実行
     if (const auto * manual_sub = std::get_if<ManualSubState>(&current_state.sub)) {
       if (*manual_sub == ManualSubState::MODE1_DETECT_ORIGIN) {
@@ -1541,6 +1601,7 @@ void R1MainNode::manual_task(void)
     // psボタンが押されたときはsabacan resetを行う
     if (ps4_->is_pushed_ps()) {
       sabacan_reset();
+      init_actuator();
     }
     // shareボタンが押されたときはモードを切り替える
     if (ps4_->is_pushed_share()) {
