@@ -227,6 +227,8 @@ R1MainNode::R1MainNode() : Node("r1_main_node")
     this->create_client<sabacan_msgs::srv::SabacanReset>("/sabacan_gpio_reset_id2");
   sabacan_gpio_reset_client_id3_ =
     this->create_client<sabacan_msgs::srv::SabacanReset>("/sabacan_gpio_reset_id3");
+  sabacan_led_reset_client_ =
+    this->create_client<sabacan_msgs::srv::SabacanReset>("/sabacan_led_reset");
 
   // ========== パラメータ ==========
   // 足回り
@@ -665,13 +667,16 @@ void R1MainNode::sabacan_reset_update(void)
     case 8:
       try_send(sabacan_gpio_reset_client_id3_, "/sabacan_gpio_reset_id3");
       break;
+    case 9:
+      try_send(sabacan_led_reset_client_, "/sabacan_led_reset");
+      break;
   }
 
   sabacan_reset_last_send_time_ = now;
   sabacan_reset_last_send_valid_ = true;
   sabacan_reset_step_++;
   // stepは最後の処理が終わるのにかかる時間も考慮し、1つ多く設定する
-  if (sabacan_reset_step_ >= 10) {
+  if (sabacan_reset_step_ >= 11) {
     sabacan_reset_status_ = SABACAN_AVAILABLE;
     RCLCPP_INFO(this->get_logger(), "sabacan reset completed");
   }

@@ -158,6 +158,7 @@ public:
   rclcpp::Client<sabacan_msgs::srv::SabacanReset>::SharedPtr sabacan_gpio_reset_client_id1_;
   rclcpp::Client<sabacan_msgs::srv::SabacanReset>::SharedPtr sabacan_gpio_reset_client_id2_;
   rclcpp::Client<sabacan_msgs::srv::SabacanReset>::SharedPtr sabacan_gpio_reset_client_id3_;
+  rclcpp::Client<sabacan_msgs::srv::SabacanReset>::SharedPtr sabacan_led_reset_client_;
   rclcpp::Time sabacan_reset_last_send_time_ = rclcpp::Time(0LL, RCL_SYSTEM_TIME);
   bool sabacan_reset_last_send_valid_ = false;
   size_t sabacan_reset_step_ = 0;
