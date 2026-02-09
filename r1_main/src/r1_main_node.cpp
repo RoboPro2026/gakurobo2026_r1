@@ -621,7 +621,7 @@ void R1MainNode::sabacan_reset_update(void)
     sabacan_reset_last_send_valid_ = false;
   }
 
-  const rclcpp::Duration send_interval = rclcpp::Duration::from_seconds(0.5);
+  const rclcpp::Duration send_interval = rclcpp::Duration::from_seconds(1.0);
   const auto now = this->get_clock()->now();
   if (sabacan_reset_last_send_valid_ && (now - sabacan_reset_last_send_time_) < send_interval) {
     return;
@@ -1021,6 +1021,10 @@ void R1MainNode::actuator_update(void)
     spear_roger2(SPEAR_ROGER2_NORMAL_POS);
     spear_move(SPEAR_MOVE_NORMAL_POS);
     spear_rotate(SPEAR_ROTATE_NORMAL_POS);
+    pole_servo(1, POLE_SERVO1_NORMAL_ANGLE);
+    pole_servo(2, POLE_SERVO2_NORMAL_ANGLE);
+    pole_servo(3, POLE_SERVO3_NORMAL_ANGLE);
+    pole_servo(4, POLE_SERVO4_NORMAL_ANGLE);
     // 位置制御系以外のアクチュエータは停止状態にする
     stop_actuator();
     actuator_status_ = ACTUATOR_AVAILABLE;
@@ -1106,6 +1110,7 @@ void R1MainNode::manual_mode2_make_spear_task(int n)
     spear_roger1(SPEAR_ROGER1_TRANSFER_POS);
     spear_roger2(SPEAR_ROGER2_TRANSFER_POS);
     spear_move(SPEAR_MOVE_TRANSFER_POS);
+    pole_roger(POLE_ROGER_EXPAND_POS);
     step++;
   } else if (step == 2) {
     // サーボモータを回転させ、ポールを水平にする
@@ -1198,7 +1203,11 @@ void R1MainNode::manual_mode2_make_spear_task(int n)
     } else if (n == 4) {
       pole_servo(4, POLE_SERVO4_NORMAL_ANGLE);
     }
-    RCLCPP_INFO(this->get_logger(), "spear make task completed for pole %d", n);
+    step++;
+  } else if (step == 11) {
+    pole_roger(POLE_ROGER_NORMAL_POS);
+    pole_y(POLE_Y_NORMAL_POS);
+    RCLCPP_INFO(this->get_logger(), "spear make task completed");
     step = 1;
   }
 }
@@ -1208,7 +1217,8 @@ void R1MainNode::manual_mode2_collect_pole_task(void)
   static int step = 1;
   RCLCPP_INFO(this->get_logger(), "manual_mode2_collect_pole_task step: %d", step);
   if (step == 1) {
-    pole_x(POLE_X_EXPAND_POS);
+    // pole_x(POLE_X_EXPAND_POS);
+    pole_y(POLE_Y_COLLECT_POS);
     step++;
   } else if (step == 2) {
     pole_roger(POLE_ROGER_EXPAND_POS);
@@ -1226,7 +1236,8 @@ void R1MainNode::manual_mode2_collect_pole_task(void)
     pole_valve(4, false);
     step++;
   } else if (step == 5) {
-    pole_x(POLE_X_NORMAL_POS);
+    // pole_x(POLE_X_NORMAL_POS);
+    step++;
   } else if (step == 6) {
     pole_roger(POLE_ROGER_NORMAL_POS);
     RCLCPP_INFO(this->get_logger(), "pole collect task completed");
@@ -1238,7 +1249,7 @@ void R1MainNode::manual_mode2_spear_and_pole(void)
 {
   if (ps4_->is_pushed_up()) {
     // やり組み立て
-    manual_mode2_make_spear_task(1);
+    manual_mode2_make_spear_task(2);
   }
 
   if (ps4_->is_pushed_right()) {
@@ -1275,7 +1286,7 @@ void R1MainNode::manual_mode2_spear_and_pole(void)
   }
 
   if (ps4_->is_pushed_r1()) {
-    spear_roger1(spear_roger2_position_ref_ + 0.01);
+    spear_roger1(spear_roger1_position_ref_ + 0.01);
   }
 
   if (ps4_->is_pushed_l2()) {
@@ -1586,7 +1597,8 @@ void R1MainNode::manual_task(void)
       } else if (*manual_sub == ManualSubState::MODE4_R2_LIFT) {
         manual_mode4_r2_lift();
       } else if (*manual_sub == ManualSubState::TEST) {
-        test_front_kfs();
+        // test_front_kfs();
+        test_spear();
         double stick_max_velocity = 1.5;
         double vx_ref = stick_max_velocity * ps4_->data.left_stick_x;
         double vy_ref = stick_max_velocity * ps4_->data.left_stick_y;

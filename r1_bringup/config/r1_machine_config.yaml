@@ -6,10 +6,10 @@ r1_main_node:
 
     # ========== KFS回収 ==========
     # fx
-    kfs_fx_normal_pos: 0.05
+    kfs_fx_normal_pos: 0.00
     kfs_fx_expand_pos: 0.5
     # fz
-    kfs_fz_normal_pos: 0.05
+    kfs_fz_normal_pos: 0.00
     kfs_fz_low_pos: 0.05
     kfs_fz_middle_pos: 0.3
     kfs_fz_high_pos: 0.5
@@ -19,10 +19,10 @@ r1_main_node:
     kfs_fyaw_side_angle: 1.57
     kfs_fyaw_rear_angle: 3.14
     # rx
-    kfs_rx_normal_pos: 0.05
+    kfs_rx_normal_pos: 0.00
     kfs_rx_expand_pos: 0.5
     # rz
-    kfs_rz_normal_pos: 0.05
+    kfs_rz_normal_pos: 0.00
     kfs_rz_low_pos: 0.05
     kfs_rz_middle_pos: 0.3
     kfs_rz_high_pos: 0.5
@@ -45,14 +45,14 @@ r1_main_node:
     # ========== ポール回収 ==========
     # pole_x
     pole_x_normal_pos: 0.0
-    pole_x_expand_pos: 0.5
+    pole_x_expand_pos: 0.2
     # pole_y
     pole_y_normal_pos: 0.0
-    pole_y_collect_pos: 0.15
-    pole_y_transfer1_pos: 0.35
-    pole_y_transfer2_pos: 0.0
+    pole_y_collect_pos: 0.0
+    pole_y_transfer1_pos: 0.12
+    pole_y_transfer2_pos: 0.27
     pole_y_transfer3_pos: 0.0
-    pole_y_transfer4_pos: 0.0
+    pole_y_transfer4_pos: 0.4
     # pole_roger
     pole_roger_normal_pos: 0.0
     pole_roger_expand_pos: 0.5
@@ -74,15 +74,16 @@ r1_main_node:
     # roger1
     spear_roger1_normal_pos: 0.0
     spear_roger1_combine_pos: 0.0
-    spear_roger1_transfer_pos: 0.2
+    spear_roger1_transfer_pos: 0.3
     # roger2
     spear_roger2_normal_pos: 0.0
     spear_roger2_combine_pos: 0.0
-    spear_roger2_transfer_pos: 0.2
+    # うまく動かないので、roger1より高くする
+    spear_roger2_transfer_pos: 0.36
     # move
     spear_move_normal_pos: 0.0
     spear_move_combine_pos: 0.0
-    spear_move_transfer_pos: 0.3
+    spear_move_transfer_pos: 0.35
     # rotate
     spear_rotate_normal_pos: 0.0
 
@@ -328,7 +329,7 @@ r1_spear_roger1_node:
     origin_detect_threshold_time: 0.5 # 秒
     # 原点検出のときは、0の方向に戻るので、負の速度にする
     output_detect_speed: -3.14 # rad/s
-    pos_min: 0.0
+    pos_min: -0.1
     pos_max: 1.0
     normal_pos: 0.05
     # 1回転すると70mm進む。ロジャーなので、倍進むので、半径0.05570423mm
@@ -345,7 +346,7 @@ r1_spear_roger2_node:
     origin_detect_threshold_time: 0.5 # 秒
     # 原点検出のときは、0の方向に戻るので、負の速度にする
     output_detect_speed: -3.14 # rad/s
-    pos_min: 0.0
+    pos_min: -0.1
     pos_max: 1.0
     normal_pos: 0.05
     # 1回転すると70mm進む。ロジャーなので、倍進むので、半径0.05570423mm
@@ -362,7 +363,7 @@ r1_spear_move_node:
     origin_detect_threshold_time: 0.2 # 秒
     # 原点検出のときは、0の方向に戻るので、負の速度にする
     output_detect_speed: -3.14 # rad/s
-    pos_min: 0.0
+    pos_min: -0.1
     pos_max: 1.0
     normal_pos: 0.05
     # 1回転すると95mm進むので、半径は15.119719mm
