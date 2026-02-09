@@ -313,6 +313,9 @@ def generate_launch_description():
             name=f"sabacan_robomasv2_node_id{board_id}",
             parameters=[param_file],
             arguments=["--ros-args", "--log-level", log_level],
+            remappings=[
+                ("sabacan_robomas_reset", f"sabacan_robomas_reset_id{board_id}"),
+            ],
         )
 
     sabacan_robomasv2_node_id1 = create_sabacan_robomasv2_node(1)
@@ -363,6 +366,9 @@ def generate_launch_description():
             name=f"sabacan_gpio_node_id{board_id}",
             parameters=[param_file],
             arguments=["--ros-args", "--log-level", log_level],
+            remappings=[
+                ("sabacan_gpio_reset", f"sabacan_gpio_reset_id{board_id}"),
+            ],
         )
 
     sabacan_gpio_node_id1 = create_sabacan_gpio_node(1)
@@ -445,21 +451,21 @@ def generate_launch_description():
         sabacan_single_control_id5_motor1,
         sabacan_single_control_id5_motor2,
         sabacan_single_control_id5_motor3,
-        # sabacan_power_node_id0,
-        # sabacan_led_node_id1,
     ]
 
     # sabacanは遅延させて起動
     return LaunchDescription(
         [
             TimerAction(period=0.0, actions=[sabacan_robomasv2_node_id1]),
-            TimerAction(period=0.0, actions=[sabacan_robomasv2_node_id2]),
-            TimerAction(period=1.0, actions=[sabacan_robomasv2_node_id3]),
-            TimerAction(period=1.0, actions=[sabacan_robomasv2_node_id4]),
-            TimerAction(period=2.0, actions=[sabacan_robomasv2_node_id5]),
-            TimerAction(period=2.0, actions=[sabacan_gpio_node_id1]),
-            TimerAction(period=3.0, actions=[sabacan_gpio_node_id2]),
-            TimerAction(period=3.0, actions=[sabacan_gpio_node_id3]),
-            TimerAction(period=4.0, actions=normal_nodes),
+            TimerAction(period=1.0, actions=[sabacan_robomasv2_node_id2]),
+            TimerAction(period=2.0, actions=[sabacan_robomasv2_node_id3]),
+            TimerAction(period=3.0, actions=[sabacan_robomasv2_node_id4]),
+            TimerAction(period=4.0, actions=[sabacan_robomasv2_node_id5]),
+            TimerAction(period=5.0, actions=[sabacan_gpio_node_id1]),
+            TimerAction(period=5.5, actions=[sabacan_gpio_node_id2]),
+            TimerAction(period=6.0, actions=[sabacan_gpio_node_id3]),
+            TimerAction(period=6.5, actions=[sabacan_power_node_id0]),
+            TimerAction(period=7.0, actions=[sabacan_led_node_id1]),
+            TimerAction(period=7.5, actions=normal_nodes),
         ]
     )

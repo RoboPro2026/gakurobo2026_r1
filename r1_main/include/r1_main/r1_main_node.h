@@ -12,6 +12,7 @@
 #pragma once
 
 #include <chrono>
+#include <cstddef>
 #include <functional>
 #include <map>
 #include <memory>
@@ -31,6 +32,9 @@
 #include "r1_msgs/msg/linear_motion.hpp"
 #include "r1_msgs/msg/motor_ref.hpp"
 #include "rclcpp/rclcpp.hpp"
+#include "sabacan_msgs/msg/sabacan_led_ref.hpp"
+#include "sabacan_msgs/msg/sabacan_power_ref.hpp"
+#include "sabacan_msgs/srv/sabacan_reset.hpp"
 #include "sensor_msgs/msg/joy.hpp"
 #include "std_msgs/msg/bool.hpp"
 #include "std_msgs/msg/float64.hpp"
@@ -139,17 +143,37 @@ public:
   // やりリミットスイッチ
   rclcpp::Subscription<r1_msgs::msg::GpioInput>::SharedPtr spear_move_switch_status_subscription_;
   rclcpp::Subscription<r1_msgs::msg::GpioInput>::SharedPtr spear_rotate_switch_status_subscription_;
+  // ========== Sabacan ==========
+  // 電源基板の指令値Publisher
+  rclcpp::Publisher<sabacan_msgs::msg::SabacanPowerRef>::SharedPtr sabacan_power_ref_publisher_;
+  // LED基板の指令値Publisher
+  rclcpp::Publisher<sabacan_msgs::msg::SabacanLEDRef>::SharedPtr sabacan_led_ref_publisher_;
+  // リセットクライアント
+  rclcpp::Client<sabacan_msgs::srv::SabacanReset>::SharedPtr sabacan_power_reset_client_;
+  rclcpp::Client<sabacan_msgs::srv::SabacanReset>::SharedPtr sabacan_robomas_reset_client_id1_;
+  rclcpp::Client<sabacan_msgs::srv::SabacanReset>::SharedPtr sabacan_robomas_reset_client_id2_;
+  rclcpp::Client<sabacan_msgs::srv::SabacanReset>::SharedPtr sabacan_robomas_reset_client_id3_;
+  rclcpp::Client<sabacan_msgs::srv::SabacanReset>::SharedPtr sabacan_robomas_reset_client_id4_;
+  rclcpp::Client<sabacan_msgs::srv::SabacanReset>::SharedPtr sabacan_robomas_reset_client_id5_;
+  rclcpp::Client<sabacan_msgs::srv::SabacanReset>::SharedPtr sabacan_gpio_reset_client_id1_;
+  rclcpp::Client<sabacan_msgs::srv::SabacanReset>::SharedPtr sabacan_gpio_reset_client_id2_;
+  rclcpp::Client<sabacan_msgs::srv::SabacanReset>::SharedPtr sabacan_gpio_reset_client_id3_;
+  rclcpp::Client<sabacan_msgs::srv::SabacanReset>::SharedPtr sabacan_led_reset_client_;
+  rclcpp::Time sabacan_reset_last_send_time_ = rclcpp::Time(0LL, RCL_SYSTEM_TIME);
+  bool sabacan_reset_last_send_valid_ = false;
+  size_t sabacan_reset_step_ = 0;
   // タイマー
   rclcpp::TimerBase::SharedPtr timer_publisher_;
 
   // 速度指令値
   geometry_msgs::msg::Twist target_vel_;
 
+  // スイッチの状態
   bool kfs_front_switch_status_ = false;
   bool kfs_rear_switch_status_ = false;
   bool spear_move_switch_status_ = false;
   bool spear_rotate_switch_status_ = false;
-
+  // 各モードの状態
   bool is_kfs_fx_pos_mode_ = false;
   bool is_kfs_fz_pos_mode_ = false;
   bool is_kfs_fyaw_pos_mode_ = false;
@@ -165,7 +189,132 @@ public:
   bool is_spear_roger2_pos_mode_ = false;
   bool is_spear_move_pos_mode_ = false;
   bool is_spear_rotate_pos_mode_ = false;
+  // 指令値
+  double kfs_fx_position_ref_ = 0.0;
+  double kfs_fz_position_ref_ = 0.0;
+  double kfs_fyaw_position_ref_ = 0.0;
+  double kfs_rx_position_ref_ = 0.0;
+  double kfs_rz_position_ref_ = 0.0;
+  double kfs_ryaw_position_ref_ = 0.0;
+  double front_expand_position_ref_ = 0.0;
+  double rear_expand_position_ref_ = 0.0;
+  double r2_lift_velocity_ref_ = 0.0;
+  double pole_x_position_ref_ = 0.0;
+  double pole_y_position_ref_ = 0.0;
+  double pole_roger_position_ref_ = 0.0;
+  double spear_roger1_position_ref_ = 0.0;
+  double spear_roger2_position_ref_ = 0.0;
+  double spear_move_position_ref_ = 0.0;
+  double spear_rotate_position_ref_ = 0.0;
+  double kfs_front_pump_ref_ = 0.0;
+  double kfs_rear_pump_ref_ = 0.0;
+  bool kfs_front_valve_ref_ = 0.0;
+  bool kfs_rear_valve_ref_ = 0.0;
+  int pole_servo1_angle_ref_ = 0;
+  int pole_servo2_angle_ref_ = 0;
+  int pole_servo3_angle_ref_ = 0;
+  int pole_servo4_angle_ref_ = 0;
+  bool pole_valve1_ref_ = false;
+  bool pole_valve2_ref_ = false;
+  bool pole_valve3_ref_ = false;
+  bool pole_valve4_ref_ = false;
+  bool spear_hand_valve_ref_ = false;
 
+  // sabacan
+  bool sabacan_is_ems_ = false;
+  static constexpr int SABACAN_AVAILABLE = 0;
+  static constexpr int SABACAN_RESET_NOW = 1;
+  static constexpr int SABACAN_RESET_SENDING = 2;
+  int sabacan_reset_status_ = SABACAN_AVAILABLE;
+  // actuator
+  static constexpr int ACTUATOR_AVAILABLE = 0;
+  static constexpr int ACTUATOR_INITIALIZING = 1;
+  int actuator_status_ = ACTUATOR_AVAILABLE;
+
+  // 指令値関係
+  // ========== 足回り ==========
+  double CHASSIS_MAX_VELOCITY = 0.0;
+  double CHASSIS_MAX_OMEGA = 0.0;
+  // ========== KFS回収 ==========
+  // fx
+  double KFS_FX_NORMAL_POS = 0.0;
+  double KFS_FX_EXPAND_POS = 0.0;
+  // fz
+  double KFS_FZ_NORMAL_POS = 0.0;
+  double KFS_FZ_LOW_POS = 0.0;
+  double KFS_FZ_MIDDLE_POS = 0.0;
+  double KFS_FZ_HIGH_POS = 0.0;
+  // fyaw
+  double KFS_FYAW_NORMAL_ANGLE = 0.0;
+  double KFS_FYAW_FRONT_ANGLE = 0.0;
+  double KFS_FYAW_SIDE_ANGLE = 0.0;
+  double KFS_FYAW_REAR_ANGLE = 0.0;
+  // rx
+  double KFS_RX_NORMAL_POS = 0.0;
+  double KFS_RX_EXPAND_POS = 0.0;
+  // rz
+  double KFS_RZ_NORMAL_POS = 0.0;
+  double KFS_RZ_LOW_POS = 0.0;
+  double KFS_RZ_MIDDLE_POS = 0.0;
+  double KFS_RZ_HIGH_POS = 0.0;
+  // ryaw
+  double KFS_RYAW_NORMAL_ANGLE = 0.0;
+  double KFS_RYAW_FRONT_ANGLE = 0.0;
+  double KFS_RYAW_SIDE_ANGLE = 0.0;
+  double KFS_RYAW_REAR_ANGLE = 0.0;
+  // ========== 展開 ==========
+  // R2昇降
+  double R2_LIFT_MAX_VELOCITY = 0.0;
+  // front_expand
+  double FRONT_EXPAND_NORMAL_POS = 0.0;
+  double FRONT_EXPAND_EXPAND_POS = 0.0;
+  // rear_expand
+  double REAR_EXPAND_NORMAL_POS = 0.0;
+  double REAR_EXPAND_EXPAND_POS = 0.5;
+  // ========== ポール回収 ==========
+  // pole_x
+  double POLE_X_NORMAL_POS = 0.0;
+  double POLE_X_EXPAND_POS = 0.0;
+  // pole_y
+  double POLE_Y_NORMAL_POS = 0.0;
+  double POLE_Y_COLLECT_POS = 0.0;
+  double POLE_Y_TRANSFER1_POS = 0.0;
+  double POLE_Y_TRANSFER2_POS = 0.0;
+  double POLE_Y_TRANSFER3_POS = 0.0;
+  double POLE_Y_TRANSFER4_POS = 0.0;
+  // pole_roger
+  double POLE_ROGER_NORMAL_POS = 0.0;
+  double POLE_ROGER_EXPAND_POS = 0.0;
+  // servo1
+  int POLE_SERVO1_NORMAL_ANGLE = 0;
+  int POLE_SERVO1_HORIZONTAL_ANGLE = 0;
+  // servo2
+  int POLE_SERVO2_NORMAL_ANGLE = 0;
+  int POLE_SERVO2_HORIZONTAL_ANGLE = 0;
+  // servo3
+  int POLE_SERVO3_NORMAL_ANGLE = 0;
+  int POLE_SERVO3_HORIZONTAL_ANGLE = 0;
+  // servo4
+  int POLE_SERVO4_NORMAL_ANGLE = 0;
+  int POLE_SERVO4_HORIZONTAL_ANGLE = 0;
+  // ========== やり ==========
+  // spear_roger1
+  double SPEAR_ROGER1_NORMAL_POS = 0.0;
+  double SPEAR_ROGER1_COMBINE_POS = 0.0;
+  double SPEAR_ROGER1_TRANSFER_POS = 0.0;
+  // spear_roger2
+  double SPEAR_ROGER2_NORMAL_POS = 0.0;
+  double SPEAR_ROGER2_COMBINE_POS = 0.0;
+  double SPEAR_ROGER2_TRANSFER_POS = 0.0;
+  // spear_move
+  double SPEAR_MOVE_NORMAL_POS = 0.0;
+  double SPEAR_MOVE_COMBINE_POS = 0.0;
+  double SPEAR_MOVE_TRANSFER_POS = 0.0;
+  // spear_rotate
+  double SPEAR_ROTATE_NORMAL_POS = 0.0;
+  double SPEAR_ROTATE_COMBINE_ANGLE = 0.0;
+
+  // コンストラクタ
   R1MainNode();
 
   // ========== コールバック関数 =========
@@ -193,6 +342,16 @@ public:
   // joyのcallback
   void joy_callback(const sensor_msgs::msg::Joy::SharedPtr msg);
   void timer_callback(void);
+  void declare_and_get_parameter(
+    const std::string & name, double & value, double default_value = 0.0);
+  void declare_and_get_parameter(const std::string & name, int & value, int default_value = 0);
+  // sabacan
+  void sabacan_reset_update(void);
+  void sabacan_reset(void);
+  void sabacan_power_ref(bool is_ems);
+  void sabacan_led_ref(uint8_t r, uint8_t g, uint8_t b);
+  // 現在の状態に応じて、LEDを光らせる。
+  void sabacan_led_update(void);
   // ========== 各動作の関数 ==========
   // 足回り
   void chassis_move_vel(double vx, double vy, double omega);
@@ -222,17 +381,19 @@ public:
   void kfs_rear_pump(double pwm);
   void kfs_front_valve(bool on);
   void kfs_rear_valve(bool on);
-  // ポール真空ポンプ・電磁弁
-  void pole_servo1(int angle);
-  void pole_servo2(int angle);
-  void pole_servo3(int angle);
-  void pole_servo4(int angle);
-  void pole_valve1(bool on);
-  void pole_valve2(bool on);
-  void pole_valve3(bool on);
-  void pole_valve4(bool on);
-  // やり
+  // ポールサーボ・電磁弁
+  void pole_servo(int n, int angle);
+  void pole_valve(int n, bool on);
+  // やり電磁弁
   void spear_hand_valve(bool on);
+  // 動いていたら危険なアクチュエータは停止する
+  // 位置制御は止められないので、そのまま
+  // TODO: 位置制御系も止められるようにする
+  void stop_actuator(void);
+  // 位置制御系のアクチュエータを初期位置に移動する
+  void init_actuator(void);
+  void actuator_update(void);
+  void set_emergency(bool enable);
   // ========== 原点検出関数 ==========
   // KFS回収
   void kfs_fx_detect_origin(void);
@@ -270,4 +431,13 @@ public:
   void test_pole(void);
   void test_spear(void);
   void test_r2_lift(void);
+  // ========== マニュアルモード ==========
+  void manual_mode1_detect_origin(void);
+  void manual_mode2_spear_and_pole(void);
+  void manual_mode2_make_spear_task(int n);
+  void manual_mode2_collect_pole_task(void);
+  void manual_mode3_kfs(void);
+  rclcpp::TimerBase::SharedPtr manual_mode3_front_valve_timer_;
+  rclcpp::TimerBase::SharedPtr manual_mode3_rear_valve_timer_;
+  void manual_mode4_r2_lift(void);
 };
