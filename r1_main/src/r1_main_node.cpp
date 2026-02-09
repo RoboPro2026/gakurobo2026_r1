@@ -232,7 +232,7 @@ R1MainNode::R1MainNode() : Node("r1_main_node")
 
   // ========== パラメータ ==========
   // 足回り
-  declare_and_get_parameter("chasssis_max_velocity", CHASSIS_MAX_VELOCITY);
+  declare_and_get_parameter("chassis_max_velocity", CHASSIS_MAX_VELOCITY);
   declare_and_get_parameter("chassis_max_omega", CHASSIS_MAX_OMEGA);
 
   // ========== KFS回収 ==========
@@ -312,6 +312,7 @@ R1MainNode::R1MainNode() : Node("r1_main_node")
   declare_and_get_parameter("spear_move_transfer_pos", SPEAR_MOVE_TRANSFER_POS);
   // spear_rotate
   declare_and_get_parameter("spear_rotate_normal_pos", SPEAR_ROTATE_NORMAL_POS);
+  declare_and_get_parameter("spear_rotate_combine_angle", SPEAR_ROTATE_COMBINE_ANGLE);
 
   // タイマー
   timer_publisher_ = this->create_wall_timer(10ms, std::bind(&R1MainNode::timer_callback, this));
@@ -325,6 +326,8 @@ R1MainNode::R1MainNode() : Node("r1_main_node")
   state_machine_ = std::make_shared<StateMachine>();
   // state_machine_->set_next_state({MainState::MANUAL, ManualSubState::TEST});
   state_machine_->set_next_state({MainState::MANUAL, ManualSubState::MODE2_SPEAR_AND_POLE});
+  // アクチュエータを初期化
+  init_actuator();
 }
 
 void R1MainNode::kfs_fx_mode_status_callback(const std_msgs::msg::Int32::SharedPtr msg)
@@ -1145,54 +1148,6 @@ void R1MainNode::manual_mode2_make_spear_task(int n)
     spear_move(SPEAR_MOVE_COMBINE_POS);
     step++;
   } else if (step == 5) {
-    // ポールハンドの電磁弁をOFFにする。
-    if (n == 1) {
-      pole_valve(1, false);
-    } else if (n == 2) {
-      pole_valve(2, false);
-    } else if (n == 3) {
-      pole_valve(3, false);
-    } else if (n == 4) {
-      pole_valve(4, false);
-    }
-    step++;
-  } else if (step == 6) {
-    // 受け渡し位置にやりハンドを移動する。
-    // ポールハンドの電磁弁をONにし、ハンドを開放する。
-    spear_move(SPEAR_MOVE_TRANSFER_POS);
-    if (n == 1) {
-      pole_valve(1, true);
-    } else if (n == 2) {
-      pole_valve(2, true);
-    } else if (n == 3) {
-      pole_valve(3, true);
-    } else if (n == 4) {
-      pole_valve(4, true);
-    }
-    step++;
-  } else if (step == 7) {
-    // ポールハンドの電磁弁をOFFにし、ハンドを閉じる。
-    // やりハンドの電磁弁をONにし、やりハンドを開放する。
-    if (n == 1) {
-      pole_valve(1, false);
-    } else if (n == 2) {
-      pole_valve(2, false);
-    } else if (n == 3) {
-      pole_valve(3, false);
-    } else if (n == 4) {
-      pole_valve(4, false);
-    }
-    spear_hand_valve(true);
-    step++;
-  } else if (step == 8) {
-    // やりハンドをぶつからない位置に移動する。
-    spear_move(SPEAR_MOVE_NORMAL_POS);
-    step++;
-  } else if (step == 9) {
-    // やりハンドの電磁弁をOFFにする。
-    spear_hand_valve(false);
-    step++;
-  } else if (step == 10) {
     // サーボモータを回転させ、ポールを垂直にする。
     if (n == 1) {
       pole_servo(1, POLE_SERVO1_NORMAL_ANGLE);
@@ -1204,9 +1159,31 @@ void R1MainNode::manual_mode2_make_spear_task(int n)
       pole_servo(4, POLE_SERVO4_NORMAL_ANGLE);
     }
     step++;
-  } else if (step == 11) {
+  } else if (step == 6) {
+    // ポールハンドの電磁弁をOFFにする。
+    if (n == 1) {
+      pole_valve(1, false);
+    } else if (n == 2) {
+      pole_valve(2, false);
+    } else if (n == 3) {
+      pole_valve(3, false);
+    } else if (n == 4) {
+      pole_valve(4, false);
+    }
+    step++;
+  } else if (step == 7) {
+    spear_rotate(SPEAR_ROTATE_COMBINE_ANGLE);  // 180度回転
+    step++;
+  } else if (step == 8) {
     pole_roger(POLE_ROGER_NORMAL_POS);
     pole_y(POLE_Y_NORMAL_POS);
+    step++;
+  } else if (step == 9) {
+    // spear_moveを元の位置に移動
+    spear_move(SPEAR_MOVE_TRANSFER_POS);
+    // spear_rogerを初期位置に移動
+    spear_roger1(SPEAR_ROGER1_NORMAL_POS);
+    spear_roger2(SPEAR_ROGER2_NORMAL_POS);
     RCLCPP_INFO(this->get_logger(), "spear make task completed");
     step = 1;
   }
@@ -1249,19 +1226,22 @@ void R1MainNode::manual_mode2_spear_and_pole(void)
 {
   if (ps4_->is_pushed_up()) {
     // やり組み立て
-    manual_mode2_make_spear_task(2);
+    manual_mode2_make_spear_task(1);
   }
 
   if (ps4_->is_pushed_right()) {
-    pole_roger(pole_roger_position_ref_ + 0.01);
+    // pole_roger(pole_roger_position_ref_ + 0.01);
+    spear_rotate(spear_rotate_position_ref_ + 0.05);
   }
 
   if (ps4_->is_pushed_down()) {
-    pole_x(pole_x_position_ref_ - 0.01);
+    // pole_x(pole_x_position_ref_ - 0.01);
+    pole_servo(1, pole_servo1_angle_ref_ - 1);
   }
 
   if (ps4_->is_pushed_left()) {
-    pole_roger(pole_roger_position_ref_ - 0.01);
+    // pole_roger(pole_roger_position_ref_ - 0.01);
+    spear_rotate(spear_rotate_position_ref_ - 0.05);
   }
 
   if (ps4_->is_pushed_triangle()) {
@@ -1274,7 +1254,8 @@ void R1MainNode::manual_mode2_spear_and_pole(void)
   }
 
   if (ps4_->is_pushed_cross()) {
-    pole_x(pole_x_position_ref_ + 0.01);
+    // pole_x(pole_x_position_ref_ + 0.01);
+    pole_servo(1, pole_servo1_angle_ref_ + 1);
   }
 
   if (ps4_->is_pushed_square()) {
@@ -1602,15 +1583,14 @@ void R1MainNode::manual_task(void)
       }
     }
     // 共通タスク
-    double stick_max_velocity = 1.5;
-    double vx_ref = stick_max_velocity * ps4_->data.left_stick_x;
-    double vy_ref = stick_max_velocity * ps4_->data.left_stick_y;
-    double vz_ref = ps4_->data.right_stick_x;
+    double vx_ref = CHASSIS_MAX_VELOCITY * ps4_->data.left_stick_x;
+    double vy_ref = CHASSIS_MAX_VELOCITY * ps4_->data.left_stick_y;
+    double vz_ref = CHASSIS_MAX_OMEGA * ps4_->data.right_stick_x;
     // 台形制御で速度を滑らかに変化させる
-    double vx = simple_trapezoid_vx_.update(vx_ref);
-    double vy = simple_trapezoid_vy_.update(vy_ref);
-    double vz = simple_trapezoid_omega_.update(vz_ref);
-    chassis_move_vel(vx, vy, vz);
+    // double vx = simple_trapezoid_vx_.update(vx_ref);
+    // double vy = simple_trapezoid_vy_.update(vy_ref);
+    // double vz = simple_trapezoid_omega_.update(vz_ref);
+    chassis_move_vel(vx_ref, vy_ref, vz_ref);
 
     // optionsが押されたときは電源をOFFにする
     if (ps4_->is_pushed_options()) {

@@ -312,6 +312,7 @@ public:
   double SPEAR_MOVE_TRANSFER_POS = 0.0;
   // spear_rotate
   double SPEAR_ROTATE_NORMAL_POS = 0.0;
+  double SPEAR_ROTATE_COMBINE_ANGLE = 0.0;
 
   // コンストラクタ
   R1MainNode();
