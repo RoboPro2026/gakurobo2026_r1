@@ -198,8 +198,10 @@ R1MainNode::R1MainNode() : Node("r1_main_node")
   pole_valve4_gpio_pwm_ref_publisher_ =
     this->create_publisher<r1_msgs::msg::GpioPwmRef>("/pole_valve4_gpio_pwm_ref", 10);
   // やりハンド電磁弁
-  spear_hand_valve_gpio_pwm_ref_publisher_ =
-    this->create_publisher<r1_msgs::msg::GpioPwmRef>("/spear_hand_valve_gpio_pwm_ref", 10);
+  spear_hand_valve1_gpio_pwm_ref_publisher_ =
+    this->create_publisher<r1_msgs::msg::GpioPwmRef>("/spear_hand_valve1_gpio_pwm_ref", 10);
+  spear_hand_valve2_gpio_pwm_ref_publisher_ =
+    this->create_publisher<r1_msgs::msg::GpioPwmRef>("/spear_hand_valve2_gpio_pwm_ref", 10);
   // やりリミットスイッチ
   spear_move_switch_status_subscription_ = this->create_subscription<r1_msgs::msg::GpioInput>(
     "/spear_move_switch_status", 10,
@@ -220,6 +222,7 @@ R1MainNode::R1MainNode() : Node("r1_main_node")
   // 電源基板のリセットサービスClient
   sabacan_power_reset_client_ =
     this->create_client<sabacan_msgs::srv::SabacanReset>("/sabacan_power_reset");
+  // ロボマス制御基板のリセットサービスClient
   sabacan_robomas_reset_client_id1_ =
     this->create_client<sabacan_msgs::srv::SabacanReset>("/sabacan_robomas_reset_id1");
   sabacan_robomas_reset_client_id2_ =
@@ -230,6 +233,9 @@ R1MainNode::R1MainNode() : Node("r1_main_node")
     this->create_client<sabacan_msgs::srv::SabacanReset>("/sabacan_robomas_reset_id4");
   sabacan_robomas_reset_client_id5_ =
     this->create_client<sabacan_msgs::srv::SabacanReset>("/sabacan_robomas_reset_id5");
+  sabacan_robomas_reset_client_id6_ =
+    this->create_client<sabacan_msgs::srv::SabacanReset>("/sabacan_robomas_reset_id6");
+  // GPIO基板のリセットサービスClient
   sabacan_gpio_reset_client_id1_ =
     this->create_client<sabacan_msgs::srv::SabacanReset>("/sabacan_gpio_reset_id1");
   sabacan_gpio_reset_client_id2_ =
@@ -693,15 +699,18 @@ void R1MainNode::sabacan_reset_update(void)
       try_send(sabacan_robomas_reset_client_id5_, "/sabacan_robomas_reset_id5");
       break;
     case 6:
-      try_send(sabacan_gpio_reset_client_id1_, "/sabacan_gpio_reset_id1");
+      try_send(sabacan_robomas_reset_client_id6_, "/sabacan_robomas_reset_id6");
       break;
     case 7:
-      try_send(sabacan_gpio_reset_client_id2_, "/sabacan_gpio_reset_id2");
+      try_send(sabacan_gpio_reset_client_id1_, "/sabacan_gpio_reset_id1");
       break;
     case 8:
-      try_send(sabacan_gpio_reset_client_id3_, "/sabacan_gpio_reset_id3");
+      try_send(sabacan_gpio_reset_client_id2_, "/sabacan_gpio_reset_id2");
       break;
     case 9:
+      try_send(sabacan_gpio_reset_client_id3_, "/sabacan_gpio_reset_id3");
+      break;
+    case 10:
       try_send(sabacan_led_reset_client_, "/sabacan_led_reset");
       break;
   }
@@ -710,7 +719,7 @@ void R1MainNode::sabacan_reset_update(void)
   sabacan_reset_last_send_valid_ = true;
   sabacan_reset_step_++;
   // stepは最後の処理が終わるのにかかる時間も考慮し、1つ多く設定する
-  if (sabacan_reset_step_ >= 11) {
+  if (sabacan_reset_step_ >= 12) {
     sabacan_reset_status_ = SABACAN_AVAILABLE;
     RCLCPP_INFO(this->get_logger(), "sabacan reset completed");
   }
@@ -1012,13 +1021,22 @@ void R1MainNode::pole_valve(int n, bool on)
   }
 }
 
-void R1MainNode::spear_hand_valve(bool on)
+void R1MainNode::spear_hand_valve1(bool on)
 {
   r1_msgs::msg::GpioPwmRef msg;
   msg.ref = on ? 1.0 : 0.0;
-  spear_hand_valve_gpio_pwm_ref_publisher_->publish(msg);
-  RCLCPP_INFO(this->get_logger(), "spear hand valve %d", on);
-  spear_hand_valve_ref_ = on;
+  spear_hand_valve1_gpio_pwm_ref_publisher_->publish(msg);
+  RCLCPP_INFO(this->get_logger(), "spear hand valve1 %d", on);
+  spear_hand_valve1_ref_ = on;
+}
+
+void R1MainNode::spear_hand_valve2(bool on)
+{
+  r1_msgs::msg::GpioPwmRef msg;
+  msg.ref = on ? 1.0 : 0.0;
+  spear_hand_valve2_gpio_pwm_ref_publisher_->publish(msg);
+  RCLCPP_INFO(this->get_logger(), "spear hand valve2 %d", on);
+  spear_hand_valve2_ref_ = on;
 }
 
 void R1MainNode::brake_valve(bool on)
@@ -1047,7 +1065,8 @@ void R1MainNode::stop_actuator(void)
   pole_valve(3, false);
   pole_valve(4, false);
   // やり電磁弁
-  spear_hand_valve(false);
+  spear_hand_valve1(false);
+  spear_hand_valve2(false);
   // ブレーキ電磁弁
   brake_valve(false);
 }
@@ -1214,11 +1233,11 @@ void R1MainNode::manual_mode3_make_spear_task(int n)
       pole_servo(4, POLE_SERVO4_HORIZONTAL_ANGLE);
     }
     // やりハンドの電磁弁をONにし、ハンドを開放する。
-    spear_hand_valve(true);
+    spear_hand_valve1(true);
     step++;
   } else if (step == 3) {
     // やりハンドの電磁弁をOFFにし、ハンドを閉じる。
-    spear_hand_valve(false);
+    spear_hand_valve1(false);
     // ポールハンドの電磁弁をONにし、やり機構にポールを受け渡す。
     if (n == 1) {
       pole_valve(1, true);
@@ -1330,6 +1349,8 @@ void R1MainNode::manual_mode2_pole(void)
 void R1MainNode::manual_mode3_spear(void)
 {
   int & brake_valve_step = manual_mode3_brake_valve_step_;
+  int & spear_hand_valve1_step = manual_mode3_spear_hand_valve1_step_;
+  int & spear_hand_valve2_step = manual_mode3_spear_hand_valve2_step_;
 
   if (ps4_->is_pushed_up()) {
     manual_mode3_make_spear_task(1);
@@ -1358,7 +1379,14 @@ void R1MainNode::manual_mode3_spear(void)
   }
 
   if (ps4_->is_pushed_circle()) {
-    pole_y(pole_y_position_ref_ + 0.01);
+    if (spear_hand_valve2_step == 1) {
+      spear_hand_valve2(true);
+      spear_hand_valve2_step = 2;
+    } else {
+      spear_hand_valve2(false);
+      spear_hand_valve2_step = 1;
+    }
+    // pole_y(pole_y_position_ref_ + 0.01);
   }
 
   if (ps4_->is_pushed_cross()) {
@@ -1366,7 +1394,14 @@ void R1MainNode::manual_mode3_spear(void)
   }
 
   if (ps4_->is_pushed_square()) {
-    pole_y(pole_y_position_ref_ - 0.01);
+    if (spear_hand_valve1_step == 1) {
+      spear_hand_valve1(true);
+      spear_hand_valve1_step = 2;
+    } else {
+      spear_hand_valve1(false);
+      spear_hand_valve1_step = 1;
+    }
+    // pole_y(pole_y_position_ref_ - 0.01);
   }
 
   if (ps4_->is_pushed_l1()) {
@@ -1674,6 +1709,9 @@ void R1MainNode::reset_step(void)
   // 各手順のステップをリセット
   manual_mode2_collect_pole_task_step_ = DEFAULT_STEP;
   manual_mode3_make_spear_task_step_ = DEFAULT_STEP;
+  manual_mode3_brake_valve_step_ = DEFAULT_STEP;
+  manual_mode3_spear_hand_valve1_step_ = DEFAULT_STEP;
+  manual_mode3_spear_hand_valve2_step_ = DEFAULT_STEP;
   manual_mode4_fx_step_ = DEFAULT_STEP;
   manual_mode4_fz_step_ = DEFAULT_STEP;
   manual_mode4_fyaw_step_ = DEFAULT_STEP;
@@ -2086,9 +2124,9 @@ void R1MainNode::test_spear(void)
 
   if (ps4_->is_pushed_r1()) {
     if (spear_hand_valve_pushed) {
-      spear_hand_valve(false);
+      spear_hand_valve1(false);
     } else {
-      spear_hand_valve(true);
+      spear_hand_valve1(true);
     }
     spear_hand_valve_pushed = !spear_hand_valve_pushed;
   }

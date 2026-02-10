@@ -272,10 +272,14 @@ public:
       "/pole_valve4_gpio_pwm_ref", 10,
       std::bind(&MyNode::pole_valve4_gpio_pwm_ref_callback, this, std::placeholders::_1));
     // やり電磁弁
-    spear_hand_valve_gpio_pwm_ref_subscription_ =
+    spear_hand_valve1_gpio_pwm_ref_subscription_ =
       this->create_subscription<r1_msgs::msg::GpioPwmRef>(
-        "/spear_hand_valve_gpio_pwm_ref", 10,
-        std::bind(&MyNode::spear_hand_valve_gpio_pwm_ref_callback, this, std::placeholders::_1));
+        "/spear_hand_valve1_gpio_pwm_ref", 10,
+        std::bind(&MyNode::spear_hand_valve1_gpio_pwm_ref_callback, this, std::placeholders::_1));
+    spear_hand_valve2_gpio_pwm_ref_subscription_ =
+      this->create_subscription<r1_msgs::msg::GpioPwmRef>(
+        "/spear_hand_valve2_gpio_pwm_ref", 10,
+        std::bind(&MyNode::spear_hand_valve2_gpio_pwm_ref_callback, this, std::placeholders::_1));
     // やりリミットスイッチ
     spear_move_switch_status_publisher_ =
       this->create_publisher<r1_msgs::msg::GpioInput>("/spear_move_switch_status", 10);
@@ -979,9 +983,18 @@ public:
     sabacan_gpio_ref_float_publisher_[info.board_id]->publish(sabacan_msg);
   }
 
-  void spear_hand_valve_gpio_pwm_ref_callback(const r1_msgs::msg::GpioPwmRef::SharedPtr msg)
+  void spear_hand_valve1_gpio_pwm_ref_callback(const r1_msgs::msg::GpioPwmRef::SharedPtr msg)
   {
-    auto info = spear_hand_valve_;
+    auto info = spear_hand_valve1_;
+    auto sabacan_msg = sabacan_msgs::msg::SabacanGPIORefFloat();
+    sabacan_msg.pin_number = info.number;
+    sabacan_msg.ref_float = msg->ref;
+    sabacan_gpio_ref_float_publisher_[info.board_id]->publish(sabacan_msg);
+  }
+
+  void spear_hand_valve2_gpio_pwm_ref_callback(const r1_msgs::msg::GpioPwmRef::SharedPtr msg)
+  {
+    auto info = spear_hand_valve2_;
     auto sabacan_msg = sabacan_msgs::msg::SabacanGPIORefFloat();
     sabacan_msg.pin_number = info.number;
     sabacan_msg.ref_float = msg->ref;
@@ -1154,7 +1167,9 @@ public:
   rclcpp::Subscription<r1_msgs::msg::GpioPwmRef>::SharedPtr pole_valve4_gpio_pwm_ref_subscription_;
   // やり電磁弁
   rclcpp::Subscription<r1_msgs::msg::GpioPwmRef>::SharedPtr
-    spear_hand_valve_gpio_pwm_ref_subscription_;
+    spear_hand_valve1_gpio_pwm_ref_subscription_;
+  rclcpp::Subscription<r1_msgs::msg::GpioPwmRef>::SharedPtr
+    spear_hand_valve2_gpio_pwm_ref_subscription_;
   // やりリミットスイッチ
   rclcpp::Publisher<r1_msgs::msg::GpioInput>::SharedPtr spear_move_switch_status_publisher_;
   rclcpp::Publisher<r1_msgs::msg::GpioInput>::SharedPtr spear_rotate_switch_status_publisher_;
@@ -1210,7 +1225,8 @@ public:
   BoardInfo pole_valve3_ = {.board_id = 3, .number = 6};
   BoardInfo pole_valve4_ = {.board_id = 3, .number = 7};
   // やり
-  BoardInfo spear_hand_valve_ = {.board_id = 1, .number = 8};
+  BoardInfo spear_hand_valve1_ = {.board_id = 1, .number = 8};
+  BoardInfo spear_hand_valve2_ = {.board_id = 2, .number = 7};
   BoardInfo spear_move_switch_ = {.board_id = 2, .number = 2};
   BoardInfo spear_rotate_switch_ = {.board_id = 2, .number = 3};
   // ブレーキ用電磁弁

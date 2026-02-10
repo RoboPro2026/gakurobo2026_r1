@@ -142,7 +142,8 @@ public:
   rclcpp::Publisher<r1_msgs::msg::GpioPwmRef>::SharedPtr pole_valve3_gpio_pwm_ref_publisher_;
   rclcpp::Publisher<r1_msgs::msg::GpioPwmRef>::SharedPtr pole_valve4_gpio_pwm_ref_publisher_;
   // やりハンド電磁弁
-  rclcpp::Publisher<r1_msgs::msg::GpioPwmRef>::SharedPtr spear_hand_valve_gpio_pwm_ref_publisher_;
+  rclcpp::Publisher<r1_msgs::msg::GpioPwmRef>::SharedPtr spear_hand_valve1_gpio_pwm_ref_publisher_;
+  rclcpp::Publisher<r1_msgs::msg::GpioPwmRef>::SharedPtr spear_hand_valve2_gpio_pwm_ref_publisher_;
   // やりリミットスイッチ
   rclcpp::Subscription<r1_msgs::msg::GpioInput>::SharedPtr spear_move_switch_status_subscription_;
   rclcpp::Subscription<r1_msgs::msg::GpioInput>::SharedPtr spear_rotate_switch_status_subscription_;
@@ -160,6 +161,7 @@ public:
   rclcpp::Client<sabacan_msgs::srv::SabacanReset>::SharedPtr sabacan_robomas_reset_client_id3_;
   rclcpp::Client<sabacan_msgs::srv::SabacanReset>::SharedPtr sabacan_robomas_reset_client_id4_;
   rclcpp::Client<sabacan_msgs::srv::SabacanReset>::SharedPtr sabacan_robomas_reset_client_id5_;
+  rclcpp::Client<sabacan_msgs::srv::SabacanReset>::SharedPtr sabacan_robomas_reset_client_id6_;
   rclcpp::Client<sabacan_msgs::srv::SabacanReset>::SharedPtr sabacan_gpio_reset_client_id1_;
   rclcpp::Client<sabacan_msgs::srv::SabacanReset>::SharedPtr sabacan_gpio_reset_client_id2_;
   rclcpp::Client<sabacan_msgs::srv::SabacanReset>::SharedPtr sabacan_gpio_reset_client_id3_;
@@ -225,7 +227,8 @@ public:
   bool pole_valve2_ref_ = false;
   bool pole_valve3_ref_ = false;
   bool pole_valve4_ref_ = false;
-  bool spear_hand_valve_ref_ = false;
+  bool spear_hand_valve1_ref_ = false;
+  bool spear_hand_valve2_ref_ = false;
   double brake_valve_ref_ = 0.0;
 
   // sabacan
@@ -402,7 +405,8 @@ public:
   void pole_servo(int n, int angle);
   void pole_valve(int n, bool on);
   // やり電磁弁
-  void spear_hand_valve(bool on);
+  void spear_hand_valve1(bool on);
+  void spear_hand_valve2(bool on);
   // ブレーキ電磁弁
   void brake_valve(bool on);
   // 動いていたら危険なアクチュエータは停止する
@@ -463,6 +467,8 @@ public:
   int manual_mode2_collect_pole_task_step_ = DEFAULT_STEP;
   int manual_mode3_make_spear_task_step_ = DEFAULT_STEP;
   int manual_mode3_brake_valve_step_ = DEFAULT_STEP;
+  int manual_mode3_spear_hand_valve1_step_ = DEFAULT_STEP;
+  int manual_mode3_spear_hand_valve2_step_ = DEFAULT_STEP;
   int manual_mode4_fx_step_ = DEFAULT_STEP;
   int manual_mode4_fz_step_ = DEFAULT_STEP;
   int manual_mode4_fyaw_step_ = DEFAULT_STEP;
