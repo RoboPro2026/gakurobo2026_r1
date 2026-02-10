@@ -1152,8 +1152,8 @@ void R1MainNode::manual_mode2_collect_pole_task(void)
   int & step = manual_mode2_collect_pole_task_step_;
   RCLCPP_INFO(this->get_logger(), "manual_mode2_collect_pole_task step: %d", step);
   if (step == 1) {
-    pole_x1(POLE_X1_EXPAND_POS);
-    pole_x2(POLE_X2_EXPAND_POS);
+    // pole_x1(POLE_X1_EXPAND_POS);
+    // pole_x2(POLE_X2_EXPAND_POS);
     pole_y(POLE_Y_COLLECT_POS);
     step++;
   } else if (step == 2) {
@@ -1172,8 +1172,8 @@ void R1MainNode::manual_mode2_collect_pole_task(void)
     pole_valve(4, false);
     step++;
   } else if (step == 5) {
-    pole_x1(POLE_X1_NORMAL_POS);
-    pole_x2(POLE_X2_NORMAL_POS);
+    // pole_x1(POLE_X1_NORMAL_POS);
+    // pole_x2(POLE_X2_NORMAL_POS);
     step++;
   } else if (step == 6) {
     pole_roger(POLE_ROGER_NORMAL_POS);
@@ -1340,7 +1340,7 @@ void R1MainNode::manual_mode3_spear(void)
   }
 
   if (ps4_->is_pushed_down()) {
-    pole_servo(1, pole_servo1_angle_ref_ - 1);
+    spear_move(spear_move_position_ref_ - 0.01);
   }
 
   if (ps4_->is_pushed_left()) {
@@ -1358,15 +1358,15 @@ void R1MainNode::manual_mode3_spear(void)
   }
 
   if (ps4_->is_pushed_circle()) {
-    spear_move(spear_move_position_ref_ + 0.01);
+    pole_y(pole_y_position_ref_ + 0.01);
   }
 
   if (ps4_->is_pushed_cross()) {
-    pole_servo(1, pole_servo1_angle_ref_ + 1);
+    spear_move(spear_move_position_ref_ + 0.01);
   }
 
   if (ps4_->is_pushed_square()) {
-    spear_move(spear_move_position_ref_ - 0.01);
+    pole_y(pole_y_position_ref_ - 0.01);
   }
 
   if (ps4_->is_pushed_l1()) {
@@ -1524,67 +1524,71 @@ void R1MainNode::manual_mode4_kfs(void)
   }
 
   if (ps4_->is_pushed_l1()) {
-    // kfs_fyawを90度戻す
-    fyaw_step--;
-    if (fyaw_step < 1) {
-      fyaw_step = 1;
-    }
-    RCLCPP_INFO(this->get_logger(), "fyaw_step: %d", fyaw_step);
-    if (fyaw_step == 1) {
-      kfs_fyaw(KFS_FYAW_FRONT_ANGLE);
-    } else if (fyaw_step == 2) {
-      kfs_fyaw(KFS_FYAW_SIDE_ANGLE);
-    } else if (fyaw_step == 3) {
-      kfs_fyaw(KFS_FYAW_REAR_ANGLE);
-    }
+    kfs_fx(kfs_fx_position_ref_ - 0.01);
+    // // kfs_fyawを90度戻す
+    // fyaw_step--;
+    // if (fyaw_step < 1) {
+    //   fyaw_step = 1;
+    // }
+    // RCLCPP_INFO(this->get_logger(), "fyaw_step: %d", fyaw_step);
+    // if (fyaw_step == 1) {
+    //   kfs_fyaw(KFS_FYAW_FRONT_ANGLE);
+    // } else if (fyaw_step == 2) {
+    //   kfs_fyaw(KFS_FYAW_SIDE_ANGLE);
+    // } else if (fyaw_step == 3) {
+    //   kfs_fyaw(KFS_FYAW_REAR_ANGLE);
+    // }
   }
 
   if (ps4_->is_pushed_r1()) {
-    // kfs_fyawを90度進める
-    fyaw_step++;
-    if (fyaw_step > 3) {
-      fyaw_step = 3;
-    }
-    RCLCPP_INFO(this->get_logger(), "fyaw_step: %d", fyaw_step);
-    if (fyaw_step == 1) {
-      kfs_fyaw(KFS_FYAW_FRONT_ANGLE);
-    } else if (fyaw_step == 2) {
-      kfs_fyaw(KFS_FYAW_SIDE_ANGLE);
-    } else if (fyaw_step == 3) {
-      kfs_fyaw(KFS_FYAW_REAR_ANGLE);
-    }
+    kfs_fx(kfs_fx_position_ref_ + 0.01);
+    // // kfs_fyawを90度進める
+    // fyaw_step++;
+    // if (fyaw_step > 3) {
+    //   fyaw_step = 3;
+    // }
+    // RCLCPP_INFO(this->get_logger(), "fyaw_step: %d", fyaw_step);
+    // if (fyaw_step == 1) {
+    //   kfs_fyaw(KFS_FYAW_FRONT_ANGLE);
+    // } else if (fyaw_step == 2) {
+    //   kfs_fyaw(KFS_FYAW_SIDE_ANGLE);
+    // } else if (fyaw_step == 3) {
+    //   kfs_fyaw(KFS_FYAW_REAR_ANGLE);
+    // }
   }
 
   if (ps4_->is_pushed_l2()) {
-    // kfs_ryawを90度戻す
-    ryaw_step--;
-    if (ryaw_step < 1) {
-      ryaw_step = 1;
-    }
-    RCLCPP_INFO(this->get_logger(), "ryaw_step: %d", ryaw_step);
-    if (ryaw_step == 1) {
-      kfs_ryaw(KFS_RYAW_FRONT_ANGLE);
-    } else if (ryaw_step == 2) {
-      kfs_ryaw(KFS_RYAW_SIDE_ANGLE);
-    } else if (ryaw_step == 3) {
-      kfs_ryaw(KFS_RYAW_REAR_ANGLE);
-    }
+    kfs_fz(kfs_fz_position_ref_ - 0.01);
+    // // kfs_ryawを90度戻す
+    // ryaw_step--;
+    // if (ryaw_step < 1) {
+    //   ryaw_step = 1;
+    // }
+    // RCLCPP_INFO(this->get_logger(), "ryaw_step: %d", ryaw_step);
+    // if (ryaw_step == 1) {
+    //   kfs_ryaw(KFS_RYAW_FRONT_ANGLE);
+    // } else if (ryaw_step == 2) {
+    //   kfs_ryaw(KFS_RYAW_SIDE_ANGLE);
+    // } else if (ryaw_step == 3) {
+    //   kfs_ryaw(KFS_RYAW_REAR_ANGLE);
+    // }
   }
 
   if (ps4_->is_pushed_r2()) {
-    // kfs_ryawを90度進める
-    ryaw_step++;
-    if (ryaw_step > 3) {
-      ryaw_step = 3;
-    }
-    RCLCPP_INFO(this->get_logger(), "ryaw_step: %d", ryaw_step);
-    if (ryaw_step == 1) {
-      kfs_ryaw(KFS_RYAW_FRONT_ANGLE);
-    } else if (ryaw_step == 2) {
-      kfs_ryaw(KFS_RYAW_SIDE_ANGLE);
-    } else if (ryaw_step == 3) {
-      kfs_ryaw(KFS_RYAW_REAR_ANGLE);
-    }
+    kfs_fz(kfs_fz_position_ref_ + 0.01);
+    // // kfs_ryawを90度進める
+    // ryaw_step++;
+    // if (ryaw_step > 3) {
+    //   ryaw_step = 3;
+    // }
+    // RCLCPP_INFO(this->get_logger(), "ryaw_step: %d", ryaw_step);
+    // if (ryaw_step == 1) {
+    //   kfs_ryaw(KFS_RYAW_FRONT_ANGLE);
+    // } else if (ryaw_step == 2) {
+    //   kfs_ryaw(KFS_RYAW_SIDE_ANGLE);
+    // } else if (ryaw_step == 3) {
+    //   kfs_ryaw(KFS_RYAW_REAR_ANGLE);
+    // }
   }
 }
 
