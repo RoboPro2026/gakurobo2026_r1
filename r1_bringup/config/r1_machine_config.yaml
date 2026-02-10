@@ -406,6 +406,7 @@ bno086_node:
 sabacan_robomasv2_node_id1:
   ros__parameters:
     board_id: 1
+    enable_initialize: false
     motor_type: ["VESC", "VESC", "VESC", "VESC"]
     control_type: ["VELOCITY", "VELOCITY", "VELOCITY", "VELOCITY"]
     # モータ番号0と1はABS_SPD,ABS_POSをフィードバック
@@ -422,6 +423,7 @@ sabacan_robomasv2_node_id1:
 sabacan_robomasv2_node_id2:
   ros__parameters:
     board_id: 2
+    enable_initialize: false
     motor_type: ["C610", "C610", "C610", "C610"]
     control_type: ["POS", "POS", "POS", "POS"]
     speed_gain_p: [0.5, 0.5, 0.5, 0.5]
@@ -443,6 +445,7 @@ sabacan_robomasv2_node_id2:
 sabacan_robomasv2_node_id3:
   ros__parameters:
     board_id: 3
+    enable_initialize: false
     # motor_number 3だけSESCなので、ゲインを半分にしている
     motor_type: ["C610", "C610", "C610", "C610"]
     control_type: ["POS", "POS", "POS", "POS"]
@@ -465,6 +468,7 @@ sabacan_robomasv2_node_id3:
 sabacan_robomasv2_node_id4:
   ros__parameters:
     board_id: 4
+    enable_initialize: false
     motor_type: ["C610", "C610", "C610", "C610"]
     control_type: ["POS", "POS", "POS", "POS"]
     speed_gain_p: [0.5, 0.5, 0.5, 0.5]
@@ -486,6 +490,7 @@ sabacan_robomasv2_node_id4:
 sabacan_robomasv2_node_id5:
   ros__parameters:
     board_id: 5
+    enable_initialize: false
     motor_type: ["C610", "C610", "C610", "C610"]
     control_type: ["POS", "POS", "POS", "POS"]
     speed_gain_p: [0.5, 0.5, 0.5, 0.5]
@@ -507,6 +512,7 @@ sabacan_robomasv2_node_id5:
 sabacan_robomasv2_node_id6:
   ros__parameters:
     board_id: 6
+    enable_initialize: false
     motor_type: ["C620", "C610", "C610", "C610"]
     control_type: ["VELOCITY", "POS", "POS", "POS"]
     speed_gain_p: [0.5, 0.5, 0.5, 0.5]
@@ -528,6 +534,7 @@ sabacan_robomasv2_node_id6:
 sabacan_gpio_node_id1:
   ros__parameters:
     board_id: 1
+    enable_initialize: false
     pin_type: ["OUTPUT_PWM", "OUTPUT_PWM", "OUTPUT_PWM", "OUTPUT_PWM", "OUTPUT_PWM", "OUTPUT_PWM", "OUTPUT_PWM", "OUTPUT_PWM", "OUTPUT_PWM"]
     pwm_freq: [1000, 1000, 1000, 1000, 1000, 1000, 1000, 1000, 1000]
     # monitor_regは無効
@@ -537,6 +544,7 @@ sabacan_gpio_node_id1:
 sabacan_gpio_node_id2:
   ros__parameters:
     board_id: 2
+    enable_initialize: false
     pin_type: ["INPUT", "INPUT", "INPUT", "INPUT", "INPUT", "INPUT", "INPUT", "INPUT", "OUTPUT_PWM"]
     pwm_freq: [0, 0, 0, 0, 0, 0, 0, 0, 1000]
     # monitor_regはPORT_READを有効化
@@ -546,6 +554,7 @@ sabacan_gpio_node_id2:
 sabacan_gpio_node_id3:
   ros__parameters:
     board_id: 3
+    enable_initialize: false
     # 0~3はサーボ、4~7は電磁弁
     pin_type: ["OUTPUT_SERVO", "OUTPUT_SERVO", "OUTPUT_SERVO", "OUTPUT_SERVO", "OUTPUT_PWM", "OUTPUT_PWM", "OUTPUT_PWM", "OUTPUT_PWM", "OUTPUT_PWM"]
     pwm_freq: [0, 0, 0, 0, 1000, 1000, 1000, 1000, 1000]
@@ -557,8 +566,10 @@ sabacan_gpio_node_id3:
 sabacan_power_node_id0:
   ros__parameters:
     board_id: 0
+    enable_initialize: false
     monitor_period: 100
 
 sabacan_led_node_id1:
   ros__parameters:
     board_id: 1
+    enable_initialize: false

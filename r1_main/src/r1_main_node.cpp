@@ -339,7 +339,7 @@ R1MainNode::R1MainNode() : Node("r1_main_node")
   // state_machine_->set_next_state({MainState::MANUAL, ManualSubState::TEST});
   state_machine_->set_next_state({MainState::MANUAL, ManualSubState::MODE2_POLE});
   // アクチュエータを初期化
-  init_actuator();
+  // init_actuator();
 }
 
 void R1MainNode::kfs_fx_mode_status_callback(const std_msgs::msg::Int32::SharedPtr msg)
