@@ -46,8 +46,9 @@ enum class ManualSubState
   MODE1_DETECT_ORIGIN,
   MODE2_POLE,
   MODE3_SPEAR,
-  MODE4_KFS,
-  MODE5_R2_LIFT,
+  MODE4_FKFS,
+  MODE5_RKFS,
+  MODE6_R2_LIFT,
   TEST
 };
 enum class AutoSubState

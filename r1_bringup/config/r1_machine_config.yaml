@@ -46,15 +46,15 @@ r1_main_node:
 
     # ========== ポール回収 ==========
     # pole_x1
-    pole_x1_normal_pos: 0.0
-    pole_x1_expand_pos: 0.2
+    pole_x1_normal_pos: 0.275
+    pole_x1_expand_pos: 0.0
     # pole_x2
-    pole_x2_normal_pos: 0.0
-    pole_x2_expand_pos: 0.2
+    pole_x2_normal_pos: 0.275
+    pole_x2_expand_pos: 0.0
     # pole_y
     pole_y_normal_pos: 0.0
     pole_y_collect_pos: 0.0
-    pole_y_transfer1_pos: 0.10
+    pole_y_transfer1_pos: 0.09
     pole_y_transfer2_pos: 0.27
     pole_y_transfer3_pos: 0.0
     pole_y_transfer4_pos: 0.4
@@ -89,6 +89,9 @@ r1_main_node:
     spear_move_normal_pos: 0.0
     spear_move_combine_pos: 0.0
     spear_move_transfer_pos: 0.45
+    # TODO: ここの名前わかりにくいので治す
+    spear_move_valve1_pos: 0.0
+    spear_move_valve2_pos: 0.2
     # rotate
     spear_rotate_normal_pos: 0.0
     spear_rotate_combine_angle: 3.1415926535
@@ -291,7 +294,7 @@ r1_pole_x2_node:
     normal_pos: 0.05
     # ギアが一周すると2*pi*20mm進むので、半径は20mm
     radius: 0.02
-    inverse_motor: false
+    inverse_motor: true
     use_low_switch: false
     use_high_switch: false
     inverse_low_switch_logic: false
@@ -476,11 +479,11 @@ sabacan_robomasv2_node_id4:
     speed_gain_p: [0.5, 0.5, 0.5, 0.5]
     speed_gain_i: [0.2, 0.2, 0.2, 0.2]
     speed_gain_d: [0.0, 0.0, 0.0, 0.0]
-    torque_lim: [5.5, 1.0, 1.0, 1.0]
+    torque_lim: [1.0, 1.0, 1.0, 1.0]
     pos_gain_p: [6.0, 6.0, 6.0, 6.0]
     pos_gain_i: [3.0, 3.0, 3.0, 3.0]
     pos_gain_d: [0.0, 0.0, 0.0, 0.0]
-    speed_lim: [50.0, 10.0, 10.0, 10.0]
+    speed_lim: [20.0, 20.0, 10.0, 10.0]
     # TRQ+SPD+POSをフィードバック
     monitor_reg1: [0x0001000100010000, 0x0001000100010000, 0x0001000100010000, 0x0001000100010000]
     # TRQ+SPD+POS+MOTOR_STATEをフィードバック
@@ -498,9 +501,9 @@ sabacan_robomasv2_node_id5:
     speed_gain_p: [0.5, 0.5, 0.5, 0.5]
     speed_gain_i: [0.2, 0.2, 0.2, 0.2]
     speed_gain_d: [0.0, 0.0, 0.0, 0.0]
-    torque_lim: [1.0, 1.0, 1.0, 0.5]
+    torque_lim: [1.0, 1.0, 1.0, 0.7]
     pos_gain_p: [6.0, 6.0, 6.0, 6.0]
-    pos_gain_i: [3.0, 3.0, 3.0, 3.0]
+    pos_gain_i: [3.0, 3.0, 3.0, 0.0]
     pos_gain_d: [0.0, 0.0, 0.0, 0.0]
     speed_lim: [10.0, 10.0, 15.0, 10.0]
     # TRQ+SPD+POSをフィードバック

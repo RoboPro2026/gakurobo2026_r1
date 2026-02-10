@@ -328,6 +328,8 @@ public:
   double SPEAR_MOVE_NORMAL_POS = 0.0;
   double SPEAR_MOVE_COMBINE_POS = 0.0;
   double SPEAR_MOVE_TRANSFER_POS = 0.0;
+  double SPEAR_MOVE_VALVE1_POS = 0.0;
+  double SPEAR_MOVE_VALVE2_POS = 0.0;
   // spear_rotate
   double SPEAR_ROTATE_NORMAL_POS = 0.0;
   double SPEAR_ROTATE_COMBINE_ANGLE = 0.0;
@@ -461,8 +463,9 @@ public:
   void manual_mode2_collect_pole_task(void);
   void manual_mode3_spear(void);
   void manual_mode3_make_spear_task(int n);
-  void manual_mode4_kfs(void);
-  void manual_mode5_r2_lift(void);
+  void manual_mode4_fkfs(void);
+  void manual_mode5_rkfs(void);
+  void manual_mode6_r2_lift(void);
   static constexpr int DEFAULT_STEP = 1;
   int manual_mode2_collect_pole_task_step_ = DEFAULT_STEP;
   int manual_mode3_make_spear_task_step_ = DEFAULT_STEP;
@@ -472,15 +475,15 @@ public:
   int manual_mode4_fx_step_ = DEFAULT_STEP;
   int manual_mode4_fz_step_ = DEFAULT_STEP;
   int manual_mode4_fyaw_step_ = DEFAULT_STEP;
-  int manual_mode4_rx_step_ = DEFAULT_STEP;
-  int manual_mode4_rz_step_ = DEFAULT_STEP;
-  int manual_mode4_ryaw_step_ = DEFAULT_STEP;
   int manual_mode4_front_pump_step_ = DEFAULT_STEP;
-  int manual_mode4_rear_pump_step_ = DEFAULT_STEP;
-  int manual_mode5_front_expand_step_ = DEFAULT_STEP;
-  int manual_mode5_rear_expand_step_ = DEFAULT_STEP;
-  int manual_mode5_r2_lift_step_ = DEFAULT_STEP;
+  int manual_mode5_rx_step_ = DEFAULT_STEP;
+  int manual_mode5_rz_step_ = DEFAULT_STEP;
+  int manual_mode5_ryaw_step_ = DEFAULT_STEP;
+  int manual_mode5_rear_pump_step_ = DEFAULT_STEP;
+  int manual_mode6_front_expand_step_ = DEFAULT_STEP;
+  int manual_mode6_rear_expand_step_ = DEFAULT_STEP;
+  int manual_mode6_r2_lift_step_ = DEFAULT_STEP;
   void reset_step(void);
   rclcpp::TimerBase::SharedPtr manual_mode4_front_valve_timer_;
-  rclcpp::TimerBase::SharedPtr manual_mode4_rear_valve_timer_;
+  rclcpp::TimerBase::SharedPtr manual_mode5_rear_valve_timer_;
 };
