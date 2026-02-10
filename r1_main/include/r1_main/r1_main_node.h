@@ -239,6 +239,8 @@ public:
   static constexpr int ACTUATOR_INITIALIZING = 1;
   int actuator_status_ = ACTUATOR_AVAILABLE;
 
+  bool is_initialized_ = false;
+
   // 指令値関係
   // ========== 足回り ==========
   double CHASSIS_MAX_VELOCITY = 0.0;
@@ -252,6 +254,7 @@ public:
   double KFS_FZ_LOW_POS = 0.0;
   double KFS_FZ_MIDDLE_POS = 0.0;
   double KFS_FZ_HIGH_POS = 0.0;
+  double KFS_FZ_BOOK_POS = 0.0;
   // fyaw
   double KFS_FYAW_NORMAL_ANGLE = 0.0;
   double KFS_FYAW_FRONT_ANGLE = 0.0;
@@ -265,6 +268,7 @@ public:
   double KFS_RZ_LOW_POS = 0.0;
   double KFS_RZ_MIDDLE_POS = 0.0;
   double KFS_RZ_HIGH_POS = 0.0;
+  double KFS_RZ_BOOK_POS = 0.0;
   // ryaw
   double KFS_RYAW_NORMAL_ANGLE = 0.0;
   double KFS_RYAW_FRONT_ANGLE = 0.0;
@@ -454,7 +458,23 @@ public:
   void manual_mode3_spear(void);
   void manual_mode3_make_spear_task(int n);
   void manual_mode4_kfs(void);
+  void manual_mode5_r2_lift(void);
+  static constexpr int DEFAULT_STEP = 1;
+  int manual_mode2_collect_pole_task_step_ = DEFAULT_STEP;
+  int manual_mode3_make_spear_task_step_ = DEFAULT_STEP;
+  int manual_mode3_brake_valve_step_ = DEFAULT_STEP;
+  int manual_mode4_fx_step_ = DEFAULT_STEP;
+  int manual_mode4_fz_step_ = DEFAULT_STEP;
+  int manual_mode4_fyaw_step_ = DEFAULT_STEP;
+  int manual_mode4_rx_step_ = DEFAULT_STEP;
+  int manual_mode4_rz_step_ = DEFAULT_STEP;
+  int manual_mode4_ryaw_step_ = DEFAULT_STEP;
+  int manual_mode4_front_pump_step_ = DEFAULT_STEP;
+  int manual_mode4_rear_pump_step_ = DEFAULT_STEP;
+  int manual_mode5_front_expand_step_ = DEFAULT_STEP;
+  int manual_mode5_rear_expand_step_ = DEFAULT_STEP;
+  int manual_mode5_r2_lift_step_ = DEFAULT_STEP;
+  void reset_step(void);
   rclcpp::TimerBase::SharedPtr manual_mode4_front_valve_timer_;
   rclcpp::TimerBase::SharedPtr manual_mode4_rear_valve_timer_;
-  void manual_mode5_r2_lift(void);
 };

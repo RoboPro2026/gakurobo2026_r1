@@ -253,6 +253,7 @@ R1MainNode::R1MainNode() : Node("r1_main_node")
   declare_and_get_parameter("kfs_fz_low_pos", KFS_FZ_LOW_POS);
   declare_and_get_parameter("kfs_fz_middle_pos", KFS_FZ_MIDDLE_POS);
   declare_and_get_parameter("kfs_fz_high_pos", KFS_FZ_HIGH_POS);
+  declare_and_get_parameter("kfs_fz_book_pos", KFS_FZ_BOOK_POS);
   // fyaw
   declare_and_get_parameter("kfs_fyaw_normal_angle", KFS_FYAW_NORMAL_ANGLE);
   declare_and_get_parameter("kfs_fyaw_front_angle", KFS_FYAW_FRONT_ANGLE);
@@ -266,6 +267,7 @@ R1MainNode::R1MainNode() : Node("r1_main_node")
   declare_and_get_parameter("kfs_rz_low_pos", KFS_RZ_LOW_POS);
   declare_and_get_parameter("kfs_rz_middle_pos", KFS_RZ_MIDDLE_POS);
   declare_and_get_parameter("kfs_rz_high_pos", KFS_RZ_HIGH_POS);
+  declare_and_get_parameter("kfs_rz_book_pos", KFS_RZ_BOOK_POS);
   // ryaw
   declare_and_get_parameter("kfs_ryaw_normal_angle", KFS_RYAW_NORMAL_ANGLE);
   declare_and_get_parameter("kfs_ryaw_front_angle", KFS_RYAW_FRONT_ANGLE);
@@ -1147,7 +1149,7 @@ void R1MainNode::manual_mode1_detect_origin(void)
 
 void R1MainNode::manual_mode2_collect_pole_task(void)
 {
-  static int step = 1;
+  int & step = manual_mode2_collect_pole_task_step_;
   RCLCPP_INFO(this->get_logger(), "manual_mode2_collect_pole_task step: %d", step);
   if (step == 1) {
     pole_x1(POLE_X1_EXPAND_POS);
@@ -1182,7 +1184,7 @@ void R1MainNode::manual_mode2_collect_pole_task(void)
 
 void R1MainNode::manual_mode3_make_spear_task(int n)
 {
-  static int step = 1;
+  int & step = manual_mode3_make_spear_task_step_;
   RCLCPP_INFO(this->get_logger(), "manual_mode2_make_spear_task step: %d", step);
   if (step == 1) {
     // pole_yを受け渡し位置に移動
@@ -1327,7 +1329,7 @@ void R1MainNode::manual_mode2_pole(void)
 
 void R1MainNode::manual_mode3_spear(void)
 {
-  static int brake_valve_step = 1;
+  int & brake_valve_step = manual_mode3_brake_valve_step_;
 
   if (ps4_->is_pushed_up()) {
     manual_mode3_make_spear_task(1);
@@ -1386,20 +1388,20 @@ void R1MainNode::manual_mode3_spear(void)
 
 void R1MainNode::manual_mode4_kfs(void)
 {
-  static int fx_step = 1;
-  static int fz_step = 1;
-  static int fyaw_step = 1;
-  static int rx_step = 1;
-  static int rz_step = 1;
-  static int ryaw_step = 1;
-  static int front_pump_step = 1;
-  static int rear_pump_step = 1;
+  int & fx_step = manual_mode4_fx_step_;
+  int & fz_step = manual_mode4_fz_step_;
+  int & fyaw_step = manual_mode4_fyaw_step_;
+  int & rx_step = manual_mode4_rx_step_;
+  int & rz_step = manual_mode4_rz_step_;
+  int & ryaw_step = manual_mode4_ryaw_step_;
+  int & front_pump_step = manual_mode4_front_pump_step_;
+  int & rear_pump_step = manual_mode4_rear_pump_step_;
 
   if (ps4_->is_pushed_up()) {
     // 1段上のkfs_fz位置へ移動
     fz_step++;
-    if (fz_step > 3) {
-      fz_step = 3;
+    if (fz_step > 4) {
+      fz_step = 4;
     }
     RCLCPP_INFO(this->get_logger(), "fz_step: %d", fz_step);
     if (fz_step == 1) {
@@ -1408,6 +1410,8 @@ void R1MainNode::manual_mode4_kfs(void)
       kfs_fz(KFS_FZ_MIDDLE_POS);
     } else if (fz_step == 3) {
       kfs_fz(KFS_FZ_HIGH_POS);
+    } else if (fz_step == 4) {
+      kfs_fz(KFS_FZ_BOOK_POS);
     }
   }
 
@@ -1459,8 +1463,8 @@ void R1MainNode::manual_mode4_kfs(void)
   if (ps4_->is_pushed_triangle()) {
     // 1段上のkfs_rz位置へ移動
     rz_step++;
-    if (rz_step > 3) {
-      rz_step = 3;
+    if (rz_step > 4) {
+      rz_step = 4;
     }
     RCLCPP_INFO(this->get_logger(), "rz_step: %d", rz_step);
     if (rz_step == 1) {
@@ -1469,6 +1473,8 @@ void R1MainNode::manual_mode4_kfs(void)
       kfs_rz(KFS_RZ_MIDDLE_POS);
     } else if (rz_step == 3) {
       kfs_rz(KFS_RZ_HIGH_POS);
+    } else if (rz_step == 4) {
+      kfs_rz(KFS_RZ_BOOK_POS);
     }
   }
 
@@ -1584,24 +1590,24 @@ void R1MainNode::manual_mode4_kfs(void)
 
 void R1MainNode::manual_mode5_r2_lift(void)
 {
-  static int front_expand_step = 1;
-  static int rear_expand_step = 1;
-  static int r2_lift_step = 0;
+  int & front_expand_step = manual_mode5_front_expand_step_;
+  int & rear_expand_step = manual_mode5_rear_expand_step_;
+  int & r2_lift_step = manual_mode5_r2_lift_step_;
 
   if (ps4_->data.triangle) {
-    if (r2_lift_step != 1) {
+    if (r2_lift_step != 2) {
       r2_lift(R2_LIFT_MAX_VELOCITY);
       RCLCPP_INFO(this->get_logger(), "r2 lift up");
-      r2_lift_step = 1;
+      r2_lift_step = 2;
     }
   } else if (ps4_->data.cross) {
-    if (r2_lift_step != -1) {
+    if (r2_lift_step != 3) {
       r2_lift(-R2_LIFT_MAX_VELOCITY);
       RCLCPP_INFO(this->get_logger(), "r2 lift down");
-      r2_lift_step = -1;
+      r2_lift_step = 3;
     }
   } else {
-    if (r2_lift_step != 0) {
+    if (r2_lift_step != 1) {
       r2_lift(0.0);
       RCLCPP_INFO(this->get_logger(), "r2 lift stop");
       r2_lift_step = 0;
@@ -1659,6 +1665,24 @@ void R1MainNode::manual_mode5_r2_lift(void)
   }
 }
 
+void R1MainNode::reset_step(void)
+{
+  // 各手順のステップをリセット
+  manual_mode2_collect_pole_task_step_ = DEFAULT_STEP;
+  manual_mode3_make_spear_task_step_ = DEFAULT_STEP;
+  manual_mode4_fx_step_ = DEFAULT_STEP;
+  manual_mode4_fz_step_ = DEFAULT_STEP;
+  manual_mode4_fyaw_step_ = DEFAULT_STEP;
+  manual_mode4_rx_step_ = DEFAULT_STEP;
+  manual_mode4_rz_step_ = DEFAULT_STEP;
+  manual_mode4_ryaw_step_ = DEFAULT_STEP;
+  manual_mode4_front_pump_step_ = DEFAULT_STEP;
+  manual_mode4_rear_pump_step_ = DEFAULT_STEP;
+  manual_mode5_front_expand_step_ = DEFAULT_STEP;
+  manual_mode5_rear_expand_step_ = DEFAULT_STEP;
+  manual_mode5_r2_lift_step_ = DEFAULT_STEP;
+}
+
 void R1MainNode::manual_task(void)
 {
   static bool stop_actuator_flag = false;
@@ -1672,23 +1696,6 @@ void R1MainNode::manual_task(void)
 
   } else {
     stop_actuator_flag = false;
-    // 状態に応じて、各タスクを実行
-    if (const auto * manual_sub = std::get_if<ManualSubState>(&current_state.sub)) {
-      if (*manual_sub == ManualSubState::MODE1_DETECT_ORIGIN) {
-        manual_mode1_detect_origin();
-      } else if (*manual_sub == ManualSubState::MODE2_POLE) {
-        manual_mode2_pole();
-      } else if (*manual_sub == ManualSubState::MODE3_SPEAR) {
-        manual_mode3_spear();
-      } else if (*manual_sub == ManualSubState::MODE4_KFS) {
-        manual_mode4_kfs();
-      } else if (*manual_sub == ManualSubState::MODE5_R2_LIFT) {
-        manual_mode5_r2_lift();
-      } else if (*manual_sub == ManualSubState::TEST) {
-        // test_front_kfs();
-        test_spear();
-      }
-    }
     // 共通タスク
     double vx_ref = CHASSIS_MAX_VELOCITY * ps4_->data.left_stick_x;
     double vy_ref = CHASSIS_MAX_VELOCITY * ps4_->data.left_stick_y;
@@ -1706,7 +1713,9 @@ void R1MainNode::manual_task(void)
     // psボタンが押されたときはsabacan resetを行う
     if (ps4_->is_pushed_ps()) {
       sabacan_reset();
+      reset_step();
       init_actuator();
+      is_initialized_ = true;
     }
     // shareボタンが押されたときはモードを切り替える
     if (ps4_->is_pushed_share()) {
@@ -1722,6 +1731,30 @@ void R1MainNode::manual_task(void)
         } else if (*manual_sub == ManualSubState::MODE5_R2_LIFT) {
           state_machine_->set_next_state({MainState::MANUAL, ManualSubState::MODE1_DETECT_ORIGIN});
         }
+      }
+    }
+
+    // 初期化が行われていない場合はこれ以降の処理は実行しない
+    // TODO: 初期化の待ち時間が面倒だったら、この処理はなくす
+    if (is_initialized_ == false) {
+      return;
+    }
+
+    // 状態に応じて、各タスクを実行
+    if (const auto * manual_sub = std::get_if<ManualSubState>(&current_state.sub)) {
+      if (*manual_sub == ManualSubState::MODE1_DETECT_ORIGIN) {
+        manual_mode1_detect_origin();
+      } else if (*manual_sub == ManualSubState::MODE2_POLE) {
+        manual_mode2_pole();
+      } else if (*manual_sub == ManualSubState::MODE3_SPEAR) {
+        manual_mode3_spear();
+      } else if (*manual_sub == ManualSubState::MODE4_KFS) {
+        manual_mode4_kfs();
+      } else if (*manual_sub == ManualSubState::MODE5_R2_LIFT) {
+        manual_mode5_r2_lift();
+      } else if (*manual_sub == ManualSubState::TEST) {
+        // test_front_kfs();
+        test_spear();
       }
     }
   }

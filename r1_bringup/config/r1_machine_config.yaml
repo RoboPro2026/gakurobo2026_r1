@@ -6,26 +6,28 @@ r1_main_node:
 
     # ========== KFS回収 ==========
     # fx
-    kfs_fx_normal_pos: 0.00
+    kfs_fx_normal_pos: 0.0
     kfs_fx_expand_pos: 0.5
     # fz
     kfs_fz_normal_pos: 0.00
     kfs_fz_low_pos: 0.10
     kfs_fz_middle_pos: 0.30
     kfs_fz_high_pos: 0.50
+    kfs_fz_book_pos: 0.521
     # fyaw
     kfs_fyaw_normal_angle: 0.0
     kfs_fyaw_front_angle: 0.0
     kfs_fyaw_side_angle: 1.57
     kfs_fyaw_rear_angle: 3.14
     # rx
-    kfs_rx_normal_pos: 0.00
+    kfs_rx_normal_pos: 0.0
     kfs_rx_expand_pos: 0.5
     # rz
     kfs_rz_normal_pos: 0.00
     kfs_rz_low_pos: 0.10
     kfs_rz_middle_pos: 0.30
     kfs_rz_high_pos: 0.50
+    kfs_rz_book_pos: 0.521
     # ryaw
     kfs_ryaw_normal_angle: 0.0
     kfs_ryaw_front_angle: 0.0
