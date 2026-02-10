@@ -44,9 +44,10 @@ enum class EmergencySubState
 enum class ManualSubState
 {
   MODE1_DETECT_ORIGIN,
-  MODE2_SPEAR_AND_POLE,
-  MODE3_KFS,
-  MODE4_R2_LIFT,
+  MODE2_POLE,
+  MODE3_SPEAR,
+  MODE4_KFS,
+  MODE5_R2_LIFT,
   TEST
 };
 enum class AutoSubState

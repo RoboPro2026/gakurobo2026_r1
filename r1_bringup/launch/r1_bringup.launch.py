@@ -199,18 +199,32 @@ def generate_launch_description():
     )
 
     # ========== ポール ==========
-    r1_pole_x_node = Node(
+    r1_pole_x1_node = Node(
         package="r1_machine",
         executable="r1_linear_motion_node",
-        name="r1_pole_x_node",
+        name="r1_pole_x1_node",
         parameters=[param_file],
         arguments=["--ros-args", "--log-level", "warn"],
         remappings=[
-            ("linear_motion_status", "pole_x_linear_motion_status"),
-            ("linear_motion_motor_ref", "pole_x_motor_ref"),
-            ("linear_motion_position_ref", "pole_x_position_ref"),
-            ("linear_motion_detect_origin", "pole_x_detect_origin"),
-            ("linear_motion_mode_status", "pole_x_mode_status"),
+            ("linear_motion_status", "pole_x1_linear_motion_status"),
+            ("linear_motion_motor_ref", "pole_x1_motor_ref"),
+            ("linear_motion_position_ref", "pole_x1_position_ref"),
+            ("linear_motion_detect_origin", "pole_x1_detect_origin"),
+            ("linear_motion_mode_status", "pole_x1_mode_status"),
+        ],
+    )
+    r1_pole_x2_node = Node(
+        package="r1_machine",
+        executable="r1_linear_motion_node",
+        name="r1_pole_x2_node",
+        parameters=[param_file],
+        arguments=["--ros-args", "--log-level", "warn"],
+        remappings=[
+            ("linear_motion_status", "pole_x2_linear_motion_status"),
+            ("linear_motion_motor_ref", "pole_x2_motor_ref"),
+            ("linear_motion_position_ref", "pole_x2_position_ref"),
+            ("linear_motion_detect_origin", "pole_x2_detect_origin"),
+            ("linear_motion_mode_status", "pole_x2_mode_status"),
         ],
     )
 
@@ -323,6 +337,7 @@ def generate_launch_description():
     sabacan_robomasv2_node_id3 = create_sabacan_robomasv2_node(3)
     sabacan_robomasv2_node_id4 = create_sabacan_robomasv2_node(4)
     sabacan_robomasv2_node_id5 = create_sabacan_robomasv2_node(5)
+    sabacan_robomasv2_node_id6 = create_sabacan_robomasv2_node(6)
 
     def create_sabacan_single_control_node(
         board_id: int, motor_number: int, log_level="warn"
@@ -358,6 +373,10 @@ def generate_launch_description():
     sabacan_single_control_id5_motor1 = create_sabacan_single_control_node(5, 1)
     sabacan_single_control_id5_motor2 = create_sabacan_single_control_node(5, 2)
     sabacan_single_control_id5_motor3 = create_sabacan_single_control_node(5, 3)
+    sabacan_single_control_id6_motor0 = create_sabacan_single_control_node(6, 0)
+    sabacan_single_control_id6_motor1 = create_sabacan_single_control_node(6, 1)
+    sabacan_single_control_id6_motor2 = create_sabacan_single_control_node(6, 2)
+    sabacan_single_control_id6_motor3 = create_sabacan_single_control_node(6, 3)
 
     def create_sabacan_gpio_node(board_id: int, log_level="warn") -> Node:
         return Node(
@@ -412,7 +431,7 @@ def generate_launch_description():
     normal_nodes = [
         ps4_node,
         # bno086_node,
-        r1_main_node,
+        # r1_main_node,
         r1_mecanum_node,
         r1_odometry_node,
         r1_sabacan_msgs_converter_node,
@@ -424,7 +443,8 @@ def generate_launch_description():
         r1_kfs_ryaw_node,
         r1_front_expand_node,
         r1_rear_expand_node,
-        r1_pole_x_node,
+        r1_pole_x1_node,
+        r1_pole_x2_node,
         r1_pole_y_node,
         r1_pole_roger_node,
         r1_spear_roger1_node,
@@ -451,6 +471,10 @@ def generate_launch_description():
         sabacan_single_control_id5_motor1,
         sabacan_single_control_id5_motor2,
         sabacan_single_control_id5_motor3,
+        sabacan_single_control_id6_motor0,
+        sabacan_single_control_id6_motor1,
+        sabacan_single_control_id6_motor2,
+        sabacan_single_control_id6_motor3,
     ]
 
     # sabacanは遅延させて起動
@@ -461,11 +485,13 @@ def generate_launch_description():
             TimerAction(period=2.0, actions=[sabacan_robomasv2_node_id3]),
             TimerAction(period=3.0, actions=[sabacan_robomasv2_node_id4]),
             TimerAction(period=4.0, actions=[sabacan_robomasv2_node_id5]),
-            TimerAction(period=5.0, actions=[sabacan_gpio_node_id1]),
-            TimerAction(period=5.5, actions=[sabacan_gpio_node_id2]),
-            TimerAction(period=6.0, actions=[sabacan_gpio_node_id3]),
-            TimerAction(period=6.5, actions=[sabacan_power_node_id0]),
-            TimerAction(period=7.0, actions=[sabacan_led_node_id1]),
-            TimerAction(period=7.5, actions=normal_nodes),
+            TimerAction(period=5.0, actions=[sabacan_robomasv2_node_id6]),
+            TimerAction(period=6.0, actions=[sabacan_gpio_node_id1]),
+            TimerAction(period=7.0, actions=[sabacan_gpio_node_id2]),
+            TimerAction(period=8.0, actions=[sabacan_gpio_node_id3]),
+            TimerAction(period=9.0, actions=[sabacan_power_node_id0]),
+            TimerAction(period=9.5, actions=[sabacan_led_node_id1]),
+            TimerAction(period=10.0, actions=normal_nodes),
+            TimerAction(period=12.0, actions=[r1_main_node]),
         ]
     )

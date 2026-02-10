@@ -91,15 +91,18 @@ public:
   rclcpp::Publisher<r1_msgs::msg::MotorRef>::SharedPtr r2_lift_motor_ref_publisher_;
   // ========== ポール回収 ==========
   // 指令値Publisher
-  rclcpp::Publisher<std_msgs::msg::Float64>::SharedPtr pole_x_position_ref_publisher_;
+  rclcpp::Publisher<std_msgs::msg::Float64>::SharedPtr pole_x1_position_ref_publisher_;
+  rclcpp::Publisher<std_msgs::msg::Float64>::SharedPtr pole_x2_position_ref_publisher_;
   rclcpp::Publisher<std_msgs::msg::Float64>::SharedPtr pole_y_position_ref_publisher_;
   rclcpp::Publisher<std_msgs::msg::Float64>::SharedPtr pole_roger_position_ref_publisher_;
   // 原点検出Publisher
-  rclcpp::Publisher<std_msgs::msg::Bool>::SharedPtr pole_x_detect_origin_publisher_;
+  rclcpp::Publisher<std_msgs::msg::Bool>::SharedPtr pole_x1_detect_origin_publisher_;
+  rclcpp::Publisher<std_msgs::msg::Bool>::SharedPtr pole_x2_detect_origin_publisher_;
   rclcpp::Publisher<std_msgs::msg::Bool>::SharedPtr pole_y_detect_origin_publisher_;
   rclcpp::Publisher<std_msgs::msg::Bool>::SharedPtr pole_roger_detect_origin_publisher_;
   // mode Subscription
-  rclcpp::Subscription<std_msgs::msg::Int32>::SharedPtr pole_x_mode_status_subscription_;
+  rclcpp::Subscription<std_msgs::msg::Int32>::SharedPtr pole_x1_mode_status_subscription_;
+  rclcpp::Subscription<std_msgs::msg::Int32>::SharedPtr pole_x2_mode_status_subscription_;
   rclcpp::Subscription<std_msgs::msg::Int32>::SharedPtr pole_y_mode_status_subscription_;
   rclcpp::Subscription<std_msgs::msg::Int32>::SharedPtr pole_roger_mode_status_subscription_;
   // ========== やり ==========
@@ -143,6 +146,8 @@ public:
   // やりリミットスイッチ
   rclcpp::Subscription<r1_msgs::msg::GpioInput>::SharedPtr spear_move_switch_status_subscription_;
   rclcpp::Subscription<r1_msgs::msg::GpioInput>::SharedPtr spear_rotate_switch_status_subscription_;
+  // ブレーキ用電磁弁
+  rclcpp::Publisher<r1_msgs::msg::GpioPwmRef>::SharedPtr brake_valve_gpio_pwm_ref_publisher_;
   // ========== Sabacan ==========
   // 電源基板の指令値Publisher
   rclcpp::Publisher<sabacan_msgs::msg::SabacanPowerRef>::SharedPtr sabacan_power_ref_publisher_;
@@ -182,7 +187,8 @@ public:
   bool is_kfs_ryaw_pos_mode_ = false;
   bool is_front_expand_pos_mode_ = false;
   bool is_rear_expand_pos_mode_ = false;
-  bool is_pole_x_pos_mode_ = false;
+  bool is_pole_x1_pos_mode_ = false;
+  bool is_pole_x2_pos_mode_ = false;
   bool is_pole_y_pos_mode_ = false;
   bool is_pole_roger_pos_mode_ = false;
   bool is_spear_roger1_pos_mode_ = false;
@@ -199,7 +205,8 @@ public:
   double front_expand_position_ref_ = 0.0;
   double rear_expand_position_ref_ = 0.0;
   double r2_lift_velocity_ref_ = 0.0;
-  double pole_x_position_ref_ = 0.0;
+  double pole_x1_position_ref_ = 0.0;
+  double pole_x2_position_ref_ = 0.0;
   double pole_y_position_ref_ = 0.0;
   double pole_roger_position_ref_ = 0.0;
   double spear_roger1_position_ref_ = 0.0;
@@ -219,6 +226,7 @@ public:
   bool pole_valve3_ref_ = false;
   bool pole_valve4_ref_ = false;
   bool spear_hand_valve_ref_ = false;
+  double brake_valve_ref_ = 0.0;
 
   // sabacan
   bool sabacan_is_ems_ = false;
@@ -272,9 +280,12 @@ public:
   double REAR_EXPAND_NORMAL_POS = 0.0;
   double REAR_EXPAND_EXPAND_POS = 0.5;
   // ========== ポール回収 ==========
-  // pole_x
-  double POLE_X_NORMAL_POS = 0.0;
-  double POLE_X_EXPAND_POS = 0.0;
+  // pole_x1
+  double POLE_X1_NORMAL_POS = 0.0;
+  double POLE_X1_EXPAND_POS = 0.0;
+  // pole_x2
+  double POLE_X2_NORMAL_POS = 0.0;
+  double POLE_X2_EXPAND_POS = 0.0;
   // pole_y
   double POLE_Y_NORMAL_POS = 0.0;
   double POLE_Y_COLLECT_POS = 0.0;
@@ -327,7 +338,8 @@ public:
   void kfs_ryaw_mode_status_callback(const std_msgs::msg::Int32::SharedPtr msg);
   void front_expand_mode_status_callback(const std_msgs::msg::Int32::SharedPtr msg);
   void rear_expand_mode_status_callback(const std_msgs::msg::Int32::SharedPtr msg);
-  void pole_x_mode_status_callback(const std_msgs::msg::Int32::SharedPtr msg);
+  void pole_x1_mode_status_callback(const std_msgs::msg::Int32::SharedPtr msg);
+  void pole_x2_mode_status_callback(const std_msgs::msg::Int32::SharedPtr msg);
   void pole_y_mode_status_callback(const std_msgs::msg::Int32::SharedPtr msg);
   void pole_roger_mode_status_callback(const std_msgs::msg::Int32::SharedPtr msg);
   void spear_roger1_mode_status_callback(const std_msgs::msg::Int32::SharedPtr msg);
@@ -368,7 +380,8 @@ public:
   // R2昇降
   void r2_lift(double vel);
   // ポール回収
-  void pole_x(double pos);
+  void pole_x1(double pos);
+  void pole_x2(double pos);
   void pole_y(double pos);
   void pole_roger(double pos);
   // やり
@@ -386,6 +399,8 @@ public:
   void pole_valve(int n, bool on);
   // やり電磁弁
   void spear_hand_valve(bool on);
+  // ブレーキ電磁弁
+  void brake_valve(bool on);
   // 動いていたら危険なアクチュエータは停止する
   // 位置制御は止められないので、そのまま
   // TODO: 位置制御系も止められるようにする
@@ -406,7 +421,8 @@ public:
   void front_expand_detect_origin(void);
   void rear_expand_detect_origin(void);
   // ポール回収
-  void pole_x_detect_origin(void);
+  void pole_x1_detect_origin(void);
+  void pole_x2_detect_origin(void);
   void pole_y_detect_origin(void);
   void pole_roger_detect_origin(void);
   // やり
@@ -433,11 +449,12 @@ public:
   void test_r2_lift(void);
   // ========== マニュアルモード ==========
   void manual_mode1_detect_origin(void);
-  void manual_mode2_spear_and_pole(void);
-  void manual_mode2_make_spear_task(int n);
+  void manual_mode2_pole(void);
   void manual_mode2_collect_pole_task(void);
-  void manual_mode3_kfs(void);
-  rclcpp::TimerBase::SharedPtr manual_mode3_front_valve_timer_;
-  rclcpp::TimerBase::SharedPtr manual_mode3_rear_valve_timer_;
-  void manual_mode4_r2_lift(void);
+  void manual_mode3_spear(void);
+  void manual_mode3_make_spear_task(int n);
+  void manual_mode4_kfs(void);
+  rclcpp::TimerBase::SharedPtr manual_mode4_front_valve_timer_;
+  rclcpp::TimerBase::SharedPtr manual_mode4_rear_valve_timer_;
+  void manual_mode5_r2_lift(void);
 };

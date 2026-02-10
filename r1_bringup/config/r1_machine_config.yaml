@@ -43,9 +43,12 @@ r1_main_node:
     rear_expand_expand_pos: 0.5
 
     # ========== ポール回収 ==========
-    # pole_x
-    pole_x_normal_pos: 0.0
-    pole_x_expand_pos: 0.2
+    # pole_x1
+    pole_x1_normal_pos: 0.0
+    pole_x1_expand_pos: 0.2
+    # pole_x2
+    pole_x2_normal_pos: 0.0
+    pole_x2_expand_pos: 0.2
     # pole_y
     pole_y_normal_pos: 0.0
     pole_y_collect_pos: 0.0
@@ -251,7 +254,7 @@ r1_rear_expand_node:
     normal_pos: 0.05
     # ギアが一周すると2*pi*26mm進むので、半径は26mm
     radius: 0.026
-    inverse_motor: true
+    inverse_motor: false
     use_low_switch: false
     use_high_switch: false
     inverse_low_switch_logic: false
@@ -259,7 +262,23 @@ r1_rear_expand_node:
 
 # ---------- ポール回収 ----------
 # linear motion node
-r1_pole_x_node:
+r1_pole_x1_node:
+  ros__parameters:
+    torque_threshold: 0.5 # Nm
+    origin_detect_threshold_time: 0.5 # 秒
+    # 原点検出のときは、0の方向に戻るので、負の速度にする
+    output_detect_speed: -3.14 # rad/s
+    pos_min: 0.0
+    pos_max: 1.0
+    normal_pos: 0.05
+    # ギアが一周すると2*pi*20mm進むので、半径は20mm
+    radius: 0.02
+    inverse_motor: false
+    use_low_switch: false
+    use_high_switch: false
+    inverse_low_switch_logic: false
+    inverse_high_switch_logic: false
+r1_pole_x2_node:
   ros__parameters:
     torque_threshold: 0.5 # Nm
     origin_detect_threshold_time: 0.5 # 秒
@@ -424,14 +443,15 @@ sabacan_robomasv2_node_id2:
 sabacan_robomasv2_node_id3:
   ros__parameters:
     board_id: 3
+    # motor_number 3だけSESCなので、ゲインを半分にしている
     motor_type: ["C610", "C610", "C610", "C610"]
     control_type: ["POS", "POS", "POS", "POS"]
-    speed_gain_p: [0.5, 0.5, 0.5, 0.5]
-    speed_gain_i: [0.2, 0.2, 0.2, 0.2]
+    speed_gain_p: [0.5, 0.5, 0.5, 0.25]
+    speed_gain_i: [0.2, 0.2, 0.2, 0.1]
     speed_gain_d: [0.0, 0.0, 0.0, 0.0]
     torque_lim: [0.75, 0.75, 0.75, 1.0]
     pos_gain_p: [6.0, 6.0, 6.0, 6.0]
-    pos_gain_i: [3.0, 3.0, 3.0, 3.0]
+    pos_gain_i: [3.0, 3.0, 3.0, 0.0]
     pos_gain_d: [0.0, 0.0, 0.0, 0.0]
     speed_lim: [15.0, 15.0, 15.0, 10.0]
     # TRQ+SPD+POSをフィードバック
@@ -441,12 +461,12 @@ sabacan_robomasv2_node_id3:
     # VESCのフィードバックは無効化
     monitor_reg2: [0, 0, 0, 0]
     monitor_period: 50
-# R2昇降、ポール回収
+# ポール回収
 sabacan_robomasv2_node_id4:
   ros__parameters:
     board_id: 4
-    motor_type: ["C620", "C610", "C610", "C610"]
-    control_type: ["VELOCITY", "POS", "POS", "POS"]
+    motor_type: ["C610", "C610", "C610", "C610"]
+    control_type: ["POS", "POS", "POS", "POS"]
     speed_gain_p: [0.5, 0.5, 0.5, 0.5]
     speed_gain_i: [0.2, 0.2, 0.2, 0.2]
     speed_gain_d: [0.0, 0.0, 0.0, 0.0]
@@ -483,7 +503,27 @@ sabacan_robomasv2_node_id5:
     # VESCのフィードバックは無効化
     monitor_reg2: [0, 0, 0, 0]
     monitor_period: 100
-
+# R2昇降
+sabacan_robomasv2_node_id6:
+  ros__parameters:
+    board_id: 6
+    motor_type: ["C620", "C610", "C610", "C610"]
+    control_type: ["VELOCITY", "POS", "POS", "POS"]
+    speed_gain_p: [0.5, 0.5, 0.5, 0.5]
+    speed_gain_i: [0.2, 0.2, 0.2, 0.2]
+    speed_gain_d: [0.0, 0.0, 0.0, 0.0]
+    torque_lim: [5.5, 1.0, 1.0, 0.5]
+    pos_gain_p: [6.0, 6.0, 6.0, 6.0]
+    pos_gain_i: [3.0, 3.0, 3.0, 3.0]
+    pos_gain_d: [0.0, 0.0, 0.0, 0.0]
+    speed_lim: [50.0, 10.0, 10.0, 10.0]
+    # TRQ+SPD+POSをフィードバック
+    monitor_reg1: [0x0001000100010000, 0x0, 0x0, 0x0]
+    # TRQ+SPD+POS+MOTOR_STATEをフィードバック
+    # monitor_reg1: [0x0001000100010002, 0x0001000100010002, 0x0001000100010002, 0x0001000100010002]
+    # VESCのフィードバックは無効化
+    monitor_reg2: [0, 0, 0, 0]
+    monitor_period: 100
 # PWM出力
 sabacan_gpio_node_id1:
   ros__parameters:
@@ -497,7 +537,8 @@ sabacan_gpio_node_id1:
 sabacan_gpio_node_id2:
   ros__parameters:
     board_id: 2
-    pin_type: ["INPUT", "INPUT", "INPUT", "INPUT", "INPUT", "INPUT", "INPUT", "INPUT", "INPUT"]
+    pin_type: ["INPUT", "INPUT", "INPUT", "INPUT", "INPUT", "INPUT", "INPUT", "INPUT", "OUTPUT_PWM"]
+    pwm_freq: [0, 0, 0, 0, 0, 0, 0, 0, 1000]
     # monitor_regはPORT_READを有効化
     monitor_reg: 0x4
     monitor_period: 50
