@@ -16,6 +16,8 @@ find_package(rclcpp REQUIRED)
 find_package(sabacan_msgs REQUIRED)
 find_package(sensor_msgs REQUIRED)
 find_package(std_msgs REQUIRED)
+find_package(tf2 REQUIRED)
+find_package(tf2_ros REQUIRED)
 
 add_executable(r1_main_node src/r1_main_node.cpp)
 add_executable(test_node src/test_node.cpp)
@@ -27,6 +29,7 @@ ament_target_dependencies(r1_main_node
   sensor_msgs
   std_msgs
   r1_msgs
+  tf2
 )
 
 ament_target_dependencies(test_node

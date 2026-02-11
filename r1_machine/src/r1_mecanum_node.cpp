@@ -49,6 +49,7 @@
 #include "rcl_interfaces/msg/parameter_descriptor.hpp"
 #include "rclcpp/rclcpp.hpp"
 #include "sensor_msgs/msg/imu.hpp"
+#include "std_msgs/msg/float64.hpp"
 #include "std_msgs/msg/float64_multi_array.hpp"
 #include "tf2/LinearMath/Matrix3x3.h"
 #include "tf2/LinearMath/Quaternion.h"
@@ -78,6 +79,10 @@ public:
     // BNO086以外のIMUを使う場合は、適宜変えること。
     imu_subscription_ = this->create_subscription<sensor_msgs::msg::Imu>(
       "/bno086/imu/data_raw", 10, std::bind(&MyNode::imu_callback, this, std::placeholders::_1));
+
+    // yawのオフセット
+    yaw_offset_subscription_ = this->create_subscription<std_msgs::msg::Float64>(
+      "yaw_offset", 10, std::bind(&MyNode::yaw_offset_callback, this, std::placeholders::_1));
 
     auto parameter_descriptor = rcl_interfaces::msg::ParameterDescriptor();
     // パラメータの範囲を設定
@@ -207,7 +212,16 @@ public:
       msg->orientation.x, msg->orientation.y, msg->orientation.z, msg->orientation.w);
     double yaw, pitch, roll;
     tf2::Matrix3x3(q).getRPY(roll, pitch, yaw);
-    theta_ = yaw;
+    theta_ = yaw + theta_offset_;
+  }
+
+  void yaw_offset_callback(const std_msgs::msg::Float64::SharedPtr msg)
+  {
+    // imuを使わない設定の場合は処理しない
+    if (!use_imu_) return;
+
+    theta_offset_ = msg->data;
+    RCLCPP_INFO(this->get_logger(), "yaw_offset = %f", theta_offset_);
   }
 
   /**
@@ -305,10 +319,12 @@ public:
   rclcpp::Publisher<r1_msgs::msg::Mecanum>::SharedPtr wheel_speeds_ref_publisher_;
   rclcpp::Subscription<r1_msgs::msg::Mecanum>::SharedPtr wheel_speeds_feedback_subscription_;
   rclcpp::Subscription<sensor_msgs::msg::Imu>::SharedPtr imu_subscription_;
+  rclcpp::Subscription<std_msgs::msg::Float64>::SharedPtr yaw_offset_subscription_;
   rclcpp::Publisher<geometry_msgs::msg::Twist>::SharedPtr feedback_vel_publisher_;
   // 速度指令値
   geometry_msgs::msg::Twist target_vel_;
   double theta_ = 0.0;
+  double theta_offset_ = 0.0;
   bool use_imu_ = true;
   double speed_limit_;   //rad/s
   double robot_length_;  // ロボットの長さ (m)

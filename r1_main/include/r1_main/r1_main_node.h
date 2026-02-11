@@ -35,10 +35,13 @@
 #include "sabacan_msgs/msg/sabacan_led_ref.hpp"
 #include "sabacan_msgs/msg/sabacan_power_ref.hpp"
 #include "sabacan_msgs/srv/sabacan_reset.hpp"
+#include "sensor_msgs/msg/imu.hpp"
 #include "sensor_msgs/msg/joy.hpp"
 #include "std_msgs/msg/bool.hpp"
 #include "std_msgs/msg/float64.hpp"
 #include "std_msgs/msg/int32.hpp"
+#include "tf2/LinearMath/Matrix3x3.h"
+#include "tf2/LinearMath/Quaternion.h"
 
 class R1MainNode : public rclcpp::Node
 {
@@ -169,6 +172,13 @@ public:
   rclcpp::Time sabacan_reset_last_send_time_ = rclcpp::Time(0LL, RCL_SYSTEM_TIME);
   bool sabacan_reset_last_send_valid_ = false;
   size_t sabacan_reset_step_ = 0;
+  // IMUのSubscription
+  rclcpp::Subscription<sensor_msgs::msg::Imu>::SharedPtr imu_subscription_;
+  double yaw_ = 0.0;
+  double pitch_ = 0.0;
+  double roll_ = 0.0;
+  // メカナムのyaw_offset
+  rclcpp::Publisher<std_msgs::msg::Float64>::SharedPtr yaw_offset_publisher_;
   // タイマー
   rclcpp::TimerBase::SharedPtr timer_publisher_;
 
@@ -373,6 +383,9 @@ public:
   void sabacan_led_ref(uint8_t r, uint8_t g, uint8_t b);
   // 現在の状態に応じて、LEDを光らせる。
   void sabacan_led_update(void);
+  // IMU
+  void imu_callback(const sensor_msgs::msg::Imu::SharedPtr msg);
+  void publish_yaw_offset(double offset);
   // ========== 各動作の関数 ==========
   // 足回り
   void chassis_move_vel(double vx, double vy, double omega);

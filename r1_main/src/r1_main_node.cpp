@@ -245,6 +245,12 @@ R1MainNode::R1MainNode() : Node("r1_main_node")
   sabacan_led_reset_client_ =
     this->create_client<sabacan_msgs::srv::SabacanReset>("/sabacan_led_reset");
 
+  // IMU
+  imu_subscription_ = this->create_subscription<sensor_msgs::msg::Imu>(
+    "/bno086/imu/data_raw", 10, std::bind(&R1MainNode::imu_callback, this, std::placeholders::_1));
+
+  yaw_offset_publisher_ = this->create_publisher<std_msgs::msg::Float64>("/yaw_offset", 10);
+
   // ========== パラメータ ==========
   // 足回り
   declare_and_get_parameter("chassis_max_velocity", CHASSIS_MAX_VELOCITY);
@@ -532,6 +538,13 @@ void R1MainNode::spear_rotate_switch_status_callback(const r1_msgs::msg::GpioInp
   spear_rotate_switch_status_ = msg->status;
 }
 
+void R1MainNode::imu_callback(const sensor_msgs::msg::Imu::SharedPtr msg)
+{
+  // IMUの情報を更新
+  tf2::Quaternion q(msg->orientation.x, msg->orientation.y, msg->orientation.z, msg->orientation.w);
+  tf2::Matrix3x3(q).getRPY(roll_, pitch_, yaw_);
+}
+
 void R1MainNode::kfs_fx_detect_origin(void)
 {
   std_msgs::msg::Bool msg;
@@ -760,6 +773,14 @@ void R1MainNode::sabacan_led_ref(uint8_t r, uint8_t g, uint8_t b)
 void R1MainNode::sabacan_led_update(void)
 {
   // TODO: 暇なときに実装する
+}
+
+void R1MainNode::publish_yaw_offset(double offset)
+{
+  std_msgs::msg::Float64 msg;
+  msg.data = offset;
+  yaw_offset_publisher_->publish(msg);
+  RCLCPP_INFO(this->get_logger(), "yaw_offset = %f", offset);
 }
 
 void R1MainNode::timer_callback(void)
@@ -1844,6 +1865,7 @@ void R1MainNode::manual_task(void)
     if (ps4_->is_pushed_ps()) {
       sabacan_reset();
       reset_step();
+      publish_yaw_offset(yaw_);
       init_actuator();
       is_initialized_ = true;
     }
