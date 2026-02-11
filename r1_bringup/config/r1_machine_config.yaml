@@ -10,10 +10,10 @@ r1_main_node:
     kfs_fx_expand_pos: 0.5
     # fz
     kfs_fz_normal_pos: 0.05
-    kfs_fz_low_pos: 0.10
-    kfs_fz_middle_pos: 0.30
-    kfs_fz_high_pos: 0.50
-    kfs_fz_book_pos: 0.60
+    kfs_fz_low_pos: 0.05
+    kfs_fz_middle_pos: 0.25
+    kfs_fz_high_pos: 0.45
+    kfs_fz_book_pos: 0.55
     # fyaw
     kfs_fyaw_normal_angle: 0.0
     kfs_fyaw_front_angle: 0.0
@@ -24,10 +24,10 @@ r1_main_node:
     kfs_rx_expand_pos: 0.5
     # rz
     kfs_rz_normal_pos: 0.05
-    kfs_rz_low_pos: 0.10
-    kfs_rz_middle_pos: 0.30
-    kfs_rz_high_pos: 0.50
-    kfs_rz_book_pos: 0.60
+    kfs_rz_low_pos: 0.05
+    kfs_rz_middle_pos: 0.25
+    kfs_rz_high_pos: 0.45
+    kfs_rz_book_pos: 0.55
     # ryaw
     kfs_ryaw_normal_angle: 0.0
     kfs_ryaw_front_angle: 0.0

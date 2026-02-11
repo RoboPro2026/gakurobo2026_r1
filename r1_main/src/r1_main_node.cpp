@@ -1670,7 +1670,7 @@ void R1MainNode::manual_mode5_rkfs(void)
 
   if (ps4_->is_pushed_circle()) {
     // kfs_ryawを微調整（指令値を増加）
-    kfs_fyaw(kfs_ryaw_position_ref_ + 0.1);
+    kfs_ryaw(kfs_ryaw_position_ref_ + 0.1);
   }
 
   if (ps4_->is_pushed_cross()) {
