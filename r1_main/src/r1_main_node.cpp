@@ -1865,7 +1865,8 @@ void R1MainNode::manual_task(void)
     if (ps4_->is_pushed_ps()) {
       sabacan_reset();
       reset_step();
-      publish_yaw_offset(yaw_);
+      // 現在の角度が0度となるようなオフセットを設定する。
+      publish_yaw_offset(-yaw_);
       init_actuator();
       is_initialized_ = true;
     }
