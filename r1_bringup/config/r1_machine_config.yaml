@@ -9,11 +9,11 @@ r1_main_node:
     kfs_fx_normal_pos: 0.05
     kfs_fx_expand_pos: 0.5
     # fz
-    kfs_fz_normal_pos: 0.05
-    kfs_fz_low_pos: 0.05
-    kfs_fz_middle_pos: 0.25
-    kfs_fz_high_pos: 0.45
-    kfs_fz_book_pos: 0.55
+    kfs_fz_normal_pos: 0.02
+    kfs_fz_low_pos: 0.02
+    kfs_fz_middle_pos: 0.22
+    kfs_fz_high_pos: 0.42
+    kfs_fz_book_pos: 0.52
     # fyaw
     kfs_fyaw_normal_angle: 0.0
     kfs_fyaw_front_angle: 0.0
@@ -23,11 +23,11 @@ r1_main_node:
     kfs_rx_normal_pos: 0.05
     kfs_rx_expand_pos: 0.5
     # rz
-    kfs_rz_normal_pos: 0.05
-    kfs_rz_low_pos: 0.05
-    kfs_rz_middle_pos: 0.25
-    kfs_rz_high_pos: 0.45
-    kfs_rz_book_pos: 0.55
+    kfs_rz_normal_pos: 0.02
+    kfs_rz_low_pos: 0.02
+    kfs_rz_middle_pos: 0.22
+    kfs_rz_high_pos: 0.42
+    kfs_rz_book_pos: 0.52
     # ryaw
     kfs_ryaw_normal_angle: 0.0
     kfs_ryaw_front_angle: 0.0
@@ -166,8 +166,8 @@ r1_kfs_fyaw_node:
     torque_threshold: 0.2 # Nm
     origin_detect_threshold_time: 0.5 # 秒
     origin_detect_speed: -3.14 # rad/s
-    angle_min: 0.0
-    angle_max: 3.14
+    angle_min: -5.0
+    angle_max: 5.0
     normal_angle: 0.0
     # ギア比で割った値がモーターの角度指令値となる
     # 減速比は26 / 80 = 0.325
@@ -218,8 +218,8 @@ r1_kfs_ryaw_node:
     torque_threshold: 0.2 # Nm
     origin_detect_threshold_time: 0.5 # 秒
     origin_detect_speed: -3.14 # rad/s
-    angle_min: 0.0
-    angle_max: 3.14
+    angle_min: -5.0
+    angle_max: 5.0
     normal_angle: 0.0
     # ギア比で割った値がモーターの角度指令値となる
     # 減速比は26 / 80 = 0.325

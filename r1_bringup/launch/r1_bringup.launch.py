@@ -430,7 +430,7 @@ def generate_launch_description():
     # ros2_socketcan以外のノードの起動を遅延させる
     normal_nodes = [
         ps4_node,
-        bno086_node,
+        # bno086_node,
         # r1_main_node,
         r1_mecanum_node,
         r1_odometry_node,
