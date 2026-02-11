@@ -54,7 +54,7 @@ r1_main_node:
     # pole_y
     pole_y_normal_pos: 0.0
     pole_y_collect_pos: 0.0
-    pole_y_transfer1_pos: 0.09
+    pole_y_transfer1_pos: 0.10
     pole_y_transfer2_pos: 0.27
     pole_y_transfer3_pos: 0.0
     pole_y_transfer4_pos: 0.4
@@ -79,12 +79,12 @@ r1_main_node:
     # roger1
     spear_roger1_normal_pos: 0.0
     spear_roger1_combine_pos: 0.0
-    spear_roger1_transfer_pos: 0.4
+    spear_roger1_transfer_pos: 0.38
     # roger2
     spear_roger2_normal_pos: 0.0
     spear_roger2_combine_pos: 0.0
     # うまく動かないので、roger1より高くする
-    spear_roger2_transfer_pos: 0.4
+    spear_roger2_transfer_pos: 0.38
     # move
     spear_move_normal_pos: 0.0
     spear_move_combine_pos: 0.0
@@ -94,7 +94,7 @@ r1_main_node:
     spear_move_valve2_pos: 0.2
     # rotate
     spear_rotate_normal_pos: 0.0
-    spear_rotate_combine_angle: 3.1415926535
+    spear_rotate_combine_angle: 3.3
 
 
 # -------- 足回り ----------
@@ -391,8 +391,8 @@ r1_spear_rotate_node:
     # torque_threshold: 0.5 # Nm
     origin_detect_threshold_time: 0.4 # 秒
     origin_detect_speed: -3.14 # rad/s
-    angle_min: 0.0
-    angle_max: 3.14
+    angle_min: -1.0
+    angle_max: 5.0
     normal_angle: 0.0
     # ギア比は1.0
     gear_ratio: 1.0
