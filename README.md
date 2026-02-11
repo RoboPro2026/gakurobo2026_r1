@@ -38,6 +38,10 @@ venvを有効にする
 source .venv/bin/activate
 ```
 
+# urg_node
+$ rosdep update
+$ rosdep install -i --from-paths urg_node2
+
 ## ROS 2を実行
 ```
 cd ~/ros2_ws
