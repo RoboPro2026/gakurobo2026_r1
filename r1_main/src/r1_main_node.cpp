@@ -328,16 +328,23 @@ R1MainNode::R1MainNode() : Node("r1_main_node")
   declare_and_get_parameter("spear_roger1_normal_pos", SPEAR_ROGER1_NORMAL_POS);
   declare_and_get_parameter("spear_roger1_combine_pos", SPEAR_ROGER1_COMBINE_POS);
   declare_and_get_parameter("spear_roger1_transfer_pos", SPEAR_ROGER1_TRANSFER_POS);
+  declare_and_get_parameter("spear_roger1_low_attack_pos", SPEAR_ROGER1_LOW_ATTACK_POS);
+  declare_and_get_parameter("spear_roger1_middle_attack_pos", SPEAR_ROGER1_MIDDLE_ATTACK_POS);
+  declare_and_get_parameter("spear_roger1_high_attack_pos", SPEAR_ROGER1_HIGH_ATTACK_POS);
   // spear_roger2
   declare_and_get_parameter("spear_roger2_normal_pos", SPEAR_ROGER2_NORMAL_POS);
   declare_and_get_parameter("spear_roger2_combine_pos", SPEAR_ROGER2_COMBINE_POS);
   declare_and_get_parameter("spear_roger2_transfer_pos", SPEAR_ROGER2_TRANSFER_POS);
+  declare_and_get_parameter("spear_roger2_low_attack_pos", SPEAR_ROGER2_LOW_ATTACK_POS);
+  declare_and_get_parameter("spear_roger2_middle_attack_pos", SPEAR_ROGER2_MIDDLE_ATTACK_POS);
+  declare_and_get_parameter("spear_roger2_high_attack_pos", SPEAR_ROGER2_HIGH_ATTACK_POS);
   // spear_move
   declare_and_get_parameter("spear_move_normal_pos", SPEAR_MOVE_NORMAL_POS);
   declare_and_get_parameter("spear_move_combine_pos", SPEAR_MOVE_COMBINE_POS);
   declare_and_get_parameter("spear_move_transfer_pos", SPEAR_MOVE_TRANSFER_POS);
   declare_and_get_parameter("spear_move_valve1_pos", SPEAR_MOVE_VALVE1_POS);
   declare_and_get_parameter("spear_move_valve2_pos", SPEAR_MOVE_VALVE2_POS);
+  declare_and_get_parameter("spear_move_attack_pos", SPEAR_MOVE_ATTACK_POS);
   // spear_rotate
   declare_and_get_parameter("spear_rotate_normal_pos", SPEAR_ROTATE_NORMAL_POS);
   declare_and_get_parameter("spear_rotate_combine_angle", SPEAR_ROTATE_COMBINE_ANGLE);
@@ -1813,6 +1820,100 @@ void R1MainNode::manual_mode6_r2_lift(void)
   }
 }
 
+void R1MainNode::manual_mode7_spear_attack_task(int n)
+{
+  int step = manual_mode7_spear_attack_task_step_;
+  RCLCPP_INFO(this->get_logger(), "manual_mode7_spear_attack_task step: %d", step);
+
+  if (step == 1) {
+    // spear_roger1とspear_roger2を攻撃の高さに合わせる。
+    // spear_moveとspear_rotateを初期位置に移動する。
+    if (n == 1) {
+      spear_roger1(SPEAR_ROGER1_LOW_ATTACK_POS);
+      spear_roger2(SPEAR_ROGER2_LOW_ATTACK_POS);
+    } else if (n == 2) {
+      spear_roger1(SPEAR_ROGER1_MIDDLE_ATTACK_POS);
+      spear_roger2(SPEAR_ROGER2_MIDDLE_ATTACK_POS);
+    } else if (n == 3) {
+      spear_roger1(SPEAR_ROGER1_HIGH_ATTACK_POS);
+      spear_roger2(SPEAR_ROGER2_HIGH_ATTACK_POS);
+    }
+    spear_move(SPEAR_MOVE_NORMAL_POS);
+    spear_rotate(SPEAR_ROTATE_NORMAL_POS);
+    step++;
+  } else if (step == 2) {
+    // spear_moveを動かして、やりを押し出す。
+    spear_move(SPEAR_MOVE_ATTACK_POS);
+    step++;
+  } else if (step == 3) {
+    // spear_moveを動かして、やりを戻す。
+    spear_move(SPEAR_MOVE_NORMAL_POS);
+    step++;
+  } else if (step == 4) {
+    // spear_roger1とspear_roger2をもとの高さに戻す。
+    spear_roger1(SPEAR_ROGER1_NORMAL_POS);
+    spear_roger2(SPEAR_ROGER2_NORMAL_POS);
+    RCLCPP_INFO(this->get_logger(), "spear attack task completed");
+    step = 1;
+  }
+}
+
+void R1MainNode::manual_mode7_spear_attack(void)
+{
+  int & spear_hand_valve1_step = manual_mode7_spear_hand_valve1_step_;
+
+  if (ps4_->is_pushed_up()) {
+    if (spear_hand_valve1_step == 1) {
+      spear_hand_valve1(true);
+      spear_hand_valve1_step = 2;
+    } else {
+      spear_hand_valve1(false);
+      spear_hand_valve1_step = 1;
+    }
+  }
+
+  if (ps4_->is_pushed_right()) {
+    spear_rotate(spear_rotate_position_ref_ + 0.1);
+  }
+
+  if (ps4_->is_pushed_down()) {
+    spear_move(spear_move_position_ref_ - 0.01);
+  }
+
+  if (ps4_->is_pushed_left()) {
+    spear_rotate(spear_rotate_position_ref_ - 0.1);
+  }
+
+  if (ps4_->is_pushed_triangle()) {
+  }
+
+  if (ps4_->is_pushed_circle()) {
+  }
+
+  if (ps4_->is_pushed_cross()) {
+    spear_move(spear_move_position_ref_ + 0.01);
+  }
+
+  if (ps4_->is_pushed_square()) {
+  }
+
+  if (ps4_->is_pushed_l1()) {
+    spear_roger1(spear_roger1_position_ref_ - 0.01);
+  }
+
+  if (ps4_->is_pushed_r1()) {
+    spear_roger1(spear_roger1_position_ref_ + 0.01);
+  }
+
+  if (ps4_->is_pushed_l2()) {
+    spear_roger2(spear_roger2_position_ref_ - 0.01);
+  }
+
+  if (ps4_->is_pushed_r2()) {
+    spear_roger2(spear_roger2_position_ref_ + 0.01);
+  }
+}
+
 void R1MainNode::reset_step(void)
 {
   // 各手順のステップをリセット
@@ -1832,6 +1933,8 @@ void R1MainNode::reset_step(void)
   manual_mode6_front_expand_step_ = DEFAULT_STEP;
   manual_mode6_rear_expand_step_ = DEFAULT_STEP;
   manual_mode6_r2_lift_step_ = DEFAULT_STEP;
+  manual_mode7_spear_attack_task_step_ = DEFAULT_STEP;
+  manual_mode7_spear_hand_valve1_step_ = DEFAULT_STEP;
 }
 
 void R1MainNode::manual_task(void)
@@ -1886,6 +1989,8 @@ void R1MainNode::manual_task(void)
         } else if (*manual_sub == ManualSubState::MODE5_RKFS) {
           state_machine_->set_next_state({MainState::MANUAL, ManualSubState::MODE6_R2_LIFT});
         } else if (*manual_sub == ManualSubState::MODE6_R2_LIFT) {
+          state_machine_->set_next_state({MainState::MANUAL, ManualSubState::MODE7_SPEAR_ATTACK});
+        } else if (*manual_sub == ManualSubState::MODE7_SPEAR_ATTACK) {
           state_machine_->set_next_state({MainState::MANUAL, ManualSubState::MODE1_DETECT_ORIGIN});
         }
       }
@@ -1911,6 +2016,8 @@ void R1MainNode::manual_task(void)
         manual_mode5_rkfs();
       } else if (*manual_sub == ManualSubState::MODE6_R2_LIFT) {
         manual_mode6_r2_lift();
+      } else if (*manual_sub == ManualSubState::MODE7_SPEAR_ATTACK) {
+        manual_mode7_spear_attack();
       }
     }
   }

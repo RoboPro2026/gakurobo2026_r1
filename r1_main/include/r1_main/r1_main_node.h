@@ -330,16 +330,23 @@ public:
   double SPEAR_ROGER1_NORMAL_POS = 0.0;
   double SPEAR_ROGER1_COMBINE_POS = 0.0;
   double SPEAR_ROGER1_TRANSFER_POS = 0.0;
+  double SPEAR_ROGER1_LOW_ATTACK_POS = 0.0;
+  double SPEAR_ROGER1_MIDDLE_ATTACK_POS = 0.0;
+  double SPEAR_ROGER1_HIGH_ATTACK_POS = 0.0;
   // spear_roger2
   double SPEAR_ROGER2_NORMAL_POS = 0.0;
   double SPEAR_ROGER2_COMBINE_POS = 0.0;
   double SPEAR_ROGER2_TRANSFER_POS = 0.0;
+  double SPEAR_ROGER2_LOW_ATTACK_POS = 0.0;
+  double SPEAR_ROGER2_MIDDLE_ATTACK_POS = 0.0;
+  double SPEAR_ROGER2_HIGH_ATTACK_POS = 0.0;
   // spear_move
   double SPEAR_MOVE_NORMAL_POS = 0.0;
   double SPEAR_MOVE_COMBINE_POS = 0.0;
   double SPEAR_MOVE_TRANSFER_POS = 0.0;
   double SPEAR_MOVE_VALVE1_POS = 0.0;
   double SPEAR_MOVE_VALVE2_POS = 0.0;
+  double SPEAR_MOVE_ATTACK_POS = 0.0;
   // spear_rotate
   double SPEAR_ROTATE_NORMAL_POS = 0.0;
   double SPEAR_ROTATE_COMBINE_ANGLE = 0.0;
@@ -479,6 +486,8 @@ public:
   void manual_mode4_fkfs(void);
   void manual_mode5_rkfs(void);
   void manual_mode6_r2_lift(void);
+  void manual_mode7_spear_attack(void);
+  void manual_mode7_spear_attack_task(int n);
   static constexpr int DEFAULT_STEP = 1;
   int manual_mode2_collect_pole_task_step_ = DEFAULT_STEP;
   int manual_mode3_make_spear_task_step_ = DEFAULT_STEP;
@@ -496,6 +505,8 @@ public:
   int manual_mode6_front_expand_step_ = DEFAULT_STEP;
   int manual_mode6_rear_expand_step_ = DEFAULT_STEP;
   int manual_mode6_r2_lift_step_ = DEFAULT_STEP;
+  int manual_mode7_spear_attack_task_step_ = DEFAULT_STEP;
+  int manual_mode7_spear_hand_valve1_step_ = DEFAULT_STEP;
   void reset_step(void);
   rclcpp::TimerBase::SharedPtr manual_mode4_front_valve_timer_;
   rclcpp::TimerBase::SharedPtr manual_mode5_rear_valve_timer_;
