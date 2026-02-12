@@ -82,8 +82,8 @@ r1_main_node:
     spear_roger1_transfer_pos: 0.38
     # 攻撃
     spear_roger1_low_attack_pos: 0.38
-    spear_roger1_middle_attack_pos: 0.5
-    spear_roger1_high_attack_pos: 0.7
+    spear_roger1_middle_attack_pos: 0.64
+    spear_roger1_high_attack_pos: 1.0
     # roger2
     spear_roger2_normal_pos: 0.0
     spear_roger2_combine_pos: 0.0
@@ -351,7 +351,7 @@ r1_spear_roger1_node:
     # 原点検出のときは、0の方向に戻るので、負の速度にする
     output_detect_speed: -3.14 # rad/s
     pos_min: -0.1
-    pos_max: 1.0
+    pos_max: 1.5
     normal_pos: 0.05
     # 1回転すると70mm進む。ロジャーなので、倍進むので、半径0.05570423mm
     radius: 0.05570423
@@ -368,7 +368,7 @@ r1_spear_roger2_node:
     # 原点検出のときは、0の方向に戻るので、負の速度にする
     output_detect_speed: -3.14 # rad/s
     pos_min: -0.1
-    pos_max: 1.0
+    pos_max: 1.5
     normal_pos: 0.05
     # 1回転すると70mm進む。ロジャーなので、倍進むので、半径0.05570423mm
     radius: 0.05570423

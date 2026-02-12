@@ -1822,7 +1822,7 @@ void R1MainNode::manual_mode6_r2_lift(void)
 
 void R1MainNode::manual_mode7_spear_attack_task(int n)
 {
-  int step = manual_mode7_spear_attack_task_step_;
+  int & step = manual_mode7_spear_attack_task_step_;
   RCLCPP_INFO(this->get_logger(), "manual_mode7_spear_attack_task step: %d", step);
 
   if (step == 1) {
@@ -1885,9 +1885,11 @@ void R1MainNode::manual_mode7_spear_attack(void)
   }
 
   if (ps4_->is_pushed_triangle()) {
+    manual_mode7_spear_attack_task(3);
   }
 
   if (ps4_->is_pushed_circle()) {
+    manual_mode7_spear_attack_task(2);
   }
 
   if (ps4_->is_pushed_cross()) {
@@ -1895,6 +1897,7 @@ void R1MainNode::manual_mode7_spear_attack(void)
   }
 
   if (ps4_->is_pushed_square()) {
+    manual_mode7_spear_attack_task(1);
   }
 
   if (ps4_->is_pushed_l1()) {
