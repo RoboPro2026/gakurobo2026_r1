@@ -1,8 +1,8 @@
 r1_main_node:
   ros__parameters:
     # ========== 足回り ==========
-    chassis_max_velocity: 1.0
-    chassis_max_omega: 1.57
+    chassis_max_velocity: 0.4
+    chassis_max_omega: 0.75
 
     # ========== KFS回収 ==========
     # fx
@@ -527,7 +527,7 @@ sabacan_robomasv2_node_id6:
     pos_gain_p: [6.0, 6.0, 6.0, 6.0]
     pos_gain_i: [3.0, 3.0, 3.0, 3.0]
     pos_gain_d: [0.0, 0.0, 0.0, 0.0]
-    speed_lim: [50.0, 10.0, 10.0, 10.0]
+    speed_lim: [15.0, 10.0, 10.0, 10.0]
     # TRQ+SPD+POSをフィードバック
     monitor_reg1: [0x0001000100010000, 0x0, 0x0, 0x0]
     # TRQ+SPD+POS+MOTOR_STATEをフィードバック
