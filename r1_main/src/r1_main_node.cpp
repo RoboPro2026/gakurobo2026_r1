@@ -1758,7 +1758,7 @@ void R1MainNode::manual_mode6_r2_lift(void)
     if (r2_lift_step != 1) {
       r2_lift(0.0);
       RCLCPP_INFO(this->get_logger(), "r2 lift stop");
-      r2_lift_step = 0;
+      r2_lift_step = 1;
     }
   }
 
@@ -1863,7 +1863,9 @@ void R1MainNode::manual_task(void)
     }
     // psボタンが押されたときはsabacan resetを行う
     if (ps4_->is_pushed_ps()) {
+      // sabacanにリセット信号を送信する
       sabacan_reset();
+      // stepをリセットする
       reset_step();
       // 現在の角度が0度となるようなオフセットを設定する。
       publish_yaw_offset(-yaw_);

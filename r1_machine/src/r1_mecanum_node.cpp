@@ -213,6 +213,7 @@ public:
     double yaw, pitch, roll;
     tf2::Matrix3x3(q).getRPY(roll, pitch, yaw);
     theta_ = yaw + theta_offset_;
+    // RCLCPP_INFO(this->get_logger(), "theta(yaw) = %f", theta_);
   }
 
   void yaw_offset_callback(const std_msgs::msg::Float64::SharedPtr msg)
@@ -240,8 +241,8 @@ public:
     double R = wheel_radius_;
 
     // 回転行列を計算
-    vx = _vx * cos(theta) + _vy * sin(theta);
-    vy = -_vx * sin(theta) + _vy * cos(theta);
+    vx = _vx * cos(-theta) + _vy * sin(-theta);
+    vy = -_vx * sin(-theta) + _vy * cos(-theta);
     omega = _omega;
 
     // メカナムホイールの逆運動学の計算
