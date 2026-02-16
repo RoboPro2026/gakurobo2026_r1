@@ -10,6 +10,7 @@
  */
 
 #include <chrono>
+#include <complex>
 #include <limits>
 
 #include "geometry_msgs/msg/twist.hpp"
@@ -23,9 +24,6 @@
 #include "tf2/LinearMath/Matrix3x3.h"
 #include "tf2/LinearMath/Quaternion.h"
 
-// TODO:初期化処理を行う。
-// TODO: ステアの状態を指定できるようにする。
-
 class MyNode : public rclcpp::Node
 {
 public:
@@ -38,6 +36,11 @@ public:
     // ホイールの速度指令値Publisher
     swerve_drive_ref_publisher_ =
       this->create_publisher<r1_msgs::msg::SwerveDrive>("/swerve_drive_ref", 10);
+
+    // 手動でswerve_drive_refを指定するためのSubscription
+    manual_swerve_drive_ref_subscription_ = this->create_subscription<r1_msgs::msg::SwerveDrive>(
+      "/manual_swerve_drive_ref", 10,
+      std::bind(&MyNode::manual_swerve_drive_ref_callback, this, std::placeholders::_1));
 
     parameter_callback_handler_ = this->add_on_set_parameters_callback(
       std::bind(&MyNode::parameter_callback, this, std::placeholders::_1));
@@ -57,6 +60,7 @@ public:
     this->declare_parameter("steering_gear_ratio", 1.0);
     this->declare_parameter("wheel_speed_limit", 100.0);
     this->declare_parameter("steering_angle_limit", 6.28);
+    this->declare_parameter("angle_diff_range", 0.5);
     this->declare_parameter("wheel_motor_inverse", std::vector<bool>{false, false, false, false});
     this->declare_parameter(
       "steering_motor_inverse", std::vector<bool>{false, false, false, false});
@@ -70,6 +74,7 @@ public:
     this->get_parameter("steering_gear_ratio", steering_gear_ratio_);
     this->get_parameter("wheel_speed_limit", wheel_speed_limit_);
     this->get_parameter("steering_angle_limit", steering_angle_limit_);
+    this->get_parameter("angle_diff_range", angle_diff_range_);
     std::vector<bool> wheel_motor_inverse(4);
     this->get_parameter("wheel_motor_inverse", wheel_motor_inverse);
     for (size_t i = 0; i < 4; i++) {
@@ -123,6 +128,10 @@ public:
         RCLCPP_INFO(
           this->get_logger(), "Updated parameter: steering_angle_limit = %.3f",
           steering_angle_limit_);
+      } else if (name == "angle_diff_range") {
+        angle_diff_range_ = parameter.as_double();
+        RCLCPP_INFO(
+          this->get_logger(), "Updated parameter: angle_diff_range = %.3f", angle_diff_range_);
       } else if (name == "wheel_motor_inverse") {
         std::vector<bool> wheel_motor_inverse = parameter.as_bool_array();
         RCLCPP_INFO(
@@ -199,6 +208,51 @@ public:
     RCLCPP_INFO(this->get_logger(), "yaw_offset = %f", yaw_offset_);
   }
 
+  void manual_swerve_drive_ref_callback(const r1_msgs::msg::SwerveDrive::SharedPtr msg)
+  {
+    // 指令値を受信
+    swerve_drive_ref_ = *msg;
+    // 回転方向とギア比を考慮し代入。limitの確認は手動なので、行わない
+    swerve_drive_ref_.v0 *= wheel_motor_dir_[0] / wheel_gear_ratio_;
+    swerve_drive_ref_.v1 *= wheel_motor_dir_[1] / wheel_gear_ratio_;
+    swerve_drive_ref_.v2 *= wheel_motor_dir_[2] / wheel_gear_ratio_;
+    swerve_drive_ref_.v3 *= wheel_motor_dir_[3] / wheel_gear_ratio_;
+    swerve_drive_ref_.theta0 *= steering_motor_dir_[0] / steering_gear_ratio_;
+    swerve_drive_ref_.theta1 *= steering_motor_dir_[1] / steering_gear_ratio_;
+    swerve_drive_ref_.theta2 *= steering_motor_dir_[2] / steering_gear_ratio_;
+    swerve_drive_ref_.theta3 *= steering_motor_dir_[3] / steering_gear_ratio_;
+    // publish
+    swerve_drive_ref_publisher_->publish(swerve_drive_ref_);
+    // ステアの前回値を更新
+    prev_steer_theta_[0] = msg->theta0;
+    prev_steer_theta_[1] = msg->theta1;
+    prev_steer_theta_[2] = msg->theta2;
+    prev_steer_theta_[3] = msg->theta3;
+
+    RCLCPP_INFO(
+      this->get_logger(),
+      "Manual swerve drive ref: v0=%.3f, theta0=%.3f, v1=%.3f, "
+      "theta1=%.3f, v2=%.3f, theta2=%.3f, v3=%.3f, theta3=%.3f",
+      swerve_drive_ref_.v0, swerve_drive_ref_.theta0, swerve_drive_ref_.v1,
+      swerve_drive_ref_.theta1, swerve_drive_ref_.v2, swerve_drive_ref_.theta2,
+      swerve_drive_ref_.v3, swerve_drive_ref_.theta3);
+  }
+
+  /**
+   * @brief 角度差を計算する。計算結果は-pi~pi
+   * 
+   * @param current_angle 
+   * @param prev_angle 
+   * @return double 
+   */
+  double angle_diff(double current_angle, double prev_angle)
+  {
+    std::complex<double> current = std::polar(1.0, current_angle);
+    std::complex<double> prev = std::polar(1.0, prev_angle);
+    std::complex<double> diff = current / prev;  // 位相差
+    return std::arg(diff);
+  }
+
   void calculate_swerve_drive(double vx_ref, double vy_ref, double omega_ref, double theta)
   {
     double wheel_vx[4];
@@ -207,20 +261,25 @@ public:
     double steer_theta[4];
     double R = robot_radius_;
 
-    // 座標系
-    // y
-    // ↑
-    // |
-    // |
-    // O----------→ x
-
     // 4輪独立ステアリングの逆運動学の計算
     for (int i = 0; i < 4; i++) {
+      // 逆運動学を計算
       wheel_vx[i] = vx_ref - R * omega_ref * std::sin(theta + i * M_PI / 2.0);
       wheel_vy[i] = vy_ref + R * omega_ref * std::cos(theta + i * M_PI / 2.0);
       wheel_v[i] = std::sqrt(std::pow(wheel_vx[i], 2) + std::pow(wheel_vy[i], 2));
-      // TODO: thetaが連続となるようにする。
+      // thetaが連続となるようにする。
+      // 前回の指令値との角度差を計算する
       steer_theta[i] = std::atan2(wheel_vy[i], wheel_vx[i]);
+      double diff = angle_diff(steer_theta[i], prev_steer_theta_[i]);
+      if (std::abs(diff) < angle_diff_range_) {
+        // 角度差が一定値以下のときは、連続となるようにする。
+        while (steer_theta[i] - prev_steer_theta_[i] > M_PI) {
+          steer_theta[i] -= 2 * M_PI;
+        }
+        while (steer_theta[i] - prev_steer_theta_[i] < -M_PI) {
+          steer_theta[i] += 2 * M_PI;
+        }
+      }
     }
 
     // 計算した回転速度がlimitより高いかを確認
@@ -257,14 +316,21 @@ public:
     swerve_drive_ref_.theta1 = steer_theta[1] * steering_motor_dir_[1] / steering_gear_ratio_;
     swerve_drive_ref_.theta2 = steer_theta[2] * steering_motor_dir_[2] / steering_gear_ratio_;
     swerve_drive_ref_.theta3 = steer_theta[3] * steering_motor_dir_[3] / steering_gear_ratio_;
+
+    // 前回値を更新
+    for (int i = 0; i < 4; i++) {
+      prev_steer_theta_[i] = steer_theta[i];
+    }
   }
 
   rclcpp::Subscription<geometry_msgs::msg::Twist>::SharedPtr cmd_vel_subscription_;
   rclcpp::Publisher<r1_msgs::msg::SwerveDrive>::SharedPtr swerve_drive_ref_publisher_;
+  rclcpp::Subscription<r1_msgs::msg::SwerveDrive>::SharedPtr manual_swerve_drive_ref_subscription_;
   rclcpp::node_interfaces::OnSetParametersCallbackHandle::SharedPtr parameter_callback_handler_;
   rclcpp::Subscription<sensor_msgs::msg::Imu>::SharedPtr imu_subscription_;
   rclcpp::Subscription<std_msgs::msg::Float64>::SharedPtr yaw_offset_subscription_;
   r1_msgs::msg::SwerveDrive swerve_drive_ref_;
+  double prev_steer_theta_[4] = {0};
 
   // ========== 機械パラメータ ==========
   static constexpr int N = 4;
@@ -277,6 +343,8 @@ public:
   // ========== 制御パラメータ ==========
   double wheel_speed_limit_;     // ホイールの速度制限 (rad/s)
   double steering_angle_limit_;  // ステアリング角度の制限 (rad)
+  double
+    angle_diff_range_;  // 角度差の範囲。この値を小さくすると、ステアリングの角度が連続になるようにする範囲が狭くなる。単位はrad。
   // motor_inverse = trueのとき、motor_dir_が-1.0になる。
   std::vector<double> wheel_motor_dir_ = {1.0, 1.0, 1.0, 1.0};
   std::vector<double> steering_motor_dir_ = {1.0, 1.0, 1.0, 1.0};
