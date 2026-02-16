@@ -1,0 +1,10 @@
+# ホイールの速度指令値
+float32 v0
+float32 v1
+float32 v2
+float32 v3
+# ステアリング角度指令値
+float32 theta0
+float32 theta1
+float32 theta2
+float32 theta3
