@@ -12,7 +12,7 @@
   - `/bno086/imu/data_raw` (`sensor_msgs/msg/Imu`): IMU姿勢（`use_imu=true` のときYawを使用）。
   - `yaw_offset` (`std_msgs/msg/Float64`): Yawオフセット [rad]（`use_imu=true` のときのみ反映）。
 - **Publish**
-  - `/swerve_drive_ref` (`r1_msgs/msg/SwerveDrive`): 各輪の速度指令 `v0..v3` とステア角指令 `theta0..theta3`。
+  - `/swerve_drive_ref` (`r1_msgs/msg/SwerveDrive`): 各輪の角速度指令 `omega0..omega3` とステア角指令 `theta0..theta3`。
 
 ## パラメータ
 
@@ -22,10 +22,10 @@
 | --- | --- | --- | --- |
 | `robot_length` | double | `0.5` | ロボット長さ [m]。`robot_radius` の算出に使用。 |
 | `robot_width` | double | `0.5` | ロボット幅 [m]。`robot_radius` の算出に使用。 |
-| `wheel_radius` | double | `0.1` | ホイール半径 [m]（※現状の実装では計算に未使用）。 |
+| `wheel_radius` | double | `0.1` | ホイール半径 [m]。`/cmd_vel` から計算した線速度 [m/s] を角速度 [rad/s] に換算するために使用します。 |
 | `wheel_gear_ratio` | double | `1.0` | ホイール側の減速比（出力 `v*` は `... / wheel_gear_ratio`）。 |
 | `steer_gear_ratio` | double | `1.0` | ステア側の減速比（出力 `theta*` は `... / steer_gear_ratio`）。 |
-| `wheel_speed_limit` | double | `100.0` | 速度上限（※現状は超過時にログを出すのみで、指令値のスケーリングは反映されません）。 |
+| `wheel_speed_limit` | double | `100.0` | 角速度上限 [rad/s]。超過時は全輪同率でスケーリングします。 |
 | `steer_angle_limit` | double | `6.28` | ステア角上限 [rad]（超過時にERRORログ）。 |
 | `angle_diff_range` | double | `0.5` | ステア角連続化を行う角度差の範囲 [rad]（前回値との差がこの値未満のときに unwrap します）。 |
 | `steer_theta_offset` | double[4] | `[0, 0, 0, 0]` | 各輪のステア角オフセット [rad]（`theta*` 出力に加算）。 |
@@ -33,7 +33,7 @@
 | `steer_motor_inverse` | bool[4] | `[false, false, false, false]` | 各輪のステア回転方向反転フラグ（`true` で `theta*` に -1 倍を反映）。 |
 | `use_imu` | bool | `true` | IMUのYawを計算に用いるか。`false` の場合はYawが更新されません（Yawを 0 として扱いたい場合は実装側で初期化が必要です）。 |
 
-補足: `v0..v3` は内部で `vx_ref, vy_ref` から合成しており、現状の実装では `wheel_radius` による角速度換算は行っていません（`/cmd_vel` の並進速度と同じ次元の値になります）。
+補足: `omega0..omega3` は `/cmd_vel` の並進・回転から各輪の線速度を計算し、`omega = v / wheel_radius` として角速度 [rad/s] に換算した値です。
 
 ## 逆運動学（実装概要）
 
@@ -70,7 +70,7 @@ ros2 topic pub /cmd_vel geometry_msgs/Twist '{linear: {x: 0.5, y: 0.0}, angular:
 手動で指令を与える例（limitチェックは行いません）:
 
 ```bash
-ros2 topic pub /manual_swerve_drive_ref r1_msgs/msg/SwerveDrive '{v0: 1.0, v1: 1.0, v2: 1.0, v3: 1.0, theta0: 0.0, theta1: 0.0, theta2: 0.0, theta3: 0.0}'
+ros2 topic pub /manual_swerve_drive_ref r1_msgs/msg/SwerveDrive '{omega0: 10.0, omega1: 10.0, omega2: 10.0, omega3: 10.0, theta0: 0.0, theta1: 0.0, theta2: 0.0, theta3: 0.0}'
 ```
 
 指令値の確認:

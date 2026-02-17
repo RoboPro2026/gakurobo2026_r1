@@ -19,7 +19,7 @@ from sensor_msgs.msg import Imu
 
 @dataclass
 class SwerveState:
-    v: list[float]
+    omega: list[float]
     theta: list[float]
     stamp_monotonic: float
 
@@ -48,6 +48,8 @@ class SwerveDriveViewer(Node):
         self.declare_parameter("imu_pub_topic", "/bno086/imu/data_raw")
         self.declare_parameter("imu_sub_topic", "/bno086/imu/data_raw")
         self.declare_parameter("rotate_robot", True)
+        self.declare_parameter("wheel_radius", 0.1)
+        self.declare_parameter("swerve_v_is_angular", True)
         self.declare_parameter("robot_length", 0.5)
         self.declare_parameter("robot_width", 0.5)
         self.declare_parameter("vector_scale", 0.3)
@@ -82,6 +84,12 @@ class SwerveDriveViewer(Node):
         )
         self._rotate_robot = (
             self.get_parameter("rotate_robot").get_parameter_value().bool_value
+        )
+        self._wheel_radius = (
+            self.get_parameter("wheel_radius").get_parameter_value().double_value
+        )
+        self._swerve_v_is_angular = (
+            self.get_parameter("swerve_v_is_angular").get_parameter_value().bool_value
         )
         self._robot_length = (
             self.get_parameter("robot_length").get_parameter_value().double_value
@@ -151,6 +159,9 @@ class SwerveDriveViewer(Node):
             self._cmd_vel_vector_scale = self._vector_scale
         if self._omega_arc_radius_scale <= 0.0:
             self._omega_arc_radius_scale = 0.45
+        if self._wheel_radius <= 0.0:
+            self.get_logger().warn("wheel_radius <= 0.0, treating swerve speed as already-linear.")
+            self._swerve_v_is_angular = False
 
         mpl.rcParams["figure.raise_window"] = bool(self._raise_window)
 
@@ -279,7 +290,12 @@ class SwerveDriveViewer(Node):
 
     def _on_msg(self, msg: SwerveDrive) -> None:
         self._latest = SwerveState(
-            v=[float(msg.v0), float(msg.v1), float(msg.v2), float(msg.v3)],
+            omega=[
+                float(msg.omega0),
+                float(msg.omega1),
+                float(msg.omega2),
+                float(msg.omega3),
+            ],
             theta=[
                 float(msg.theta0),
                 float(msg.theta1),
@@ -311,6 +327,12 @@ class SwerveDriveViewer(Node):
 
     def _clamp01(self, value: float) -> float:
         return 0.0 if value <= 0.0 else (1.0 if value >= 1.0 else value)
+
+    def _swerve_speed_linear(self, omega_radps: float) -> float:
+        if not self._swerve_v_is_angular:
+            # legacy: treat incoming as already-linear
+            return omega_radps
+        return self._wheel_radius * omega_radps
 
     def _init_plot(self) -> None:
         plt.ion()
@@ -800,7 +822,7 @@ class SwerveDriveViewer(Node):
         u = []
         v = []
         for i in range(4):
-            speed = self._latest.v[i]
+            speed = self._swerve_speed_linear(self._latest.omega[i])
             theta = self._latest.theta[i]
             u.append(self._vector_scale * speed * math.cos(theta))
             v.append(self._vector_scale * speed * math.sin(theta))
@@ -874,11 +896,11 @@ class SwerveDriveViewer(Node):
             )
 
         lines.append(
-            "v: [{:+.3f}, {:+.3f}, {:+.3f}, {:+.3f}]".format(
-                self._latest.v[0],
-                self._latest.v[1],
-                self._latest.v[2],
-                self._latest.v[3],
+            "v(m/s): [{:+.3f}, {:+.3f}, {:+.3f}, {:+.3f}]".format(
+                self._swerve_speed_linear(self._latest.omega[0]),
+                self._swerve_speed_linear(self._latest.omega[1]),
+                self._swerve_speed_linear(self._latest.omega[2]),
+                self._swerve_speed_linear(self._latest.omega[3]),
             )
         )
         lines.append(
@@ -889,6 +911,16 @@ class SwerveDriveViewer(Node):
                 self._latest.theta[3],
             )
         )
+        if self._swerve_v_is_angular:
+            lines.append(
+                "omega_raw(rad/s): [{:+.3f}, {:+.3f}, {:+.3f}, {:+.3f}]  r={:.4g}m".format(
+                    self._latest.omega[0],
+                    self._latest.omega[1],
+                    self._latest.omega[2],
+                    self._latest.omega[3],
+                    self._wheel_radius,
+                )
+            )
 
         # cmd_vel vector (x/y)
         if cmd is None:

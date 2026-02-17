@@ -181,11 +181,11 @@ public:
       omega_ref);
     RCLCPP_INFO(
       this->get_logger(),
-      "Calculated swerve drive ref: v0=%.3f, theta0=%.3f, v1=%.3f, "
-      "theta1=%.3f, v2=%.3f, theta2=%.3f, v3=%.3f, theta3=%.3f",
-      swerve_drive_ref_.v0, swerve_drive_ref_.theta0, swerve_drive_ref_.v1,
-      swerve_drive_ref_.theta1, swerve_drive_ref_.v2, swerve_drive_ref_.theta2,
-      swerve_drive_ref_.v3, swerve_drive_ref_.theta3);
+      "Calculated swerve drive ref: omega0=%.3f, theta0=%.3f, omega1=%.3f, "
+      "theta1=%.3f, omega2=%.3f, theta2=%.3f, omega3=%.3f, theta3=%.3f",
+      swerve_drive_ref_.omega0, swerve_drive_ref_.theta0, swerve_drive_ref_.omega1,
+      swerve_drive_ref_.theta1, swerve_drive_ref_.omega2, swerve_drive_ref_.theta2,
+      swerve_drive_ref_.omega3, swerve_drive_ref_.theta3);
   }
 
   void imu_callback(const sensor_msgs::msg::Imu::SharedPtr msg)
@@ -214,10 +214,10 @@ public:
   void manual_swerve_drive_ref_callback(const r1_msgs::msg::SwerveDrive::SharedPtr msg)
   {
     // 回転方向とギア比を考慮し代入。limitの確認は手動なので、行わない
-    swerve_drive_ref_.v0 = wheel_motor_dir_[0] * msg->v0 / wheel_gear_ratio_;
-    swerve_drive_ref_.v1 = wheel_motor_dir_[1] * msg->v1 / wheel_gear_ratio_;
-    swerve_drive_ref_.v2 = wheel_motor_dir_[2] * msg->v2 / wheel_gear_ratio_;
-    swerve_drive_ref_.v3 = wheel_motor_dir_[3] * msg->v3 / wheel_gear_ratio_;
+    swerve_drive_ref_.omega0 = wheel_motor_dir_[0] * msg->omega0 / wheel_gear_ratio_;
+    swerve_drive_ref_.omega1 = wheel_motor_dir_[1] * msg->omega1 / wheel_gear_ratio_;
+    swerve_drive_ref_.omega2 = wheel_motor_dir_[2] * msg->omega2 / wheel_gear_ratio_;
+    swerve_drive_ref_.omega3 = wheel_motor_dir_[3] * msg->omega3 / wheel_gear_ratio_;
     swerve_drive_ref_.theta0 =
       (steer_motor_dir_[0] * msg->theta0 + steer_theta_offset_[0]) / steer_gear_ratio_;
     swerve_drive_ref_.theta1 =
@@ -236,11 +236,11 @@ public:
 
     RCLCPP_INFO(
       this->get_logger(),
-      "Manual swerve drive ref: v0=%.3f, theta0=%.3f, v1=%.3f, "
-      "theta1=%.3f, v2=%.3f, theta2=%.3f, v3=%.3f, theta3=%.3f",
-      swerve_drive_ref_.v0, swerve_drive_ref_.theta0, swerve_drive_ref_.v1,
-      swerve_drive_ref_.theta1, swerve_drive_ref_.v2, swerve_drive_ref_.theta2,
-      swerve_drive_ref_.v3, swerve_drive_ref_.theta3);
+      "Manual swerve drive ref: omega0=%.3f, theta0=%.3f, omega1=%.3f, "
+      "theta1=%.3f, omega2=%.3f, theta2=%.3f, omega3=%.3f, theta3=%.3f",
+      swerve_drive_ref_.omega0, swerve_drive_ref_.theta0, swerve_drive_ref_.omega1,
+      swerve_drive_ref_.theta1, swerve_drive_ref_.omega2, swerve_drive_ref_.theta2,
+      swerve_drive_ref_.omega3, swerve_drive_ref_.theta3);
   }
 
   /**
@@ -287,19 +287,18 @@ public:
       }
     }
 
-    // 計算した回転速度がlimitより高いかを確認
-    double max_speed = std::abs(wheel_v[0]);
+    // 計算した角速度がlimitより高いかを確認
+    double max_omega = std::abs(wheel_v[0] / wheel_radius_);
     for (int i = 1; i < 4; i++) {
-      max_speed = std::max(max_speed, std::abs(wheel_v[i]));
+      max_omega = std::max(max_omega, std::abs(wheel_v[i] / wheel_radius_));
     }
-    if (max_speed > wheel_speed_limit_) {
-      double scale = wheel_speed_limit_ / max_speed;
-      swerve_drive_ref_.v0 *= scale;
-      swerve_drive_ref_.v1 *= scale;
-      swerve_drive_ref_.v2 *= scale;
-      swerve_drive_ref_.v3 *= scale;
+    if (max_omega > wheel_speed_limit_) {
+      const double scale = wheel_speed_limit_ / max_omega;
+      for (int i = 0; i < 4; i++) {
+        wheel_v[i] *= scale;
+      }
       RCLCPP_ERROR(
-        this->get_logger(), "Wheel speed limit exceeded. Scaling down by factor %.3f", scale);
+        this->get_logger(), "Wheel omega limit exceeded. Scaling down by factor %.3f", scale);
     }
 
     // 計算したステアリング角度がlimitより高いかを確認
@@ -313,10 +312,10 @@ public:
     }
 
     // 回転方向とギア比を考慮し代入
-    swerve_drive_ref_.v0 = wheel_motor_dir_[0] * wheel_v[0] / wheel_gear_ratio_;
-    swerve_drive_ref_.v1 = wheel_motor_dir_[1] * wheel_v[1] / wheel_gear_ratio_;
-    swerve_drive_ref_.v2 = wheel_motor_dir_[2] * wheel_v[2] / wheel_gear_ratio_;
-    swerve_drive_ref_.v3 = wheel_motor_dir_[3] * wheel_v[3] / wheel_gear_ratio_;
+    swerve_drive_ref_.omega0 = wheel_motor_dir_[0] * wheel_v[0] / wheel_radius_ / wheel_gear_ratio_;
+    swerve_drive_ref_.omega1 = wheel_motor_dir_[1] * wheel_v[1] / wheel_radius_ / wheel_gear_ratio_;
+    swerve_drive_ref_.omega2 = wheel_motor_dir_[2] * wheel_v[2] / wheel_radius_ / wheel_gear_ratio_;
+    swerve_drive_ref_.omega3 = wheel_motor_dir_[3] * wheel_v[3] / wheel_radius_ / wheel_gear_ratio_;
     swerve_drive_ref_.theta0 =
       (steer_motor_dir_[0] * steer_theta[0] + steer_theta_offset_[0]) / steer_gear_ratio_;
     swerve_drive_ref_.theta1 =
