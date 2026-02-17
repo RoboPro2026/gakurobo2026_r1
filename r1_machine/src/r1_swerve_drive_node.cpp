@@ -57,13 +57,13 @@ public:
     this->declare_parameter("robot_width", 0.5);
     this->declare_parameter("wheel_radius", 0.1);
     this->declare_parameter("wheel_gear_ratio", 1.0);
-    this->declare_parameter("steering_gear_ratio", 1.0);
+    this->declare_parameter("steer_gear_ratio", 1.0);
     this->declare_parameter("wheel_speed_limit", 100.0);
-    this->declare_parameter("steering_angle_limit", 6.28);
+    this->declare_parameter("steer_angle_limit", 6.28);
     this->declare_parameter("angle_diff_range", 0.5);
+    this->declare_parameter("steer_theta_offset", std::vector<double>{0.0, 0.0, 0.0, 0.0});
     this->declare_parameter("wheel_motor_inverse", std::vector<bool>{false, false, false, false});
-    this->declare_parameter(
-      "steering_motor_inverse", std::vector<bool>{false, false, false, false});
+    this->declare_parameter("steer_motor_inverse", std::vector<bool>{false, false, false, false});
     this->declare_parameter("use_imu", true);
 
     this->get_parameter("robot_length", robot_length_);
@@ -71,19 +71,20 @@ public:
     robot_radius_ = std::sqrt(std::pow(robot_length_ / 2.0, 2) + std::pow(robot_width_ / 2.0, 2));
     this->get_parameter("wheel_radius", wheel_radius_);
     this->get_parameter("wheel_gear_ratio", wheel_gear_ratio_);
-    this->get_parameter("steering_gear_ratio", steering_gear_ratio_);
+    this->get_parameter("steer_gear_ratio", steer_gear_ratio_);
     this->get_parameter("wheel_speed_limit", wheel_speed_limit_);
-    this->get_parameter("steering_angle_limit", steering_angle_limit_);
+    this->get_parameter("steer_angle_limit", steer_angle_limit_);
     this->get_parameter("angle_diff_range", angle_diff_range_);
+    this->get_parameter("steer_theta_offset", steer_theta_offset_);
     std::vector<bool> wheel_motor_inverse(4);
     this->get_parameter("wheel_motor_inverse", wheel_motor_inverse);
     for (size_t i = 0; i < 4; i++) {
       wheel_motor_dir_[i] = wheel_motor_inverse[i] ? -1.0 : 1.0;
     }
-    std::vector<bool> steering_motor_inverse(4);
-    this->get_parameter("steering_motor_inverse", steering_motor_inverse);
+    std::vector<bool> steer_motor_inverse(4);
+    this->get_parameter("steer_motor_inverse", steer_motor_inverse);
     for (size_t i = 0; i < 4; i++) {
-      steering_motor_dir_[i] = steering_motor_inverse[i] ? -1.0 : 1.0;
+      steer_motor_dir_[i] = steer_motor_inverse[i] ? -1.0 : 1.0;
     }
     this->get_parameter("use_imu", use_imu_);
   }
@@ -114,24 +115,28 @@ public:
         wheel_gear_ratio_ = parameter.as_double();
         RCLCPP_INFO(
           this->get_logger(), "Updated parameter: wheel_gear_ratio = %.3f", wheel_gear_ratio_);
-      } else if (name == "steering_gear_ratio") {
-        steering_gear_ratio_ = parameter.as_double();
+      } else if (name == "steer_gear_ratio") {
+        steer_gear_ratio_ = parameter.as_double();
         RCLCPP_INFO(
-          this->get_logger(), "Updated parameter: steering_gear_ratio = %.3f",
-          steering_gear_ratio_);
+          this->get_logger(), "Updated parameter: steer_gear_ratio = %.3f", steer_gear_ratio_);
       } else if (name == "wheel_speed_limit") {
         wheel_speed_limit_ = parameter.as_double();
         RCLCPP_INFO(
           this->get_logger(), "Updated parameter: wheel_speed_limit = %.3f", wheel_speed_limit_);
-      } else if (name == "steering_angle_limit") {
-        steering_angle_limit_ = parameter.as_double();
+      } else if (name == "steer_angle_limit") {
+        steer_angle_limit_ = parameter.as_double();
         RCLCPP_INFO(
-          this->get_logger(), "Updated parameter: steering_angle_limit = %.3f",
-          steering_angle_limit_);
+          this->get_logger(), "Updated parameter: steer_angle_limit = %.3f", steer_angle_limit_);
       } else if (name == "angle_diff_range") {
         angle_diff_range_ = parameter.as_double();
         RCLCPP_INFO(
           this->get_logger(), "Updated parameter: angle_diff_range = %.3f", angle_diff_range_);
+      } else if (name == "steer_theta_offset") {
+        steer_theta_offset_ = parameter.as_double_array();
+        RCLCPP_INFO(
+          this->get_logger(), "Updated parameter: steer_theta_offset = [%f, %f, %f, %f]",
+          steer_theta_offset_[0], steer_theta_offset_[1], steer_theta_offset_[2],
+          steer_theta_offset_[3]);
       } else if (name == "wheel_motor_inverse") {
         std::vector<bool> wheel_motor_inverse = parameter.as_bool_array();
         RCLCPP_INFO(
@@ -141,16 +146,14 @@ public:
         for (int i = 0; i < N; i++) {
           wheel_motor_dir_[i] = wheel_motor_inverse[i] ? -1.0 : 1.0;
         }
-      } else if (name == "steering_motor_inverse") {
-        std::vector<bool> steering_motor_inverse = parameter.as_bool_array();
+      } else if (name == "steer_motor_inverse") {
+        std::vector<bool> steer_motor_inverse = parameter.as_bool_array();
         RCLCPP_INFO(
-          this->get_logger(), "Updated parameter: steering_motor_inverse = [%s, %s, %s, %s]",
-          steering_motor_inverse[0] ? "true" : "false",
-          steering_motor_inverse[1] ? "true" : "false",
-          steering_motor_inverse[2] ? "true" : "false",
-          steering_motor_inverse[3] ? "true" : "false");
+          this->get_logger(), "Updated parameter: steer_motor_inverse = [%s, %s, %s, %s]",
+          steer_motor_inverse[0] ? "true" : "false", steer_motor_inverse[1] ? "true" : "false",
+          steer_motor_inverse[2] ? "true" : "false", steer_motor_inverse[3] ? "true" : "false");
         for (int i = 0; i < N; i++) {
-          steering_motor_dir_[i] = steering_motor_inverse[i] ? -1.0 : 1.0;
+          steer_motor_dir_[i] = steer_motor_inverse[i] ? -1.0 : 1.0;
         }
       } else if (name == "use_imu") {
         use_imu_ = parameter.as_bool();
@@ -210,17 +213,19 @@ public:
 
   void manual_swerve_drive_ref_callback(const r1_msgs::msg::SwerveDrive::SharedPtr msg)
   {
-    // 指令値を受信
-    swerve_drive_ref_ = *msg;
     // 回転方向とギア比を考慮し代入。limitの確認は手動なので、行わない
-    swerve_drive_ref_.v0 *= wheel_motor_dir_[0] / wheel_gear_ratio_;
-    swerve_drive_ref_.v1 *= wheel_motor_dir_[1] / wheel_gear_ratio_;
-    swerve_drive_ref_.v2 *= wheel_motor_dir_[2] / wheel_gear_ratio_;
-    swerve_drive_ref_.v3 *= wheel_motor_dir_[3] / wheel_gear_ratio_;
-    swerve_drive_ref_.theta0 *= steering_motor_dir_[0] / steering_gear_ratio_;
-    swerve_drive_ref_.theta1 *= steering_motor_dir_[1] / steering_gear_ratio_;
-    swerve_drive_ref_.theta2 *= steering_motor_dir_[2] / steering_gear_ratio_;
-    swerve_drive_ref_.theta3 *= steering_motor_dir_[3] / steering_gear_ratio_;
+    swerve_drive_ref_.v0 = wheel_motor_dir_[0] * msg->v0 / wheel_gear_ratio_;
+    swerve_drive_ref_.v1 = wheel_motor_dir_[1] * msg->v1 / wheel_gear_ratio_;
+    swerve_drive_ref_.v2 = wheel_motor_dir_[2] * msg->v2 / wheel_gear_ratio_;
+    swerve_drive_ref_.v3 = wheel_motor_dir_[3] * msg->v3 / wheel_gear_ratio_;
+    swerve_drive_ref_.theta0 =
+      (steer_motor_dir_[0] * msg->theta0 + steer_theta_offset_[0]) / steer_gear_ratio_;
+    swerve_drive_ref_.theta1 =
+      (steer_motor_dir_[1] * msg->theta1 + steer_theta_offset_[1]) / steer_gear_ratio_;
+    swerve_drive_ref_.theta2 =
+      (steer_motor_dir_[2] * msg->theta2 + steer_theta_offset_[2]) / steer_gear_ratio_;
+    swerve_drive_ref_.theta3 =
+      (steer_motor_dir_[3] * msg->theta3 + steer_theta_offset_[3]) / steer_gear_ratio_;
     // publish
     swerve_drive_ref_publisher_->publish(swerve_drive_ref_);
     // ステアの前回値を更新
@@ -300,22 +305,26 @@ public:
     // 計算したステアリング角度がlimitより高いかを確認
     // ステアリングの角度制限を超えたらクランプしてしまうと、それはそれで危ないので、ERRORを出すだけにする。
     for (int i = 0; i < 4; i++) {
-      if (std::abs(steer_theta[i]) > steering_angle_limit_) {
+      if (std::abs(steer_theta[i]) > steer_angle_limit_) {
         RCLCPP_ERROR(
-          this->get_logger(), "Steering angle limit exceeded for wheel %d: %.3f rad", i,
+          this->get_logger(), "steer angle limit exceeded for wheel %d: %.3f rad", i,
           steer_theta[i]);
       }
     }
 
     // 回転方向とギア比を考慮し代入
-    swerve_drive_ref_.v0 = wheel_v[0] * wheel_motor_dir_[0] / wheel_gear_ratio_;
-    swerve_drive_ref_.v1 = wheel_v[1] * wheel_motor_dir_[1] / wheel_gear_ratio_;
-    swerve_drive_ref_.v2 = wheel_v[2] * wheel_motor_dir_[2] / wheel_gear_ratio_;
-    swerve_drive_ref_.v3 = wheel_v[3] * wheel_motor_dir_[3] / wheel_gear_ratio_;
-    swerve_drive_ref_.theta0 = steer_theta[0] * steering_motor_dir_[0] / steering_gear_ratio_;
-    swerve_drive_ref_.theta1 = steer_theta[1] * steering_motor_dir_[1] / steering_gear_ratio_;
-    swerve_drive_ref_.theta2 = steer_theta[2] * steering_motor_dir_[2] / steering_gear_ratio_;
-    swerve_drive_ref_.theta3 = steer_theta[3] * steering_motor_dir_[3] / steering_gear_ratio_;
+    swerve_drive_ref_.v0 = wheel_motor_dir_[0] * wheel_v[0] / wheel_gear_ratio_;
+    swerve_drive_ref_.v1 = wheel_motor_dir_[1] * wheel_v[1] / wheel_gear_ratio_;
+    swerve_drive_ref_.v2 = wheel_motor_dir_[2] * wheel_v[2] / wheel_gear_ratio_;
+    swerve_drive_ref_.v3 = wheel_motor_dir_[3] * wheel_v[3] / wheel_gear_ratio_;
+    swerve_drive_ref_.theta0 =
+      (steer_motor_dir_[0] * steer_theta[0] + steer_theta_offset_[0]) / steer_gear_ratio_;
+    swerve_drive_ref_.theta1 =
+      (steer_motor_dir_[1] * steer_theta[1] + steer_theta_offset_[1]) / steer_gear_ratio_;
+    swerve_drive_ref_.theta2 =
+      (steer_motor_dir_[2] * steer_theta[2] + steer_theta_offset_[2]) / steer_gear_ratio_;
+    swerve_drive_ref_.theta3 =
+      (steer_motor_dir_[3] * steer_theta[3] + steer_theta_offset_[3]) / steer_gear_ratio_;
 
     // 前回値を更新
     for (int i = 0; i < 4; i++) {
@@ -334,20 +343,22 @@ public:
 
   // ========== 機械パラメータ ==========
   static constexpr int N = 4;
-  double robot_length_;         // ロボットの長さ (m)
-  double robot_width_;          // ロボットの幅 (m)
-  double robot_radius_;         // ロボットの半径 (m) = sqrt((length/2)^2 + (width/2)^2)
-  double wheel_radius_;         // ホイールの半径 (m)
-  double wheel_gear_ratio_;     // ホイールのギア比（減速比）。ギア比で割った値が出力される
-  double steering_gear_ratio_;  // ステアリングのギア比（減速比）。ギア比で割った値が出力される
+  double robot_length_;      // ロボットの長さ (m)
+  double robot_width_;       // ロボットの幅 (m)
+  double robot_radius_;      // ロボットの半径 (m) = sqrt((length/2)^2 + (width/2)^2)
+  double wheel_radius_;      // ホイールの半径 (m)
+  double wheel_gear_ratio_;  // ホイールのギア比（減速比）。ギア比で割った値が出力される
+  double steer_gear_ratio_;  // ステアリングのギア比（減速比）。ギア比で割った値が出力される
   // ========== 制御パラメータ ==========
-  double wheel_speed_limit_;     // ホイールの速度制限 (rad/s)
-  double steering_angle_limit_;  // ステアリング角度の制限 (rad)
+  double wheel_speed_limit_;  // ホイールの速度制限 (rad/s)
+  double steer_angle_limit_;  // ステアリング角度の制限 (rad)
   double
     angle_diff_range_;  // 角度差の範囲。この値を小さくすると、ステアリングの角度が連続になるようにする範囲が狭くなる。単位はrad。
+  std::vector<double> steer_theta_offset_ = {
+    0.0, 0.0, 0.0, 0.0};  // ステアリングの角度オフセット (rad)
   // motor_inverse = trueのとき、motor_dir_が-1.0になる。
   std::vector<double> wheel_motor_dir_ = {1.0, 1.0, 1.0, 1.0};
-  std::vector<double> steering_motor_dir_ = {1.0, 1.0, 1.0, 1.0};
+  std::vector<double> steer_motor_dir_ = {1.0, 1.0, 1.0, 1.0};
   bool use_imu_;       // IMUを使用するかどうか
   double yaw_offset_;  // IMUのyaw角のオフセット (rad)
   double yaw_;         // IMUのyaw角
