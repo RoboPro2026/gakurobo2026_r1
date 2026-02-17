@@ -31,7 +31,7 @@
   //        |        |         |
   //        |                  | 
   //        |        |         |
-  // <---x--|--------O---------|
+  //   -----|--------O---------|-------> x
   //        |       ↺ w       |
   //        |                  | 
   //        |                  |
@@ -241,8 +241,8 @@ public:
     double R = wheel_radius_;
 
     // 回転行列を計算
-    vx = _vx * cos(-theta) + _vy * sin(-theta);
-    vy = -_vx * sin(-theta) + _vy * cos(-theta);
+    vx = _vx * cos(theta) + _vy * sin(theta);
+    vy = -_vx * sin(theta) + _vy * cos(theta);
     omega = _omega;
 
     // メカナムホイールの逆運動学の計算

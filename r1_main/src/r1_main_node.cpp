@@ -1954,7 +1954,7 @@ void R1MainNode::manual_task(void)
   } else {
     stop_actuator_flag = false;
     // 共通タスク
-    double vx_ref = CHASSIS_MAX_VELOCITY * ps4_->data.left_stick_x;
+    double vx_ref = CHASSIS_MAX_VELOCITY * (-1) * ps4_->data.left_stick_x;
     double vy_ref = CHASSIS_MAX_VELOCITY * ps4_->data.left_stick_y;
     double vz_ref = CHASSIS_MAX_OMEGA * ps4_->data.right_stick_x;
     // 台形制御で速度を滑らかに変化させる
