@@ -247,10 +247,10 @@ public:
 
     // メカナムホイールの逆運動学の計算
     // ここはうまく行かなかったら適当に入れ替えてる
-    wheel_speeds_ref_[FL] = (1 / R) * (vx - vy + (L + W) * omega);
-    wheel_speeds_ref_[FR] = (1 / R) * (vx + vy + (L + W) * omega);
-    wheel_speeds_ref_[RL] = (1 / R) * (vx + vy - (L + W) * omega);
-    wheel_speeds_ref_[RR] = (1 / R) * (vx - vy - (L + W) * omega);
+    wheel_speeds_ref_[FL] = (1 / R) * (-vx - vy + (L + W) * omega);
+    wheel_speeds_ref_[FR] = (1 / R) * (-vx + vy + (L + W) * omega);
+    wheel_speeds_ref_[RL] = (1 / R) * (-vx + vy - (L + W) * omega);
+    wheel_speeds_ref_[RR] = (1 / R) * (-vx - vy - (L + W) * omega);
 
     // wheel_speeds_ref_[FL] = (1 / R) * (vx + vy + (L + W) * omega);
     // wheel_speeds_ref_[FR] = (1 / R) * (vx - vy + (L + W) * omega);
