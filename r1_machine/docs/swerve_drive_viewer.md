@@ -56,6 +56,14 @@ source ~/ros2_ws/install/setup.bash
 python3 src/gakurobo2026_r1/r1_machine/example/swerve_drive_viewer.py
 ```
 
+## 凡例（グラフ）
+
+- **黒い矩形**: ロボット外形（`robot_length` × `robot_width`）。`rotate_robot=true` のときYawで回転します。
+- **オレンジの点 + 数字(0〜3)**: ホイール位置とホイール番号。
+- **青い矢印（4本）**: `/swerve_drive_ref` の各輪ベクトル（長さ= `v*`、向き= `theta*` をXYに投影して表示。表示倍率は `vector_scale`）。
+- **赤い矢印（1本）**: `/cmd_vel` の並進（`linear.x`, `linear.y`）を原点から1本のベクトルで表示（表示倍率は `cmd_vel_vector_scale`）。
+- **赤い円弧 + 矢印**: `/cmd_vel` の回転（`angular.z`）。符号で回転方向、|omega|で弧の長さ/濃さが変わります（`omega_arc_radius_scale`）。
+
 パラメータを指定する例:
 
 ```bash
@@ -65,4 +73,3 @@ python3 src/gakurobo2026_r1/r1_machine/example/swerve_drive_viewer.py --ros-args
   -p cmd_vel_pub_topic:=/cmd_vel \
   -p imu_pub_topic:=/bno086/imu/data_raw
 ```
-

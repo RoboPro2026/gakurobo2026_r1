@@ -8,6 +8,7 @@ from typing import Optional
 import matplotlib as mpl
 import matplotlib.pyplot as plt
 from matplotlib.patches import Arc, FancyArrowPatch
+from matplotlib.lines import Line2D
 from matplotlib.widgets import Button, CheckButtons, Slider, TextBox
 import rclpy
 from geometry_msgs.msg import Twist
@@ -52,6 +53,7 @@ class SwerveDriveViewer(Node):
         self.declare_parameter("vector_scale", 0.3)
         self.declare_parameter("cmd_vel_vector_scale", 0.3)
         self.declare_parameter("omega_arc_radius_scale", 0.45)
+        self.declare_parameter("show_legend", True)
         self.declare_parameter("rate_hz", 30.0)
         self.declare_parameter("always_on_top", False)
         self.declare_parameter("raise_window", False)
@@ -95,6 +97,9 @@ class SwerveDriveViewer(Node):
         )
         self._omega_arc_radius_scale = (
             self.get_parameter("omega_arc_radius_scale").get_parameter_value().double_value
+        )
+        self._show_legend = (
+            self.get_parameter("show_legend").get_parameter_value().bool_value
         )
         self._rate_hz = self.get_parameter("rate_hz").get_parameter_value().double_value
         self._always_on_top = (
@@ -411,6 +416,51 @@ class SwerveDriveViewer(Node):
             zorder=6,
         )
         self._ax.add_patch(self._omega_arrow)
+
+        if self._show_legend:
+            legend_handles = [
+                Line2D([0], [0], color="k", lw=1.5, label="robot outline"),
+                Line2D(
+                    [0],
+                    [0],
+                    marker="o",
+                    color="w",
+                    markerfacecolor="C1",
+                    markersize=8,
+                    label="wheel pos (0..3)",
+                ),
+                FancyArrowPatch(
+                    (0, 0),
+                    (1, 0),
+                    arrowstyle="-|>",
+                    mutation_scale=12,
+                    color="C0",
+                    lw=2.0,
+                    label="swerve_drive_ref",
+                ),
+                FancyArrowPatch(
+                    (0, 0),
+                    (1, 0),
+                    arrowstyle="-|>",
+                    mutation_scale=12,
+                    color="C3",
+                    lw=2.0,
+                    label="cmd_vel (vx, vy)",
+                ),
+                Line2D(
+                    [0],
+                    [0],
+                    color="C3",
+                    lw=2.0,
+                    label="cmd_vel omega (arc)",
+                ),
+            ]
+            self._legend = self._ax.legend(
+                handles=legend_handles,
+                loc="upper right",
+                framealpha=0.9,
+                fontsize=9,
+            )
 
         pad = max(self._robot_length, self._robot_width) * 0.8 + 0.2
         self._ax.set_xlim(-pad, pad)
