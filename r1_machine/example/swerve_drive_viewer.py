@@ -7,6 +7,7 @@ from typing import Optional
 
 import matplotlib as mpl
 import matplotlib.pyplot as plt
+from matplotlib.patches import Arc, FancyArrowPatch
 from matplotlib.widgets import Button, CheckButtons, Slider, TextBox
 import rclpy
 from geometry_msgs.msg import Twist
@@ -30,6 +31,12 @@ class CmdVelState:
     stamp_monotonic: float
 
 
+@dataclass
+class ImuYawState:
+    yaw: float
+    stamp_monotonic: float
+
+
 class SwerveDriveViewer(Node):
     def __init__(self) -> None:
         super().__init__("swerve_drive_viewer")
@@ -38,9 +45,13 @@ class SwerveDriveViewer(Node):
         self.declare_parameter("cmd_vel_topic", "/cmd_vel")
         self.declare_parameter("cmd_vel_pub_topic", "/cmd_vel")
         self.declare_parameter("imu_pub_topic", "/bno086/imu/data_raw")
+        self.declare_parameter("imu_sub_topic", "/bno086/imu/data_raw")
+        self.declare_parameter("rotate_robot", True)
         self.declare_parameter("robot_length", 0.5)
         self.declare_parameter("robot_width", 0.5)
         self.declare_parameter("vector_scale", 0.3)
+        self.declare_parameter("cmd_vel_vector_scale", 0.3)
+        self.declare_parameter("omega_arc_radius_scale", 0.45)
         self.declare_parameter("rate_hz", 30.0)
         self.declare_parameter("always_on_top", False)
         self.declare_parameter("raise_window", False)
@@ -64,6 +75,12 @@ class SwerveDriveViewer(Node):
         self._imu_pub_topic = (
             self.get_parameter("imu_pub_topic").get_parameter_value().string_value
         )
+        self._imu_sub_topic = (
+            self.get_parameter("imu_sub_topic").get_parameter_value().string_value
+        )
+        self._rotate_robot = (
+            self.get_parameter("rotate_robot").get_parameter_value().bool_value
+        )
         self._robot_length = (
             self.get_parameter("robot_length").get_parameter_value().double_value
         )
@@ -72,6 +89,12 @@ class SwerveDriveViewer(Node):
         )
         self._vector_scale = (
             self.get_parameter("vector_scale").get_parameter_value().double_value
+        )
+        self._cmd_vel_vector_scale = (
+            self.get_parameter("cmd_vel_vector_scale").get_parameter_value().double_value
+        )
+        self._omega_arc_radius_scale = (
+            self.get_parameter("omega_arc_radius_scale").get_parameter_value().double_value
         )
         self._rate_hz = self.get_parameter("rate_hz").get_parameter_value().double_value
         self._always_on_top = (
@@ -119,11 +142,16 @@ class SwerveDriveViewer(Node):
             self._cmd_vel_publish_rate_hz = 20.0
         if self._imu_publish_rate_hz <= 0.0:
             self._imu_publish_rate_hz = 50.0
+        if self._cmd_vel_vector_scale <= 0.0:
+            self._cmd_vel_vector_scale = self._vector_scale
+        if self._omega_arc_radius_scale <= 0.0:
+            self._omega_arc_radius_scale = 0.45
 
         mpl.rcParams["figure.raise_window"] = bool(self._raise_window)
 
         self._latest: Optional[SwerveState] = None
         self._cmd_vel: Optional[CmdVelState] = None
+        self._imu_yaw: Optional[ImuYawState] = None
         self._heading_est = 0.0
         self._heading_last_monotonic: Optional[float] = None
         self._cmd_vel_pub = None
@@ -139,6 +167,7 @@ class SwerveDriveViewer(Node):
 
         self.create_subscription(SwerveDrive, self._topic, self._on_msg, 10)
         self.create_subscription(Twist, self._cmd_vel_topic, self._on_cmd_vel, 10)
+        self.create_subscription(Imu, self._imu_sub_topic, self._on_imu, 10)
         if self._enable_cmd_vel_publish_ui:
             self._cmd_vel_pub = self.create_publisher(
                 Twist, self._cmd_vel_pub_topic, 10
@@ -147,6 +176,7 @@ class SwerveDriveViewer(Node):
             self._imu_pub = self.create_publisher(Imu, self._imu_pub_topic, 10)
         self.get_logger().info(f"Subscribing: {self._topic}")
         self.get_logger().info(f"Subscribing: {self._cmd_vel_topic}")
+        self.get_logger().info(f"Subscribing: {self._imu_sub_topic}")
         if self._enable_cmd_vel_publish_ui:
             self.get_logger().info(f"Publishing (UI): {self._cmd_vel_pub_topic}")
         if self._enable_imu_publish_ui:
@@ -230,6 +260,18 @@ class SwerveDriveViewer(Node):
             stamp_monotonic=now,
         )
 
+    def _quat_to_yaw(self, x: float, y: float, z: float, w: float) -> float:
+        # yaw (Z axis rotation), ROS standard (ENU), from quaternion.
+        siny_cosp = 2.0 * (w * z + x * y)
+        cosy_cosp = 1.0 - 2.0 * (y * y + z * z)
+        return math.atan2(siny_cosp, cosy_cosp)
+
+    def _on_imu(self, msg: Imu) -> None:
+        now = time.monotonic()
+        q = msg.orientation
+        yaw = self._quat_to_yaw(float(q.x), float(q.y), float(q.z), float(q.w))
+        self._imu_yaw = ImuYawState(yaw=yaw, stamp_monotonic=now)
+
     def _on_msg(self, msg: SwerveDrive) -> None:
         self._latest = SwerveState(
             v=[float(msg.v0), float(msg.v1), float(msg.v2), float(msg.v3)],
@@ -249,6 +291,21 @@ class SwerveDriveViewer(Node):
         x = [half_l, -half_l, -half_l, half_l]
         y = [half_w, half_w, -half_w, -half_w]
         return x, y
+
+    def _rotate_xy(
+        self, x: list[float], y: list[float], yaw: float
+    ) -> tuple[list[float], list[float]]:
+        c = math.cos(yaw)
+        s = math.sin(yaw)
+        xr: list[float] = []
+        yr: list[float] = []
+        for xi, yi in zip(x, y):
+            xr.append(c * xi - s * yi)
+            yr.append(s * xi + c * yi)
+        return xr, yr
+
+    def _clamp01(self, value: float) -> float:
+        return 0.0 if value <= 0.0 else (1.0 if value >= 1.0 else value)
 
     def _init_plot(self) -> None:
         plt.ion()
@@ -270,27 +327,36 @@ class SwerveDriveViewer(Node):
         self._ax.grid(True)
 
         xw, yw = self._wheel_positions()
+        self._wheel_x_body = xw
+        self._wheel_y_body = yw
 
         # Robot outline (rectangle)
-        outline_x = [
+        self._outline_x_body = [
             0.5 * self._robot_length,
             0.5 * self._robot_length,
             -0.5 * self._robot_length,
             -0.5 * self._robot_length,
             0.5 * self._robot_length,
         ]
-        outline_y = [
+        self._outline_y_body = [
             0.5 * self._robot_width,
             -0.5 * self._robot_width,
             -0.5 * self._robot_width,
             0.5 * self._robot_width,
             0.5 * self._robot_width,
         ]
-        (self._outline_line,) = self._ax.plot(outline_x, outline_y, "k-", lw=1.5)
+        (self._outline_line,) = self._ax.plot(
+            self._outline_x_body, self._outline_y_body, "k-", lw=1.5
+        )
 
-        self._ax.scatter(xw, yw, c=["C1", "C1", "C1", "C1"], s=40)
+        self._wheel_scatter = self._ax.scatter(
+            xw, yw, c=["C1", "C1", "C1", "C1"], s=40
+        )
+        self._wheel_labels = []
         for i, (x, y) in enumerate(zip(xw, yw)):
-            self._ax.text(x, y, f" {i}", va="center", ha="left", fontsize=10)
+            self._wheel_labels.append(
+                self._ax.text(x, y, f" {i}", va="center", ha="left", fontsize=10)
+            )
 
         u0 = [0.0, 0.0, 0.0, 0.0]
         v0 = [0.0, 0.0, 0.0, 0.0]
@@ -305,6 +371,46 @@ class SwerveDriveViewer(Node):
             color=["C0", "C0", "C0", "C0"],
             width=0.007,
         )
+
+        # cmd_vel arrow (single vector for x/y) and omega arrow (curved)
+        self._cmd_vel_quiver = self._ax.quiver(
+            [0.0],
+            [0.0],
+            [0.0],
+            [0.0],
+            angles="xy",
+            scale_units="xy",
+            scale=1.0,
+            color=["C3"],
+            width=0.010,
+            zorder=5,
+        )
+        self._omega_radius = (
+            max(self._robot_length, self._robot_width) * self._omega_arc_radius_scale
+        )
+        self._omega_arc = Arc(
+            (0.0, 0.0),
+            2.0 * self._omega_radius,
+            2.0 * self._omega_radius,
+            theta1=0.0,
+            theta2=0.0,
+            color="C3",
+            lw=2.0,
+            alpha=0.0,
+            zorder=5,
+        )
+        self._ax.add_patch(self._omega_arc)
+        self._omega_arrow = FancyArrowPatch(
+            (0.0, 0.0),
+            (0.0, 0.0),
+            arrowstyle="-|>",
+            mutation_scale=16,
+            color="C3",
+            lw=2.0,
+            alpha=0.0,
+            zorder=6,
+        )
+        self._ax.add_patch(self._omega_arrow)
 
         pad = max(self._robot_length, self._robot_width) * 0.8 + 0.2
         self._ax.set_xlim(-pad, pad)
@@ -620,7 +726,26 @@ class SwerveDriveViewer(Node):
             self._fig.canvas.draw_idle()
             return
 
-        xw, yw = self._wheel_positions()
+        cmd = self._cmd_vel
+
+        yaw = 0.0
+        yaw_src = "none"
+        if self._imu_yaw is not None:
+            yaw = self._imu_yaw.yaw
+            yaw_src = "imu"
+        else:
+            yaw = self._heading_est
+            yaw_src = "cmd_vel_int"
+
+        if self._rotate_robot:
+            xw, yw = self._rotate_xy(self._wheel_x_body, self._wheel_y_body, yaw)
+            ox, oy = self._rotate_xy(self._outline_x_body, self._outline_y_body, yaw)
+            self._outline_line.set_data(ox, oy)
+            self._wheel_scatter.set_offsets(list(zip(xw, yw)))
+            for label, xi, yi in zip(self._wheel_labels, xw, yw):
+                label.set_position((xi, yi))
+        else:
+            xw, yw = self._wheel_x_body, self._wheel_y_body
 
         u = []
         v = []
@@ -634,7 +759,6 @@ class SwerveDriveViewer(Node):
         self._quiver.set_UVC(u, v)
 
         age = now - self._latest.stamp_monotonic
-        cmd = self._cmd_vel
         lines: list[str] = []
         lines.append(f"swerve rx: {self._topic}")
         lines.append(f"cmd_vel rx: {self._cmd_vel_topic}")
@@ -642,6 +766,7 @@ class SwerveDriveViewer(Node):
             lines.append(f"cmd_vel tx: {self._cmd_vel_pub_topic}")
         if self._enable_imu_publish_ui:
             lines.append(f"imu tx: {self._imu_pub_topic}")
+        lines.append(f"robot_yaw({yaw_src}): {yaw:+.3f} rad ({math.degrees(yaw):+.1f} deg)")
         lines.append(f"swerve age: {age:.3f} s")
 
         if cmd is None:
@@ -714,6 +839,48 @@ class SwerveDriveViewer(Node):
                 self._latest.theta[3],
             )
         )
+
+        # cmd_vel vector (x/y)
+        if cmd is None:
+            cvx, cvy, comega = 0.0, 0.0, 0.0
+        else:
+            cvx, cvy, comega = cmd.vx, cmd.vy, cmd.omega
+        self._cmd_vel_quiver.set_UVC(
+            [self._cmd_vel_vector_scale * cvx],
+            [self._cmd_vel_vector_scale * cvy],
+        )
+
+        # omega curved arrow (about origin). Span reflects |omega|.
+        omega_lim = abs(self._cmd_vel_limit_omega) if self._cmd_vel_limit_omega != 0.0 else 1.0
+        omega_ratio = self._clamp01(abs(comega) / omega_lim)
+        if omega_ratio < 1e-3:
+            self._omega_arc.set_alpha(0.0)
+            self._omega_arrow.set_alpha(0.0)
+        else:
+            span_deg = 45.0 + 225.0 * omega_ratio  # 45..270 deg
+            base_deg = 30.0
+            if comega >= 0.0:
+                theta1 = base_deg
+                theta2 = base_deg + span_deg
+                arrow_dir = 1.0
+            else:
+                theta1 = base_deg - span_deg
+                theta2 = base_deg
+                arrow_dir = -1.0
+
+            alpha = 0.25 + 0.75 * omega_ratio
+            self._omega_arc.theta1 = theta1
+            self._omega_arc.theta2 = theta2
+            self._omega_arc.set_alpha(alpha)
+
+            end_rad = math.radians(theta2)
+            start_rad = math.radians(theta2 - 10.0 * arrow_dir)
+            x0 = self._omega_radius * math.cos(start_rad)
+            y0 = self._omega_radius * math.sin(start_rad)
+            x1 = self._omega_radius * math.cos(end_rad)
+            y1 = self._omega_radius * math.sin(end_rad)
+            self._omega_arrow.set_positions((x0, y0), (x1, y1))
+            self._omega_arrow.set_alpha(alpha)
 
         self._status_text.set_text("\n".join(lines))
 
