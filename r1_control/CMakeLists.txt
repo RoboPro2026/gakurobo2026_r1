@@ -2,7 +2,8 @@ cmake_minimum_required(VERSION 3.8)
 project(r1_control)
 
 if(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
-  add_compile_options(-Wall -Wextra -Wpedantic)
+  # r1_controlは重い処理が多いので、-O3でコンパイルする
+  add_compile_options(-std=c++20 -Wall -Wextra -Wpedantic -O3)
 endif()
 
 # find dependencies

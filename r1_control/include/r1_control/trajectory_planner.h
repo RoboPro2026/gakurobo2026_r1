@@ -403,7 +403,10 @@ private:
   double dist_all_;
   // 軌道全体の時間
   double t_all_;
-  // 計算結果
+  rclcpp::Logger logger_;
+
+public:
+  // 計算結果、簡単にアクセスできるようにpublicにする
   std::vector<double> t_;
   std::vector<double> x_;
   std::vector<double> y_;
@@ -417,5 +420,4 @@ private:
   int array_size_;
   // 各区間の計算状態
   std::vector<int> status_;
-  rclcpp::Logger logger_;
 };
