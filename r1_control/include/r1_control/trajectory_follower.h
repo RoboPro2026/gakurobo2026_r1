@@ -11,12 +11,16 @@
 
 #pragma once
 
+#include <cmath>
+
 #include "geometry_msgs/msg/twist.hpp"
 #include "nav_msgs/msg/odometry.hpp"
 #include "r1_control/trajectory_planner.h"
 #include "rclcpp/rclcpp.hpp"
 #include "tf2/LinearMath/Matrix3x3.h"
 #include "tf2/LinearMath/Quaternion.h"
+#include "tf2/utils.h"
+#include "tf2_geometry_msgs/tf2_geometry_msgs.hpp"
 
 struct WayPoint
 {
@@ -32,6 +36,7 @@ struct WayPoint
 
 class TrajectoryFollower
 {
+public:
   TrajectoryFollower(TrajectoryPlanner * traj_planner)
   : logger_(rclcpp::get_logger("trajectory_follower"))
   {
@@ -75,7 +80,7 @@ class TrajectoryFollower
     for (int i = 0; i < 3; i++) {
       error[i] = x_ref[i] - x[i];
       integral_error_[i] += error[i] * dt_;
-      double derivative = (error[i] - prev_error_[i]) / dt_;
+      [[maybe_unused]] const double derivative = (error[i] - prev_error_[i]) / dt_;
       prev_error_[i] = error[i];
       // p制御+軌道FF
       ret[i] = kp_ * error[i] + kff_ * v_ref[i];
@@ -117,11 +122,11 @@ class TrajectoryFollower
     wp.x = traj_planner_->x_[next_idx_];
     wp.y = traj_planner_->y_[next_idx_];
     wp.theta = traj_planner_->theta_[next_idx_];
-    wp.v_trans = traj_planner->v_trans_[next_idx_];
-    wp.a_trans = traj_planner->a_trans_[next_idx_];
-    wp.j_trans = traj_planner->j_trans_[next_idx_];
-    wp.omega = traj_planner->omega_[next_idx_];
-    wp.curvature = traj_planner->curvature_[next_idx_];
+    wp.v_trans = traj_planner_->v_trans_[next_idx_];
+    wp.a_trans = traj_planner_->a_trans_[next_idx_];
+    wp.j_trans = traj_planner_->j_trans_[next_idx_];
+    wp.omega = traj_planner_->omega_[next_idx_];
+    wp.curvature = traj_planner_->curvature_[next_idx_];
 
     // 現在の位置のnext_waypointから、角度を計算
     double arg = std::atan2(wp.y - y, wp.x - x);

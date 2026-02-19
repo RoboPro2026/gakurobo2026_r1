@@ -9,6 +9,7 @@
  * 
  */
 
+#include <algorithm>
 #include <chrono>
 #include <complex>
 #include <limits>
@@ -85,11 +86,9 @@ public:
 
     for (int i = 0; i < ACT_N; i++) {
       act_traj_planner_[i] = std::make_shared<TrajectoryPlanner>();
-      act_traj_follower_[i] = std::make_shared<TrajectoryFollower>();
     }
 
-    declare_and_get_parameter("act_param_base_filepath", act_param_base_filepath_, "");
-    declare_and_get_parameter("act_wp_base_filepath", act_wp_base_filepath_, "");
+    declare_and_get_parameter("act_filebase", act_filebase_, "");
     declare_and_get_parameter("zone", zone_, "red");
     declare_and_get_parameter("search_radius", search_radius_, 0.0);
     declare_and_get_parameter("kp", kp_, 0.0);
@@ -98,8 +97,23 @@ public:
     declare_and_get_parameter("kff", kff_, 0.0);
     declare_and_get_parameter("goal_range", goal_range_, 0.0);
 
+    try {
+      for (int i = 0; i < ACT_N; i++) {
+        if (generate_trajectory(i) != 0) {
+          throw std::runtime_error("Failed to generate trajectory");
+        }
+      }
+    } catch (const std::exception & e) {
+      RCLCPP_FATAL(
+        this->get_logger(), "Exception caught during trajectory generation: %s", e.what());
+      rclcpp::shutdown();
+      return;
+    }
+
     for (int i = 0; i < ACT_N; i++) {
-      generate_trajectory(i);
+      act_traj_follower_[i] = std::make_shared<TrajectoryFollower>(act_traj_planner_[i].get());
+      act_traj_follower_[i]->set_param(
+        kp_, ki_, kd_, kff_, 0.01 /* dt */, search_radius_, goal_range_);
     }
     RCLCPP_INFO(this->get_logger(), "Generated trajectories for all ACTs");
 
@@ -130,17 +144,17 @@ public:
     int inc = 10;  // 軌道の点を10点ごとに表示する
 
     for (int i = 0;; i += inc) {
-      if (i >= traj_planner_[n]->array_size_) {
-        i = traj_planner_[n]->array_size_ - 1;
+      if (i >= act_traj_planner_[n]->array_size_) {
+        i = act_traj_planner_[n]->array_size_ - 1;
       }
       geometry_msgs::msg::PoseStamped pose;
       pose.header = path.header;
-      pose.pose.position.x = traj_planner_[n]->x_[i];
-      pose.pose.position.y = traj_planner_[n]->y_[i];
+      pose.pose.position.x = act_traj_planner_[n]->x_[i];
+      pose.pose.position.y = act_traj_planner_[n]->y_[i];
       pose.pose.position.z = 0.0;
 
       tf2::Quaternion q;
-      q.setRPY(0.0, 0.0, traj_planner_[n]->theta_[i]);  // roll, pitch, yaw
+      q.setRPY(0.0, 0.0, act_traj_planner_[n]->theta_[i]);  // roll, pitch, yaw
       q.normalize();
       pose.pose.orientation.x = q.x();
       pose.pose.orientation.y = q.y();
@@ -148,14 +162,15 @@ public:
       pose.pose.orientation.w = q.w();
       path.poses.push_back(pose);
 
-      if (i >= traj_planner_[n]->array_size_ - 1) {
+      if (i >= act_traj_planner_[n]->array_size_ - 1) {
         break;
       }
     }
     waypoints_publisher_->publish(path);
   }
 
-  void publish_cmd_vel_and_target_pose(Waypoint waypoint, geometry_msgs::msg::Twist cmd_vel)
+  void publish_cmd_vel_and_target_pose(
+    const WayPoint & waypoint, const geometry_msgs::msg::Twist & cmd_vel)
   {
     geometry_msgs::msg::PoseStamped target_pose;
     target_pose.header.stamp = this->get_clock()->now();
@@ -181,11 +196,14 @@ public:
       act_step_ = ACT0;
       act_traj_follower_[0]->reset();
       // act0のpathをpublishする
-      publish_path(&act_traj_planner_[0]);
+      publish_path(0);
       RCLCPP_INFO(this->get_logger(), "Starting ACT0");
     } else if (act_step_ == ACT0) {
+      // 軌道追従の計算を行う
       std::pair<WayPoint, geometry_msgs::msg::Twist> ret = act_traj_follower_[0]->update(odometry_);
+      // 指令値と目標のwaypointをpublishする
       publish_cmd_vel_and_target_pose(ret.first, ret.second);
+      // goal_range_以内に到達したらFINISHに遷移する
       if (act_traj_follower_[0]->is_finished()) {
         act_step_ = ACT0_FINISH;
       }
@@ -198,53 +216,83 @@ public:
     act_publisher_->publish(act_status_msg);
   }
 
-  void generate_trajectory(int n)
+  int generate_trajectory(int n)
   {
     // paramの読み込み
     double dt, v_max, a_max, j_max, omega_max;
     char line[256], buff[256];
     // ファイル名が与えられていなかったらエラーにする
-    if (act_param_base_filepath_ == "") {
-      RCLCPP_FATAL(this->get_logger(), "act_param_base_filepath is not set");
-      return;
+    if (act_filebase_ == "") {
+      RCLCPP_FATAL(this->get_logger(), "actfilebase is not set");
+      return 1;
     }
     // ファイルを開く
-    std::string param_name = act_param_base_filepath_ + std::to_string(n) + ".csv";
+    std::string param_name = act_filebase_ + std::to_string(n) + "_robot_parameter.csv";
     FILE * fp = fopen(param_name.c_str(), "r");
     if (fp == NULL) {
       RCLCPP_FATAL(this->get_logger(), "Failed to open %s", param_name.c_str());
-      return;
+      return 1;
     }
 
     // 最初の1行目はzoneなので無視
-    fscanf(fp, "%s", line);
+    if (fscanf(fp, "%255s", line) != 1) {
+      RCLCPP_FATAL(this->get_logger(), "Failed to read zone from %s", param_name.c_str());
+      fclose(fp);
+      return 1;
+    }
     // 2行目はdt
-    fscanf(fp, "dt,%lf", &dt);
+    // データを読むときはなぜか最初は空白にしないと読めない
+    if (fscanf(fp, " dt,%lf", &dt) != 1) {
+      RCLCPP_FATAL(this->get_logger(), "Failed to read dt from %s", param_name.c_str());
+      fclose(fp);
+      return 1;
+    }
     // 3行目はv_max
-    fscanf(fp, "v_max,%lf", &v_max);
+    if (fscanf(fp, " v_max,%lf", &v_max) != 1) {
+      RCLCPP_FATAL(this->get_logger(), "Failed to read v_max from %s", param_name.c_str());
+      fclose(fp);
+      return 1;
+    }
     // 4行目はa_max
-    fscanf(fp, "a_max,%lf", &a_max);
+    if (fscanf(fp, " a_max,%lf", &a_max) != 1) {
+      RCLCPP_FATAL(this->get_logger(), "Failed to read a_max from %s", param_name.c_str());
+      fclose(fp);
+      return 1;
+    }
     // 5行目はj_max
-    fscanf(fp, "j_max,%lf", &j_max);
+    if (fscanf(fp, " j_max,%lf", &j_max) != 1) {
+      RCLCPP_FATAL(this->get_logger(), "Failed to read j_max from %s", param_name.c_str());
+      fclose(fp);
+      return 1;
+    }
     // 6行目はomega_max
-    fscanf(fp, "omega_max,%lf", &omega_max);
+    if (fscanf(fp, " omega_max,%lf", &omega_max) != 1) {
+      RCLCPP_FATAL(this->get_logger(), "Failed to read omega_max from %s", param_name.c_str());
+      fclose(fp);
+      return 1;
+    }
     // 7行目以降は無視
     fclose(fp);
+
+    // 取得したデータをログに出力する
+    RCLCPP_INFO(
+      this->get_logger(), "Parameters for ACT%d: dt=%f, v_max=%f, a_max=%f, j_max=%f, omega_max=%f",
+      n, dt, v_max, a_max, j_max, omega_max);
 
     // waypointの読み込み
     std::vector<double> x_wp, y_wp;
     std::vector<std::pair<int, double>> theta_wp, v_trans_wp;
     // ファイル名が与えられていなかったらエラーにする
-    if (act_wp_base_filepath_ == "") {
-      RCLCPP_FATAL(this->get_logger(), "act_wp_base_filepath is not set");
-      return;
+    if (act_filebase_ == "") {
+      RCLCPP_FATAL(this->get_logger(), "act_filebase is not set");
+      return 1;
     }
-    std::string wp_filename = act_wp_base_filepath_ + std::to_string(n) + ".csv";
+    std::string wp_filename = act_filebase_ + std::to_string(n) + "_waypoints.csv";
     // ファイルを開く
     fp = fopen(wp_filename.c_str(), "r");
     if (fp == NULL) {
       RCLCPP_FATAL(this->get_logger(), "Failed to open %s", wp_filename.c_str());
-      return;
+      return 1;
     }
     int cnt = 0;
     int theta_wp_cnt = 0;
@@ -256,7 +304,7 @@ public:
       cnt = 0;
       i = 0;
       j = 0;
-      while (1) {
+      while (true) {
         char c = line[i];
         if (c == ',' || c == '\n' || c == '\0') {
           buff[j] = '\0';
@@ -281,8 +329,10 @@ public:
           j = 0;
           if (c == ',') {
             cnt++;
-          } else {
-            cnt = 0;
+          }
+
+          if (c == '\n' || c == '\0') {
+            break;
           }
         } else {
           buff[j] = c;
@@ -294,11 +344,33 @@ public:
 
     fclose(fp);
 
+    for (int i = 0; i < x_wp.size(); i++) {
+      RCLCPP_INFO(this->get_logger(), "Waypoint %d: x=%f, y=%f", i, x_wp[i], y_wp[i]);
+    }
+    for (int i = 0; i < theta_wp.size(); i++) {
+      RCLCPP_INFO(
+        this->get_logger(), "Theta Waypoint %d: index=%d, theta=%f", i, theta_wp[i].first,
+        theta_wp[i].second);
+    }
+    for (int i = 0; i < v_trans_wp.size(); i++) {
+      RCLCPP_INFO(
+        this->get_logger(), "Velocity Waypoint %d: index=%d, v_trans=%f", i, v_trans_wp[i].first,
+        v_trans_wp[i].second);
+    }
+
     // trajectory plannerの計算
-    act_traj_planner_[n]->calc(
+    auto ret = act_traj_planner_[n]->calc(
       x_wp, y_wp, theta_wp, v_trans_wp, dt, v_max, a_max, j_max, omega_max);
 
+    for (int i = 0; i < ret.size(); i++) {
+      if (ret[i] != 0) {
+        RCLCPP_FATAL(this->get_logger(), "Failed to calculate trajectory for ACT%d", n);
+        return 1;
+      }
+    }
+
     RCLCPP_INFO(this->get_logger(), "Generated trajectory for ACT%d", n);
+    return 0;
   }
 
   // 足回り速度指令値
@@ -318,8 +390,7 @@ public:
   nav_msgs::msg::Odometry odometry_;
   int act_step_ = ACT_NONE;
   // filepath
-  std::string act_param_base_filepath_;
-  std::string act_wp_base_filepath_;
+  std::string act_filebase_;
   // zone
   std::string zone_;
   // trajectory_follwerのparameter
