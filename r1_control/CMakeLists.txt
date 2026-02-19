@@ -25,6 +25,7 @@ add_executable(test_spline_node example/test_spline_node.cpp)
 add_executable(test_trajectory_planner_node example/test_trajectory_planner_node.cpp)
 add_executable(test_trapezoid_node example/test_trapezoid_node.cpp)
 add_executable(r1_chassis_control_node src/r1_chassis_control_node.cpp)
+add_executable(r1_dummy_odometry_node src/r1_dummy_odometry_node.cpp)
 
 pybind11_add_module(trajectory_planner src/trajectory_planner.cpp)
 
@@ -53,6 +54,17 @@ ament_target_dependencies(r1_chassis_control_node
   tf2_geometry_msgs
   visualization_msgs
 )
+
+ament_target_dependencies(r1_dummy_odometry_node
+  geometry_msgs
+  nav_msgs
+  rclcpp
+  std_msgs
+  tf2
+  tf2_geometry_msgs
+  visualization_msgs
+)
+
 
 target_include_directories(test_minimum_jerk_node PUBLIC
   $<BUILD_INTERFACE:${EIGEN3_INCLUDE_DIR}>
@@ -90,6 +102,12 @@ target_include_directories(r1_chassis_control_node PUBLIC
   $<INSTALL_INTERFACE:include>
 )
 
+target_include_directories(r1_dummy_odometry_node PUBLIC
+  $<BUILD_INTERFACE:${EIGEN3_INCLUDE_DIR}>
+  $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+  $<INSTALL_INTERFACE:include>
+)
+
 target_link_libraries(trajectory_planner
   PRIVATE
     rclcpp::rclcpp
@@ -112,6 +130,10 @@ install(TARGETS test_trapezoid_node
 )
 
 install(TARGETS r1_chassis_control_node
+  DESTINATION lib/${PROJECT_NAME}
+)
+
+install(TARGETS r1_dummy_odometry_node
   DESTINATION lib/${PROJECT_NAME}
 )
 

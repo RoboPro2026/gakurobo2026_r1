@@ -68,6 +68,14 @@ def generate_launch_description():
         arguments=["--ros-args", "--log-level", "warn"],
     )
 
+    r1_dummy_odometry_node = Node(
+        package="r1_control",
+        executable="r1_dummy_odometry_node",
+        name="r1_dummy_odometry_node",
+        parameters=[param_file],
+        arguments=["--ros-args", "--log-level", "warn"],
+    )
+
     # オドメトリの値を知りたいときはinfoにする
     r1_odometry_node = Node(
         package="r1_machine",
@@ -443,6 +451,7 @@ def generate_launch_description():
         # r1_main_node,
         r1_chassis_control_node,
         r1_mecanum_node,
+        # r1_dummy_odometry_node,
         r1_odometry_node,
         r1_sabacan_msgs_converter_node,
         r1_kfs_fx_node,

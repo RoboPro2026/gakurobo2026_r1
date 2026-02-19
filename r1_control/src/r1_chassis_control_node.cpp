@@ -196,35 +196,6 @@ public:
 
     target_pose_publisher_->publish(target_pose);
     cmd_vel_publisher_->publish(cmd_vel);
-
-    visualization_msgs::msg::Marker marker;
-    marker.header.stamp = now();
-    marker.header.frame_id = "base_link";  // ★ロボット座標系
-
-    marker.ns = "robot";
-    marker.id = 0;
-    marker.type = visualization_msgs::msg::Marker::CUBE;
-    marker.action = visualization_msgs::msg::Marker::ADD;
-
-    // ロボットサイズ（例：50cm × 40cm × 20cm）
-    marker.scale.x = 0.5;
-    marker.scale.y = 0.5;
-    marker.scale.z = 0.01;
-
-    // 原点中心に置く
-    marker.pose.position.x = 0.0;
-    marker.pose.position.y = 0.0;
-    marker.pose.position.z = marker.scale.z / 2.0;
-
-    marker.pose.orientation.w = 1.0;
-
-    // 色（青）
-    marker.color.r = 0.1f;
-    marker.color.g = 0.3f;
-    marker.color.b = 0.8f;
-    marker.color.a = 1.0;
-
-    robot_marker_publisher_->publish(marker);
   }
 
   void timer_callback()
@@ -243,9 +214,9 @@ public:
       // goal_range_以内に到達したらFINISHに遷移する
       if (act_traj_follower_[0]->is_finished()) {
         act_step_ = ACT0_FINISH;
+        RCLCPP_INFO(this->get_logger(), "Finished ACT0");
       }
     } else if (act_step_ == ACT0_FINISH) {
-      RCLCPP_INFO(this->get_logger(), "Finished ACT0");
     }
     // 現在のact_step_をpublishする
     std_msgs::msg::Int32 act_status_msg;
@@ -341,7 +312,7 @@ public:
       j = 0;
       while (true) {
         char c = line[i];
-        if (c == ',' || c == '\n' || c == '\0') {
+        if (c == ',' || c == '\r' || c == '\n' || c == '\0') {
           buff[j] = '\0';
           if (j > 0) {
             switch (cnt) {

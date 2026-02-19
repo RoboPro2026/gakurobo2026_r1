@@ -59,7 +59,6 @@ public:
   void reset()
   {
     idx_ = 0;
-    next_idx_ = 0;
     finish_ = 0;
   }
 
@@ -102,31 +101,30 @@ public:
     double theta = tf2::getYaw(odometry.pose.pose.orientation);
     double dx, dy, dist;
     // 現在位置から次のwaypointを探索
-    next_idx_ = idx_;
-    while (next_idx_ < traj_planner_->array_size_) {
-      dx = traj_planner_->x_[next_idx_] - x;
-      dy = traj_planner_->y_[next_idx_] - y;
+    while (idx_ < traj_planner_->array_size_) {
+      dx = traj_planner_->x_[idx_] - x;
+      dy = traj_planner_->y_[idx_] - y;
       dist = std::sqrt(dx * dx + dy * dy);
       if (dist > search_radius_) {
         break;
       }
-      next_idx_++;
+      idx_++;
     }
 
-    if (next_idx_ >= traj_planner_->array_size_ - 1) {
-      next_idx_ = traj_planner_->array_size_ - 1;
+    if (idx_ >= traj_planner_->array_size_ - 1) {
+      idx_ = traj_planner_->array_size_ - 1;
     }
 
     // 次のwaypointを更新
     WayPoint wp;
-    wp.x = traj_planner_->x_[next_idx_];
-    wp.y = traj_planner_->y_[next_idx_];
-    wp.theta = traj_planner_->theta_[next_idx_];
-    wp.v_trans = traj_planner_->v_trans_[next_idx_];
-    wp.a_trans = traj_planner_->a_trans_[next_idx_];
-    wp.j_trans = traj_planner_->j_trans_[next_idx_];
-    wp.omega = traj_planner_->omega_[next_idx_];
-    wp.curvature = traj_planner_->curvature_[next_idx_];
+    wp.x = traj_planner_->x_[idx_];
+    wp.y = traj_planner_->y_[idx_];
+    wp.theta = traj_planner_->theta_[idx_];
+    wp.v_trans = traj_planner_->v_trans_[idx_];
+    wp.a_trans = traj_planner_->a_trans_[idx_];
+    wp.j_trans = traj_planner_->j_trans_[idx_];
+    wp.omega = traj_planner_->omega_[idx_];
+    wp.curvature = traj_planner_->curvature_[idx_];
 
     // 現在の位置のnext_waypointから、角度を計算
     double arg = std::atan2(wp.y - y, wp.x - x);
@@ -138,7 +136,7 @@ public:
     std::vector<double> v_ref = {vx, vy, wp.omega};
 
     // 終了判定
-    bool is_last_point = (next_idx_ == traj_planner_->array_size_ - 1);
+    bool is_last_point = (idx_ == traj_planner_->array_size_ - 1);
     bool is_dist_goal = (dist < goal_range_);
     bool is_theta_goal = (std::abs(theta - wp.theta) < goal_range_);
     if (is_last_point && is_dist_goal && is_theta_goal) {
@@ -176,6 +174,5 @@ private:
   std::vector<double> integral_error_{0.0, 0.0, 0.0};
   double dt_ = 0.0;
   int idx_ = 0;
-  int next_idx_ = 0;
   int finish_ = 0;
 };

@@ -1,7 +1,7 @@
 zone,blue
 dt,0.01
-v_max,1.0
-a_max,1.0
-j_max,1.0
+v_max,2.0
+a_max,4.0
+j_max,10.0
 omega_max,3.14
 robot_dt,1.0

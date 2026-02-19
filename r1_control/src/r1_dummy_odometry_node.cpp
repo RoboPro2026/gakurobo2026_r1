@@ -1,0 +1,142 @@
+/**
+ * @file r1_dummy_odometry_node.cpp
+ * @author Yudai Yamaguchi
+ * @brief 指令値に追従するオドメトリのダミーノード
+ * @version 0.1
+ * @date 2026-02-19
+ * 
+ * @copyright Copyright (c) 2026
+ * 
+ */
+
+#include <algorithm>
+#include <chrono>
+#include <complex>
+#include <limits>
+
+#include "geometry_msgs/msg/pose_stamped.hpp"
+#include "geometry_msgs/msg/twist.hpp"
+#include "nav_msgs/msg/odometry.hpp"
+#include "nav_msgs/msg/path.hpp"
+#include "rcl_interfaces/msg/floating_point_range.hpp"
+#include "rcl_interfaces/msg/parameter_descriptor.hpp"
+#include "rclcpp/rclcpp.hpp"
+#include "std_msgs/msg/float64.hpp"
+#include "std_msgs/msg/float64_multi_array.hpp"
+#include "std_msgs/msg/int32.hpp"
+#include "tf2/LinearMath/Matrix3x3.h"
+#include "tf2/LinearMath/Quaternion.h"
+#include "tf2/utils.h"
+#include "tf2_geometry_msgs/tf2_geometry_msgs.hpp"
+#include "visualization_msgs/msg/marker.hpp"
+
+using namespace std::chrono_literals;
+
+double lpf(double x, double prev_y, double tau, double dt)
+{
+  double alpha = dt / (tau + dt);
+  return alpha * x + (1 - alpha) * prev_y;
+}
+
+class MyNode : public rclcpp::Node
+{
+public:
+  MyNode() : Node("r1_dummy_odometry_node")
+  {
+    odometry_publisher_ = this->create_publisher<nav_msgs::msg::Odometry>("/odometry", 10);
+
+    target_pose_subscription_ = this->create_subscription<geometry_msgs::msg::PoseStamped>(
+      "/target_pose", 10, std::bind(&MyNode::target_pose_callback, this, std::placeholders::_1));
+
+    robot_marker_publisher_ =
+      this->create_publisher<visualization_msgs::msg::Marker>("/robot_marker", 10);
+
+    timer_ = this->create_wall_timer(10ms, std::bind(&MyNode::timer_callback, this));
+
+    this->declare_parameter<double>("tau", 0.5);
+    tau_ = this->get_parameter("tau").as_double();
+  }
+
+  void target_pose_callback(const geometry_msgs::msg::PoseStamped::SharedPtr msg) { pose_ = *msg; }
+
+  void timer_callback()
+  {
+    double x = lpf(pose_.pose.position.x, prev_x_, tau_, 0.01);
+    double y = lpf(pose_.pose.position.y, prev_y_, tau_, 0.01);
+    double z = 0;
+    double theta = lpf(tf2::getYaw(pose_.pose.orientation), prev_theta_, tau_, 0.01);
+
+    prev_x_ = x;
+    prev_y_ = y;
+    prev_theta_ = theta;
+
+    tf2::Quaternion q;
+    q.setRPY(0, 0, theta);
+
+    // cmd_vel_に追従するオドメトリを生成してpublishする
+    nav_msgs::msg::Odometry odom;
+    odom.header.stamp = this->get_clock()->now();
+    odom.header.frame_id = "odom";
+    odom.child_frame_id = "base_link";
+    odom.pose.pose.position.x = x;
+    odom.pose.pose.position.y = y;
+    odom.pose.pose.position.z = 0.0;
+    odom.pose.pose.orientation.x = q.x();
+    odom.pose.pose.orientation.y = q.y();
+    odom.pose.pose.orientation.z = q.z();
+    odom.pose.pose.orientation.w = q.w();
+    odometry_publisher_->publish(odom);
+    RCLCPP_INFO(this->get_logger(), "Published odometry: x=%.3f, y=%.3f, z=%.3f", x, y, z);
+
+    // robot_markerも同様に更新してpublishする
+    visualization_msgs::msg::Marker marker;
+    marker.header.stamp = this->get_clock()->now();
+    marker.header.frame_id = "odom";
+    // marker.header.frame_id = "base_link";
+    marker.ns = "robot";
+    marker.id = 0;
+    marker.type = visualization_msgs::msg::Marker::CUBE;
+    marker.action = visualization_msgs::msg::Marker::ADD;
+    marker.scale.x = 0.5;
+    marker.scale.y = 0.5;
+    marker.scale.z = 0.1;
+    marker.pose.position.x = odom.pose.pose.position.x;
+    marker.pose.position.y = odom.pose.pose.position.y;
+    // marker.pose.position.x = 0.0;
+    // marker.pose.position.y = 0.0;
+    marker.pose.position.z = marker.scale.z / 2.0;
+    marker.pose.orientation.x = 0.0;
+    marker.pose.orientation.y = 0.0;
+    marker.pose.orientation.z = 0.0;
+    marker.pose.orientation.w = 1.0;
+    marker.color.a = 1.0;  // 不透明
+    marker.color.r = 0.0;
+    marker.color.g = 1.0;  // 緑色
+    marker.color.b = 0.0;
+    robot_marker_publisher_->publish(marker);
+  }
+
+  rclcpp::Publisher<nav_msgs::msg::Odometry>::SharedPtr odometry_publisher_;
+  rclcpp::Subscription<geometry_msgs::msg::PoseStamped>::SharedPtr target_pose_subscription_;
+  // robot_markerのPublisher
+  rclcpp::Publisher<visualization_msgs::msg::Marker>::SharedPtr robot_marker_publisher_;
+  rclcpp::TimerBase::SharedPtr timer_;
+
+  // 速度指令値
+  geometry_msgs::msg::PoseStamped pose_;
+
+  // 時定数
+  double tau_;
+  double prev_x_ = 0.0;
+  double prev_y_ = 0.0;
+  double prev_theta_ = 0.0;
+};
+
+int main(int argc, char * argv[])
+{
+  rclcpp::init(argc, argv);
+  auto node = std::make_shared<MyNode>();
+  rclcpp::spin(node);
+  rclcpp::shutdown();
+  return 0;
+}
