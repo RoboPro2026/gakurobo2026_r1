@@ -15,6 +15,7 @@ find_package(tf2_geometry_msgs REQUIRED)
 find_package(tf2_ros REQUIRED)
 find_package(nav_msgs REQUIRED)
 find_package(rclcpp REQUIRED)
+find_package(visualization_msgs REQUIRED)
 find_package(Eigen3 REQUIRED)
 find_package(Python3 COMPONENTS Interpreter Development MODULE REQUIRED)
 find_package(pybind11 REQUIRED)
@@ -50,6 +51,7 @@ ament_target_dependencies(r1_chassis_control_node
   std_msgs
   tf2
   tf2_geometry_msgs
+  visualization_msgs
 )
 
 target_include_directories(test_minimum_jerk_node PUBLIC

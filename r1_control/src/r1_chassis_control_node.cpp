@@ -28,6 +28,7 @@
 #include "std_msgs/msg/int32.hpp"
 #include "tf2/LinearMath/Matrix3x3.h"
 #include "tf2/LinearMath/Quaternion.h"
+#include "visualization_msgs/msg/marker.hpp"
 
 using namespace std::chrono_literals;
 
@@ -73,6 +74,9 @@ public:
     // target_poseのPublisher
     target_pose_publisher_ =
       this->create_publisher<geometry_msgs::msg::PoseStamped>("/target_pose", 10);
+    // robot_markerのPublisher
+    robot_marker_publisher_ =
+      this->create_publisher<visualization_msgs::msg::Marker>("/robot_marker", 10);
 
     // ACTのPublisher
     act_publisher_ = this->create_publisher<std_msgs::msg::Int32>("/chassis_act_status", 10);
@@ -117,6 +121,8 @@ public:
     }
     RCLCPP_INFO(this->get_logger(), "Generated trajectories for all ACTs");
 
+    act_step_ = ACT_NONE;
+
     // timer
     timer_ = this->create_wall_timer(10ms, std::bind(&R1ChassisControlNode::timer_callback, this));
   }
@@ -139,9 +145,11 @@ public:
   {
     nav_msgs::msg::Path path;
     path.header.stamp = this->get_clock()->now();
-    path.header.frame_id = "map";
+    path.header.frame_id = "odom";
+    // NOTE: デバッグのためにodomにしている
+    // path.header.frame_id = "odom";
 
-    int inc = 10;  // 軌道の点を10点ごとに表示する
+    int inc = 20;  // 軌道の点を10点ごとに表示する
 
     for (int i = 0;; i += inc) {
       if (i >= act_traj_planner_[n]->array_size_) {
@@ -188,6 +196,35 @@ public:
 
     target_pose_publisher_->publish(target_pose);
     cmd_vel_publisher_->publish(cmd_vel);
+
+    visualization_msgs::msg::Marker marker;
+    marker.header.stamp = now();
+    marker.header.frame_id = "base_link";  // ★ロボット座標系
+
+    marker.ns = "robot";
+    marker.id = 0;
+    marker.type = visualization_msgs::msg::Marker::CUBE;
+    marker.action = visualization_msgs::msg::Marker::ADD;
+
+    // ロボットサイズ（例：50cm × 40cm × 20cm）
+    marker.scale.x = 0.5;
+    marker.scale.y = 0.5;
+    marker.scale.z = 0.01;
+
+    // 原点中心に置く
+    marker.pose.position.x = 0.0;
+    marker.pose.position.y = 0.0;
+    marker.pose.position.z = marker.scale.z / 2.0;
+
+    marker.pose.orientation.w = 1.0;
+
+    // 色（青）
+    marker.color.r = 0.1f;
+    marker.color.g = 0.3f;
+    marker.color.b = 0.8f;
+    marker.color.a = 1.0;
+
+    robot_marker_publisher_->publish(marker);
   }
 
   void timer_callback()
@@ -295,9 +332,7 @@ public:
       return 1;
     }
     int cnt = 0;
-    int theta_wp_cnt = 0;
-    int v_trans_wp_cnt = 0;
-    int i = 0, j = 0;
+    int i = 0, j = 0, line_cnt = 0;
 
     // カンマ区切りのデータを読む。データを読むときは空データも考慮する。
     while (fgets(line, sizeof(line), fp)) {
@@ -317,12 +352,10 @@ public:
                 y_wp.push_back(atof(buff));
                 break;
               case 2:
-                theta_wp.emplace_back(theta_wp_cnt, atof(buff));
-                theta_wp_cnt++;
+                theta_wp.emplace_back(line_cnt, atof(buff));
                 break;
               case 3:
-                v_trans_wp.emplace_back(v_trans_wp_cnt, atof(buff));
-                v_trans_wp_cnt++;
+                v_trans_wp.emplace_back(line_cnt, atof(buff));
                 break;
             }
           }
@@ -340,23 +373,25 @@ public:
         }
         i++;
       }
+      line_cnt++;
     }
 
     fclose(fp);
 
-    for (int i = 0; i < x_wp.size(); i++) {
-      RCLCPP_INFO(this->get_logger(), "Waypoint %d: x=%f, y=%f", i, x_wp[i], y_wp[i]);
-    }
-    for (int i = 0; i < theta_wp.size(); i++) {
-      RCLCPP_INFO(
-        this->get_logger(), "Theta Waypoint %d: index=%d, theta=%f", i, theta_wp[i].first,
-        theta_wp[i].second);
-    }
-    for (int i = 0; i < v_trans_wp.size(); i++) {
-      RCLCPP_INFO(
-        this->get_logger(), "Velocity Waypoint %d: index=%d, v_trans=%f", i, v_trans_wp[i].first,
-        v_trans_wp[i].second);
-    }
+    // 読み込んだwaypointをログに出力する
+    // for (int i = 0; i < x_wp.size(); i++) {
+    //   RCLCPP_INFO(this->get_logger(), "Waypoint %d: x=%f, y=%f", i, x_wp[i], y_wp[i]);
+    // }
+    // for (int i = 0; i < theta_wp.size(); i++) {
+    //   RCLCPP_INFO(
+    //     this->get_logger(), "Theta Waypoint %d: index=%d, theta=%f", i, theta_wp[i].first,
+    //     theta_wp[i].second);
+    // }
+    // for (int i = 0; i < v_trans_wp.size(); i++) {
+    //   RCLCPP_INFO(
+    //     this->get_logger(), "Velocity Waypoint %d: index=%d, v_trans=%f", i, v_trans_wp[i].first,
+    //     v_trans_wp[i].second);
+    // }
 
     // trajectory plannerの計算
     auto ret = act_traj_planner_[n]->calc(
@@ -381,6 +416,8 @@ public:
   rclcpp::Publisher<nav_msgs::msg::Path>::SharedPtr waypoints_publisher_;
   // target_poseのPublisher
   rclcpp::Publisher<geometry_msgs::msg::PoseStamped>::SharedPtr target_pose_publisher_;
+  // robot_markerのPublisher
+  rclcpp::Publisher<visualization_msgs::msg::Marker>::SharedPtr robot_marker_publisher_;
   // ACTのPublisher
   rclcpp::Publisher<std_msgs::msg::Int32>::SharedPtr act_publisher_;
   // ACTのSubscription

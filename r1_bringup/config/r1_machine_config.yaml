@@ -1,3 +1,15 @@
+r1_chassis_control_node:
+  ros__parameters:
+    act_filebase: "src/gakurobo2026_r1/data/"
+    zone: "red"
+    search_radius: 0.5
+    kp: 0.1
+    ki: 0.0
+    kd: 0.0
+    kff: 0.8
+    goal_range: 0.1
+
+
 r1_main_node:
   ros__parameters:
     # ========== 足回り ==========

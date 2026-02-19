@@ -49,6 +49,15 @@ def generate_launch_description():
         parameters=[param_file],
         arguments=["--ros-args", "--log-level", "info"],
     )
+
+    r1_chassis_control_node = Node(
+        package="r1_control",
+        executable="r1_chassis_control_node",
+        name="r1_chassis_control_node",
+        parameters=[param_file],
+        arguments=["--ros-args", "--log-level", "info"],
+    )
+
     # ========== 足回り ==========
     # メカナムホイールの指令値を知りたいときはinfoにする
     r1_mecanum_node = Node(
@@ -432,6 +441,7 @@ def generate_launch_description():
         ps4_node,
         bno086_node,
         # r1_main_node,
+        r1_chassis_control_node,
         r1_mecanum_node,
         r1_odometry_node,
         r1_sabacan_msgs_converter_node,
