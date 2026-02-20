@@ -100,6 +100,7 @@ public:
     declare_and_get_parameter("kd", kd_, 0.0);
     declare_and_get_parameter("kff", kff_, 0.0);
     declare_and_get_parameter("goal_range", goal_range_, 0.0);
+    declare_and_get_parameter("finish_time_threshold", finish_time_threshold_, 0.0);
 
     try {
       for (int i = 0; i < ACT_N; i++) {
@@ -117,7 +118,7 @@ public:
     for (int i = 0; i < ACT_N; i++) {
       act_traj_follower_[i] = std::make_shared<TrajectoryFollower>(act_traj_planner_[i].get());
       act_traj_follower_[i]->set_param(
-        kp_, ki_, kd_, kff_, 0.01 /* dt */, search_radius_, goal_range_);
+        kp_, ki_, kd_, kff_, 0.01 /* dt */, search_radius_, goal_range_, finish_time_threshold_);
     }
     RCLCPP_INFO(this->get_logger(), "Generated trajectories for all ACTs");
 
@@ -449,7 +450,7 @@ public:
     auto ret = act_traj_planner_[n]->calc(
       x_wp, y_wp, theta_wp, v_trans_wp, dt, v_max, a_max, j_max, omega_max);
 
-    for (int i = 0; i < ret.size(); i++) {
+    for (int i = 0; i < (int)ret.size(); i++) {
       if (ret[i] != 0) {
         RCLCPP_FATAL(this->get_logger(), "Failed to calculate trajectory for ACT%d", n);
         return 1;
@@ -489,6 +490,7 @@ public:
   double kd_;
   double kff_;
   double goal_range_;
+  double finish_time_threshold_;
 
   // trajectory planner
   std::vector<std::shared_ptr<TrajectoryPlanner>> act_traj_planner_;

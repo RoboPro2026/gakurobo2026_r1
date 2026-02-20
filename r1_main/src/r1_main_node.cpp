@@ -1967,7 +1967,17 @@ void R1MainNode::auto_act0(void)
 
   if (step == ACT_NONE) {
     if (ps4_->is_pushed_triangle()) {
+      // 位置制御のプログラム実行
       publish_chassis_act_ref(ACT0_START);
+    }
+    if (ps4_->is_pushed_circle()) {
+      // オドメトリの原点リセット
+      publish_yaw_offset(-yaw_);
+      double x, y, yaw;
+      x = odometry_.pose.pose.position.x;
+      y = odometry_.pose.pose.position.y;
+      yaw = tf2::getYaw(odometry_.pose.pose.orientation);
+      publish_odometry_offset(-x, -y, -yaw);
     }
     double vx_ref = CHASSIS_MAX_VELOCITY * (-1) * ps4_->data.left_stick_x;
     double vy_ref = CHASSIS_MAX_VELOCITY * ps4_->data.left_stick_y;

@@ -42,10 +42,12 @@ public:
   {
     traj_planner_ = traj_planner;
     finish_ = 0;
+    last_out_of_range_time_ = rclcpp::Clock().now();
   }
 
   void set_param(
-    double kp, double ki, double kd, double kff, double dt, double search_radius, double eps)
+    double kp, double ki, double kd, double kff, double dt, double search_radius, double goal_range,
+    double finish_time_threshold)
   {
     kp_ = kp;
     ki_ = ki;
@@ -53,13 +55,16 @@ public:
     dt_ = dt;
     kff_ = kff;
     search_radius_ = search_radius;
-    goal_range_ = eps;
+    goal_range_ = goal_range;
+    finish_time_threshold_ = finish_time_threshold;
+    last_out_of_range_time_ = rclcpp::Clock().now();
   }
 
   void reset()
   {
     idx_ = 0;
     finish_ = 0;
+    last_out_of_range_time_ = rclcpp::Clock().now();
   }
 
   /**
@@ -99,7 +104,7 @@ public:
     double x = odometry.pose.pose.position.x;
     double y = odometry.pose.pose.position.y;
     double theta = tf2::getYaw(odometry.pose.pose.orientation);
-    double dx, dy, dist;
+    double dx = 0.0, dy = 0.0, dist = 0.0;
     // 現在位置から次のwaypointを探索
     while (idx_ < traj_planner_->array_size_) {
       dx = traj_planner_->x_[idx_] - x;
@@ -139,9 +144,18 @@ public:
     bool is_last_point = (idx_ == traj_planner_->array_size_ - 1);
     bool is_dist_goal = (dist < goal_range_);
     bool is_theta_goal = (std::abs(theta - wp.theta) < goal_range_);
-    if (is_last_point && is_dist_goal && is_theta_goal) {
+    // 範囲外のときは、収束判定用変数を更新
+    if (is_last_point == false || is_dist_goal == false || is_theta_goal == false) {
+      last_out_of_range_time_ = rclcpp::Clock().now();
+    }
+    // 収束したかの終了判定
+    bool is_time_ok =
+      (rclcpp::Clock().now() - last_out_of_range_time_).seconds() > finish_time_threshold_;
+
+    if (is_last_point && is_dist_goal && is_theta_goal && is_time_ok) {
       finish_ = 1;
     }
+
     // 足回りの速度ベクトルを計算
     std::vector<double> v_chassis;
     if (finish_ == 0) {
@@ -169,10 +183,12 @@ private:
   double ki_ = 0.0;
   double kd_ = 0.0;
   double kff_ = 0.0;
-  double goal_range_ = 0.01;  // ゴールとみなす距離の閾値
+  double goal_range_ = 0.01;            // ゴールとみなす距離の閾値
+  double finish_time_threshold_ = 0.3;  // 収束時間の判定用しきい値
   std::vector<double> prev_error_{0.0, 0.0, 0.0};
   std::vector<double> integral_error_{0.0, 0.0, 0.0};
   double dt_ = 0.0;
   int idx_ = 0;
   int finish_ = 0;
+  rclcpp::Time last_out_of_range_time_ = rclcpp::Clock().now();
 };

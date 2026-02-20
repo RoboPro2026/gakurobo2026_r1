@@ -651,6 +651,7 @@ public:
       angle_msg.pos = msg->pos;
       spear_rotate_angle_motion_status_publisher_->publish(angle_msg);
     }
+    /*
     if (odometry_encoder_update_[X] && odometry_encoder_update_[Y]) {
       auto odom_msg = r1_msgs::msg::OdometryEncoder();
       odom_msg.encoder_pos_x = odometry_encoder_pos_values_[X];
@@ -661,6 +662,7 @@ public:
       odometry_encoder_update_[X] = false;
       odometry_encoder_update_[Y] = false;
     }
+    */
 
     // デバッグ用パブリッシュ（マッチするものに配信）
     for (size_t i = 0; i < debug_motor_.size(); ++i) {
@@ -1019,6 +1021,14 @@ public:
     msg_feedback.rl_wheel_speed = mecanum_wheel_speeds_feedback_[RL];
     msg_feedback.rr_wheel_speed = mecanum_wheel_speeds_feedback_[RR];
     mecanum_wheel_speeds_feedback_publisher_->publish(msg_feedback);
+
+
+      auto odom_msg = r1_msgs::msg::OdometryEncoder();
+      odom_msg.encoder_pos_x = odometry_encoder_pos_values_[X];
+      odom_msg.encoder_pos_y = odometry_encoder_pos_values_[Y];
+      odom_msg.encoder_speed_x = odometry_encoder_speed_values_[X];
+      odom_msg.encoder_speed_y = odometry_encoder_speed_values_[Y];
+      odometry_encoder_publisher_->publish(odom_msg);
   }
 
   // ======== Sabacan Publisher and Subscription =========

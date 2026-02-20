@@ -166,6 +166,8 @@ public:
     double py_world = px * std::sin(yaw) + py * std::cos(yaw);
     pos_x_ += px_world;
     pos_y_ += py_world;
+    // pos_x_ += vx_world * 0.01;
+    // pos_y_ += vy_world * 0.01;
 
     odom_msg.pose.pose.position.x = pos_x_;
     odom_msg.pose.pose.position.y = pos_y_;

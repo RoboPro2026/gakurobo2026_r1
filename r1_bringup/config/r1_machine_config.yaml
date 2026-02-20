@@ -3,11 +3,12 @@ r1_chassis_control_node:
     act_filebase: "src/gakurobo2026_r1/data/"
     zone: "red"
     search_radius: 0.2
-    kp: 0.1
+    kp: 0.5
     ki: 0.0
     kd: 0.0
-    kff: 1.0
-    goal_range: 0.1
+    kff: 0.0
+    goal_range: 0.05
+    finish_time_threshold: 1.0
 r1_dummy_odometry_node:
   ros__parameters:
     tau: 0.25
@@ -129,7 +130,7 @@ r1_mecanum_node:
     robot_length: 0.470
   #   # 484mm
     robot_width: 0.484
-    speed_limit: 75.0
+    speed_limit: 30.0
   #   # モーターの出力は歯数が34（モーター側）と歯数が42（ホイール側）で組みあわせているので
   # モーターの出力は歯数が32（モーター側）と歯数が64（ホイール側）で組みあわせているので
   #   # 減速比は32 / 64 = 0.5
@@ -143,6 +144,7 @@ r1_odometry_node:
     # 使ったオムニは小さい白オムニ
     # 適当に実測したパラメータなので、ずれてるかも
     wheel_radius: 0.025
+    # wheel_radius: 0.0125
     encoder_x_inverse: false
     encoder_y_inverse: false
     use_imu: true
