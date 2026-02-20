@@ -364,6 +364,15 @@ public:
     //     v_trans_wp[i].second);
     // }
 
+    // FILE * debug_fp = fopen(("debug_act" + std::to_string(n) + ".csv").c_str(), "w");
+    // if (debug_fp == NULL) {
+    //   RCLCPP_FATAL(this->get_logger(), "Failed to open debug file for ACT%d", n);
+    //   return 1;
+    // }
+
+    // act_traj_planner_[n]->print_csv_trajectory(debug_fp);
+    // fclose(debug_fp);
+
     // trajectory plannerの計算
     auto ret = act_traj_planner_[n]->calc(
       x_wp, y_wp, theta_wp, v_trans_wp, dt, v_max, a_max, j_max, omega_max);
