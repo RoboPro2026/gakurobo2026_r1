@@ -87,37 +87,6 @@ public:
     odom.pose.pose.orientation.w = q.w();
     odometry_publisher_->publish(odom);
     RCLCPP_INFO(this->get_logger(), "Published odometry: x=%.3f, y=%.3f, z=%.3f", x, y, z);
-
-    // robot_markerも同様に更新してpublishする
-    visualization_msgs::msg::Marker marker;
-    marker.header.stamp = this->get_clock()->now();
-    marker.header.frame_id = "odom";
-    // marker.header.frame_id = "base_link";
-    marker.ns = "robot";
-    marker.id = 0;
-    marker.type = visualization_msgs::msg::Marker::CUBE;
-    marker.action = visualization_msgs::msg::Marker::ADD;
-    marker.scale.x = 0.5;
-    marker.scale.y = 0.5;
-    marker.scale.z = 0.1;
-    marker.pose.position.x = odom.pose.pose.position.x;
-    marker.pose.position.y = odom.pose.pose.position.y;
-    // marker.pose.position.x = 0.0;
-    // marker.pose.position.y = 0.0;
-    marker.pose.position.z = marker.scale.z / 2.0;
-    marker.pose.orientation.x = odom.pose.pose.orientation.x;
-    marker.pose.orientation.y = odom.pose.pose.orientation.y;
-    marker.pose.orientation.z = odom.pose.pose.orientation.z;
-    marker.pose.orientation.w = odom.pose.pose.orientation.w;
-    // marker.pose.orientation.x = 0.0;
-    // marker.pose.orientation.y = 0.0;
-    // marker.pose.orientation.z = 0.0;
-    // marker.pose.orientation.w = 1.0;
-    marker.color.a = 1.0;  // 不透明
-    marker.color.r = 0.0;
-    marker.color.g = 1.0;  // 緑色
-    marker.color.b = 0.0;
-    robot_marker_publisher_->publish(marker);
   }
 
   rclcpp::Publisher<nav_msgs::msg::Odometry>::SharedPtr odometry_publisher_;

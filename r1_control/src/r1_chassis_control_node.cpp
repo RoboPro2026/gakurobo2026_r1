@@ -198,6 +198,76 @@ public:
     cmd_vel_publisher_->publish(cmd_vel);
   }
 
+  void publish_robot_marker(void)
+  {
+    auto & odom = odometry_;
+    visualization_msgs::msg::Marker marker;
+    marker.header.stamp = this->get_clock()->now();
+    // NOTE: base_linkだとうまく動かないのでodomにしている
+    marker.header.frame_id = "odom";
+    // marker.header.frame_id = "base_link";
+    marker.ns = "robot";
+    marker.id = 0;
+    marker.type = visualization_msgs::msg::Marker::CUBE;
+    marker.action = visualization_msgs::msg::Marker::ADD;
+    marker.scale.x = 0.5;
+    marker.scale.y = 0.5;
+    marker.scale.z = 0.1;
+    marker.pose.position.x = odom.pose.pose.position.x;
+    marker.pose.position.y = odom.pose.pose.position.y;
+    // marker.pose.position.x = 0.0;
+    // marker.pose.position.y = 0.0;
+    marker.pose.position.z = marker.scale.z / 2.0;
+    marker.pose.orientation.x = odom.pose.pose.orientation.x;
+    marker.pose.orientation.y = odom.pose.pose.orientation.y;
+    marker.pose.orientation.z = odom.pose.pose.orientation.z;
+    marker.pose.orientation.w = odom.pose.pose.orientation.w;
+    // marker.pose.orientation.x = 0.0;
+    // marker.pose.orientation.y = 0.0;
+    // marker.pose.orientation.z = 0.0;
+    // marker.pose.orientation.w = 1.0;
+    marker.color.a = 1.0;  // 不透明
+    marker.color.r = 0.0;
+    marker.color.g = 1.0;  // 緑色
+    marker.color.b = 0.0;
+    robot_marker_publisher_->publish(marker);
+
+    // ロボットの0度方向(前方)を示す線を描画
+    // tf2::Quaternion q(
+    //   odom.pose.pose.orientation.x, odom.pose.pose.orientation.y, odom.pose.pose.orientation.z,
+    //   odom.pose.pose.orientation.w);
+    // double roll = 0.0, pitch = 0.0, yaw = 0.0;
+    // tf2::Matrix3x3(q).getRPY(roll, pitch, yaw);
+
+    // constexpr double heading_length = 0.7;  // [m]
+    // visualization_msgs::msg::Marker heading;
+    // heading.header = marker.header;
+    // heading.ns = "robot_heading";
+    // heading.id = 1;
+    // heading.type = visualization_msgs::msg::Marker::LINE_STRIP;
+    // heading.action = visualization_msgs::msg::Marker::ADD;
+    // heading.pose.orientation.w = 1.0;  // points are in the header frame
+    // heading.scale.x = 0.03;            // line width
+    // heading.color.a = 1.0;
+    // heading.color.r = 1.0;  // 赤
+    // heading.color.g = 0.0;
+    // heading.color.b = 0.0;
+
+    // geometry_msgs::msg::Point p0;
+    // p0.x = odom.pose.pose.position.x;
+    // p0.y = odom.pose.pose.position.y;
+    // p0.z = marker.scale.z;  // cube上面付近
+
+    // geometry_msgs::msg::Point p1;
+    // p1.x = p0.x + heading_length * std::cos(yaw);
+    // p1.y = p0.y + heading_length * std::sin(yaw);
+    // p1.z = p0.z;
+
+    // heading.points.push_back(p0);
+    // heading.points.push_back(p1);
+    // robot_marker_publisher_->publish(heading);
+  }
+
   void timer_callback()
   {
     if (act_step_ == ACT0_START) {
@@ -222,6 +292,8 @@ public:
     std_msgs::msg::Int32 act_status_msg;
     act_status_msg.data = act_step_;
     act_publisher_->publish(act_status_msg);
+    // robot_markerをpublishする
+    publish_robot_marker();
   }
 
   int generate_trajectory(int n)
