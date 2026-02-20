@@ -11,6 +11,8 @@
 
 #include "r1_main/r1_main_node.h"
 
+#include "tf2_geometry_msgs/tf2_geometry_msgs.hpp"
+
 void R1MainNode::declare_and_get_parameter(
   const std::string & name, double & value, double default_value)
 {
@@ -251,6 +253,18 @@ R1MainNode::R1MainNode() : Node("r1_main_node")
 
   yaw_offset_publisher_ = this->create_publisher<std_msgs::msg::Float64>("/yaw_offset", 10);
 
+  // オドメトリのoffset Publisher
+  odometry_offset_publisher_ =
+    this->create_publisher<std_msgs::msg::Float64MultiArray>("/odometry_offset", 10);
+  // オドメトリのSubscription
+  odometry_subscription_ = this->create_subscription<nav_msgs::msg::Odometry>(
+    "/odometry", 10, std::bind(&R1MainNode::odometry_callback, this, std::placeholders::_1));
+  // chassis_actのPublisher
+  chassis_act_ref_publisher_ = this->create_publisher<std_msgs::msg::Int32>("/chassis_act_ref", 10);
+  // chassis_actのSubscription
+  chassis_act_status_subscription_ = this->create_subscription<std_msgs::msg::Int32>(
+    "/chassis_act_status", 10,
+    std::bind(&R1MainNode::chassis_act_status_callback, this, std::placeholders::_1));
   // ========== パラメータ ==========
   // 足回り
   declare_and_get_parameter("chassis_max_velocity", CHASSIS_MAX_VELOCITY);
@@ -360,7 +374,8 @@ R1MainNode::R1MainNode() : Node("r1_main_node")
 
   state_machine_ = std::make_shared<StateMachine>();
   // state_machine_->set_next_state({MainState::MANUAL, ManualSubState::TEST});
-  state_machine_->set_next_state({MainState::MANUAL, ManualSubState::MODE2_POLE});
+  // state_machine_->set_next_state({MainState::MANUAL, ManualSubState::MODE2_POLE});
+  state_machine_->set_next_state({MainState::AUTO, AutoSubState::ACT0});
   // アクチュエータを初期化
   // init_actuator();
 }
@@ -550,6 +565,16 @@ void R1MainNode::imu_callback(const sensor_msgs::msg::Imu::SharedPtr msg)
   // IMUの情報を更新
   tf2::Quaternion q(msg->orientation.x, msg->orientation.y, msg->orientation.z, msg->orientation.w);
   tf2::Matrix3x3(q).getRPY(roll_, pitch_, yaw_);
+}
+
+void R1MainNode::odometry_callback(const nav_msgs::msg::Odometry::SharedPtr msg)
+{
+  odometry_ = *msg;
+}
+
+void R1MainNode::chassis_act_status_callback(const std_msgs::msg::Int32::SharedPtr msg)
+{
+  chassis_act_status_ = msg->data;
 }
 
 void R1MainNode::kfs_fx_detect_origin(void)
@@ -788,6 +813,25 @@ void R1MainNode::publish_yaw_offset(double offset)
   msg.data = offset;
   yaw_offset_publisher_->publish(msg);
   RCLCPP_INFO(this->get_logger(), "yaw_offset = %f", offset);
+}
+
+void R1MainNode::publish_odometry_offset(double x_offset, double y_offset, double yaw_offset)
+{
+  std_msgs::msg::Float64MultiArray msg;
+  msg.data.push_back(x_offset);
+  msg.data.push_back(y_offset);
+  msg.data.push_back(yaw_offset);
+  odometry_offset_publisher_->publish(msg);
+  RCLCPP_INFO(
+    this->get_logger(), "odometry offset x: %f, y: %f, yaw: %f", x_offset, y_offset, yaw_offset);
+}
+
+void R1MainNode::publish_chassis_act_ref(int ref)
+{
+  std_msgs::msg::Int32 msg;
+  msg.data = ref;
+  chassis_act_ref_publisher_->publish(msg);
+  RCLCPP_INFO(this->get_logger(), "chassis act ref: %d", ref);
 }
 
 void R1MainNode::timer_callback(void)
@@ -1917,6 +1961,27 @@ void R1MainNode::manual_mode7_spear_attack(void)
   }
 }
 
+void R1MainNode::auto_act0(void)
+{
+  int & step = chassis_act_status_;
+
+  if (step == ACT_NONE) {
+    if (ps4_->is_pushed_triangle()) {
+      publish_chassis_act_ref(ACT0_START);
+    }
+    double vx_ref = CHASSIS_MAX_VELOCITY * (-1) * ps4_->data.left_stick_x;
+    double vy_ref = CHASSIS_MAX_VELOCITY * ps4_->data.left_stick_y;
+    double vz_ref = CHASSIS_MAX_OMEGA * ps4_->data.right_stick_x;
+    chassis_move_vel(vx_ref, vy_ref, vz_ref);
+  } else if (step == ACT0_START) {
+    // 何もしない
+  } else if (step == ACT0) {
+    // 何もしない
+  } else if (step == ACT0_FINISH) {
+    publish_chassis_act_ref(ACT_NONE);
+  }
+}
+
 void R1MainNode::reset_step(void)
 {
   // 各手順のステップをリセット
@@ -1938,6 +2003,24 @@ void R1MainNode::reset_step(void)
   manual_mode6_r2_lift_step_ = DEFAULT_STEP;
   manual_mode7_spear_attack_task_step_ = DEFAULT_STEP;
   manual_mode7_spear_hand_valve1_step_ = DEFAULT_STEP;
+  publish_chassis_act_ref(ACT_NONE);
+}
+
+void R1MainNode::reset_robot(void)
+{
+  // sabacanにリセット信号を送信する
+  sabacan_reset();
+  // stepをリセットする
+  reset_step();
+  // 現在の角度が0度となるようなオフセットを設定する。
+  publish_yaw_offset(-yaw_);
+  double x, y, yaw;
+  x = odometry_.pose.pose.position.x;
+  y = odometry_.pose.pose.position.y;
+  yaw = tf2::getYaw(odometry_.pose.pose.orientation);
+  publish_odometry_offset(-x, -y, -yaw);
+  init_actuator();
+  is_initialized_ = true;
 }
 
 void R1MainNode::manual_task(void)
@@ -1969,14 +2052,7 @@ void R1MainNode::manual_task(void)
     }
     // psボタンが押されたときはsabacan resetを行う
     if (ps4_->is_pushed_ps()) {
-      // sabacanにリセット信号を送信する
-      sabacan_reset();
-      // stepをリセットする
-      reset_step();
-      // 現在の角度が0度となるようなオフセットを設定する。
-      publish_yaw_offset(-yaw_);
-      init_actuator();
-      is_initialized_ = true;
+      reset_robot();
     }
     // shareボタンが押されたときはモードを切り替える
     if (ps4_->is_pushed_share()) {
@@ -2026,7 +2102,52 @@ void R1MainNode::manual_task(void)
   }
 }
 
-void R1MainNode::auto_task(void) {}
+void R1MainNode::auto_task(void)
+{
+  static bool stop_actuator_flag = false;
+  auto current_state = state_machine_->get_current_state();
+  if (ps4_->is_connected() == false) {
+    // 未接続のときはアクチュエータ停止
+    if (stop_actuator_flag == false) {
+      stop_actuator();
+      stop_actuator_flag = true;
+    }
+
+  } else {
+    stop_actuator_flag = false;
+    // 共通タスク
+
+    // optionsが押されたときは電源をOFFにする
+    if (ps4_->is_pushed_options()) {
+      sabacan_power_ref(!sabacan_is_ems_);
+    }
+    // psボタンが押されたときはsabacan resetを行う
+    if (ps4_->is_pushed_ps()) {
+      reset_robot();
+    }
+    // shareボタンが押されたときはモードを切り替える
+    if (ps4_->is_pushed_share()) {
+      if (const auto * auto_sub = std::get_if<AutoSubState>(&current_state.sub)) {
+        if (*auto_sub == AutoSubState::ACT0) {
+          state_machine_->set_next_state({MainState::AUTO, AutoSubState::ACT0});
+        }
+      }
+    }
+
+    // 初期化が行われていない場合はこれ以降の処理は実行しない
+    // TODO: 初期化の待ち時間が面倒だったら、この処理はなくす
+    if (is_initialized_ == false) {
+      return;
+    }
+
+    // 状態に応じて、各タスクを実行
+    if (const auto * auto_sub = std::get_if<AutoSubState>(&current_state.sub)) {
+      if (*auto_sub == AutoSubState::ACT0) {
+        auto_act0();
+      }
+    }
+  }
+}
 
 void R1MainNode::main_task(void)
 {

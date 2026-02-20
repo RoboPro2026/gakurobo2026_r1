@@ -7,7 +7,7 @@
 - **Subscribe**
   - `/odometry_encoder` (`r1_msgs/msg/OdometryEncoder`): X・Y 方向のエンコーダ積算値と角速度。`encoder_pos_x`, `encoder_pos_y` は積算角度 [rad]、`encoder_speed_x`, `encoder_speed_y` は角速度 [rad/s] が格納されます。
   - `/bno086/imu/data_raw` (`sensor_msgs/msg/Imu`): IMU からのヨー角と角速度。`use_imu` が `true` の場合に限り、オドメトリの向きと角速度の参照として使用します。
-  - `/odometry_imu_offset` (`std_msgs/msg/Float64MultiArray`): 実行中にオフセットを加算するためのトピック。`data` の先頭 3 要素を `[offset_pos_x, offset_pos_y, offset_yaw]` として解釈し、それぞれ現在値に加算します。
+  - `/odometry_offset` (`std_msgs/msg/Float64MultiArray`): 実行中にオフセットを加算するためのトピック。`data` の先頭 3 要素を `[offset_pos_x, offset_pos_y, offset_yaw]` として解釈し、それぞれ現在値に加算します。
 - **Publish**
   - `/odometry` (`nav_msgs/msg/Odometry`): 推定された位置・姿勢・速度。`header.frame_id = "odom"`、`child_frame_id = "base_link"` 固定です。
 

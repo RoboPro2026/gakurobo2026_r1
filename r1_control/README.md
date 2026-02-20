@@ -13,3 +13,4 @@
 ## ドキュメント
 
 - [trajectory_planner](./docs/trajectory_planner.md)
+- [r1_chassis_control_node](./docs/r1_chassis_control_node.md)

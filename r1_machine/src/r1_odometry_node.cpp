@@ -35,8 +35,8 @@ public:
       "/bno086/imu/data_raw", 10, std::bind(&MyNode::imu_callback, this, std::placeholders::_1));
 
     imu_offset_subscription_ = this->create_subscription<std_msgs::msg::Float64MultiArray>(
-      "/odometry_imu_offset", 10,
-      std::bind(&MyNode::imu_offset_callback, this, std::placeholders::_1));
+      "/odometry_offset", 10,
+      std::bind(&MyNode::odometry_offset_callback, this, std::placeholders::_1));
 
     timer_ = this->create_wall_timer(10ms, std::bind(&MyNode::timer_callback, this));
 
@@ -134,11 +134,11 @@ public:
     imu_yaw_angular_velocity_ = msg->angular_velocity.z;
   }
 
-  void imu_offset_callback(const std_msgs::msg::Float64MultiArray::SharedPtr msg)
+  void odometry_offset_callback(const std_msgs::msg::Float64MultiArray::SharedPtr msg)
   {
-    // IMUのオフセット値を更新
+    // odometryのオフセット値を更新
     if (msg->data.size() < 3) {
-      RCLCPP_ERROR(this->get_logger(), "IMU offset message must contain at least 3 elements");
+      RCLCPP_ERROR(this->get_logger(), "Odometry offset message must contain at least 3 elements");
       return;
     }
     offset_pos_x_ += msg->data[0];
@@ -146,7 +146,7 @@ public:
     offset_yaw_ += msg->data[2];
     RCLCPP_INFO(
       this->get_logger(),
-      "Updated IMU offsets: offset_pos_x = %.3f, offset_pos_y = %.3f, offset_yaw = %.3f",
+      "Updated Odometry offsets: offset_pos_x = %.3f, offset_pos_y = %.3f, offset_yaw = %.3f",
       offset_pos_x_, offset_pos_y_, offset_yaw_);
   }
 
