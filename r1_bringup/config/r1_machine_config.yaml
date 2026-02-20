@@ -445,7 +445,7 @@ sabacan_robomasv2_node_id1:
     # monitor_reg1: [0x0C00000000000002, 0x0C00000000000002, 0x2, 0x2]
     # VESC_CURRENT + VESC_ERPMをフィードバック
     monitor_reg2: [0x18, 0x18, 0x18, 0x18]
-    monitor_period: 20
+    monitor_period: 10
 
 # KFS回収前、展開補助前
 sabacan_robomasv2_node_id2:

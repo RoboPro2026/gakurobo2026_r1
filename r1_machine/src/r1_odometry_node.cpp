@@ -44,17 +44,11 @@ public:
       std::bind(&MyNode::parameter_callback, this, std::placeholders::_1));
 
     this->declare_parameter<double>("wheel_radius", 0.025);
-    this->declare_parameter<double>("offset_pos_x", 0.0);
-    this->declare_parameter<double>("offset_pos_y", 0.0);
-    this->declare_parameter<double>("offset_yaw", 0.0);
     this->declare_parameter<bool>("encoder_x_inverse", false);
     this->declare_parameter<bool>("encoder_y_inverse", false);
     this->declare_parameter<bool>("use_imu", true);
 
     this->get_parameter("wheel_radius", wheel_radius_);
-    this->get_parameter("offset_pos_x", offset_pos_x_);
-    this->get_parameter("offset_pos_y", offset_pos_y_);
-    this->get_parameter("offset_yaw", offset_yaw_);
 
     bool encoder_inverse[2];
     this->get_parameter("encoder_x_inverse", encoder_inverse[0]);
@@ -75,15 +69,6 @@ public:
       if (name == "wheel_radius") {
         wheel_radius_ = param.as_double();
         RCLCPP_INFO(this->get_logger(), "Updated parameter: wheel_radius = %.3f", wheel_radius_);
-      } else if (name == "offset_pos_x") {
-        offset_pos_x_ += param.as_double();
-        RCLCPP_INFO(this->get_logger(), "Updated parameter: offset_pos_x = %.3f", offset_pos_x_);
-      } else if (name == "offset_pos_y") {
-        offset_pos_y_ += param.as_double();
-        RCLCPP_INFO(this->get_logger(), "Updated parameter: offset_pos_y = %.3f", offset_pos_y_);
-      } else if (name == "offset_yaw") {
-        offset_yaw_ += param.as_double();
-        RCLCPP_INFO(this->get_logger(), "Updated parameter: offset_yaw = %.3f", offset_yaw_);
       } else if (name == "encoder_x_inverse") {
         encoder_x_direction_ = param.as_bool() ? -1.0 : 1.0;
         RCLCPP_INFO(
@@ -112,6 +97,8 @@ public:
   {
     // エンコーダの値を更新
     encoder_update_ = true;
+    prev_encoder_pos_x_ = encoder_pos_x_;
+    prev_encoder_pos_y_ = encoder_pos_y_;
     encoder_pos_x_ = msg->encoder_pos_x;
     encoder_pos_y_ = msg->encoder_pos_y;
     encoder_speed_x_ = msg->encoder_speed_x;
@@ -141,17 +128,13 @@ public:
       RCLCPP_ERROR(this->get_logger(), "Odometry offset message must contain at least 3 elements");
       return;
     }
-    offset_pos_x_ += msg->data[0];
-    offset_pos_y_ += msg->data[1];
     offset_yaw_ += msg->data[2];
-    // pos_x_ += offset_pos_x_;
-    // pos_y_ += offset_pos_y_;
     pos_x_ += msg->data[0];
     pos_y_ += msg->data[1];
     RCLCPP_INFO(
       this->get_logger(),
       "Updated Odometry offsets: offset_pos_x = %.3f, offset_pos_y = %.3f, offset_yaw = %.3f",
-      offset_pos_x_, offset_pos_y_, offset_yaw_);
+      msg->data[0], msg->data[1], msg->data[2]);
   }
 
   void timer_callback()
@@ -177,9 +160,12 @@ public:
     double yaw = imu_yaw_ + offset_yaw_;
     double vx_world = vx * std::cos(yaw) - vy * std::sin(yaw);
     double vy_world = vx * std::sin(yaw) + vy * std::cos(yaw);
-    double dt = 0.01;
-    pos_x_ += vx_world * dt;
-    pos_y_ += vy_world * dt;
+    double px = encoder_x_direction_ * wheel_radius_ * (encoder_pos_x_ - prev_encoder_pos_x_);
+    double py = encoder_y_direction_ * wheel_radius_ * (encoder_pos_y_ - prev_encoder_pos_y_);
+    double px_world = px * std::cos(yaw) - py * std::sin(yaw);
+    double py_world = px * std::sin(yaw) + py * std::cos(yaw);
+    pos_x_ += px_world;
+    pos_y_ += py_world;
 
     odom_msg.pose.pose.position.x = pos_x_;
     odom_msg.pose.pose.position.y = pos_y_;
@@ -193,8 +179,8 @@ public:
     odom_msg.pose.pose.orientation.z = q.z();
     odom_msg.pose.pose.orientation.w = q.w();
 
-    odom_msg.twist.twist.linear.x = encoder_x_direction_ * wheel_radius_ * encoder_speed_x_;
-    odom_msg.twist.twist.linear.y = encoder_y_direction_ * wheel_radius_ * encoder_speed_y_;
+    odom_msg.twist.twist.linear.x = vx_world;
+    odom_msg.twist.twist.linear.y = vy_world;
     odom_msg.twist.twist.angular.z = imu_yaw_angular_velocity_;
 
     RCLCPP_INFO(
@@ -216,10 +202,12 @@ private:
   rclcpp::TimerBase::SharedPtr timer_;
   rclcpp::node_interfaces::OnSetParametersCallbackHandle::SharedPtr param_callback_handle_;
   // マイコンから送られてくるエンコーダの値は、すでに積分されたものが送られてくる。単位は[rad]
-  double encoder_pos_x_ = 0.0;             // rad
-  double encoder_pos_y_ = 0.0;             // rad
-  double encoder_speed_x_ = 0.0;           // rad/s
-  double encoder_speed_y_ = 0.0;           // rad/s
+  double encoder_pos_x_ = 0.0;       // rad
+  double encoder_pos_y_ = 0.0;       // rad
+  double prev_encoder_pos_x_ = 0.0;  // rad
+  double prev_encoder_pos_y_ = 0.0;  // rad
+  double encoder_speed_x_ = 0.0;     // rad/s
+  double encoder_speed_y_ = 0.0;     // rad/s
   double pos_x_ = 0.0;
   double pos_y_ = 0.0;
   double imu_yaw_ = 0.0;                   // rad
