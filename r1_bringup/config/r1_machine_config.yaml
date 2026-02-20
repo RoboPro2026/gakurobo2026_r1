@@ -144,8 +144,8 @@ r1_odometry_node:
     # 適当に実測したパラメータなので、ずれてるかも
     wheel_radius: 0.025
     encoder_x_inverse: false
-    encoder_y_inverse: true
-    use_imu: false
+    encoder_y_inverse: false
+    use_imu: true
 
 # ---------- KFS回収機構 ----------
 # linear motion node

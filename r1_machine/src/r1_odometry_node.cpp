@@ -144,6 +144,10 @@ public:
     offset_pos_x_ += msg->data[0];
     offset_pos_y_ += msg->data[1];
     offset_yaw_ += msg->data[2];
+    // pos_x_ += offset_pos_x_;
+    // pos_y_ += offset_pos_y_;
+    pos_x_ += msg->data[0];
+    pos_y_ += msg->data[1];
     RCLCPP_INFO(
       this->get_logger(),
       "Updated Odometry offsets: offset_pos_x = %.3f, offset_pos_y = %.3f, offset_yaw = %.3f",
@@ -174,11 +178,11 @@ public:
     double vx_world = vx * std::cos(yaw) - vy * std::sin(yaw);
     double vy_world = vx * std::sin(yaw) + vy * std::cos(yaw);
     double dt = 0.01;
-    double pos_x = vx_world * dt;
-    double pos_y = vy_world * dt;
+    pos_x_ += vx_world * dt;
+    pos_y_ += vy_world * dt;
 
-    odom_msg.pose.pose.position.x = pos_x + offset_pos_x_;
-    odom_msg.pose.pose.position.y = pos_y + offset_pos_y_;
+    odom_msg.pose.pose.position.x = pos_x_;
+    odom_msg.pose.pose.position.y = pos_y_;
     odom_msg.pose.pose.position.z = 0.0;
 
     tf2::Quaternion q;
@@ -197,7 +201,7 @@ public:
       this->get_logger(),
       "position(x = %.3f, y = %.3f, yaw = %.3f) velocity(vx = %.3f, vy = %.3f, omega "
       "= %.3f)",
-      odom_msg.pose.pose.position.x, odom_msg.pose.pose.position.y, imu_yaw_ + offset_yaw_,
+      odom_msg.pose.pose.position.x, odom_msg.pose.pose.position.y, yaw,
       odom_msg.twist.twist.linear.x, odom_msg.twist.twist.linear.y, odom_msg.twist.twist.angular.z);
 
     // オドメトリを配信
@@ -216,6 +220,8 @@ private:
   double encoder_pos_y_ = 0.0;             // rad
   double encoder_speed_x_ = 0.0;           // rad/s
   double encoder_speed_y_ = 0.0;           // rad/s
+  double pos_x_ = 0.0;
+  double pos_y_ = 0.0;
   double imu_yaw_ = 0.0;                   // rad
   double imu_yaw_angular_velocity_ = 0.0;  // rad/s
   double wheel_radius_ = 0.025;            // m
