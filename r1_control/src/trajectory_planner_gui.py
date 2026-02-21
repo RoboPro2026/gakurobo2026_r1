@@ -731,10 +731,10 @@ class MainWindow(QMainWindow):
             insert_index = min(selected_row + 1, len(self.runner.x_wp))
 
         # フィールド座標系から基準座標系への変換
-        # 赤ゾーンのときは、描画時に x を反転しているので、追加時には逆変換して保存する
+        # 青ゾーンのときは、描画時に x を反転しているので、追加時には逆変換して保存する
         x_field = float(event.xdata)
         y_field = float(event.ydata)
-        if self.runner.zone == "red":
+        if self.runner.zone == "blue":
             x_val = -x_field
         else:
             x_val = x_field

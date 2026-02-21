@@ -236,7 +236,9 @@ class RunTrajectoryPlanner:
         try:
             self._write_parameters_to_path(backup_path)
         except OSError as e:
-            self._log(f"パラメータのバックアップ保存に失敗しました: {backup_path} ({e})")
+            self._log(
+                f"パラメータのバックアップ保存に失敗しました: {backup_path} ({e})"
+            )
 
     def _write_parameters_to_path(self, path: str) -> None:
         """与えられたパスに現在のパラメータを書き出す内部ヘルパー"""
@@ -300,12 +302,14 @@ class RunTrajectoryPlanner:
     # ========= internal helpers =========
     def _get_zone_adjusted_waypoints(
         self,
-    ) -> tuple[list[float], list[float], list[tuple[int, float]], list[tuple[int, float]]]:
+    ) -> tuple[
+        list[float], list[float], list[tuple[int, float]], list[tuple[int, float]]
+    ]:
         """ゾーンに応じて変換した waypoint を返す（元データは変更しない）"""
         x_adj = list(self.x_wp)
         theta_adj = list(self.theta_wp)
 
-        if self.zone == "red":
+        if self.zone == "blue":
             x_adj = [-x for x in self.x_wp]
             theta_adj = [(i, np.pi - th) for i, th in self.theta_wp]
 
@@ -334,13 +338,17 @@ class RunTrajectoryPlanner:
 
     def _plot_object_with_zone(self, field_object: patches.Patch) -> None:
         """オブジェクトをゾーンに応じてプロット"""
-        if self.zone == "red" and isinstance(field_object, patches.Rectangle):
+        if self.zone == "blue" and isinstance(field_object, patches.Rectangle):
             mirrored_x = -(field_object.get_x() + field_object.get_width())
             field_object.set_x(mirrored_x)
         self.ax.add_patch(field_object)
 
     def _plot_field(self) -> None:
-        """フィールドの描画"""
+        """
+        フィールドの描画
+        各種図形は赤ゾーンのときの座標で定義
+        フィールド図と上下が反転しているので注意
+        """
         field = patches.Rectangle(
             xy=(0, 0),
             width=6.0,
@@ -350,22 +358,7 @@ class RunTrajectoryPlanner:
             facecolor="none",
         )
         r1_start_zone = patches.Rectangle(
-            xy=(5.0, 11.0),
-            width=1.0,
-            height=1.0,
-            linewidth=1,
-            edgecolor="black",
-            facecolor="none",
-        )
-        r2_start_zone = patches.Rectangle(
-            xy=(0.875, 11.2),
-            width=0.8,
-            height=0.8,
-            linewidth=1,
-            edgecolor="black",
-            facecolor="none",
-        )
-        retry_zone = patches.Rectangle(
+            # xy=(5.0, 11.0),
             xy=(5.0, 0.0),
             width=1.0,
             height=1.0,
@@ -373,8 +366,27 @@ class RunTrajectoryPlanner:
             edgecolor="black",
             facecolor="none",
         )
+        r2_start_zone = patches.Rectangle(
+            # xy=(0.875, 11.2),
+            xy=(1.0, 0.0),
+            width=0.8,
+            height=0.8,
+            linewidth=1,
+            edgecolor="black",
+            facecolor="none",
+        )
+        retry_zone = patches.Rectangle(
+            # xy=(5.0, 0.0),
+            xy=(5.0, 11.0),
+            width=1.0,
+            height=1.0,
+            linewidth=1,
+            edgecolor="black",
+            facecolor="none",
+        )
         poll_rack = patches.Rectangle(
-            xy=(3.0, 11.7),
+            # xy=(3.0, 11.7),
+            xy=(3.0, 0.0),
             width=0.8,
             height=0.3,
             linewidth=1,
@@ -382,7 +394,8 @@ class RunTrajectoryPlanner:
             facecolor="none",
         )
         head_rack = patches.Rectangle(
-            xy=(0.0, 10.45),
+            # xy=(0.0, 10.45),
+            xy=(0.0, 0.35),
             width=0.15,
             height=1.2,
             linewidth=1,
@@ -390,7 +403,8 @@ class RunTrajectoryPlanner:
             facecolor="none",
         )
         hidensyo_rack = patches.Rectangle(
-            xy=(0.0, 0.437),
+            # xy=(0.0, 0.437),
+            xy=(0.0, 12.0 - 0.437 - 1.626),
             width=0.16,
             height=1.626,
             linewidth=1,
@@ -398,7 +412,8 @@ class RunTrajectoryPlanner:
             facecolor="none",
         )
         hidensyo_rack1 = patches.Rectangle(
-            xy=(0.0, 0.437),
+            # xy=(0.0, 0.437),
+            xy=(0.0, 12.0 - 0.437 - 1.626),
             width=0.16,
             height=0.542,
             linewidth=1,
@@ -406,7 +421,8 @@ class RunTrajectoryPlanner:
             facecolor="none",
         )
         hidensyo_rack2 = patches.Rectangle(
-            xy=(0.0, 0.437),
+            # xy=(0.0, 0.437),
+            xy=(0.0, 12.0 - 0.437 - 1.626),
             width=0.16,
             height=1.084,
             linewidth=1,
@@ -414,7 +430,8 @@ class RunTrajectoryPlanner:
             facecolor="none",
         )
         yariokiba = patches.Rectangle(
-            xy=(0.525, 2.2),
+            # xy=(0.525, 2.2),
+            xy=(0.865, 12.0 - 0.437 - 1.626 - 0.437),
             width=1.5,
             height=0.3,
             linewidth=1,
@@ -422,7 +439,8 @@ class RunTrajectoryPlanner:
             facecolor="none",
         )
         arena_entrance = patches.Rectangle(
-            xy=(0.0, 2.5),
+            # xy=(0.0, 2.5),
+            xy=(0.0, 12.0 - 0.437 - 1.626 - 0.437 - 0.05),
             width=4.025,
             height=0.05,
             linewidth=1,
@@ -430,7 +448,8 @@ class RunTrajectoryPlanner:
             facecolor="none",
         )
         forest1 = patches.Rectangle(
-            xy=(3.6, 7.6),
+            # xy=(3.6, 7.6),
+            xy=(3.6, 3.2),
             width=1.2,
             height=1.2,
             linewidth=1,
@@ -438,7 +457,8 @@ class RunTrajectoryPlanner:
             facecolor="none",
         )
         forest1_square = patches.Rectangle(
-            xy=(3.6 + 0.428, 7.6 + 0.428),
+            # xy=(3.6 + 0.428, 7.6 + 0.428),
+            xy=(3.6 + 0.428, 3.2 + 0.428),
             width=0.35,
             height=0.35,
             linewidth=1,
@@ -446,7 +466,8 @@ class RunTrajectoryPlanner:
             facecolor="none",
         )
         forest2 = patches.Rectangle(
-            xy=(2.4, 7.6),
+            # xy=(2.4, 7.6),
+            xy=(2.4, 3.2),
             width=1.2,
             height=1.2,
             linewidth=1,
@@ -454,7 +475,8 @@ class RunTrajectoryPlanner:
             facecolor="none",
         )
         forest2_square = patches.Rectangle(
-            xy=(2.4 + 0.428, 7.6 + 0.428),
+            # xy=(2.4 + 0.428, 7.6 + 0.428),
+            xy=(2.4 + 0.428, 3.2 + 0.428),
             width=0.35,
             height=0.35,
             linewidth=1,
@@ -462,7 +484,8 @@ class RunTrajectoryPlanner:
             facecolor="none",
         )
         forest3 = patches.Rectangle(
-            xy=(1.2, 7.6),
+            # xy=(1.2, 7.6),
+            xy=(1.2, 3.2),
             width=1.2,
             height=1.2,
             linewidth=1,
@@ -470,7 +493,8 @@ class RunTrajectoryPlanner:
             facecolor="none",
         )
         forest3_square = patches.Rectangle(
-            xy=(1.2 + 0.428, 7.6 + 0.428),
+            # xy=(1.2 + 0.428, 7.6 + 0.428),
+            xy=(1.2 + 0.428, 3.2 + 0.428),
             width=0.35,
             height=0.35,
             linewidth=1,
@@ -478,7 +502,8 @@ class RunTrajectoryPlanner:
             facecolor="none",
         )
         forest4 = patches.Rectangle(
-            xy=(3.6, 6.4),
+            # xy=(3.6, 6.4),
+            xy=(3.6, 4.4),
             width=1.2,
             height=1.2,
             linewidth=1,
@@ -486,7 +511,8 @@ class RunTrajectoryPlanner:
             facecolor="none",
         )
         forest4_square = patches.Rectangle(
-            xy=(3.6 + 0.428, 6.4 + 0.428),
+            # xy=(3.6 + 0.428, 6.4 + 0.428),
+            xy=(3.6 + 0.428, 4.4 + 0.428),
             width=0.35,
             height=0.35,
             linewidth=1,
@@ -494,7 +520,8 @@ class RunTrajectoryPlanner:
             facecolor="none",
         )
         forest5 = patches.Rectangle(
-            xy=(2.4, 6.4),
+            # xy=(2.4, 6.4),
+            xy=(2.4, 4.4),
             width=1.2,
             height=1.2,
             linewidth=1,
@@ -502,7 +529,8 @@ class RunTrajectoryPlanner:
             facecolor="none",
         )
         forest5_square = patches.Rectangle(
-            xy=(2.4 + 0.428, 6.4 + 0.428),
+            # xy=(2.4 + 0.428, 6.4 + 0.428),
+            xy=(2.4 + 0.428, 4.4 + 0.428),
             width=0.35,
             height=0.35,
             linewidth=1,
@@ -510,7 +538,8 @@ class RunTrajectoryPlanner:
             facecolor="none",
         )
         forest6 = patches.Rectangle(
-            xy=(1.2, 6.4),
+            # xy=(1.2, 6.4),
+            xy=(1.2, 4.4),
             width=1.2,
             height=1.2,
             linewidth=1,
@@ -518,7 +547,8 @@ class RunTrajectoryPlanner:
             facecolor="none",
         )
         forest6_square = patches.Rectangle(
-            xy=(1.2 + 0.428, 6.4 + 0.428),
+            # xy=(1.2 + 0.428, 6.4 + 0.428),
+            xy=(1.2 + 0.428, 4.4 + 0.428),
             width=0.35,
             height=0.35,
             linewidth=1,
@@ -526,7 +556,8 @@ class RunTrajectoryPlanner:
             facecolor="none",
         )
         forest7 = patches.Rectangle(
-            xy=(3.6, 5.2),
+            # xy=(3.6, 5.2),
+            xy=(3.6, 5.6),
             width=1.2,
             height=1.2,
             linewidth=1,
@@ -534,7 +565,8 @@ class RunTrajectoryPlanner:
             facecolor="none",
         )
         forest7_square = patches.Rectangle(
-            xy=(3.6 + 0.428, 5.2 + 0.428),
+            # xy=(3.6 + 0.428, 5.2 + 0.428),
+            xy=(3.6 + 0.428, 5.6 + 0.428),
             width=0.35,
             height=0.35,
             linewidth=1,
@@ -542,7 +574,8 @@ class RunTrajectoryPlanner:
             facecolor="none",
         )
         forest8 = patches.Rectangle(
-            xy=(2.4, 5.2),
+            # xy=(2.4, 5.2),
+            xy=(2.4, 5.6),
             width=1.2,
             height=1.2,
             linewidth=1,
@@ -550,7 +583,8 @@ class RunTrajectoryPlanner:
             facecolor="none",
         )
         forest8_square = patches.Rectangle(
-            xy=(2.4 + 0.428, 5.2 + 0.428),
+            # xy=(2.4 + 0.428, 5.2 + 0.428),
+            xy=(2.4 + 0.428, 5.6 + 0.428),
             width=0.35,
             height=0.35,
             linewidth=1,
@@ -558,7 +592,8 @@ class RunTrajectoryPlanner:
             facecolor="none",
         )
         forest9 = patches.Rectangle(
-            xy=(1.2, 5.2),
+            # xy=(1.2, 5.2),
+            xy=(1.2, 5.6),
             width=1.2,
             height=1.2,
             linewidth=1,
@@ -566,7 +601,8 @@ class RunTrajectoryPlanner:
             facecolor="none",
         )
         forest9_square = patches.Rectangle(
-            xy=(1.2 + 0.428, 5.2 + 0.428),
+            # xy=(1.2 + 0.428, 5.2 + 0.428),
+            xy=(1.2 + 0.428, 5.6 + 0.428),
             width=0.35,
             height=0.35,
             linewidth=1,
@@ -574,7 +610,8 @@ class RunTrajectoryPlanner:
             facecolor="none",
         )
         forest10 = patches.Rectangle(
-            xy=(3.6, 4.0),
+            # xy=(3.6, 4.0),
+            xy=(3.6, 6.8),
             width=1.2,
             height=1.2,
             linewidth=1,
@@ -582,7 +619,8 @@ class RunTrajectoryPlanner:
             facecolor="none",
         )
         forest10_square = patches.Rectangle(
-            xy=(3.6 + 0.428, 4.0 + 0.428),
+            # xy=(3.6 + 0.428, 4.0 + 0.428),
+            xy=(3.6 + 0.428, 6.8 + 0.428),
             width=0.35,
             height=0.35,
             linewidth=1,
@@ -590,7 +628,8 @@ class RunTrajectoryPlanner:
             facecolor="none",
         )
         forest11 = patches.Rectangle(
-            xy=(2.4, 4.0),
+            # xy=(2.4, 4.0),
+            xy=(2.4, 6.8),
             width=1.2,
             height=1.2,
             linewidth=1,
@@ -598,7 +637,8 @@ class RunTrajectoryPlanner:
             facecolor="none",
         )
         forest11_square = patches.Rectangle(
-            xy=(2.4 + 0.428, 4.0 + 0.428),
+            # xy=(2.4 + 0.428, 4.0 + 0.428),
+            xy=(2.4 + 0.428, 6.8 + 0.428),
             width=0.35,
             height=0.35,
             linewidth=1,
@@ -606,7 +646,8 @@ class RunTrajectoryPlanner:
             facecolor="none",
         )
         forest12 = patches.Rectangle(
-            xy=(1.2, 4.0),
+            # xy=(1.2, 4.0),
+            xy=(1.2, 6.8),
             width=1.2,
             height=1.2,
             linewidth=1,
@@ -614,7 +655,8 @@ class RunTrajectoryPlanner:
             facecolor="none",
         )
         forest12_square = patches.Rectangle(
-            xy=(1.2 + 0.428, 4.0 + 0.428),
+            # xy=(1.2 + 0.428, 4.0 + 0.428),
+            xy=(1.2 + 0.428, 6.8 + 0.428),
             width=0.35,
             height=0.35,
             linewidth=1,
@@ -663,7 +705,7 @@ class RunTrajectoryPlanner:
 
     def _set_axis_range(self) -> None:
         """ゾーンに応じて表示範囲を設定"""
-        if self.zone == "blue":
+        if self.zone == "red":
             self.ax.set_xlim(-1, 13)
             self.ax.set_ylim(-1, 13)
         else:
@@ -854,7 +896,12 @@ class RunTrajectoryPlanner:
 
     def plot_vel_acc_jerk(self) -> None:
         """速度・加速度・躍度をまとめて描画"""
-        if self.t is None or self.v_trans is None or self.a_trans is None or self.j_trans is None:
+        if (
+            self.t is None
+            or self.v_trans is None
+            or self.a_trans is None
+            or self.j_trans is None
+        ):
             return
 
         fig, axes = plt.subplots(3, 1, sharex=True, figsize=(10, 8))
