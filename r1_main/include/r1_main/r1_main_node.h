@@ -180,10 +180,10 @@ public:
   double yaw_ = 0.0;
   double pitch_ = 0.0;
   double roll_ = 0.0;
-  // メカナムのyaw_offsetのPublisher
-  rclcpp::Publisher<std_msgs::msg::Float64>::SharedPtr yaw_offset_publisher_;
-  // オドメトリのoffsetのPublisher
-  rclcpp::Publisher<std_msgs::msg::Float64MultiArray>::SharedPtr odometry_offset_publisher_;
+  // set_mecanum_yawのPublisher
+  rclcpp::Publisher<std_msgs::msg::Float64>::SharedPtr set_mecanum_yaw_publisher_;
+  // set_odometryのPublisher
+  rclcpp::Publisher<std_msgs::msg::Float64MultiArray>::SharedPtr set_odometry_publisher_;
   // オドメトリのSubscription
   rclcpp::Subscription<nav_msgs::msg::Odometry>::SharedPtr odometry_subscription_;
   // chassis_actのPublisher
@@ -411,10 +411,10 @@ public:
   void sabacan_led_update(void);
   // IMU
   void imu_callback(const sensor_msgs::msg::Imu::SharedPtr msg);
-  void publish_yaw_offset(double offset);
+  void set_mecanum_yaw(double yaw);
   // オドメトリ
   void odometry_callback(const nav_msgs::msg::Odometry::SharedPtr msg);
-  void publish_odometry_offset(double x_offset, double y_offset, double yaw_offset);
+  void set_odometry(double x, double y, double yaw);
   // chassis_act
   void chassis_act_status_callback(const std_msgs::msg::Int32::SharedPtr msg);
   void publish_chassis_act_ref(int ref);

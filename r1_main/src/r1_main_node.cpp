@@ -251,11 +251,13 @@ R1MainNode::R1MainNode() : Node("r1_main_node")
   imu_subscription_ = this->create_subscription<sensor_msgs::msg::Imu>(
     "/bno086/imu/data_raw", 10, std::bind(&R1MainNode::imu_callback, this, std::placeholders::_1));
 
-  yaw_offset_publisher_ = this->create_publisher<std_msgs::msg::Float64>("/yaw_offset", 10);
+  // set_mecanum_yawのPublisher
+  set_mecanum_yaw_publisher_ =
+    this->create_publisher<std_msgs::msg::Float64>("/set_mecanum_yaw", 10);
 
-  // オドメトリのoffset Publisher
-  odometry_offset_publisher_ =
-    this->create_publisher<std_msgs::msg::Float64MultiArray>("/odometry_offset", 10);
+  // set_odometryのPublisher
+  set_odometry_publisher_ =
+    this->create_publisher<std_msgs::msg::Float64MultiArray>("/set_odometry", 10);
   // オドメトリのSubscription
   odometry_subscription_ = this->create_subscription<nav_msgs::msg::Odometry>(
     "/odometry", 10, std::bind(&R1MainNode::odometry_callback, this, std::placeholders::_1));
@@ -807,23 +809,22 @@ void R1MainNode::sabacan_led_update(void)
   // TODO: 暇なときに実装する
 }
 
-void R1MainNode::publish_yaw_offset(double offset)
+void R1MainNode::set_mecanum_yaw(double yaw)
 {
   std_msgs::msg::Float64 msg;
-  msg.data = offset;
-  yaw_offset_publisher_->publish(msg);
-  RCLCPP_INFO(this->get_logger(), "yaw_offset = %f", offset);
+  msg.data = yaw;
+  set_mecanum_yaw_publisher_->publish(msg);
+  RCLCPP_INFO(this->get_logger(), "set mecanum yaw: %f", yaw);
 }
 
-void R1MainNode::publish_odometry_offset(double x_offset, double y_offset, double yaw_offset)
+void R1MainNode::set_odometry(double x, double y, double yaw)
 {
   std_msgs::msg::Float64MultiArray msg;
-  msg.data.push_back(x_offset);
-  msg.data.push_back(y_offset);
-  msg.data.push_back(yaw_offset);
-  odometry_offset_publisher_->publish(msg);
-  RCLCPP_INFO(
-    this->get_logger(), "odometry offset x: %f, y: %f, yaw: %f", x_offset, y_offset, yaw_offset);
+  msg.data.push_back(x);
+  msg.data.push_back(y);
+  msg.data.push_back(yaw);
+  set_odometry_publisher_->publish(msg);
+  RCLCPP_INFO(this->get_logger(), "set odometry x: %f, y: %f, yaw: %f", x, y, yaw);
 }
 
 void R1MainNode::publish_chassis_act_ref(int ref)
@@ -1971,13 +1972,9 @@ void R1MainNode::auto_act0(void)
       publish_chassis_act_ref(ACT0_START);
     }
     if (ps4_->is_pushed_circle()) {
-      // オドメトリの原点リセット
-      publish_yaw_offset(-yaw_);
-      double x, y, yaw;
-      x = odometry_.pose.pose.position.x;
-      y = odometry_.pose.pose.position.y;
-      yaw = tf2::getYaw(odometry_.pose.pose.orientation);
-      publish_odometry_offset(-x, -y, -yaw);
+      set_mecanum_yaw(0.0);
+      // 青のスタートゾーン
+      set_odometry(-5.5, 0.5, 0.0);
     }
     double vx_ref = CHASSIS_MAX_VELOCITY * (-1) * ps4_->data.left_stick_x;
     double vy_ref = CHASSIS_MAX_VELOCITY * ps4_->data.left_stick_y;
@@ -2023,12 +2020,9 @@ void R1MainNode::reset_robot(void)
   // stepをリセットする
   reset_step();
   // 現在の角度が0度となるようなオフセットを設定する。
-  publish_yaw_offset(-yaw_);
-  double x, y, yaw;
-  x = odometry_.pose.pose.position.x;
-  y = odometry_.pose.pose.position.y;
-  yaw = tf2::getYaw(odometry_.pose.pose.orientation);
-  publish_odometry_offset(-x, -y, -yaw);
+  set_mecanum_yaw(0.0);
+  // 位置は適当
+  set_odometry(0.0, 0.0, 0.0);
   init_actuator();
   is_initialized_ = true;
 }

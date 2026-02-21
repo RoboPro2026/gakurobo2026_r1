@@ -10,6 +10,7 @@
  */
 
 #include <cmath>
+#include <complex>
 #include <nav_msgs/msg/odometry.hpp>
 #include <rclcpp/rclcpp.hpp>
 #include <sensor_msgs/msg/imu.hpp>
@@ -34,9 +35,8 @@ public:
     imu_subscription_ = this->create_subscription<sensor_msgs::msg::Imu>(
       "/bno086/imu/data_raw", 10, std::bind(&MyNode::imu_callback, this, std::placeholders::_1));
 
-    imu_offset_subscription_ = this->create_subscription<std_msgs::msg::Float64MultiArray>(
-      "/odometry_offset", 10,
-      std::bind(&MyNode::odometry_offset_callback, this, std::placeholders::_1));
+    set_odometry_subscription_ = this->create_subscription<std_msgs::msg::Float64MultiArray>(
+      "/set_odometry", 10, std::bind(&MyNode::set_odometry_callback, this, std::placeholders::_1));
 
     timer_ = this->create_wall_timer(10ms, std::bind(&MyNode::timer_callback, this));
 
@@ -105,6 +105,18 @@ public:
     encoder_speed_y_ = msg->encoder_speed_y;
   }
 
+  /**
+   * @brief 角度を-pi~piの範囲に正規化する
+   * 
+   * @param angle 
+   * @return double 
+   */
+  double angle_normalize(double angle)
+  {
+    std::complex<double> ret = std::polar(1.0, angle);
+    return std::arg(ret);
+  }
+
   void imu_callback(const sensor_msgs::msg::Imu::SharedPtr msg)
   {
     // IMUのyaw角の情報を更新、他の情報は使用しない（必要ないので）
@@ -121,20 +133,22 @@ public:
     imu_yaw_angular_velocity_ = msg->angular_velocity.z;
   }
 
-  void odometry_offset_callback(const std_msgs::msg::Float64MultiArray::SharedPtr msg)
+  void set_odometry_callback(const std_msgs::msg::Float64MultiArray::SharedPtr msg)
   {
-    // odometryのオフセット値を更新
+    // odometryの値を設定
     if (msg->data.size() < 3) {
-      RCLCPP_ERROR(this->get_logger(), "Odometry offset message must contain at least 3 elements");
+      RCLCPP_ERROR(this->get_logger(), "Set odometry message must contain at least 3 elements");
       return;
     }
-    offset_yaw_ += msg->data[2];
-    pos_x_ += msg->data[0];
-    pos_y_ += msg->data[1];
+    // xとyは直接値を書き換える
+    pos_x_ = msg->data[0];
+    pos_y_ = msg->data[1];
+    // yawはオフセットを更新する
+    offset_yaw_ = msg->data[2] - imu_yaw_;
+
     RCLCPP_INFO(
-      this->get_logger(),
-      "Updated Odometry offsets: offset_pos_x = %.3f, offset_pos_y = %.3f, offset_yaw = %.3f",
-      msg->data[0], msg->data[1], msg->data[2]);
+      this->get_logger(), "Set odometry: pos_x = %.3f, pos_y = %.3f, yaw = %.3f", msg->data[0],
+      msg->data[1], msg->data[2]);
   }
 
   void timer_callback()
@@ -157,7 +171,8 @@ public:
     // 位置と姿勢の更新
     double vx = encoder_x_direction_ * wheel_radius_ * encoder_speed_x_;
     double vy = encoder_y_direction_ * wheel_radius_ * encoder_speed_y_;
-    double yaw = imu_yaw_ + offset_yaw_;
+    // オフセットを加算するので、値が-pi~piの範囲に収まるように正規化
+    double yaw = angle_normalize(imu_yaw_ + offset_yaw_);
     double vx_world = vx * std::cos(yaw) - vy * std::sin(yaw);
     double vy_world = vx * std::sin(yaw) + vy * std::cos(yaw);
     double px = encoder_x_direction_ * wheel_radius_ * (encoder_pos_x_ - prev_encoder_pos_x_);
@@ -200,7 +215,7 @@ private:
   rclcpp::Publisher<nav_msgs::msg::Odometry>::SharedPtr odometry_publisher_;
   rclcpp::Subscription<r1_msgs::msg::OdometryEncoder>::SharedPtr encoder_subscription_;
   rclcpp::Subscription<sensor_msgs::msg::Imu>::SharedPtr imu_subscription_;
-  rclcpp::Subscription<std_msgs::msg::Float64MultiArray>::SharedPtr imu_offset_subscription_;
+  rclcpp::Subscription<std_msgs::msg::Float64MultiArray>::SharedPtr set_odometry_subscription_;
   rclcpp::TimerBase::SharedPtr timer_;
   rclcpp::node_interfaces::OnSetParametersCallbackHandle::SharedPtr param_callback_handle_;
   // マイコンから送られてくるエンコーダの値は、すでに積分されたものが送られてくる。単位は[rad]

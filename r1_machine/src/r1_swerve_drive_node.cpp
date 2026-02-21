@@ -50,8 +50,9 @@ public:
       "/bno086/imu/data_raw", 10, std::bind(&MyNode::imu_callback, this, std::placeholders::_1));
 
     // yawのオフセット
-    yaw_offset_subscription_ = this->create_subscription<std_msgs::msg::Float64>(
-      "yaw_offset", 10, std::bind(&MyNode::yaw_offset_callback, this, std::placeholders::_1));
+    set_swerve_drive_yaw_subscription_ = this->create_subscription<std_msgs::msg::Float64>(
+      "set_swerve_drive_yaw", 10,
+      std::bind(&MyNode::set_swerve_drive_yaw_callback, this, std::placeholders::_1));
 
     this->declare_parameter("robot_length", 0.5);
     this->declare_parameter("robot_width", 0.5);
@@ -188,6 +189,33 @@ public:
       swerve_drive_ref_.omega3, swerve_drive_ref_.theta3);
   }
 
+  /**
+   * @brief 角度を-pi~piの範囲に正規化する
+   * 
+   * @param angle 
+   * @return double 
+   */
+  double angle_normalize(double angle)
+  {
+    std::complex<double> ret = std::polar(1.0, angle);
+    return std::arg(ret);
+  }
+
+  /**
+   * @brief 角度差を計算する。計算結果は-pi~pi
+   * 
+   * @param current_angle 
+   * @param prev_angle 
+   * @return double 
+   */
+  double angle_diff(double current_angle, double prev_angle)
+  {
+    std::complex<double> current = std::polar(1.0, current_angle);
+    std::complex<double> prev = std::polar(1.0, prev_angle);
+    std::complex<double> diff = current / prev;  // 位相差
+    return std::arg(diff);
+  }
+
   void imu_callback(const sensor_msgs::msg::Imu::SharedPtr msg)
   {
     // imuを使わない設定の場合は処理しない
@@ -198,17 +226,18 @@ public:
       msg->orientation.x, msg->orientation.y, msg->orientation.z, msg->orientation.w);
     double yaw, pitch, roll;
     tf2::Matrix3x3(q).getRPY(roll, pitch, yaw);
-    yaw_ = yaw + yaw_offset_;
+    yaw_raw_ = yaw;
+    yaw_ = angle_normalize(yaw + yaw_offset_);
     // RCLCPP_INFO(this->get_logger(), "yaw = %f", yaw_);
   }
 
-  void yaw_offset_callback(const std_msgs::msg::Float64::SharedPtr msg)
+  void set_swerve_drive_yaw_callback(const std_msgs::msg::Float64::SharedPtr msg)
   {
     // imuを使わない設定の場合は処理しない
     if (!use_imu_) return;
 
-    yaw_offset_ = msg->data;
-    RCLCPP_INFO(this->get_logger(), "yaw_offset = %f", yaw_offset_);
+    yaw_offset_ = msg->data - yaw_raw_;
+    RCLCPP_INFO(this->get_logger(), "Set swerve drive yaw = %f", msg->data);
   }
 
   void manual_swerve_drive_ref_callback(const r1_msgs::msg::SwerveDrive::SharedPtr msg)
@@ -241,21 +270,6 @@ public:
       swerve_drive_ref_.omega0, swerve_drive_ref_.theta0, swerve_drive_ref_.omega1,
       swerve_drive_ref_.theta1, swerve_drive_ref_.omega2, swerve_drive_ref_.theta2,
       swerve_drive_ref_.omega3, swerve_drive_ref_.theta3);
-  }
-
-  /**
-   * @brief 角度差を計算する。計算結果は-pi~pi
-   * 
-   * @param current_angle 
-   * @param prev_angle 
-   * @return double 
-   */
-  double angle_diff(double current_angle, double prev_angle)
-  {
-    std::complex<double> current = std::polar(1.0, current_angle);
-    std::complex<double> prev = std::polar(1.0, prev_angle);
-    std::complex<double> diff = current / prev;  // 位相差
-    return std::arg(diff);
   }
 
   void calculate_swerve_drive(double vx_ref, double vy_ref, double omega_ref, double theta)
@@ -336,7 +350,7 @@ public:
   rclcpp::Subscription<r1_msgs::msg::SwerveDrive>::SharedPtr manual_swerve_drive_ref_subscription_;
   rclcpp::node_interfaces::OnSetParametersCallbackHandle::SharedPtr parameter_callback_handler_;
   rclcpp::Subscription<sensor_msgs::msg::Imu>::SharedPtr imu_subscription_;
-  rclcpp::Subscription<std_msgs::msg::Float64>::SharedPtr yaw_offset_subscription_;
+  rclcpp::Subscription<std_msgs::msg::Float64>::SharedPtr set_swerve_drive_yaw_subscription_;
   r1_msgs::msg::SwerveDrive swerve_drive_ref_;
   double prev_steer_theta_[4] = {0};
 
@@ -361,6 +375,7 @@ public:
   bool use_imu_;       // IMUを使用するかどうか
   double yaw_offset_;  // IMUのyaw角のオフセット (rad)
   double yaw_;         // IMUのyaw角
+  double yaw_raw_;     // IMUのyaw角（オフセットなし）
 };
 
 int main(int argc, char * argv[])

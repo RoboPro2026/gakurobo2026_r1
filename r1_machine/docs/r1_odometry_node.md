@@ -7,7 +7,7 @@
 - **Subscribe**
   - `/odometry_encoder` (`r1_msgs/msg/OdometryEncoder`): X・Y 方向のエンコーダ積算値と角速度。`encoder_pos_x`, `encoder_pos_y` は積算角度 [rad]、`encoder_speed_x`, `encoder_speed_y` は角速度 [rad/s] が格納されます。
   - `/bno086/imu/data_raw` (`sensor_msgs/msg/Imu`): IMU からのヨー角と角速度。`use_imu` が `true` の場合に限り、オドメトリの向きと角速度の参照として使用します。
-  - `/odometry_offset` (`std_msgs/msg/Float64MultiArray`): 実行中にオフセットを加算するためのトピック。`data` の先頭 3 要素を `[offset_pos_x, offset_pos_y, offset_yaw]` として解釈し、それぞれ現在値に加算します。
+  - `/set_odometry` (`std_msgs/msg/Float64MultiArray`): 実行中にオドメトリの基準を設定するトピック。`data` の先頭 3 要素を `[x, y, yaw]`（いずれも `odom` 座標系、単位は m/m/rad）として解釈し、`x/y` は内部の位置をその値へ直接設定します。`yaw` は IMU の現在ヨー角に対するオフセット（`offset_yaw`）を更新し、以降の配信ヨー角が指定値になるよう補正します（`yaw = normalize(imu_yaw + offset_yaw)`）。
 - **Publish**
   - `/odometry` (`nav_msgs/msg/Odometry`): 推定された位置・姿勢・速度。`header.frame_id = "odom"`、`child_frame_id = "base_link"` 固定です。
 
@@ -27,13 +27,10 @@
 1. `/odometry_encoder` から受け取った積算角度 (`encoder_pos_*`) と角速度 (`encoder_speed_*`) を内部状態に保存します。積算量はいずれも [rad]、角速度は [rad/s] を想定しています。
 2. 速度換算は `vx = direction_x * wheel_radius * encoder_speed_x`、`vy = direction_y * wheel_radius * encoder_speed_y` で行います。`direction_*` は `encoder_*_inverse` パラメータから ±1 を設定し、配線や設置向きの違いを吸収します。
 3. `/bno086/imu/data_raw` から得たクォータニオンを Roll-Pitch-Yaw に変換し、Yaw 成分（`imu_yaw`）と Z 軸の角速度（`angular_velocity.z`）のみを使用します。`use_imu = false` の場合は IMU を参照せず、Yaw は `offset_yaw` のみ（角速度は 0）として扱われます。
-4. Yaw（`yaw = imu_yaw + offset_yaw`）を用いて、速度を `odom` 座標系に回転します（`vx_world`, `vy_world`）。その後 `dt = 0.01`（10 ms 固定）として `pos_x = vx_world * dt`、`pos_y = vy_world * dt` を計算します。
-5. 位置は `offset_pos_x`, `offset_pos_y` を加算して `nav_msgs/msg/Odometry` に反映し、姿勢は Yaw のみから作成したクォータニオンを `pose.pose.orientation` に格納します（`pose.pose.position.z = 0.0`）。
-6. 速度は `twist.twist.linear.x/y` にボディ座標系の `vx/vy` を、`twist.twist.angular.z` に IMU の `angular_velocity.z` を格納します（`use_imu = false` の場合は 0）。
-
-注意: 現在の実装では `pos_x/pos_y` を内部で積算しておらず、各周期の変位（`vx_world * dt`, `vy_world * dt`）にオフセットを加えた値を `pose.pose.position.x/y` に格納します。
-
-パラメータ更新は差し替えではなく加算で反映されるため、実行中に補正量を増減させたい場合は加法的に指定してください。
+4. Yaw（`yaw = normalize(imu_yaw + offset_yaw)`）を用いて、速度を `odom` 座標系に回転します（`vx_world`, `vy_world`）。
+5. 位置の更新は、積算エンコーダ角度の差分から各周期の並進量（`px = wheel_radius * (encoder_pos_x - prev_encoder_pos_x)`、`py = wheel_radius * (encoder_pos_y - prev_encoder_pos_y)`）を求め、Yaw で `odom` 座標系へ回転した量（`px_world`, `py_world`）を内部の `pos_x/pos_y` に加算して積算します。
+6. `nav_msgs/msg/Odometry` には `pose.pose.position.x/y = pos_x/pos_y`、`pose.pose.orientation` は Yaw のみから作成したクォータニオンを格納します（`pose.pose.position.z = 0.0`）。
+7. 速度は `twist.twist.linear.x/y` に `odom` 座標系の `vx_world/vy_world`、`twist.twist.angular.z` に IMU の `angular_velocity.z` を格納します（`use_imu = false` の場合は 0）。
 
 ## 起動と確認
 
@@ -46,7 +43,6 @@
 
 - 主なデバッグコマンド:
   - `ros2 topic echo /odometry` で現在の推定値を確認。
-  - `ros2 param set /r1_odometry_node offset_pos_x 0.05` のようにして実行中に位置補正を加算。
-  - `ros2 topic pub --once /odometry_imu_offset std_msgs/msg/Float64MultiArray "{data: [0.05, 0.0, 0.0]}"` のようにして、トピック経由でオフセットを加算。
+  - `ros2 topic pub --once /set_odometry std_msgs/msg/Float64MultiArray "{data: [0.0, 0.0, 0.0]}"` のようにして、オドメトリ原点（位置と向き）を設定。
 
 `r1_odometry_node` は車体の移動量と IMU からの向き情報を組み合わせたシンプルな 2D オドメトリを提供し、上位ノードからの自己位置推定の初期値やフィードバックとして利用できます。
