@@ -6,7 +6,7 @@ r1_chassis_control_node:
     kp: 0.5
     ki: 0.0
     kd: 0.0
-    kff: 0.0
+    kff: 0.5
     goal_range: 0.05
     finish_time_threshold: 1.0
 r1_dummy_odometry_node:

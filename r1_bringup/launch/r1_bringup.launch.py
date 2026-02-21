@@ -454,7 +454,7 @@ def generate_launch_description():
                 "port": 8765,
             }
         ],
-        arguments=["--ros-args", "--log-level", "warn"],
+        arguments=["--ros-args", "--log-level", "error"],
     )
 
     # r1_mainのノードの起動を遅延させる
