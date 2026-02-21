@@ -444,8 +444,22 @@ def generate_launch_description():
         ]
     )
 
+    foxglove_node = Node(
+        package="foxglove_bridge",
+        executable="foxglove_bridge",
+        name="foxglove_bridge",
+        # output="screen",
+        parameters=[
+            {
+                "port": 8765,
+            }
+        ],
+        arguments=["--ros-args", "--log-level", "warn"],
+    )
+
     # r1_mainのノードの起動を遅延させる
     normal_nodes = [
+        foxglove_node,
         ps4_node,
         bno086_node,
         r1_chassis_control_node,
