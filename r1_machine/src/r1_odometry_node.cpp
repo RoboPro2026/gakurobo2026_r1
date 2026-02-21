@@ -224,7 +224,6 @@ private:
   bool encoder_update_ = true;
   bool imu_update_ = true;
   bool use_imu_ = true;
-  // TODO: 必要であれば、imu_yaw_angular_velocity_のオフセットも追加する
 };
 
 int main(int argc, char * argv[])
