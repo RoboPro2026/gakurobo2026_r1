@@ -144,18 +144,20 @@ class MainWindow(QMainWindow):
         self.param_table.setMaximumWidth(350)
         # 表示範囲を少し縦に広げる
         self.param_table.setMinimumHeight(260)
+        # パラメータ編集（特に zone）を即時反映する
+        self.param_table.itemChanged.connect(self.on_param_item_changed)
 
         # ファイル名ベース入力（入出力）
         self.input_prefix_edit = QLineEdit()
         self.output_prefix_edit = QLineEdit()
-        default_prefix = "/tmp/trajectory"
+        default_prefix = "src/gakurobo2026_r1/data/0"
         self.input_prefix_edit.setText(default_prefix)
         self.output_prefix_edit.setText(default_prefix)
         self.input_prefix_edit.setPlaceholderText(
-            "入力ファイルベース（例: /tmp/trajectory）"
+            "入力ファイルベース（例: src/gakurobo2026_r1/data/0）"
         )
         self.output_prefix_edit.setPlaceholderText(
-            "出力ファイルベース（例: /tmp/trajectory）"
+            "出力ファイルベース（例: src/gakurobo2026_r1/data/0）"
         )
 
         # ログ表示エリア
@@ -247,6 +249,23 @@ class MainWindow(QMainWindow):
         # 初期表示としてフィールドのみ描画（アスペクト比 1:1）
         self.draw_waypoints_only()
 
+    def reset_view(self) -> None:
+        """ズーム・パンの状態をリセットし、次回描画で表示範囲も再計算させる"""
+        self.base_xlim = None
+        self.base_ylim = None
+        # スライダーも初期化（zone が切り替わると座標系が反転するため）
+        self.zoom_slider.blockSignals(True)
+        self.pan_x_slider.blockSignals(True)
+        self.pan_y_slider.blockSignals(True)
+        try:
+            self.zoom_slider.setValue(0)
+            self.pan_x_slider.setValue(0)
+            self.pan_y_slider.setValue(0)
+        finally:
+            self.zoom_slider.blockSignals(False)
+            self.pan_x_slider.blockSignals(False)
+            self.pan_y_slider.blockSignals(False)
+
     def log_action(self, msg: str) -> None:
         """GUI操作のログを GUI とコマンドラインに出す"""
         # RunTrajectoryPlanner._log は「コマンドライン + GUI(log_func)」に出力する
@@ -264,6 +283,7 @@ class MainWindow(QMainWindow):
 
         # パラメータ読み込み
         self.log_action(f"パラメータ読込: {self.runner._get_input_parameter_path()}")
+        prev_zone = self.runner.zone
         if self.runner.load_parameters():
             self.update_param_table()
             self.param_table.show()
@@ -272,6 +292,14 @@ class MainWindow(QMainWindow):
             # パラメータファイルが無い場合はテーブルを隠したままにする
             self.param_table.hide()
             self.log_action("パラメータ読込: ファイルなし")
+
+        # zone が変わった場合は、表示範囲（xlim）を保持したまま再描画すると
+        # フィールドが画面外に出てしまうため、ズーム・パンをリセットして描画し直す
+        if self.runner.zone != prev_zone:
+            self.log_action(
+                f"zone変更: {prev_zone} -> {self.runner.zone} (表示リセット)"
+            )
+            self.reset_view()
 
         # waypoint 読み込み
         self.log_action(f"waypoint読込: {self.runner._get_input_waypoint_path()}")
@@ -486,6 +514,7 @@ class MainWindow(QMainWindow):
         x = self.runner.x[idx]
         y = self.runner.y[idx]
         theta = self.runner.theta[idx]
+        theta_disp = self.runner.get_display_theta(theta)
         v = None
         if self.runner.v_trans is not None and idx < len(self.runner.v_trans):
             v = self.runner.v_trans[idx]
@@ -496,16 +525,16 @@ class MainWindow(QMainWindow):
 
         if t is None:
             self.label_anim_info.setText(
-                f"t: N/A  x: {x:.3f}  y: {y:.3f}  theta: {theta:.3f}  v: "
+                f"t: N/A  x: {x:.3f}  y: {y:.3f}  theta: {theta_disp:.3f}  v: "
                 f"{'N/A' if v is None else f'{v:.3f}'}"
             )
         else:
             self.label_anim_info.setText(
-                f"t: {t:.3f}  x: {x:.3f}  y: {y:.3f}  theta: {theta:.3f}  v: "
+                f"t: {t:.3f}  x: {x:.3f}  y: {y:.3f}  theta: {theta_disp:.3f}  v: "
                 f"{'N/A' if v is None else f'{v:.3f}'}"
             )
 
-        trans = Affine2D().rotate(theta).translate(x, y) + self.ax.transData
+        trans = Affine2D().rotate(theta_disp).translate(x, y) + self.ax.transData
         self.anim_rect.set_transform(trans)
         self.anim_nose.set_transform(trans)
 
@@ -722,14 +751,6 @@ class MainWindow(QMainWindow):
         if event.xdata is None or event.ydata is None:
             return
 
-        # 挿入位置: テーブルで選択されている行の次。
-        # 何も選択されていなければ末尾に追加。
-        selected_row = self.table.currentRow()
-        if selected_row < 0:
-            insert_index = len(self.runner.x_wp)
-        else:
-            insert_index = min(selected_row + 1, len(self.runner.x_wp))
-
         # フィールド座標系から基準座標系への変換
         # 青ゾーンのときは、描画時に x を反転しているので、追加時には逆変換して保存する
         x_field = float(event.xdata)
@@ -740,32 +761,44 @@ class MainWindow(QMainWindow):
             x_val = x_field
         y_val = y_field
 
-        # x, y を指定位置に挿入（theta, v_trans は空のまま）
-        self.runner.x_wp.insert(insert_index, x_val)
-        self.runner.y_wp.insert(insert_index, y_val)
-        self.log_action(
-            f"waypoint追加: insert={insert_index}, x={x_val:.3f}, y={y_val:.3f} (zone={self.runner.zone})"
-        )
+        selected_row = self.table.currentRow()
+        # waypoint が選択されている場合は「追加」ではなく「上書き」する
+        if 0 <= selected_row < len(self.runner.x_wp):
+            self.runner.x_wp[selected_row] = x_val
+            self.runner.y_wp[selected_row] = y_val
+            self.log_action(
+                f"waypoint上書き: row={selected_row}, x={x_val:.3f}, y={y_val:.3f} (zone={self.runner.zone})"
+            )
+        else:
+            # 何も選択されていなければ末尾に追加
+            insert_index = len(self.runner.x_wp)
+            self.runner.x_wp.insert(insert_index, x_val)
+            self.runner.y_wp.insert(insert_index, y_val)
+            self.log_action(
+                f"waypoint追加: insert={insert_index}, x={x_val:.3f}, y={y_val:.3f} (zone={self.runner.zone})"
+            )
 
-        # 既存の theta, v_trans のインデックスをシフト
-        shifted_theta: list[tuple[int, float]] = []
-        for idx, val in self.runner.theta_wp:
-            if idx >= insert_index:
-                shifted_theta.append((idx + 1, val))
-            else:
-                shifted_theta.append((idx, val))
-        self.runner.theta_wp = shifted_theta
+            # 既存の theta, v_trans のインデックスをシフト
+            shifted_theta: list[tuple[int, float]] = []
+            for idx, val in self.runner.theta_wp:
+                if idx >= insert_index:
+                    shifted_theta.append((idx + 1, val))
+                else:
+                    shifted_theta.append((idx, val))
+            self.runner.theta_wp = shifted_theta
 
-        shifted_v: list[tuple[int, float]] = []
-        for idx, val in self.runner.v_trans_wp:
-            if idx >= insert_index:
-                shifted_v.append((idx + 1, val))
-            else:
-                shifted_v.append((idx, val))
-        self.runner.v_trans_wp = shifted_v
+            shifted_v: list[tuple[int, float]] = []
+            for idx, val in self.runner.v_trans_wp:
+                if idx >= insert_index:
+                    shifted_v.append((idx + 1, val))
+                else:
+                    shifted_v.append((idx, val))
+            self.runner.v_trans_wp = shifted_v
 
         # テーブル更新と waypoint のみ描画
         self.update_waypoint_table()
+        if 0 <= selected_row < self.table.rowCount():
+            self.table.selectRow(selected_row)
         self.draw_waypoints_only()
 
     def update_runner_from_table(self) -> None:
@@ -830,12 +863,43 @@ class MainWindow(QMainWindow):
             ("robot_dt", f"{self.runner.robot_dt:.3f}"),
         ]
 
-        self.param_table.setRowCount(len(params))
-        for row, (name, value) in enumerate(params):
-            name_item = QTableWidgetItem(str(name))
-            value_item = QTableWidgetItem(str(value))
-            self.param_table.setItem(row, 0, name_item)
-            self.param_table.setItem(row, 1, value_item)
+        self.param_table.blockSignals(True)
+        try:
+            self.param_table.setRowCount(len(params))
+            for row, (name, value) in enumerate(params):
+                name_item = QTableWidgetItem(str(name))
+                value_item = QTableWidgetItem(str(value))
+                self.param_table.setItem(row, 0, name_item)
+                self.param_table.setItem(row, 1, value_item)
+        finally:
+            self.param_table.blockSignals(False)
+
+    def on_param_item_changed(self, item: QTableWidgetItem) -> None:
+        """パラメータ編集（zone 等）を即時 runner と描画に反映する"""
+        if item.column() != 1:
+            return
+        row = item.row()
+        name_item = self.param_table.item(row, 0)
+        if name_item is None:
+            return
+        name = name_item.text().strip()
+        value_text = item.text().strip()
+
+        if name != "zone":
+            return
+
+        value_text = value_text.lower()
+        if value_text not in ["red", "blue"]:
+            return
+
+        prev_zone = self.runner.zone
+        if value_text == prev_zone:
+            return
+
+        self.runner.zone = value_text
+        self.log_action(f"zone変更: {prev_zone} -> {self.runner.zone} (即時反映)")
+        self.reset_view()
+        self.draw_waypoints_only()
 
     def update_runner_prefixes_from_edits(self) -> None:
         """ファイル名ベースの入力値を runner に反映する"""

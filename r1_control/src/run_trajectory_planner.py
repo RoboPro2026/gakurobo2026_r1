@@ -3,6 +3,7 @@ import os
 from datetime import datetime
 from typing import Callable
 
+import math
 import matplotlib.patches as patches
 import matplotlib.pyplot as plt
 import numpy as np
@@ -67,6 +68,12 @@ class RunTrajectoryPlanner:
         self.j_trans = None
         self.omega = None
         self.curvature = None
+
+    def get_display_theta(self, theta: float) -> float:
+        """表示用の姿勢角を返す（zone を反転しても見た目の向きを揃える）"""
+        if self.zone == "blue":
+            return math.pi - float(theta)
+        return float(theta)
 
     def _log(self, msg: str) -> None:
         """ログ出力用ヘルパー（コンソール + GUI へ）"""
@@ -791,6 +798,7 @@ class RunTrajectoryPlanner:
         self, x: float, y: float, theta: float, width: float, height: float
     ) -> None:
         """ロボット矩形を 1 つ描画"""
+        theta_disp = self.get_display_theta(theta)
         rect = patches.Rectangle(
             (-width / 2, -height / 2),
             width,
@@ -800,7 +808,7 @@ class RunTrajectoryPlanner:
             linewidth=2,
         )
 
-        trans = Affine2D().rotate(theta).translate(x, y) + self.ax.transData
+        trans = Affine2D().rotate(theta_disp).translate(x, y) + self.ax.transData
         rect.set_transform(trans)
         self.ax.add_patch(rect)
 
@@ -870,7 +878,9 @@ class RunTrajectoryPlanner:
         axes[1].plot(self.t, self.y, label="Position (y)", color="orange")
         axes[1].set_ylabel("y [m]")
 
-        axes[2].plot(self.t, self.theta, label="Orientation (theta)", color="green")
+        theta_disp = np.array([self.get_display_theta(th) for th in self.theta])
+        theta_disp = np.unwrap(theta_disp)
+        axes[2].plot(self.t, theta_disp, label="Orientation (theta)", color="green")
         axes[2].set_ylabel("theta [rad]")
 
         axes[3].plot(self.t, self.distance, label="Distance", color="purple")
