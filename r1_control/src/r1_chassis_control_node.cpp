@@ -189,7 +189,9 @@ public:
   {
     geometry_msgs::msg::PoseStamped target_pose;
     target_pose.header.stamp = this->get_clock()->now();
-    target_pose.header.frame_id = "map";
+    // デバッグのためにmapからodomに変更
+    // target_pose.header.frame_id = "map";
+    target_pose.header.frame_id = "odom";
     target_pose.pose.position.x = waypoint.x;
     target_pose.pose.position.y = waypoint.y;
     target_pose.pose.position.z = 0.0;

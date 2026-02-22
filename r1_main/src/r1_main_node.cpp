@@ -1978,7 +1978,7 @@ void R1MainNode::auto_act0(void)
     }
     if (ps4_->is_pushed_cross()) {
       // 位置制御のプログラム実行
-      publish_chassis_act_ref(ACT1);
+      publish_chassis_act_ref(ACT1_START);
     }
     double vx_ref = CHASSIS_MAX_VELOCITY * (-1) * ps4_->data.left_stick_x;
     double vy_ref = CHASSIS_MAX_VELOCITY * ps4_->data.left_stick_y;
