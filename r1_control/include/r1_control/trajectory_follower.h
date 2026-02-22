@@ -167,7 +167,6 @@ public:
 
     // 現在の位置のnext_waypointから、角度を計算
     double arg = std::atan2(wp.y - y, wp.x - x);
-    debug_value_ = arg;
     double vx = wp.v_trans * std::cos(arg);
     double vy = wp.v_trans * std::sin(arg);
 
@@ -209,8 +208,6 @@ public:
 
   int is_finished() { return finish_; }
 
-  double get_debug_value() { return debug_value_; }
-
 private:
   TrajectoryPlanner * traj_planner_;
   rclcpp::Logger logger_;
@@ -228,6 +225,4 @@ private:
   int idx_ = 0;
   int finish_ = 0;
   rclcpp::Time last_out_of_range_time_ = rclcpp::Clock().now();
-
-  double debug_value_;
 };
