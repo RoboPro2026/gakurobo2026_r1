@@ -91,6 +91,10 @@ public:
       "/chassis_act_ref", 10,
       std::bind(&R1ChassisControlNode::act_callback, this, std::placeholders::_1));
 
+    // デバッグ用
+    debug_value_publisher_ =
+      this->create_publisher<std_msgs::msg::Float64>("chassis_debug_value", 10);
+
     act_traj_planner_.resize(ACT_N);
     act_traj_follower_.resize(ACT_N);
 
@@ -312,6 +316,12 @@ public:
         act_step_ = ACT1_FINISH;
         RCLCPP_INFO(this->get_logger(), "Finished ACT1");
       }
+
+      // デバッグ用
+      std_msgs::msg::Float64 msg;
+      msg.data = act_traj_follower_[1]->get_debug_value();
+      debug_value_publisher_->publish(msg);
+
     } else if (act_step_ == ACT1_FINISH) {
     } else if (act_step_ == ACT2_START) {
       act_step_ = ACT2;
@@ -549,6 +559,9 @@ public:
   std::vector<std::shared_ptr<TrajectoryPlanner>> act_traj_planner_;
   // trajectory follower
   std::vector<std::shared_ptr<TrajectoryFollower>> act_traj_follower_;
+
+  // デバッグ用
+  rclcpp::Publisher<std_msgs::msg::Float64>::SharedPtr debug_value_publisher_;
 };
 
 int main(int argc, char * argv[])
