@@ -21,6 +21,7 @@
 
 #include "geometry_msgs/msg/twist.hpp"
 #include "magic_enum.hpp"
+#include "nav_msgs/msg/odometry.hpp"
 #include "r1_main/ps4.h"
 #include "r1_main/simple_trapezoid.h"
 #include "r1_main/state_machine.h"
@@ -39,9 +40,11 @@
 #include "sensor_msgs/msg/joy.hpp"
 #include "std_msgs/msg/bool.hpp"
 #include "std_msgs/msg/float64.hpp"
+#include "std_msgs/msg/float64_multi_array.hpp"
 #include "std_msgs/msg/int32.hpp"
 #include "tf2/LinearMath/Matrix3x3.h"
 #include "tf2/LinearMath/Quaternion.h"
+#include "tf2/utils.h"
 
 class R1MainNode : public rclcpp::Node
 {
@@ -177,13 +180,36 @@ public:
   double yaw_ = 0.0;
   double pitch_ = 0.0;
   double roll_ = 0.0;
-  // メカナムのyaw_offset
-  rclcpp::Publisher<std_msgs::msg::Float64>::SharedPtr yaw_offset_publisher_;
+  // set_mecanum_yawのPublisher
+  rclcpp::Publisher<std_msgs::msg::Float64>::SharedPtr set_mecanum_yaw_publisher_;
+  // set_odometryのPublisher
+  rclcpp::Publisher<std_msgs::msg::Float64MultiArray>::SharedPtr set_odometry_publisher_;
+  // オドメトリのSubscription
+  rclcpp::Subscription<nav_msgs::msg::Odometry>::SharedPtr odometry_subscription_;
+  // chassis_actのPublisher
+  rclcpp::Publisher<std_msgs::msg::Int32>::SharedPtr chassis_act_ref_publisher_;
+  // chassis_actのSubscription
+  rclcpp::Subscription<std_msgs::msg::Int32>::SharedPtr chassis_act_status_subscription_;
   // タイマー
   rclcpp::TimerBase::SharedPtr timer_publisher_;
 
   // 速度指令値
   geometry_msgs::msg::Twist target_vel_;
+  // オドメトリ
+  nav_msgs::msg::Odometry odometry_;
+  // chassis_act
+  static constexpr int ACT_N = 3;
+  static constexpr int ACT_NONE = 0;
+  static constexpr int ACT0_START = 1;
+  static constexpr int ACT0 = 2;
+  static constexpr int ACT0_FINISH = 3;
+  static constexpr int ACT1_START = 11;
+  static constexpr int ACT1 = 12;
+  static constexpr int ACT1_FINISH = 13;
+  static constexpr int ACT2_START = 21;
+  static constexpr int ACT2 = 22;
+  static constexpr int ACT2_FINISH = 23;
+  int chassis_act_status_ = ACT_NONE;
 
   // スイッチの状態
   bool kfs_front_switch_status_ = false;
@@ -392,7 +418,13 @@ public:
   void sabacan_led_update(void);
   // IMU
   void imu_callback(const sensor_msgs::msg::Imu::SharedPtr msg);
-  void publish_yaw_offset(double offset);
+  void set_mecanum_yaw(double yaw);
+  // オドメトリ
+  void odometry_callback(const nav_msgs::msg::Odometry::SharedPtr msg);
+  void set_odometry(double x, double y, double yaw);
+  // chassis_act
+  void chassis_act_status_callback(const std_msgs::msg::Int32::SharedPtr msg);
+  void publish_chassis_act_ref(int ref);
   // ========== 各動作の関数 ==========
   // 足回り
   void chassis_move_vel(double vx, double vy, double omega);
@@ -508,6 +540,9 @@ public:
   int manual_mode7_spear_attack_task_step_ = DEFAULT_STEP;
   int manual_mode7_spear_hand_valve1_step_ = DEFAULT_STEP;
   void reset_step(void);
+  void reset_robot(void);
   rclcpp::TimerBase::SharedPtr manual_mode4_front_valve_timer_;
   rclcpp::TimerBase::SharedPtr manual_mode5_rear_valve_timer_;
+  // ========== オートモード ==========
+  void auto_act0(void);
 };

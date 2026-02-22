@@ -20,34 +20,17 @@ def generate_launch_description():
     # パラメータファイルのフルパスを作成
     param_file = os.path.join(pkg_dir, "config", "test_config.yaml")
 
-    ps4_node = Node(
-        package="joy",
-        executable="joy_node",
-        name="joy_node",
-        arguments=["--ros-args", "--log-level", "warn"],
-    )
-
-    sabacan_robomas_node1 = Node(
-        package="sabacan",
-        executable="sabacan_robomasv2_node",
-        name="sabacan_robomasv2_node_id1",
-        parameters=[param_file],
-        arguments=["--ros-args", "--log-level", "warn"],
-    )
-
-    test_node = Node(
-        package="r1_main",
-        executable="test_node",
-        name="test_node",
+    r1_chassis_control_node = Node(
+        package="r1_control",
+        executable="r1_chassis_control_node",
+        name="r1_chassis_control_node",
         parameters=[param_file],
         arguments=["--ros-args", "--log-level", "info"],
     )
 
     return LaunchDescription(
         [
-            ps4_node,
-            sabacan_robomas_node1,
-            test_node,
+            r1_chassis_control_node
             # socket_can_bridge_launch,
         ]
     )

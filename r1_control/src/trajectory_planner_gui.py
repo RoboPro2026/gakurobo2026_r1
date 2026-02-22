@@ -10,6 +10,7 @@ from matplotlib.transforms import Affine2D
 from PyQt6.QtCore import Qt
 from PyQt6.QtWidgets import (
     QApplication,
+    QButtonGroup,
     QHBoxLayout,
     QHeaderView,
     QLabel,
@@ -102,14 +103,37 @@ class MainWindow(QMainWindow):
 
         # ボタン行（下段: waypoint 編集）
         waypoint_button_layout = QHBoxLayout()
+        self.button_edit = QPushButton("編集")
+        self.button_insert_above = QPushButton("一つ上に挿入")
+        self.button_insert_below = QPushButton("一つ下に挿入")
+        self.button_undo = QPushButton("戻る")
+        self.button_redo = QPushButton("進む")
         self.button_delete = QPushButton("選択を削除")
         self.button_up = QPushButton("一つ上へ")
         self.button_down = QPushButton("一つ下へ")
 
+        # クリック操作モード（排他的に切り替え）
+        for b in [self.button_edit, self.button_insert_above, self.button_insert_below]:
+            b.setCheckable(True)
+        self._waypoint_mode_group = QButtonGroup(self)
+        self._waypoint_mode_group.setExclusive(True)
+        self._waypoint_mode_group.addButton(self.button_edit)
+        self._waypoint_mode_group.addButton(self.button_insert_above)
+        self._waypoint_mode_group.addButton(self.button_insert_below)
+        self.button_edit.setChecked(True)  # 初期値は「編集」
+        self._waypoint_mode_group.buttonToggled.connect(self.on_waypoint_mode_toggled)
+
+        self.button_undo.clicked.connect(self.on_undo_clicked)
+        self.button_redo.clicked.connect(self.on_redo_clicked)
         self.button_delete.clicked.connect(self.on_delete_clicked)
         self.button_up.clicked.connect(self.on_up_clicked)
         self.button_down.clicked.connect(self.on_down_clicked)
 
+        waypoint_button_layout.addWidget(self.button_edit)
+        waypoint_button_layout.addWidget(self.button_insert_above)
+        waypoint_button_layout.addWidget(self.button_insert_below)
+        waypoint_button_layout.addWidget(self.button_undo)
+        waypoint_button_layout.addWidget(self.button_redo)
         waypoint_button_layout.addWidget(self.button_delete)
         waypoint_button_layout.addWidget(self.button_up)
         waypoint_button_layout.addWidget(self.button_down)
@@ -132,6 +156,8 @@ class MainWindow(QMainWindow):
         self.table.setColumnHidden(0, True)
         # 行選択時にグラフ上の waypoint をハイライト
         self.table.itemSelectionChanged.connect(self.on_waypoint_selection_changed)
+        # waypoint のセル編集をプロットへ即時反映
+        self.table.itemChanged.connect(self.on_waypoint_item_changed)
 
         # パラメータ表示用テーブル
         self.param_table = QTableWidget()
@@ -144,18 +170,20 @@ class MainWindow(QMainWindow):
         self.param_table.setMaximumWidth(350)
         # 表示範囲を少し縦に広げる
         self.param_table.setMinimumHeight(260)
+        # パラメータ編集（特に zone）を即時反映する
+        self.param_table.itemChanged.connect(self.on_param_item_changed)
 
         # ファイル名ベース入力（入出力）
         self.input_prefix_edit = QLineEdit()
         self.output_prefix_edit = QLineEdit()
-        default_prefix = "/tmp/trajectory"
+        default_prefix = "src/gakurobo2026_r1/data/0"
         self.input_prefix_edit.setText(default_prefix)
         self.output_prefix_edit.setText(default_prefix)
         self.input_prefix_edit.setPlaceholderText(
-            "入力ファイルベース（例: /tmp/trajectory）"
+            "入力ファイルベース（例: src/gakurobo2026_r1/data/0）"
         )
         self.output_prefix_edit.setPlaceholderText(
-            "出力ファイルベース（例: /tmp/trajectory）"
+            "出力ファイルベース（例: src/gakurobo2026_r1/data/0）"
         )
 
         # ログ表示エリア
@@ -247,6 +275,29 @@ class MainWindow(QMainWindow):
         # 初期表示としてフィールドのみ描画（アスペクト比 1:1）
         self.draw_waypoints_only()
 
+        # waypoint undo/redo
+        self._waypoint_undo_stack: list[dict] = []
+        self._waypoint_redo_stack: list[dict] = []
+
+        self._waypoint_click_mode = "edit"
+
+    def reset_view(self) -> None:
+        """ズーム・パンの状態をリセットし、次回描画で表示範囲も再計算させる"""
+        self.base_xlim = None
+        self.base_ylim = None
+        # スライダーも初期化（zone が切り替わると座標系が反転するため）
+        self.zoom_slider.blockSignals(True)
+        self.pan_x_slider.blockSignals(True)
+        self.pan_y_slider.blockSignals(True)
+        try:
+            self.zoom_slider.setValue(0)
+            self.pan_x_slider.setValue(0)
+            self.pan_y_slider.setValue(0)
+        finally:
+            self.zoom_slider.blockSignals(False)
+            self.pan_x_slider.blockSignals(False)
+            self.pan_y_slider.blockSignals(False)
+
     def log_action(self, msg: str) -> None:
         """GUI操作のログを GUI とコマンドラインに出す"""
         # RunTrajectoryPlanner._log は「コマンドライン + GUI(log_func)」に出力する
@@ -264,6 +315,7 @@ class MainWindow(QMainWindow):
 
         # パラメータ読み込み
         self.log_action(f"パラメータ読込: {self.runner._get_input_parameter_path()}")
+        prev_zone = self.runner.zone
         if self.runner.load_parameters():
             self.update_param_table()
             self.param_table.show()
@@ -273,11 +325,21 @@ class MainWindow(QMainWindow):
             self.param_table.hide()
             self.log_action("パラメータ読込: ファイルなし")
 
+        # zone が変わった場合は、表示範囲（xlim）を保持したまま再描画すると
+        # フィールドが画面外に出てしまうため、ズーム・パンをリセットして描画し直す
+        if self.runner.zone != prev_zone:
+            self.log_action(
+                f"zone変更: {prev_zone} -> {self.runner.zone} (表示リセット)"
+            )
+            self.reset_view()
+
         # waypoint 読み込み
         self.log_action(f"waypoint読込: {self.runner._get_input_waypoint_path()}")
         self.runner.load_waypoint()
         self.update_waypoint_table()
         self.draw_waypoints_only()
+        self._waypoint_undo_stack.clear()
+        self._waypoint_redo_stack.clear()
         self.log_action(f"waypoint読込: {len(self.runner.x_wp)} 点")
         self.log_action("設定読み込み: 完了")
 
@@ -486,6 +548,7 @@ class MainWindow(QMainWindow):
         x = self.runner.x[idx]
         y = self.runner.y[idx]
         theta = self.runner.theta[idx]
+        theta_disp = self.runner.get_display_theta(theta)
         v = None
         if self.runner.v_trans is not None and idx < len(self.runner.v_trans):
             v = self.runner.v_trans[idx]
@@ -496,16 +559,16 @@ class MainWindow(QMainWindow):
 
         if t is None:
             self.label_anim_info.setText(
-                f"t: N/A  x: {x:.3f}  y: {y:.3f}  theta: {theta:.3f}  v: "
+                f"t: N/A  x: {x:.3f}  y: {y:.3f}  theta: {theta_disp:.3f}  v: "
                 f"{'N/A' if v is None else f'{v:.3f}'}"
             )
         else:
             self.label_anim_info.setText(
-                f"t: {t:.3f}  x: {x:.3f}  y: {y:.3f}  theta: {theta:.3f}  v: "
+                f"t: {t:.3f}  x: {x:.3f}  y: {y:.3f}  theta: {theta_disp:.3f}  v: "
                 f"{'N/A' if v is None else f'{v:.3f}'}"
             )
 
-        trans = Affine2D().rotate(theta).translate(x, y) + self.ax.transData
+        trans = Affine2D().rotate(theta_disp).translate(x, y) + self.ax.transData
         self.anim_rect.set_transform(trans)
         self.anim_nose.set_transform(trans)
 
@@ -607,6 +670,7 @@ class MainWindow(QMainWindow):
         if row < 0 or row >= len(self.runner.x_wp):
             self.log_action("waypoint削除: 行が選択されていません")
             return
+        self._push_waypoint_undo()
         self.log_action(f"waypoint削除: row={row}")
 
         # x, y の削除
@@ -637,12 +701,53 @@ class MainWindow(QMainWindow):
         self.update_waypoint_table()
         self.draw_waypoints_only()
 
+    def on_waypoint_mode_toggled(self, button: QPushButton, checked: bool) -> None:
+        """クリック操作モード（編集/挿入）を切り替える"""
+        if not checked:
+            return
+        if button is self.button_insert_above:
+            self._waypoint_click_mode = "insert_above"
+            self.log_action("モード切替: 一つ上に挿入")
+        elif button is self.button_insert_below:
+            self._waypoint_click_mode = "insert_below"
+            self.log_action("モード切替: 一つ下に挿入")
+        else:
+            self._waypoint_click_mode = "edit"
+            self.log_action("モード切替: 編集")
+
+    def _insert_waypoint_at(self, insert_index: int, x_val: float, y_val: float) -> None:
+        """指定 index に waypoint を挿入し、theta/v_trans の index を補正する"""
+        insert_index = max(0, min(insert_index, len(self.runner.x_wp)))
+        self.runner.x_wp.insert(insert_index, x_val)
+        self.runner.y_wp.insert(insert_index, y_val)
+
+        shifted_theta: list[tuple[int, float]] = []
+        for idx, val in self.runner.theta_wp:
+            if idx >= insert_index:
+                shifted_theta.append((idx + 1, val))
+            else:
+                shifted_theta.append((idx, val))
+        self.runner.theta_wp = shifted_theta
+
+        shifted_v: list[tuple[int, float]] = []
+        for idx, val in self.runner.v_trans_wp:
+            if idx >= insert_index:
+                shifted_v.append((idx + 1, val))
+            else:
+                shifted_v.append((idx, val))
+        self.runner.v_trans_wp = shifted_v
+
+        self.update_waypoint_table()
+        self.table.selectRow(insert_index)
+        self.draw_waypoints_only()
+
     def on_up_clicked(self) -> None:
         """選択された waypoint を一つ上に移動する"""
         row = self.table.currentRow()
         if row <= 0 or row >= len(self.runner.x_wp):
             self.log_action("waypoint上へ: 移動できません")
             return
+        self._push_waypoint_undo()
         self.log_action(f"waypoint上へ: row={row} -> {row-1}")
 
         # x, y の入れ替え
@@ -668,6 +773,7 @@ class MainWindow(QMainWindow):
         if row < 0 or row >= len(self.runner.x_wp) - 1:
             self.log_action("waypoint下へ: 移動できません")
             return
+        self._push_waypoint_undo()
         self.log_action(f"waypoint下へ: row={row} -> {row+1}")
 
         # x, y の入れ替え
@@ -692,27 +798,43 @@ class MainWindow(QMainWindow):
         x_wp, y_wp, theta_wp, v_trans_wp = self.runner.get_waypoints()
 
         n = len(x_wp)
-        self.table.setRowCount(n)
+        self.table.blockSignals(True)
+        try:
+            self.table.setRowCount(n)
 
-        theta_dict = {i: v for i, v in theta_wp}
-        v_dict = {i: v for i, v in v_trans_wp}
+            theta_dict = {i: v for i, v in theta_wp}
+            v_dict = {i: v for i, v in v_trans_wp}
 
-        for i in range(n):
-            idx_item = QTableWidgetItem(str(i))
-            x_item = QTableWidgetItem(f"{x_wp[i]:.3f}")
-            y_item = QTableWidgetItem(f"{y_wp[i]:.3f}")
-            theta_val = theta_dict.get(i)
-            v_val = v_dict.get(i)
-            theta_item = QTableWidgetItem(
-                "" if theta_val is None else f"{theta_val:.3f}"
-            )
-            v_item = QTableWidgetItem("" if v_val is None else f"{v_val:.3f}")
+            for i in range(n):
+                idx_item = QTableWidgetItem(str(i))
+                x_item = QTableWidgetItem(f"{x_wp[i]:.3f}")
+                y_item = QTableWidgetItem(f"{y_wp[i]:.3f}")
+                theta_val = theta_dict.get(i)
+                v_val = v_dict.get(i)
+                theta_item = QTableWidgetItem(
+                    "" if theta_val is None else f"{theta_val:.3f}"
+                )
+                v_item = QTableWidgetItem("" if v_val is None else f"{v_val:.3f}")
 
-            self.table.setItem(i, 0, idx_item)
-            self.table.setItem(i, 1, x_item)
-            self.table.setItem(i, 2, y_item)
-            self.table.setItem(i, 3, theta_item)
-            self.table.setItem(i, 4, v_item)
+                self.table.setItem(i, 0, idx_item)
+                self.table.setItem(i, 1, x_item)
+                self.table.setItem(i, 2, y_item)
+                self.table.setItem(i, 3, theta_item)
+                self.table.setItem(i, 4, v_item)
+        finally:
+            self.table.blockSignals(False)
+
+    def on_waypoint_item_changed(self, item: QTableWidgetItem) -> None:
+        """waypoint テーブルの編集を runner とプロットへ即時反映する"""
+        if item.column() not in [1, 2, 3, 4]:
+            return
+        selected_row = self.table.currentRow()
+        # runner 反映前の状態を undo に積む（runner は編集前の値を保持している）
+        self._push_waypoint_undo()
+        self.update_runner_from_table(refresh_table=False)
+        if 0 <= selected_row < self.table.rowCount():
+            self.table.selectRow(selected_row)
+        self.draw_waypoints_only()
 
     def on_canvas_clicked(self, event) -> None:
         """グラフクリックで waypoint を追加する"""
@@ -722,53 +844,126 @@ class MainWindow(QMainWindow):
         if event.xdata is None or event.ydata is None:
             return
 
-        # 挿入位置: テーブルで選択されている行の次。
-        # 何も選択されていなければ末尾に追加。
-        selected_row = self.table.currentRow()
-        if selected_row < 0:
-            insert_index = len(self.runner.x_wp)
-        else:
-            insert_index = min(selected_row + 1, len(self.runner.x_wp))
-
         # フィールド座標系から基準座標系への変換
-        # 赤ゾーンのときは、描画時に x を反転しているので、追加時には逆変換して保存する
+        # 青ゾーンのときは、描画時に x を反転しているので、追加時には逆変換して保存する
         x_field = float(event.xdata)
         y_field = float(event.ydata)
-        if self.runner.zone == "red":
+        if self.runner.zone == "blue":
             x_val = -x_field
         else:
             x_val = x_field
         y_val = y_field
 
-        # x, y を指定位置に挿入（theta, v_trans は空のまま）
-        self.runner.x_wp.insert(insert_index, x_val)
-        self.runner.y_wp.insert(insert_index, y_val)
+        selected_row = self.table.currentRow()
+        mode = getattr(self, "_waypoint_click_mode", "edit")
+
+        if mode in ["insert_above", "insert_below"] and not (
+            0 <= selected_row < len(self.runner.x_wp)
+        ):
+            # 挿入モードだが選択がない場合は末尾に追加
+            mode = "edit"
+
+        if mode == "insert_above":
+            self._push_waypoint_undo()
+            insert_index = selected_row
+            self.log_action(
+                f"waypoint挿入(上): insert={insert_index}, x={x_val:.3f}, y={y_val:.3f} (zone={self.runner.zone})"
+            )
+            self._insert_waypoint_at(insert_index, x_val, y_val)
+            return
+
+        if mode == "insert_below":
+            self._push_waypoint_undo()
+            insert_index = selected_row + 1
+            self.log_action(
+                f"waypoint挿入(下): insert={insert_index}, x={x_val:.3f}, y={y_val:.3f} (zone={self.runner.zone})"
+            )
+            self._insert_waypoint_at(insert_index, x_val, y_val)
+            return
+
+        # 編集モード: 選択があれば上書き、なければ末尾に追加
+        if 0 <= selected_row < len(self.runner.x_wp):
+            self._push_waypoint_undo()
+            self.runner.x_wp[selected_row] = x_val
+            self.runner.y_wp[selected_row] = y_val
+            self.log_action(
+                f"waypoint上書き: row={selected_row}, x={x_val:.3f}, y={y_val:.3f} (zone={self.runner.zone})"
+            )
+            self.update_waypoint_table()
+            if 0 <= selected_row < self.table.rowCount():
+                self.table.selectRow(selected_row)
+            self.draw_waypoints_only()
+            return
+
+        self._push_waypoint_undo()
+        insert_index = len(self.runner.x_wp)
         self.log_action(
             f"waypoint追加: insert={insert_index}, x={x_val:.3f}, y={y_val:.3f} (zone={self.runner.zone})"
         )
+        self._insert_waypoint_at(insert_index, x_val, y_val)
 
-        # 既存の theta, v_trans のインデックスをシフト
-        shifted_theta: list[tuple[int, float]] = []
-        for idx, val in self.runner.theta_wp:
-            if idx >= insert_index:
-                shifted_theta.append((idx + 1, val))
-            else:
-                shifted_theta.append((idx, val))
-        self.runner.theta_wp = shifted_theta
+    def _get_waypoint_snapshot(self) -> dict:
+        return {
+            "x_wp": list(self.runner.x_wp),
+            "y_wp": list(self.runner.y_wp),
+            "theta_wp": list(self.runner.theta_wp),
+            "v_trans_wp": list(self.runner.v_trans_wp),
+            "selected_row": int(self.table.currentRow()),
+        }
 
-        shifted_v: list[tuple[int, float]] = []
-        for idx, val in self.runner.v_trans_wp:
-            if idx >= insert_index:
-                shifted_v.append((idx + 1, val))
-            else:
-                shifted_v.append((idx, val))
-        self.runner.v_trans_wp = shifted_v
-
-        # テーブル更新と waypoint のみ描画
+    def _restore_waypoint_snapshot(self, snap: dict) -> None:
+        self.runner.x_wp = list(snap.get("x_wp", []))
+        self.runner.y_wp = list(snap.get("y_wp", []))
+        self.runner.theta_wp = list(snap.get("theta_wp", []))
+        self.runner.v_trans_wp = list(snap.get("v_trans_wp", []))
         self.update_waypoint_table()
+        row = int(snap.get("selected_row", -1))
+        if 0 <= row < self.table.rowCount():
+            self.table.selectRow(row)
         self.draw_waypoints_only()
 
-    def update_runner_from_table(self) -> None:
+    def _push_waypoint_undo(self) -> None:
+        snap = self._get_waypoint_snapshot()
+        if self._waypoint_undo_stack:
+            prev = self._waypoint_undo_stack[-1]
+            if (
+                prev.get("x_wp") == snap.get("x_wp")
+                and prev.get("y_wp") == snap.get("y_wp")
+                and prev.get("theta_wp") == snap.get("theta_wp")
+                and prev.get("v_trans_wp") == snap.get("v_trans_wp")
+            ):
+                return
+        self._waypoint_undo_stack.append(snap)
+        # undo が積まれたら redo は無効
+        self._waypoint_redo_stack.clear()
+        # 無限に増えないように上限を設ける
+        max_hist = 200
+        if len(self._waypoint_undo_stack) > max_hist:
+            self._waypoint_undo_stack = self._waypoint_undo_stack[-max_hist:]
+
+    def on_undo_clicked(self) -> None:
+        """waypoint 操作を1つ戻す"""
+        if not self._waypoint_undo_stack:
+            self.log_action("戻る: 履歴がありません")
+            return
+        cur = self._get_waypoint_snapshot()
+        snap = self._waypoint_undo_stack.pop()
+        self._waypoint_redo_stack.append(cur)
+        self.log_action("戻る: 実行")
+        self._restore_waypoint_snapshot(snap)
+
+    def on_redo_clicked(self) -> None:
+        """waypoint 操作を1つ進める"""
+        if not self._waypoint_redo_stack:
+            self.log_action("進む: 履歴がありません")
+            return
+        cur = self._get_waypoint_snapshot()
+        snap = self._waypoint_redo_stack.pop()
+        self._waypoint_undo_stack.append(cur)
+        self.log_action("進む: 実行")
+        self._restore_waypoint_snapshot(snap)
+
+    def update_runner_from_table(self, refresh_table: bool = True) -> None:
         """テーブル内容を runner の waypoint に反映する"""
         row_count = self.table.rowCount()
 
@@ -815,8 +1010,9 @@ class MainWindow(QMainWindow):
         self.runner.theta_wp = new_theta
         self.runner.v_trans_wp = new_v
 
-        # runner の内容を基準にテーブルを整える
-        self.update_waypoint_table()
+        if refresh_table:
+            # runner の内容を基準にテーブルを整える
+            self.update_waypoint_table()
 
     def update_param_table(self) -> None:
         """runner が持つ各種パラメータを表示する"""
@@ -830,12 +1026,43 @@ class MainWindow(QMainWindow):
             ("robot_dt", f"{self.runner.robot_dt:.3f}"),
         ]
 
-        self.param_table.setRowCount(len(params))
-        for row, (name, value) in enumerate(params):
-            name_item = QTableWidgetItem(str(name))
-            value_item = QTableWidgetItem(str(value))
-            self.param_table.setItem(row, 0, name_item)
-            self.param_table.setItem(row, 1, value_item)
+        self.param_table.blockSignals(True)
+        try:
+            self.param_table.setRowCount(len(params))
+            for row, (name, value) in enumerate(params):
+                name_item = QTableWidgetItem(str(name))
+                value_item = QTableWidgetItem(str(value))
+                self.param_table.setItem(row, 0, name_item)
+                self.param_table.setItem(row, 1, value_item)
+        finally:
+            self.param_table.blockSignals(False)
+
+    def on_param_item_changed(self, item: QTableWidgetItem) -> None:
+        """パラメータ編集（zone 等）を即時 runner と描画に反映する"""
+        if item.column() != 1:
+            return
+        row = item.row()
+        name_item = self.param_table.item(row, 0)
+        if name_item is None:
+            return
+        name = name_item.text().strip()
+        value_text = item.text().strip()
+
+        if name != "zone":
+            return
+
+        value_text = value_text.lower()
+        if value_text not in ["red", "blue"]:
+            return
+
+        prev_zone = self.runner.zone
+        if value_text == prev_zone:
+            return
+
+        self.runner.zone = value_text
+        self.log_action(f"zone変更: {prev_zone} -> {self.runner.zone} (即時反映)")
+        self.reset_view()
+        self.draw_waypoints_only()
 
     def update_runner_prefixes_from_edits(self) -> None:
         """ファイル名ベースの入力値を runner に反映する"""

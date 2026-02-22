@@ -49,12 +49,29 @@ def generate_launch_description():
         parameters=[param_file],
         arguments=["--ros-args", "--log-level", "info"],
     )
+
+    r1_chassis_control_node = Node(
+        package="r1_control",
+        executable="r1_chassis_control_node",
+        name="r1_chassis_control_node",
+        parameters=[param_file],
+        arguments=["--ros-args", "--log-level", "info"],
+    )
+
     # ========== 足回り ==========
     # メカナムホイールの指令値を知りたいときはinfoにする
     r1_mecanum_node = Node(
         package="r1_machine",
         executable="r1_mecanum_node",
         name="r1_mecanum_node",  # YAMLファイル内のノード名と一致させる
+        parameters=[param_file],
+        arguments=["--ros-args", "--log-level", "warn"],
+    )
+
+    r1_dummy_odometry_node = Node(
+        package="r1_control",
+        executable="r1_dummy_odometry_node",
+        name="r1_dummy_odometry_node",
         parameters=[param_file],
         arguments=["--ros-args", "--log-level", "warn"],
     )
@@ -427,12 +444,27 @@ def generate_launch_description():
         ]
     )
 
-    # ros2_socketcan以外のノードの起動を遅延させる
+    foxglove_node = Node(
+        package="foxglove_bridge",
+        executable="foxglove_bridge",
+        name="foxglove_bridge",
+        # output="screen",
+        parameters=[
+            {
+                "port": 8765,
+            }
+        ],
+        arguments=["--ros-args", "--log-level", "error"],
+    )
+
+    # r1_mainのノードの起動を遅延させる
     normal_nodes = [
+        foxglove_node,
         ps4_node,
         bno086_node,
-        # r1_main_node,
+        r1_chassis_control_node,
         r1_mecanum_node,
+        # r1_dummy_odometry_node,
         r1_odometry_node,
         r1_sabacan_msgs_converter_node,
         r1_kfs_fx_node,

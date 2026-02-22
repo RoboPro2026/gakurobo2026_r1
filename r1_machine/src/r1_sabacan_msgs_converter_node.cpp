@@ -527,142 +527,98 @@ public:
       mecanum_wheel_speeds_feedback_[msg->motor_number] = msg->speed;
     }
     if (receive == odometry_encoder_[X]) {
-      odometry_encoder_update_[X] = true;
       odometry_encoder_pos_values_[X] = msg->abs_pos;
       odometry_encoder_speed_values_[X] = msg->abs_speed;
     }
     if (receive == odometry_encoder_[Y]) {
-      odometry_encoder_update_[Y] = true;
       odometry_encoder_pos_values_[Y] = msg->abs_pos;
       odometry_encoder_speed_values_[Y] = msg->abs_speed;
     }
     if (receive == kfs_fx_) {
-      auto linear_msg = r1_msgs::msg::LinearMotion();
-      linear_msg.torque = msg->torque;
-      linear_msg.speed = msg->speed;
-      linear_msg.pos = msg->pos;
-      kfs_fx_linear_motion_status_publisher_->publish(linear_msg);
+      kfs_fx_linear_motion_value_.torque = msg->torque;
+      kfs_fx_linear_motion_value_.speed = msg->speed;
+      kfs_fx_linear_motion_value_.pos = msg->pos;
     }
     if (receive == kfs_fz_) {
-      auto linear_msg = r1_msgs::msg::LinearMotion();
-      linear_msg.torque = msg->torque;
-      linear_msg.speed = msg->speed;
-      linear_msg.pos = msg->pos;
-      kfs_fz_linear_motion_status_publisher_->publish(linear_msg);
+      kfs_fz_linear_motion_value_.torque = msg->torque;
+      kfs_fz_linear_motion_value_.speed = msg->speed;
+      kfs_fz_linear_motion_value_.pos = msg->pos;
     }
     if (receive == kfs_fyaw_) {
-      auto angle_msg = r1_msgs::msg::AngleMotion();
-      angle_msg.torque = msg->torque;
-      angle_msg.speed = msg->speed;
-      angle_msg.pos = msg->pos;
-      kfs_fyaw_angle_motion_status_publisher_->publish(angle_msg);
+      kfs_fyaw_angle_motion_value_.torque = msg->torque;
+      kfs_fyaw_angle_motion_value_.speed = msg->speed;
+      kfs_fyaw_angle_motion_value_.pos = msg->pos;
     }
     if (receive == kfs_rx_) {
-      auto linear_msg = r1_msgs::msg::LinearMotion();
-      linear_msg.torque = msg->torque;
-      linear_msg.speed = msg->speed;
-      linear_msg.pos = msg->pos;
-      kfs_rx_linear_motion_status_publisher_->publish(linear_msg);
+      kfs_rx_linear_motion_value_.torque = msg->torque;
+      kfs_rx_linear_motion_value_.speed = msg->speed;
+      kfs_rx_linear_motion_value_.pos = msg->pos;
     }
     if (receive == kfs_rz_) {
-      auto linear_msg = r1_msgs::msg::LinearMotion();
-      linear_msg.torque = msg->torque;
-      linear_msg.speed = msg->speed;
-      linear_msg.pos = msg->pos;
-      kfs_rz_linear_motion_status_publisher_->publish(linear_msg);
+      kfs_rz_linear_motion_value_.torque = msg->torque;
+      kfs_rz_linear_motion_value_.speed = msg->speed;
+      kfs_rz_linear_motion_value_.pos = msg->pos;
     }
     if (receive == kfs_ryaw_) {
-      auto angle_msg = r1_msgs::msg::AngleMotion();
-      angle_msg.torque = msg->torque;
-      angle_msg.speed = msg->speed;
-      angle_msg.pos = msg->pos;
-      kfs_ryaw_angle_motion_status_publisher_->publish(angle_msg);
+      kfs_ryaw_angle_motion_value_.torque = msg->torque;
+      kfs_ryaw_angle_motion_value_.speed = msg->speed;
+      kfs_ryaw_angle_motion_value_.pos = msg->pos;
     }
     if (receive == front_expand_) {
-      auto linear_msg = r1_msgs::msg::LinearMotion();
-      linear_msg.torque = msg->torque;
-      linear_msg.speed = msg->speed;
-      linear_msg.pos = msg->pos;
-      front_expand_linear_motion_status_publisher_->publish(linear_msg);
+      front_expand_linear_motion_value_.torque = msg->torque;
+      front_expand_linear_motion_value_.speed = msg->speed;
+      front_expand_linear_motion_value_.pos = msg->pos;
     }
     if (receive == rear_expand_) {
-      auto linear_msg = r1_msgs::msg::LinearMotion();
-      linear_msg.torque = msg->torque;
-      linear_msg.speed = msg->speed;
-      linear_msg.pos = msg->pos;
-      rear_expand_linear_motion_status_publisher_->publish(linear_msg);
+      rear_expand_linear_motion_value_.torque = msg->torque;
+      rear_expand_linear_motion_value_.speed = msg->speed;
+      rear_expand_linear_motion_value_.pos = msg->pos;
     }
     if (receive == r2_lift_) {
-      r2_lift_motor_status_publisher_->publish(msg_status);
+      r2_lift_motor_value_ = msg_status;
     }
     if (receive == pole_x1_) {
-      auto linear_msg = r1_msgs::msg::LinearMotion();
-      linear_msg.torque = msg->torque;
-      linear_msg.speed = msg->speed;
-      linear_msg.pos = msg->pos;
-      pole_x1_linear_motion_status_publisher_->publish(linear_msg);
+      pole_x1_linear_motion_value_.torque = msg->torque;
+      pole_x1_linear_motion_value_.speed = msg->speed;
+      pole_x1_linear_motion_value_.pos = msg->pos;
     }
     if (receive == pole_x2_) {
-      auto linear_msg = r1_msgs::msg::LinearMotion();
-      linear_msg.torque = msg->torque;
-      linear_msg.speed = msg->speed;
-      linear_msg.pos = msg->pos;
-      pole_x2_linear_motion_status_publisher_->publish(linear_msg);
+      pole_x2_linear_motion_value_.torque = msg->torque;
+      pole_x2_linear_motion_value_.speed = msg->speed;
+      pole_x2_linear_motion_value_.pos = msg->pos;
     }
     if (receive == pole_y_) {
-      auto linear_msg = r1_msgs::msg::LinearMotion();
-      linear_msg.torque = msg->torque;
-      linear_msg.speed = msg->speed;
-      linear_msg.pos = msg->pos;
-      pole_y_linear_motion_status_publisher_->publish(linear_msg);
+      pole_y_linear_motion_value_.torque = msg->torque;
+      pole_y_linear_motion_value_.speed = msg->speed;
+      pole_y_linear_motion_value_.pos = msg->pos;
     }
     if (receive == pole_roger_) {
-      auto linear_msg = r1_msgs::msg::LinearMotion();
-      linear_msg.torque = msg->torque;
-      linear_msg.speed = msg->speed;
-      linear_msg.pos = msg->pos;
-      pole_roger_linear_motion_status_publisher_->publish(linear_msg);
+      pole_roger_linear_motion_value_.torque = msg->torque;
+      pole_roger_linear_motion_value_.speed = msg->speed;
+      pole_roger_linear_motion_value_.pos = msg->pos;
     }
     if (receive == spear_roger1_) {
-      auto linear_msg = r1_msgs::msg::LinearMotion();
-      linear_msg.torque = msg->torque;
-      linear_msg.speed = msg->speed;
-      linear_msg.pos = msg->pos;
-      spear_roger1_linear_motion_status_publisher_->publish(linear_msg);
+      spear_roger1_linear_motion_value_.torque = msg->torque;
+      spear_roger1_linear_motion_value_.speed = msg->speed;
+      spear_roger1_linear_motion_value_.pos = msg->pos;
     }
     if (receive == spear_roger2_) {
-      auto linear_msg = r1_msgs::msg::LinearMotion();
-      linear_msg.torque = msg->torque;
-      linear_msg.speed = msg->speed;
-      linear_msg.pos = msg->pos;
-      spear_roger2_linear_motion_status_publisher_->publish(linear_msg);
+      spear_roger2_linear_motion_value_.torque = msg->torque;
+      spear_roger2_linear_motion_value_.speed = msg->speed;
+      spear_roger2_linear_motion_value_.pos = msg->pos;
     }
     if (receive == spear_move_) {
-      auto linear_msg = r1_msgs::msg::LinearMotion();
-      linear_msg.torque = msg->torque;
-      linear_msg.speed = msg->speed;
-      linear_msg.pos = msg->pos;
-      spear_move_linear_motion_status_publisher_->publish(linear_msg);
+      spear_move_linear_motion_value_.torque = msg->torque;
+      spear_move_linear_motion_value_.speed = msg->speed;
+      spear_move_linear_motion_value_.pos = msg->pos;
     }
     if (receive == spear_rotate_) {
-      auto angle_msg = r1_msgs::msg::AngleMotion();
-      angle_msg.torque = msg->torque;
-      angle_msg.speed = msg->speed;
-      angle_msg.pos = msg->pos;
-      spear_rotate_angle_motion_status_publisher_->publish(angle_msg);
+      spear_rotate_angle_motion_value_.torque = msg->torque;
+      spear_rotate_angle_motion_value_.speed = msg->speed;
+      spear_rotate_angle_motion_value_.pos = msg->pos;
     }
-    if (odometry_encoder_update_[X] && odometry_encoder_update_[Y]) {
-      auto odom_msg = r1_msgs::msg::OdometryEncoder();
-      odom_msg.encoder_pos_x = odometry_encoder_pos_values_[X];
-      odom_msg.encoder_pos_y = odometry_encoder_pos_values_[Y];
-      odom_msg.encoder_speed_x = odometry_encoder_speed_values_[X];
-      odom_msg.encoder_speed_y = odometry_encoder_speed_values_[Y];
-      odometry_encoder_publisher_->publish(odom_msg);
-      odometry_encoder_update_[X] = false;
-      odometry_encoder_update_[Y] = false;
-    }
-
     // デバッグ用パブリッシュ（マッチするものに配信）
+    // デバッグ用データは受信callback内で送信する
     for (size_t i = 0; i < debug_motor_.size(); ++i) {
       const auto & dbg = debug_motor_[i];
       if (receive == dbg.board_info && dbg.motor_status_publisher) {
@@ -677,24 +633,16 @@ public:
     BoardInfo receive{board_id, msg->pin_number};
 
     if (receive == kfs_front_switch_) {
-      r1_msgs::msg::GpioInput gpio_msg;
-      gpio_msg.status = msg->input;
-      kfs_front_switch_status_publisher_->publish(gpio_msg);
+      kfs_front_switch_value_.status = msg->input;
     }
     if (receive == kfs_rear_switch_) {
-      r1_msgs::msg::GpioInput gpio_msg;
-      gpio_msg.status = msg->input;
-      kfs_rear_switch_status_publisher_->publish(gpio_msg);
+      kfs_rear_switch_value_.status = msg->input;
     }
     if (receive == spear_move_switch_) {
-      r1_msgs::msg::GpioInput gpio_msg;
-      gpio_msg.status = msg->input;
-      spear_move_switch_status_publisher_->publish(gpio_msg);
+      spear_move_switch_value_.status = msg->input;
     }
     if (receive == spear_rotate_switch_) {
-      r1_msgs::msg::GpioInput gpio_msg;
-      gpio_msg.status = msg->input;
-      spear_rotate_switch_status_publisher_->publish(gpio_msg);
+      spear_rotate_switch_value_.status = msg->input;
     }
 
     // デバッグ用パブリッシュ（GPIO入力）
@@ -739,12 +687,6 @@ public:
     msg_ref.control_type = msg->control_type;
     msg_ref.ref = msg->ref;
     kfs_fx_single_ref_publisher_->publish(msg_ref);
-    RCLCPP_INFO(
-      this->get_logger(), "kfs_fx_motor_ref_callback: control_type=%s, ref=%f",
-      msg_ref.control_type.c_str(), msg_ref.ref);
-    std::string topic_name = "sabacan_robomas_ref" + std::to_string(kfs_fx_.board_id) + "/motor" +
-                             std::to_string(kfs_fx_.number);
-    RCLCPP_INFO(this->get_logger(), "Published to topic: %s", topic_name.c_str());
   }
 
   void kfs_fz_motor_ref_callback(const r1_msgs::msg::MotorRef::SharedPtr msg)
@@ -1012,13 +954,48 @@ public:
 
   void timer_callback()
   {
-    // メカナムのフィードバック値を計算してパブリッシュ
+    // ロボマス制御
+    // 足回り
     auto msg_feedback = r1_msgs::msg::Mecanum();
     msg_feedback.fl_wheel_speed = mecanum_wheel_speeds_feedback_[FL];
     msg_feedback.fr_wheel_speed = mecanum_wheel_speeds_feedback_[FR];
     msg_feedback.rl_wheel_speed = mecanum_wheel_speeds_feedback_[RL];
     msg_feedback.rr_wheel_speed = mecanum_wheel_speeds_feedback_[RR];
     mecanum_wheel_speeds_feedback_publisher_->publish(msg_feedback);
+    // オドメトリ
+    auto odom_msg = r1_msgs::msg::OdometryEncoder();
+    odom_msg.encoder_pos_x = odometry_encoder_pos_values_[X];
+    odom_msg.encoder_pos_y = odometry_encoder_pos_values_[Y];
+    odom_msg.encoder_speed_x = odometry_encoder_speed_values_[X];
+    odom_msg.encoder_speed_y = odometry_encoder_speed_values_[Y];
+    odometry_encoder_publisher_->publish(odom_msg);
+    // KFS回収機構
+    kfs_fx_linear_motion_status_publisher_->publish(kfs_fx_linear_motion_value_);
+    kfs_fz_linear_motion_status_publisher_->publish(kfs_fz_linear_motion_value_);
+    kfs_fyaw_angle_motion_status_publisher_->publish(kfs_fyaw_angle_motion_value_);
+    kfs_rx_linear_motion_status_publisher_->publish(kfs_rx_linear_motion_value_);
+    kfs_rz_linear_motion_status_publisher_->publish(kfs_rz_linear_motion_value_);
+    kfs_ryaw_angle_motion_status_publisher_->publish(kfs_ryaw_angle_motion_value_);
+    // 展開
+    front_expand_linear_motion_status_publisher_->publish(front_expand_linear_motion_value_);
+    rear_expand_linear_motion_status_publisher_->publish(rear_expand_linear_motion_value_);
+    // R2昇降
+    r2_lift_motor_status_publisher_->publish(r2_lift_motor_value_);
+    // ポール
+    pole_x1_linear_motion_status_publisher_->publish(pole_x1_linear_motion_value_);
+    pole_x2_linear_motion_status_publisher_->publish(pole_x2_linear_motion_value_);
+    pole_y_linear_motion_status_publisher_->publish(pole_y_linear_motion_value_);
+    pole_roger_linear_motion_status_publisher_->publish(pole_roger_linear_motion_value_);
+    // やり
+    spear_roger1_linear_motion_status_publisher_->publish(spear_roger1_linear_motion_value_);
+    spear_roger2_linear_motion_status_publisher_->publish(spear_roger2_linear_motion_value_);
+    spear_move_linear_motion_status_publisher_->publish(spear_move_linear_motion_value_);
+    spear_rotate_angle_motion_status_publisher_->publish(spear_rotate_angle_motion_value_);
+    // GPIO
+    kfs_front_switch_status_publisher_->publish(kfs_front_switch_value_);
+    kfs_rear_switch_status_publisher_->publish(kfs_rear_switch_value_);
+    spear_move_switch_status_publisher_->publish(spear_move_switch_value_);
+    spear_rotate_switch_status_publisher_->publish(spear_rotate_switch_value_);
   }
 
   // ======== Sabacan Publisher and Subscription =========
@@ -1232,9 +1209,41 @@ public:
   // ブレーキ用電磁弁
   BoardInfo brake_valve_ = {.board_id = 2, .number = 8};
 
+  // ========== 各種ステータス。タイマーで一定周期で送信 =========
+  // ---------- ロボマス制御 ----------
+  // 足回り
+  std::vector<double> mecanum_wheel_speeds_feedback_ = std::vector<double>(MECANUM_NUM);
+  // オドメトリ用エンコーダ
   std::vector<double> odometry_encoder_pos_values_ = std::vector<double>(ODOMETRY_NUM);
   std::vector<double> odometry_encoder_speed_values_ = std::vector<double>(ODOMETRY_NUM);
-  std::vector<double> mecanum_wheel_speeds_feedback_ = std::vector<double>(MECANUM_NUM);
+  // KFS回収機構
+  r1_msgs::msg::LinearMotion kfs_fx_linear_motion_value_;
+  r1_msgs::msg::LinearMotion kfs_fz_linear_motion_value_;
+  r1_msgs::msg::AngleMotion kfs_fyaw_angle_motion_value_;
+  r1_msgs::msg::LinearMotion kfs_rx_linear_motion_value_;
+  r1_msgs::msg::LinearMotion kfs_rz_linear_motion_value_;
+  r1_msgs::msg::AngleMotion kfs_ryaw_angle_motion_value_;
+  // 展開
+  r1_msgs::msg::LinearMotion front_expand_linear_motion_value_;
+  r1_msgs::msg::LinearMotion rear_expand_linear_motion_value_;
+  // R2昇降
+  r1_msgs::msg::Motor r2_lift_motor_value_;
+  // ポール回収
+  r1_msgs::msg::LinearMotion pole_x1_linear_motion_value_;
+  r1_msgs::msg::LinearMotion pole_x2_linear_motion_value_;
+  r1_msgs::msg::LinearMotion pole_y_linear_motion_value_;
+  r1_msgs::msg::LinearMotion pole_roger_linear_motion_value_;
+  // やり
+  r1_msgs::msg::LinearMotion spear_roger1_linear_motion_value_;
+  r1_msgs::msg::LinearMotion spear_roger2_linear_motion_value_;
+  r1_msgs::msg::LinearMotion spear_move_linear_motion_value_;
+  r1_msgs::msg::AngleMotion spear_rotate_angle_motion_value_;
+  // ---------- GPIO ----------
+  r1_msgs::msg::GpioInput kfs_front_switch_value_;
+  r1_msgs::msg::GpioInput kfs_rear_switch_value_;
+  r1_msgs::msg::GpioInput spear_move_switch_value_;
+  r1_msgs::msg::GpioInput spear_rotate_switch_value_;
+
   static constexpr int FL = 0;
   static constexpr int FR = 1;
   static constexpr int RL = 2;
@@ -1246,7 +1255,6 @@ public:
   // デバッグ用
   std::vector<DebugMotorInfo> debug_motor_;
   std::vector<DebugGPIOInputInfo> debug_gpio_input_;
-  std::vector<bool> odometry_encoder_update_ = std::vector<bool>(ODOMETRY_NUM, false);
 
   rclcpp::TimerBase::SharedPtr timer_;
 };

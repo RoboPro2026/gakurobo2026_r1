@@ -54,7 +54,7 @@ enum class ManualSubState
 };
 enum class AutoSubState
 {
-  NONE
+  ACT0,
 };
 
 // SubStateを保持するvariant

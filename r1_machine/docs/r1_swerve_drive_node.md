@@ -1,6 +1,6 @@
 # r1_swerve_drive_node
 
-`r1_swerve_drive_node` は、速度指令 `/cmd_vel` (`geometry_msgs/msg/Twist`) を 4 輪独立ステアリング（swerve）用の指令 `/swerve_drive_ref` (`r1_msgs/msg/SwerveDrive`) に変換する ROS 2 ノードです。IMU (`/bno086/imu/data_raw`) のYaw（+ `yaw_offset`）を用いて、ロボットの向きを考慮した計算もできます（`use_imu`）。
+`r1_swerve_drive_node` は、速度指令 `/cmd_vel` (`geometry_msgs/msg/Twist`) を 4 輪独立ステアリング（swerve）用の指令 `/swerve_drive_ref` (`r1_msgs/msg/SwerveDrive`) に変換する ROS 2 ノードです。IMU (`/bno086/imu/data_raw`) のYaw（+ Yawオフセット）を用いて、ロボットの向きを考慮した計算もできます（`use_imu`）。
 
 手動で `/manual_swerve_drive_ref` を与えると、その値を（回転方向・ギア比・ステアオフセットを反映して）そのまま `/swerve_drive_ref` に流します。
 
@@ -10,7 +10,7 @@
   - `/cmd_vel` (`geometry_msgs/msg/Twist`): 速度指令（`linear.x`, `linear.y`, `angular.z`）。
   - `/manual_swerve_drive_ref` (`r1_msgs/msg/SwerveDrive`): 手動指令（limitチェックは行いません）。
   - `/bno086/imu/data_raw` (`sensor_msgs/msg/Imu`): IMU姿勢（`use_imu=true` のときYawを使用）。
-  - `yaw_offset` (`std_msgs/msg/Float64`): Yawオフセット [rad]（`use_imu=true` のときのみ反映）。
+  - `/set_swerve_drive_yaw` (`std_msgs/msg/Float64`): IMU の現在ヨー角に対するオフセットを更新し、計算で用いるYawを指定値に合わせます（`use_imu=true` のときのみ有効）。受け取った `data` [rad] を「現在のYaw」とみなすよう `yaw_offset = data - yaw_raw` を設定し、以降は `yaw = normalize(yaw_raw + yaw_offset)` を用います（`normalize` は `-pi`〜`pi` に正規化）。
 - **Publish**
   - `/swerve_drive_ref` (`r1_msgs/msg/SwerveDrive`): 各輪の角速度指令 `omega0..omega3` とステア角指令 `theta0..theta3`。
 
@@ -77,4 +77,10 @@ ros2 topic pub /manual_swerve_drive_ref r1_msgs/msg/SwerveDrive '{omega0: 10.0, 
 
 ```bash
 ros2 topic echo /swerve_drive_ref
+```
+
+IMU ヨー角の基準をリセットする例（現在向きを `0 rad` とみなす）:
+
+```bash
+ros2 topic pub --once /set_swerve_drive_yaw std_msgs/msg/Float64 "{data: 0.0}"
 ```
