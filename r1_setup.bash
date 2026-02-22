@@ -1,4 +1,4 @@
-cd ~/ros2_ws
+cd $HOME/ros2_ws
 source install/setup.bash
 # TODO: 他のデバイス名でも対応できるようにする
 sudo chmod 666 /dev/ttyUSB0
