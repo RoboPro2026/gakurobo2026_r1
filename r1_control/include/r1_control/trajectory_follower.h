@@ -68,6 +68,33 @@ public:
   }
 
   /**
+   * @brief 角度を-pi~piの範囲に正規化する
+   * 
+   * @param angle 
+   * @return double 
+   */
+  double angle_normalize(double angle)
+  {
+    std::complex<double> ret = std::polar(1.0, angle);
+    return std::arg(ret);
+  }
+
+  /**
+   * @brief 角度差を計算する。計算結果は-pi~pi
+   * 
+   * @param current_angle 
+   * @param prev_angle 
+   * @return double 
+   */
+  double angle_diff(double current_angle, double prev_angle)
+  {
+    std::complex<double> current = std::polar(1.0, current_angle);
+    std::complex<double> prev = std::polar(1.0, prev_angle);
+    std::complex<double> diff = current / prev;  // 位相差
+    return std::arg(diff);
+  }
+
+  /**
    * @brief P制御+軌道FFを行う。（位置制御）
    * 
    * @param x_ref 目標位置(x_ref, y_ref, theta_ref)
@@ -81,15 +108,22 @@ public:
     // PIDの実装になっているが、実際に使用しているのはPのみ。
     std::vector<double> ret(3);
     std::vector<double> error(3);
-    for (int i = 0; i < 3; i++) {
-      error[i] = x_ref[i] - x[i];
-      integral_error_[i] += error[i] * dt_;
-      [[maybe_unused]] const double derivative = (error[i] - prev_error_[i]) / dt_;
-      prev_error_[i] = error[i];
-      // p制御+軌道FF
-      ret[i] = kp_ * error[i] + kff_ * v_ref[i];
-      // ret[i] = kp_ * error[i] + ki_ * integral_error_[i] + kd_ * derivative + kff_ * v_ref[i];
-    }
+    error[0] = x_ref[0] - x[0];
+    error[1] = x_ref[1] - x[1];
+    error[2] = angle_diff(x_ref[2], x[2]);
+    // p制御+軌道FF
+    ret[0] = kp_ * error[0] + kff_ * v_ref[0];
+    ret[1] = kp_ * error[1] + kff_ * v_ref[1];
+    ret[2] = kp_ * error[2] + kff_ * v_ref[2];
+    // for (int i = 0; i < 3; i++) {
+    //   error[i] = angle_diff(x_ref[i], x[i]);
+    //   integral_error_[i] += error[i] * dt_;
+    //   [[maybe_unused]] const double derivative = (error[i] - prev_error_[i]) / dt_;
+    //   prev_error_[i] = error[i];
+    //   // p制御+軌道FF
+    //   ret[i] = kp_ * error[i] + kff_ * v_ref[i];
+    //   // ret[i] = kp_ * error[i] + ki_ * integral_error_[i] + kd_ * derivative + kff_ * v_ref[i];
+    // }
     return ret;
   }
 
@@ -144,7 +178,7 @@ public:
     // 終了判定
     bool is_last_point = (idx_ == traj_planner_->array_size_ - 1);
     bool is_dist_goal = (dist < goal_range_);
-    bool is_theta_goal = (std::abs(theta - wp.theta) < goal_range_);
+    bool is_theta_goal = (std::abs(angle_diff(theta, wp.theta)) < goal_range_);
     // 範囲外のときは、収束判定用変数を更新
     if (is_last_point == false || is_dist_goal == false || is_theta_goal == false) {
       last_out_of_range_time_ = rclcpp::Clock().now();
