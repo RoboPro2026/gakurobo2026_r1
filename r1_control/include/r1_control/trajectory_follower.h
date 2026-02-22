@@ -114,7 +114,7 @@ public:
     // p制御+軌道FF
     ret[0] = kp_ * error[0] + kff_ * v_ref[0];
     ret[1] = kp_ * error[1] + kff_ * v_ref[1];
-    ret[2] = kp_ * error[2] + kff_ * v_ref[2];
+    ret[2] = 0.6 * kp_ * error[2] + kff_ * v_ref[2];
     // for (int i = 0; i < 3; i++) {
     //   error[i] = angle_diff(x_ref[i], x[i]);
     //   integral_error_[i] += error[i] * dt_;
