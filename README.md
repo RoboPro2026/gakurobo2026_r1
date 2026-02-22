@@ -44,18 +44,48 @@ rosdep update
 rosdep install -i --from-paths urg_node2
 ```
 
-## ROS 2を実行
+# ROS 2を実行
+現在はプログラムの実行に2つのターミナルを使用しています。  
+将来的には1つのターミナルにする予定です。  
+ターミナル1  
+```
+cd ~/ros2_ws
+./src/gakurobo2026_r1/r1_setup.bash
+ros2 launch ros2_socketcan socket_can_bridge.launch.xml interface:=can0
+```
+
+ターミナル2  
 ```
 cd ~/ros2_ws
 source install/setup.bash
-sudo ./src/gakurobo2026_common/can_setup.bash
 ros2 launch r1_bringup r1_bringup.launch.py
 ```
 
-## 軌道生成GUI
+# 軌道生成GUIの実行
 CSVファイルのパスはいい感じに通してください
 ```
 cd ~/ros2_ws
 colcon build --symlink-install r1_control
 python src/gakurobo2026_r1/src/trajectory_planner_gui.py
 ```
+
+# プログラムの構成（自作プログラムのみ）
+- data
+  - 経路データ(waypoint)等。
+- r1_bringup
+  - ROS 2の起動に使用するPythonスクリプト。
+  - 各種パラメータはr1_bringup/configに入っている。
+- r1_control
+  - ロボットの制御に関する部分。
+  - r1_mainにも制御に関するプログラムは含まれているが、ここは理論寄り。（経路生成、経路追従など）
+- r1_machine
+  - ハードウェアの抽象化的な立ち位置。
+  - r1_sabacan_msgs_converter_nodeで各種トピックの整理を行っている。（実装は汚い）
+- r1_main
+  - ロボット全体のシーケンスや操縦を管理するノード。
+- r1_msgs
+  - r1で使用する独自型が入っている。
+
+共有で使用するライブラリ（`bno086`、`sabacan`）などはgakurobo2026_commonに入ってます。
+
+各種プログラムのドキュメントは、docsの中に入っています。なお、docsの中に入っている資料は、古かったり、Codexに書かせているので内容がおかしかったりする可能性があるので注意。
