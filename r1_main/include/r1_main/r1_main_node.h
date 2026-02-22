@@ -198,10 +198,17 @@ public:
   // オドメトリ
   nav_msgs::msg::Odometry odometry_;
   // chassis_act
+  static constexpr int ACT_N = 3;
   static constexpr int ACT_NONE = 0;
-  static constexpr int ACT0_START = 10;
-  static constexpr int ACT0 = 11;
-  static constexpr int ACT0_FINISH = 12;
+  static constexpr int ACT0_START = 1;
+  static constexpr int ACT0 = 2;
+  static constexpr int ACT0_FINISH = 3;
+  static constexpr int ACT1_START = 11;
+  static constexpr int ACT1 = 12;
+  static constexpr int ACT1_FINISH = 13;
+  static constexpr int ACT2_START = 21;
+  static constexpr int ACT2 = 22;
+  static constexpr int ACT2_FINISH = 23;
   int chassis_act_status_ = ACT_NONE;
 
   // スイッチの状態

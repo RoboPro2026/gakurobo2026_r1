@@ -1972,9 +1972,13 @@ void R1MainNode::auto_act0(void)
       publish_chassis_act_ref(ACT0_START);
     }
     if (ps4_->is_pushed_circle()) {
-      set_mecanum_yaw(0.0);
       // 青のスタートゾーン
+      set_mecanum_yaw(0.0);
       set_odometry(-5.5, 0.5, 0.0);
+    }
+    if (ps4_->is_pushed_cross()) {
+      // 位置制御のプログラム実行
+      publish_chassis_act_ref(ACT1);
     }
     double vx_ref = CHASSIS_MAX_VELOCITY * (-1) * ps4_->data.left_stick_x;
     double vy_ref = CHASSIS_MAX_VELOCITY * ps4_->data.left_stick_y;
@@ -1985,6 +1989,14 @@ void R1MainNode::auto_act0(void)
   } else if (step == ACT0) {
     // 何もしない
   } else if (step == ACT0_FINISH) {
+    publish_chassis_act_ref(ACT_NONE);
+  } else if (step == ACT1) {
+    // 何もしない
+  } else if (step == ACT1_FINISH) {
+    publish_chassis_act_ref(ACT_NONE);
+  } else if (step == ACT2) {
+    // 何もしない
+  } else if (step == ACT2_FINISH) {
     publish_chassis_act_ref(ACT_NONE);
   }
 }

@@ -32,12 +32,18 @@
 
 using namespace std::chrono_literals;
 
-constexpr int ACT_N = 1;
+constexpr int ACT_N = 3;
 
 constexpr int ACT_NONE = 0;
-constexpr int ACT0_START = 10;
-constexpr int ACT0 = 11;
-constexpr int ACT0_FINISH = 12;
+constexpr int ACT0_START = 1;
+constexpr int ACT0 = 2;
+constexpr int ACT0_FINISH = 3;
+constexpr int ACT1_START = 11;
+constexpr int ACT1 = 12;
+constexpr int ACT1_FINISH = 13;
+constexpr int ACT2_START = 21;
+constexpr int ACT2 = 22;
+constexpr int ACT2_FINISH = 23;
 
 class R1ChassisControlNode : public rclcpp::Node
 {
@@ -150,7 +156,7 @@ public:
     // NOTE: デバッグのためにodomにしている
     // path.header.frame_id = "odom";
 
-    int inc = 20;  // 軌道の点を10点ごとに表示する
+    int inc = 20;  // 表示間隔。pathはデバッグ用に使用するので、点の数を間引く
 
     for (int i = 0;; i += inc) {
       if (i >= act_traj_planner_[n]->array_size_) {
@@ -288,6 +294,40 @@ public:
         RCLCPP_INFO(this->get_logger(), "Finished ACT0");
       }
     } else if (act_step_ == ACT0_FINISH) {
+    } else if (act_step_ == ACT1_START) {
+      act_step_ = ACT1;
+      act_traj_follower_[1]->reset();
+      // act1のpathをpublishする
+      publish_path(1);
+      RCLCPP_INFO(this->get_logger(), "Starting ACT1");
+    } else if (act_step_ == ACT1) {
+      // 軌道追従の計算を行う
+      std::pair<WayPoint, geometry_msgs::msg::Twist> ret = act_traj_follower_[1]->update(odometry_);
+      // 指令値と目標のwaypointをpublishする
+      publish_cmd_vel_and_target_pose(ret.first, ret.second);
+      // goal_range_以内に到達したらFINISHに遷移する
+      if (act_traj_follower_[1]->is_finished()) {
+        act_step_ = ACT1_FINISH;
+        RCLCPP_INFO(this->get_logger(), "Finished ACT1");
+      }
+    } else if (act_step_ == ACT1_FINISH) {
+    } else if (act_step_ == ACT2_START) {
+      act_step_ = ACT2;
+      act_traj_follower_[2]->reset();
+      // act2のpathをpublishする
+      publish_path(2);
+      RCLCPP_INFO(this->get_logger(), "Starting ACT2");
+    } else if (act_step_ == ACT2) {
+      // 軌道追従の計算を行う
+      std::pair<WayPoint, geometry_msgs::msg::Twist> ret = act_traj_follower_[2]->update(odometry_);
+      // 指令値と目標のwaypointをpublishする
+      publish_cmd_vel_and_target_pose(ret.first, ret.second);
+      // goal_range_以内に到達したらFINISHに遷移する
+      if (act_traj_follower_[2]->is_finished()) {
+        act_step_ = ACT2_FINISH;
+        RCLCPP_INFO(this->get_logger(), "Finished ACT2");
+      }
+    } else if (act_step_ == ACT2_FINISH) {
     }
     // 現在のact_step_をpublishする
     std_msgs::msg::Int32 act_status_msg;
@@ -445,6 +485,17 @@ public:
 
     // act_traj_planner_[n]->print_csv_trajectory(debug_fp);
     // fclose(debug_fp);
+
+    // ゾーンが青ゾーンの場合は、x座標を反転する
+    if (zone_ == "blue") {
+      for (int i = 0; i < (int)x_wp.size(); i++) {
+        x_wp[i] = -x_wp[i];
+      }
+      // TODO: thetaも反転させたほうがいいかも
+      // for (int i = 0; i < theta_wp.size(); i++) {
+      //   theta_wp[i].second = -theta_wp[i].second;
+      // }
+    }
 
     // trajectory plannerの計算
     auto ret = act_traj_planner_[n]->calc(
