@@ -294,6 +294,8 @@ public:
       if (act_traj_follower_[0]->is_finished()) {
         act_step_ = ACT0_FINISH;
         RCLCPP_INFO(this->get_logger(), "Finished ACT0");
+        RCLCPP_INFO(this->get_logger(), "x = %.3f, y = %.3f, yaw = %.3f", odometry_.pose.pose.position.x, odometry_.pose.pose.position.y, tf2::getYaw(odometry_.pose.pose.orientation));
+
       }
     } else if (act_step_ == ACT0_FINISH) {
     } else if (act_step_ == ACT1_START) {
@@ -311,6 +313,7 @@ public:
       if (act_traj_follower_[1]->is_finished()) {
         act_step_ = ACT1_FINISH;
         RCLCPP_INFO(this->get_logger(), "Finished ACT1");
+        RCLCPP_INFO(this->get_logger(), "x = %.3f, y = %.3f, yaw = %.3f", odometry_.pose.pose.position.x, odometry_.pose.pose.position.y, tf2::getYaw(odometry_.pose.pose.orientation));
       }
     } else if (act_step_ == ACT1_FINISH) {
     } else if (act_step_ == ACT2_START) {
