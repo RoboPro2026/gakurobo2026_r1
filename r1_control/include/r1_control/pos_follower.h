@@ -61,9 +61,9 @@ public:
     error[1] = x_ref[1] - x[1];
     error[2] = angle_diff(x_ref[2], x[2]);
     // p制御
-    ret[0] = kp_pos_ * error[0];
-    ret[1] = kp_pos_ * error[1];
-    ret[2] = kp_angle_ * error[2];
+    ret[0] = 3.0 * kp_pos_ * error[0];
+    ret[1] = 3.0 * kp_pos_ * error[1];
+    ret[2] = 3.0 * kp_angle_ * error[2];
     return ret;
   }
 

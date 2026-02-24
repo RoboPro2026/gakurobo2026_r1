@@ -1991,8 +1991,7 @@ void R1MainNode::auto_act0(void)
   } else if (step == ACT0_START) {
     // 何もしない
   } else if (step == ACT0_MOVE) {
-    // rotateに自動で遷移
-    publish_chassis_act_ref(ACT0_ROTATE);
+    // 何もしない
   } else if (step == ACT0_ROTATE) {
     // 何もしない
   } else if (step == ACT0_FINISH) {
