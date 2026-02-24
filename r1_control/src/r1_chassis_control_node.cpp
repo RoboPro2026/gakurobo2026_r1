@@ -18,6 +18,7 @@
 #include "geometry_msgs/msg/twist.hpp"
 #include "nav_msgs/msg/odometry.hpp"
 #include "nav_msgs/msg/path.hpp"
+#include "r1_control/pos_follower.h"
 #include "r1_control/trajectory_follower.h"
 #include "r1_control/trajectory_planner.h"
 #include "rcl_interfaces/msg/floating_point_range.hpp"
@@ -36,8 +37,9 @@ constexpr int ACT_N = 3;
 
 constexpr int ACT_NONE = 0;
 constexpr int ACT0_START = 1;
-constexpr int ACT0 = 2;
-constexpr int ACT0_FINISH = 3;
+constexpr int ACT0_MOVE = 2;
+constexpr int ACT0_ROTATE = 3;
+constexpr int ACT0_FINISH = 4;
 constexpr int ACT1_START = 11;
 constexpr int ACT1 = 12;
 constexpr int ACT1_FINISH = 13;
@@ -132,7 +134,11 @@ public:
         kp_pos_, ki_pos_, kd_pos_, kff_pos_, kp_angle_, ki_angle_, kd_angle_, kff_angle_, DT,
         search_radius_, goal_pos_range_, goal_angle_range_, finish_time_threshold_);
     }
-    RCLCPP_INFO(this->get_logger(), "Generated trajectories for all ACTs");
+
+    pos_follower_ = std::make_shared<PosFollower>();
+    pos_follower_->set_param(
+      kp_pos_, ki_pos_, kd_pos_, kp_angle_, ki_angle_, kd_angle_, DT, goal_pos_range_,
+      goal_angle_range_, finish_time_threshold_);
 
     act_step_ = ACT_NONE;
 
@@ -286,20 +292,35 @@ public:
   void timer_callback()
   {
     if (act_step_ == ACT0_START) {
-      act_step_ = ACT0;
+      act_step_ = ACT0_MOVE;
       act_traj_follower_[0]->reset();
+      pos_follower_->reset();
       // act0のpathをpublishする
       publish_path(0);
       RCLCPP_INFO(this->get_logger(), "Starting ACT0");
-    } else if (act_step_ == ACT0) {
+    } else if (act_step_ == ACT0_MOVE) {
       // 軌道追従の計算を行う
       std::pair<WayPoint, geometry_msgs::msg::Twist> ret = act_traj_follower_[0]->update(odometry_);
       // 指令値と目標のwaypointをpublishする
       publish_cmd_vel_and_target_pose(ret.first, ret.second);
-      // goal_range_以内に到達したらFINISHに遷移する
+      // goal_range_以内に到達したらROTATEに遷移する
       if (act_traj_follower_[0]->is_finished()) {
         act_step_ = ACT0_FINISH;
-        RCLCPP_INFO(this->get_logger(), "Finished ACT0");
+        RCLCPP_INFO(this->get_logger(), "Finished ACT0_MOVE");
+        RCLCPP_INFO(
+          this->get_logger(), "x = %.3f, y = %.3f, yaw = %.3f", odometry_.pose.pose.position.x,
+          odometry_.pose.pose.position.y, tf2::getYaw(odometry_.pose.pose.orientation));
+      }
+    } else if (act_step_ == ACT0_ROTATE) {
+      // pos_followerで回転する
+      std::pair<WayPoint, geometry_msgs::msg::Twist> ret = pos_follower_->update(
+        odometry_, {act_traj_planner_[0]->x_.back(), act_traj_planner_[0]->y_.back(), M_PI / 2});
+      // 指令値と目標のwaypointをpublishする
+      publish_cmd_vel_and_target_pose(ret.first, ret.second);
+      // 収束したらFINISHに遷移する
+      if (pos_follower_->is_finished()) {
+        act_step_ = ACT0_FINISH;
+        RCLCPP_INFO(this->get_logger(), "Finished ACT0_ROTATE");
         RCLCPP_INFO(
           this->get_logger(), "x = %.3f, y = %.3f, yaw = %.3f", odometry_.pose.pose.position.x,
           odometry_.pose.pose.position.y, tf2::getYaw(odometry_.pose.pose.orientation));
@@ -316,7 +337,7 @@ public:
       std::pair<WayPoint, geometry_msgs::msg::Twist> ret = act_traj_follower_[1]->update(odometry_);
       // 指令値と目標のwaypointをpublishする
       publish_cmd_vel_and_target_pose(ret.first, ret.second);
-      // goal_range_以内に到達したらFINISHに遷移する
+      // goal_range_以内に到達したらROTATEに遷移する
       if (act_traj_follower_[1]->is_finished()) {
         act_step_ = ACT1_FINISH;
         RCLCPP_INFO(this->get_logger(), "Finished ACT1");
@@ -336,7 +357,7 @@ public:
       std::pair<WayPoint, geometry_msgs::msg::Twist> ret = act_traj_follower_[2]->update(odometry_);
       // 指令値と目標のwaypointをpublishする
       publish_cmd_vel_and_target_pose(ret.first, ret.second);
-      // goal_range_以内に到達したらFINISHに遷移する
+      // goal_range_以内に到達したらROTATEに遷移する
       if (act_traj_follower_[2]->is_finished()) {
         act_step_ = ACT2_FINISH;
         RCLCPP_INFO(this->get_logger(), "Finished ACT2");
@@ -570,6 +591,8 @@ public:
   std::vector<std::shared_ptr<TrajectoryPlanner>> act_traj_planner_;
   // trajectory follower
   std::vector<std::shared_ptr<TrajectoryFollower>> act_traj_follower_;
+  // pos follower
+  std::shared_ptr<PosFollower> pos_follower_;
 };
 
 int main(int argc, char * argv[])

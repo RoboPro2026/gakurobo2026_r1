@@ -198,11 +198,11 @@ public:
   // オドメトリ
   nav_msgs::msg::Odometry odometry_;
   // chassis_act
-  static constexpr int ACT_N = 3;
   static constexpr int ACT_NONE = 0;
   static constexpr int ACT0_START = 1;
-  static constexpr int ACT0 = 2;
-  static constexpr int ACT0_FINISH = 3;
+  static constexpr int ACT0_MOVE = 2;
+  static constexpr int ACT0_ROTATE = 3;
+  static constexpr int ACT0_FINISH = 4;
   static constexpr int ACT1_START = 11;
   static constexpr int ACT1 = 12;
   static constexpr int ACT1_FINISH = 13;
