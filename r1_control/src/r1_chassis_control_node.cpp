@@ -101,11 +101,16 @@ public:
     declare_and_get_parameter("act_filebase", act_filebase_, "");
     declare_and_get_parameter("zone", zone_, "red");
     declare_and_get_parameter("search_radius", search_radius_, 0.0);
-    declare_and_get_parameter("kp", kp_, 0.0);
-    declare_and_get_parameter("ki", ki_, 0.0);
-    declare_and_get_parameter("kd", kd_, 0.0);
-    declare_and_get_parameter("kff", kff_, 0.0);
-    declare_and_get_parameter("goal_range", goal_range_, 0.0);
+    declare_and_get_parameter("kp_pos", kp_pos_, 0.0);
+    declare_and_get_parameter("ki_pos", ki_pos_, 0.0);
+    declare_and_get_parameter("kd_pos", kd_pos_, 0.0);
+    declare_and_get_parameter("kff_pos", kff_pos_, 0.0);
+    declare_and_get_parameter("kp_angle", kp_angle_, 0.0);
+    declare_and_get_parameter("ki_angle", ki_angle_, 0.0);
+    declare_and_get_parameter("kd_angle", kd_angle_, 0.0);
+    declare_and_get_parameter("kff_angle", kff_angle_, 0.0);
+    declare_and_get_parameter("goal_pos_range", goal_pos_range_, 0.0);
+    declare_and_get_parameter("goal_angle_range", goal_angle_range_, 0.0);
     declare_and_get_parameter("finish_time_threshold", finish_time_threshold_, 0.0);
 
     try {
@@ -124,7 +129,8 @@ public:
     for (int i = 0; i < ACT_N; i++) {
       act_traj_follower_[i] = std::make_shared<TrajectoryFollower>(act_traj_planner_[i].get());
       act_traj_follower_[i]->set_param(
-        kp_, ki_, kd_, kff_, 0.01 /* dt */, search_radius_, goal_range_, finish_time_threshold_);
+        kp_pos_, ki_pos_, kd_pos_, kff_pos_, kp_angle_, ki_angle_, kd_angle_, kff_angle_, DT,
+        search_radius_, goal_pos_range_, goal_angle_range_, finish_time_threshold_);
     }
     RCLCPP_INFO(this->get_logger(), "Generated trajectories for all ACTs");
 
@@ -294,8 +300,9 @@ public:
       if (act_traj_follower_[0]->is_finished()) {
         act_step_ = ACT0_FINISH;
         RCLCPP_INFO(this->get_logger(), "Finished ACT0");
-        RCLCPP_INFO(this->get_logger(), "x = %.3f, y = %.3f, yaw = %.3f", odometry_.pose.pose.position.x, odometry_.pose.pose.position.y, tf2::getYaw(odometry_.pose.pose.orientation));
-
+        RCLCPP_INFO(
+          this->get_logger(), "x = %.3f, y = %.3f, yaw = %.3f", odometry_.pose.pose.position.x,
+          odometry_.pose.pose.position.y, tf2::getYaw(odometry_.pose.pose.orientation));
       }
     } else if (act_step_ == ACT0_FINISH) {
     } else if (act_step_ == ACT1_START) {
@@ -313,7 +320,9 @@ public:
       if (act_traj_follower_[1]->is_finished()) {
         act_step_ = ACT1_FINISH;
         RCLCPP_INFO(this->get_logger(), "Finished ACT1");
-        RCLCPP_INFO(this->get_logger(), "x = %.3f, y = %.3f, yaw = %.3f", odometry_.pose.pose.position.x, odometry_.pose.pose.position.y, tf2::getYaw(odometry_.pose.pose.orientation));
+        RCLCPP_INFO(
+          this->get_logger(), "x = %.3f, y = %.3f, yaw = %.3f", odometry_.pose.pose.position.x,
+          odometry_.pose.pose.position.y, tf2::getYaw(odometry_.pose.pose.orientation));
       }
     } else if (act_step_ == ACT1_FINISH) {
     } else if (act_step_ == ACT2_START) {
@@ -401,9 +410,9 @@ public:
     fclose(fp);
 
     // 取得したデータをログに出力する
-    RCLCPP_INFO(
-      this->get_logger(), "Parameters for ACT%d: dt=%f, v_max=%f, a_max=%f, j_max=%f, omega_max=%f",
-      n, dt, v_max, a_max, j_max, omega_max);
+    // RCLCPP_INFO(
+    //   this->get_logger(), "Parameters for ACT%d: dt=%f, v_max=%f, a_max=%f, j_max=%f, omega_max=%f",
+    //   n, dt, v_max, a_max, j_max, omega_max);
 
     // waypointの読み込み
     std::vector<double> x_wp, y_wp;
@@ -541,12 +550,21 @@ public:
   std::string zone_;
   // trajectory_follwerのparameter
   double search_radius_;  // 経路追従のための探索半径
-  double kp_;
-  double ki_;
-  double kd_;
-  double kff_;
-  double goal_range_;
+  // 位置[m]制御のゲイン
+  double kp_pos_;
+  double ki_pos_;
+  double kd_pos_;
+  double kff_pos_;
+  // 角度[rad]制御のゲイン
+  double kp_angle_;
+  double ki_angle_;
+  double kd_angle_;
+  double kff_angle_;
+  // 制御の終了判定閾値
+  double goal_pos_range_;
+  double goal_angle_range_;
   double finish_time_threshold_;
+  static constexpr double DT = 0.01;  //[s]
 
   // trajectory planner
   std::vector<std::shared_ptr<TrajectoryPlanner>> act_traj_planner_;

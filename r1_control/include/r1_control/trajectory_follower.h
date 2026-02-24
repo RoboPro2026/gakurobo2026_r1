@@ -46,16 +46,22 @@ public:
   }
 
   void set_param(
-    double kp, double ki, double kd, double kff, double dt, double search_radius, double goal_range,
-    double finish_time_threshold)
+    double kp_pos, double ki_pos, double kd_pos, double kff_pos, double kp_angle, double ki_angle,
+    double kd_angle, double kff_angle, double dt, double search_radius, double goal_pos_range,
+    double goal_angle_range, double finish_time_threshold)
   {
-    kp_ = kp;
-    ki_ = ki;
-    kd_ = kd;
+    kp_pos_ = kp_pos;
+    ki_pos_ = ki_pos;
+    kd_pos_ = kd_pos;
+    kff_pos_ = kff_pos;
+    kp_angle_ = kp_angle;
+    ki_angle_ = ki_angle;
+    kd_angle_ = kd_angle;
+    kff_angle_ = kff_angle;
     dt_ = dt;
-    kff_ = kff;
     search_radius_ = search_radius;
-    goal_range_ = goal_range;
+    goal_pos_range_ = goal_pos_range;
+    goal_angle_range_ = goal_angle_range;
     finish_time_threshold_ = finish_time_threshold;
     last_out_of_range_time_ = rclcpp::Clock().now();
   }
@@ -112,9 +118,9 @@ public:
     error[1] = x_ref[1] - x[1];
     error[2] = angle_diff(x_ref[2], x[2]);
     // p制御+軌道FF
-    ret[0] = kp_ * error[0] + kff_ * v_ref[0];
-    ret[1] = kp_ * error[1] + kff_ * v_ref[1];
-    ret[2] = 0.6 * kp_ * error[2] + kff_ * v_ref[2];
+    ret[0] = kp_pos_ * error[0] + kff_pos_ * v_ref[0];
+    ret[1] = kp_pos_ * error[1] + kff_pos_ * v_ref[1];
+    ret[2] = kp_angle_ * error[2] + kff_angle_ * v_ref[2];
     // for (int i = 0; i < 3; i++) {
     //   error[i] = angle_diff(x_ref[i], x[i]);
     //   integral_error_[i] += error[i] * dt_;
@@ -176,17 +182,17 @@ public:
 
     // 終了判定
     bool is_last_point = (idx_ == traj_planner_->array_size_ - 1);
-    bool is_dist_goal = (dist < goal_range_);
-    bool is_theta_goal = (std::abs(angle_diff(theta, wp.theta)) < goal_range_);
+    bool is_pos_goal = (dist < goal_pos_range_);
+    bool is_angle_goal = (std::abs(angle_diff(theta, wp.theta)) < goal_angle_range_);
     // 範囲外のときは、収束判定用変数を更新
-    if (is_last_point == false || is_dist_goal == false || is_theta_goal == false) {
+    if (is_last_point == false || is_pos_goal == false || is_angle_goal == false) {
       last_out_of_range_time_ = rclcpp::Clock().now();
     }
     // 収束したかの終了判定
     bool is_time_ok =
       (rclcpp::Clock().now() - last_out_of_range_time_).seconds() > finish_time_threshold_;
 
-    if (is_last_point && is_dist_goal && is_theta_goal && is_time_ok) {
+    if (is_last_point && is_pos_goal && is_angle_goal && is_time_ok) {
       finish_ = 1;
     }
 
@@ -213,11 +219,16 @@ private:
   rclcpp::Logger logger_;
   // 探索半径[m]
   double search_radius_ = 0.0;
-  double kp_ = 0.0;
-  double ki_ = 0.0;
-  double kd_ = 0.0;
-  double kff_ = 0.0;
-  double goal_range_ = 0.01;            // ゴールとみなす距離の閾値
+  double kp_pos_ = 0.0;
+  double ki_pos_ = 0.0;
+  double kd_pos_ = 0.0;
+  double kff_pos_ = 0.0;
+  double kp_angle_ = 0.0;
+  double ki_angle_ = 0.0;
+  double kd_angle_ = 0.0;
+  double kff_angle_ = 0.0;
+  double goal_pos_range_ = 0.01;        // ゴールとみなす距離の閾値
+  double goal_angle_range_ = 0.01;      // ゴールとみなす位置の閾値
   double finish_time_threshold_ = 0.3;  // 収束時間の判定用しきい値
   std::vector<double> prev_error_{0.0, 0.0, 0.0};
   std::vector<double> integral_error_{0.0, 0.0, 0.0};

@@ -3,11 +3,19 @@ r1_chassis_control_node:
     act_filebase: "src/gakurobo2026_r1/data/"
     zone: "blue"
     search_radius: 0.2
-    kp: 0.7
-    ki: 0.0
-    kd: 0.0
-    kff: 0.5
-    goal_range: 0.05
+    # 位置制御のゲイン
+    kp_pos: 0.7
+    ki_pos: 0.0
+    kd_pos: 0.0
+    kff_pos: 0.5
+    # 角度制御のゲイン
+    kp_angle: 0.4
+    ki_angle: 0.0
+    kd_angle: 0.0
+    kff_angle: 0.5
+    # 制御の終了判定閾値
+    goal_pos_range: 0.05
+    goal_angle_range: 0.05 # 2度
     finish_time_threshold: 1.0
 r1_dummy_odometry_node:
   ros__parameters:
