@@ -14,6 +14,7 @@ find_package(tf2 REQUIRED)
 find_package(tf2_geometry_msgs REQUIRED)
 find_package(tf2_ros REQUIRED)
 find_package(nav_msgs REQUIRED)
+find_package(r1_util REQUIRED)
 find_package(rclcpp REQUIRED)
 find_package(visualization_msgs REQUIRED)
 find_package(Eigen3 REQUIRED)
@@ -65,6 +66,12 @@ ament_target_dependencies(r1_dummy_odometry_node
   visualization_msgs
 )
 
+target_link_libraries(test_minimum_jerk_node r1_util::r1_util)
+target_link_libraries(test_spline_node r1_util::r1_util)
+target_link_libraries(test_trajectory_planner_node r1_util::r1_util)
+target_link_libraries(test_trapezoid_node r1_util::r1_util)
+target_link_libraries(r1_chassis_control_node r1_util::r1_util)
+target_link_libraries(r1_dummy_odometry_node r1_util::r1_util)
 
 target_include_directories(test_minimum_jerk_node PUBLIC
   $<BUILD_INTERFACE:${EIGEN3_INCLUDE_DIR}>
@@ -111,6 +118,7 @@ target_include_directories(r1_dummy_odometry_node PUBLIC
 target_link_libraries(trajectory_planner
   PRIVATE
     rclcpp::rclcpp
+    r1_util::r1_util
 )
 
 install(TARGETS test_minimum_jerk_node

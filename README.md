@@ -16,8 +16,7 @@ git submodule update --init --recursive
 
 ## インストール(apt)
 ```
-sudo apt install ros-humble-magic-enum
-ros-humble-ament-cmake-gtest
+sudo apt install -y ros-humble-magic-enum ros-humble-xacro ros-humble-slam-toolbox
 # for eigen
 sudo apt install libeigen3-dev
 # for pybind11

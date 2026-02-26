@@ -13,6 +13,7 @@ find_package(joy REQUIRED)
 find_package(magic_enum CONFIG REQUIRED)
 find_package(nav_msgs REQUIRED)
 find_package(r1_msgs REQUIRED)
+find_package(r1_util REQUIRED)
 find_package(rclcpp REQUIRED)
 find_package(sabacan_msgs REQUIRED)
 find_package(sensor_msgs REQUIRED)
@@ -32,6 +33,7 @@ ament_target_dependencies(r1_main_node
   sensor_msgs
   std_msgs
   r1_msgs
+  r1_util
   tf2
   tf2_geometry_msgs
 )
@@ -39,12 +41,14 @@ ament_target_dependencies(r1_main_node
 ament_target_dependencies(test_node
   rclcpp
   r1_msgs
+  r1_util
   sabacan_msgs
   sensor_msgs
   std_msgs
 )
 
 target_link_libraries(r1_main_node magic_enum::magic_enum)
+target_link_libraries(r1_main_node r1_util::r1_util)
 
 # インクルードディレクトリを設定
 target_include_directories(r1_main_node PUBLIC
