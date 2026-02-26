@@ -15,6 +15,7 @@
   <depend>magic_enum</depend>
   <depend>nav_msgs</depend>
   <depend>r1_msgs</depend>
+  <depend>r1_util</depend>
   <depend>rclcpp</depend>
   <depend>sabacan_msgs</depend>
   <depend>sensor_msgs</depend>

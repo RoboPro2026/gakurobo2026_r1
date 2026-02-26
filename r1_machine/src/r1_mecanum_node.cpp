@@ -46,6 +46,7 @@
 
 #include "geometry_msgs/msg/twist.hpp"
 #include "r1_msgs/msg/mecanum.hpp"
+#include "r1_util/r1_util.h"
 #include "rcl_interfaces/msg/floating_point_range.hpp"
 #include "rcl_interfaces/msg/parameter_descriptor.hpp"
 #include "rclcpp/rclcpp.hpp"
@@ -202,18 +203,6 @@ public:
     }
 
     return result;
-  }
-
-  /**
-   * @brief 角度を-pi~piの範囲に正規化する
-   * 
-   * @param angle 
-   * @return double 
-   */
-  double angle_normalize(double angle)
-  {
-    std::complex<double> ret = std::polar(1.0, angle);
-    return std::arg(ret);
   }
 
   void imu_callback(const sensor_msgs::msg::Imu::SharedPtr msg)

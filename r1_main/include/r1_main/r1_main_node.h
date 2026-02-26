@@ -32,6 +32,7 @@
 #include "r1_msgs/msg/gpio_servo_ref.hpp"
 #include "r1_msgs/msg/linear_motion.hpp"
 #include "r1_msgs/msg/motor_ref.hpp"
+#include "r1_util/r1_util.h"
 #include "rclcpp/rclcpp.hpp"
 #include "sabacan_msgs/msg/sabacan_led_ref.hpp"
 #include "sabacan_msgs/msg/sabacan_power_ref.hpp"
@@ -198,17 +199,6 @@ public:
   // オドメトリ
   nav_msgs::msg::Odometry odometry_;
   // chassis_act
-  static constexpr int ACT_NONE = 0;
-  static constexpr int ACT0_START = 1;
-  static constexpr int ACT0_MOVE = 2;
-  static constexpr int ACT0_ROTATE = 3;
-  static constexpr int ACT0_FINISH = 4;
-  static constexpr int ACT1_START = 11;
-  static constexpr int ACT1 = 12;
-  static constexpr int ACT1_FINISH = 13;
-  static constexpr int ACT2_START = 21;
-  static constexpr int ACT2 = 22;
-  static constexpr int ACT2_FINISH = 23;
   int chassis_act_status_ = ACT_NONE;
 
   // スイッチの状態

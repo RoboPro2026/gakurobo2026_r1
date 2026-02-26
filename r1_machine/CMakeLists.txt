@@ -17,13 +17,28 @@ find_package(tf2 REQUIRED)
 find_package(tf2_ros REQUIRED)
 find_package(nav_msgs REQUIRED)
 find_package(r1_msgs REQUIRED)
+find_package(r1_util REQUIRED)
 
-add_executable(r1_mecanum_node src/r1_mecanum_node.cpp)
-add_executable(r1_sabacan_msgs_converter_node src/r1_sabacan_msgs_converter_node.cpp)
-add_executable(r1_odometry_node src/r1_odometry_node.cpp)
-add_executable(r1_linear_motion_node src/r1_linear_motion_node.cpp)
 add_executable(r1_angle_motion_node src/r1_angle_motion_node.cpp)
+add_executable(r1_linear_motion_node src/r1_linear_motion_node.cpp)
+add_executable(r1_mecanum_node src/r1_mecanum_node.cpp)
+add_executable(r1_odometry_node src/r1_odometry_node.cpp)
+add_executable(r1_sabacan_msgs_converter_node src/r1_sabacan_msgs_converter_node.cpp)
 add_executable(r1_swerve_drive_node src/r1_swerve_drive_node.cpp)
+
+ament_target_dependencies(r1_angle_motion_node
+  rclcpp
+  std_msgs
+  r1_msgs
+  r1_util
+)
+
+ament_target_dependencies(r1_linear_motion_node
+  rclcpp
+  std_msgs
+  r1_msgs
+  r1_util
+)
 
 ament_target_dependencies(r1_mecanum_node
   geometry_msgs
@@ -32,14 +47,7 @@ ament_target_dependencies(r1_mecanum_node
   sensor_msgs
   tf2
   r1_msgs
-)
-
-ament_target_dependencies(r1_sabacan_msgs_converter_node
-  rclcpp
-  sabacan_msgs
-  sabacan_single_control_msgs
-  std_msgs
-  r1_msgs
+  r1_util
 )
 
 ament_target_dependencies(r1_odometry_node
@@ -50,24 +58,16 @@ ament_target_dependencies(r1_odometry_node
   nav_msgs
   sensor_msgs
   r1_msgs
+  r1_util
 )
 
-ament_target_dependencies(r1_linear_motion_node
+ament_target_dependencies(r1_sabacan_msgs_converter_node
   rclcpp
+  sabacan_msgs
+  sabacan_single_control_msgs
   std_msgs
   r1_msgs
-)
-
-ament_target_dependencies(r1_angle_motion_node
-  rclcpp
-  std_msgs
-  r1_msgs
-)
-
-ament_target_dependencies(r1_linear_motion_node
-  rclcpp
-  std_msgs
-  r1_msgs
+  r1_util
 )
 
 ament_target_dependencies(r1_swerve_drive_node
@@ -77,20 +77,19 @@ ament_target_dependencies(r1_swerve_drive_node
   sensor_msgs
   tf2
   r1_msgs
+  r1_util
 )
+
+target_link_libraries(r1_angle_motion_node r1_util::r1_util)
+target_link_libraries(r1_linear_motion_node r1_util::r1_util)
+target_link_libraries(r1_mecanum_node r1_util::r1_util)
+target_link_libraries(r1_odometry_node r1_util::r1_util)
+target_link_libraries(r1_sabacan_msgs_converter_node r1_util::r1_util)
+target_link_libraries(r1_swerve_drive_node r1_util::r1_util)
+
 
 # インクルードディレクトリを設定
-target_include_directories(r1_mecanum_node PUBLIC
-  $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
-  $<INSTALL_INTERFACE:include>
-)
-
-target_include_directories(r1_sabacan_msgs_converter_node PUBLIC
-  $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
-  $<INSTALL_INTERFACE:include>
-)
-
-target_include_directories(r1_odometry_node PUBLIC
+target_include_directories(r1_angle_motion_node PUBLIC
   $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
   $<INSTALL_INTERFACE:include>
 )
@@ -100,7 +99,17 @@ target_include_directories(r1_linear_motion_node PUBLIC
   $<INSTALL_INTERFACE:include>
 )
 
-target_include_directories(r1_angle_motion_node PUBLIC
+target_include_directories(r1_mecanum_node PUBLIC
+  $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+  $<INSTALL_INTERFACE:include>
+)
+
+target_include_directories(r1_odometry_node PUBLIC
+  $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+  $<INSTALL_INTERFACE:include>
+)
+
+target_include_directories(r1_sabacan_msgs_converter_node PUBLIC
   $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
   $<INSTALL_INTERFACE:include>
 )
@@ -110,15 +119,7 @@ target_include_directories(r1_swerve_drive_node PUBLIC
   $<INSTALL_INTERFACE:include>
 )
 
-install(TARGETS r1_mecanum_node
-  DESTINATION lib/${PROJECT_NAME}
-)
-
-install(TARGETS r1_sabacan_msgs_converter_node
-  DESTINATION lib/${PROJECT_NAME}
-)
-
-install(TARGETS r1_odometry_node
+install(TARGETS r1_angle_motion_node
   DESTINATION lib/${PROJECT_NAME}
 )
 
@@ -126,7 +127,15 @@ install(TARGETS r1_linear_motion_node
   DESTINATION lib/${PROJECT_NAME}
 )
 
-install(TARGETS r1_angle_motion_node
+install(TARGETS r1_mecanum_node
+  DESTINATION lib/${PROJECT_NAME}
+)
+
+install(TARGETS r1_odometry_node
+  DESTINATION lib/${PROJECT_NAME}
+)
+
+install(TARGETS r1_sabacan_msgs_converter_node
   DESTINATION lib/${PROJECT_NAME}
 )
 

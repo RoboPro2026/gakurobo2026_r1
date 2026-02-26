@@ -1,11 +1,11 @@
 /**
- * @file util.h
- * @author Yamaguchi Yudai
- * @brief 
+ * @file r1_util.h
+ * @author Yudai Yamaguchi (yudai.yy0804@gmail.com)
+ * @brief R1の共通ライブラリ
  * @version 0.1
- * @date 2025-12-04
+ * @date 2026-02-26
  * 
- * @copyright Copyright (c) 2025
+ * @copyright Copyright (c) 2026
  * 
  */
 
@@ -13,7 +13,21 @@
 
 #include <cmath>
 #include <complex>
-#include <vector>
+
+#include "rclcpp/rclcpp.hpp"
+
+constexpr int ACT_N = 3;
+constexpr int ACT_NONE = 0;
+constexpr int ACT0_START = 1;
+constexpr int ACT0_MOVE = 2;
+constexpr int ACT0_ROTATE = 3;
+constexpr int ACT0_FINISH = 4;
+constexpr int ACT1_START = 11;
+constexpr int ACT1 = 12;
+constexpr int ACT1_FINISH = 13;
+constexpr int ACT2_START = 21;
+constexpr int ACT2 = 22;
+constexpr int ACT2_FINISH = 23;
 
 std::vector<double> linspace(double start, double end, int num)
 {
@@ -39,7 +53,7 @@ double sign(double x) { return (x >= 0) ? 1.0 : -1.0; }
    * @param angle 
    * @return double 
    */
-double angle_normalize(double angle)
+inline double angle_normalize(double angle)
 {
   std::complex<double> ret = std::polar(1.0, angle);
   return std::arg(ret);
@@ -47,13 +61,12 @@ double angle_normalize(double angle)
 
 /**
    * @brief 角度差を計算する。計算結果は-pi~pi
-   * 一度複素数平面に変換することで、-piとpiの境界も簡単に計算することができる
    * 
    * @param current_angle 
    * @param prev_angle 
    * @return double 
    */
-double angle_diff(double current_angle, double prev_angle)
+inline double angle_diff(double current_angle, double prev_angle)
 {
   std::complex<double> current = std::polar(1.0, current_angle);
   std::complex<double> prev = std::polar(1.0, prev_angle);

@@ -12,7 +12,7 @@
 #include <cstdio>
 
 #include "r1_control/trajectory_planner.h"
-#include "r1_control/util.h"
+#include "r1_util/r1_util.h"
 
 void test_trajectory_planner1()
 {

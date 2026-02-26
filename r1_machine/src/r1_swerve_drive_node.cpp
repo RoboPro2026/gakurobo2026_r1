@@ -15,6 +15,7 @@
 
 #include "geometry_msgs/msg/twist.hpp"
 #include "r1_msgs/msg/swerve_drive.hpp"
+#include "r1_util/r1_util.h"
 #include "rcl_interfaces/msg/floating_point_range.hpp"
 #include "rcl_interfaces/msg/parameter_descriptor.hpp"
 #include "rclcpp/rclcpp.hpp"
@@ -187,33 +188,6 @@ public:
       swerve_drive_ref_.omega0, swerve_drive_ref_.theta0, swerve_drive_ref_.omega1,
       swerve_drive_ref_.theta1, swerve_drive_ref_.omega2, swerve_drive_ref_.theta2,
       swerve_drive_ref_.omega3, swerve_drive_ref_.theta3);
-  }
-
-  /**
-   * @brief 角度を-pi~piの範囲に正規化する
-   * 
-   * @param angle 
-   * @return double 
-   */
-  double angle_normalize(double angle)
-  {
-    std::complex<double> ret = std::polar(1.0, angle);
-    return std::arg(ret);
-  }
-
-  /**
-   * @brief 角度差を計算する。計算結果は-pi~pi
-   * 
-   * @param current_angle 
-   * @param prev_angle 
-   * @return double 
-   */
-  double angle_diff(double current_angle, double prev_angle)
-  {
-    std::complex<double> current = std::polar(1.0, current_angle);
-    std::complex<double> prev = std::polar(1.0, prev_angle);
-    std::complex<double> diff = current / prev;  // 位相差
-    return std::arg(diff);
   }
 
   void imu_callback(const sensor_msgs::msg::Imu::SharedPtr msg)

@@ -21,6 +21,7 @@
 #include "r1_control/pos_follower.h"
 #include "r1_control/trajectory_follower.h"
 #include "r1_control/trajectory_planner.h"
+#include "r1_util/r1_util.h"
 #include "rcl_interfaces/msg/floating_point_range.hpp"
 #include "rcl_interfaces/msg/parameter_descriptor.hpp"
 #include "rclcpp/rclcpp.hpp"
@@ -32,20 +33,6 @@
 #include "visualization_msgs/msg/marker.hpp"
 
 using namespace std::chrono_literals;
-
-constexpr int ACT_N = 3;
-
-constexpr int ACT_NONE = 0;
-constexpr int ACT0_START = 1;
-constexpr int ACT0_MOVE = 2;
-constexpr int ACT0_ROTATE = 3;
-constexpr int ACT0_FINISH = 4;
-constexpr int ACT1_START = 11;
-constexpr int ACT1 = 12;
-constexpr int ACT1_FINISH = 13;
-constexpr int ACT2_START = 21;
-constexpr int ACT2 = 22;
-constexpr int ACT2_FINISH = 23;
 
 class R1ChassisControlNode : public rclcpp::Node
 {
