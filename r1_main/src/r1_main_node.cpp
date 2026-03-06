@@ -1990,9 +1990,7 @@ void R1MainNode::auto_act0(void)
     chassis_move_vel(vx_ref, vy_ref, vz_ref);
   } else if (step == ACT0_START) {
     // 何もしない
-  } else if (step == ACT0_MOVE) {
-    // 何もしない
-  } else if (step == ACT0_ROTATE) {
+  } else if (step == ACT0) {
     // 何もしない
   } else if (step == ACT0_FINISH) {
     publish_chassis_act_ref(ACT_NONE);

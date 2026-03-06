@@ -443,17 +443,17 @@ def generate_launch_description():
     #         ),
     #     ]
     # )
-#    eth2can_node = Node(
-#        package="eth2can",
-#        executable="eth2can_node",
-#        name="eth2can_node",
-#        parameters=[param_file],
-#        arguments=["--ros-args", "--log-level", "warn"],
-#        remappings=[
-#            ("from_can_bus0", "from_can_bus"),
-#            ("to_can_bus0", "to_can_bus"),
-#        ],
-#    )
+    #    eth2can_node = Node(
+    #        package="eth2can",
+    #        executable="eth2can_node",
+    #        name="eth2can_node",
+    #        parameters=[param_file],
+    #        arguments=["--ros-args", "--log-level", "warn"],
+    #        remappings=[
+    #            ("from_can_bus0", "from_can_bus"),
+    #            ("to_can_bus0", "to_can_bus"),
+    #        ],
+    #    )
 
     foxglove_node = Node(
         package="foxglove_bridge",
@@ -470,7 +470,7 @@ def generate_launch_description():
 
     # r1_mainのノードの起動を遅延させる
     normal_nodes = [
-#        eth2can_node,
+        #        eth2can_node,
         ps4_node,
         bno086_node,
         r1_chassis_control_node,
@@ -534,7 +534,7 @@ def generate_launch_description():
     # sabacanは遅延させて起動
     return LaunchDescription(
         [
-            TimerAction(period=0.0, actions=[foxglove_node]),
+            # TimerAction(period=0.0, actions=[foxglove_node]),
             TimerAction(period=2.0, actions=normal_nodes),
             TimerAction(period=4.0, actions=[r1_main_node]),
         ]

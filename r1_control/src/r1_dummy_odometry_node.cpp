@@ -48,9 +48,6 @@ public:
     target_pose_subscription_ = this->create_subscription<geometry_msgs::msg::PoseStamped>(
       "/target_pose", 10, std::bind(&MyNode::target_pose_callback, this, std::placeholders::_1));
 
-    robot_marker_publisher_ =
-      this->create_publisher<visualization_msgs::msg::Marker>("/robot_marker", 10);
-
     timer_ = this->create_wall_timer(10ms, std::bind(&MyNode::timer_callback, this));
 
     this->declare_parameter<double>("tau", 0.5);
@@ -91,8 +88,6 @@ public:
 
   rclcpp::Publisher<nav_msgs::msg::Odometry>::SharedPtr odometry_publisher_;
   rclcpp::Subscription<geometry_msgs::msg::PoseStamped>::SharedPtr target_pose_subscription_;
-  // robot_markerのPublisher
-  rclcpp::Publisher<visualization_msgs::msg::Marker>::SharedPtr robot_marker_publisher_;
   rclcpp::TimerBase::SharedPtr timer_;
 
   // 速度指令値

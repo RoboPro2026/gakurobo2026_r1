@@ -72,6 +72,9 @@ public:
     // robot_markerのPublisher
     robot_marker_publisher_ =
       this->create_publisher<visualization_msgs::msg::Marker>("/robot_marker", 10);
+    // robot_trajectoryのPublisher
+    robot_trajectory_publisher_ =
+      this->create_publisher<nav_msgs::msg::Path>("/robot_trajectory", 10);
 
     // ACTのPublisher
     act_publisher_ = this->create_publisher<std_msgs::msg::Int32>("/chassis_act_status", 10);
@@ -101,6 +104,11 @@ public:
     declare_and_get_parameter("goal_pos_range", goal_pos_range_, 0.0);
     declare_and_get_parameter("goal_angle_range", goal_angle_range_, 0.0);
     declare_and_get_parameter("finish_time_threshold", finish_time_threshold_, 0.0);
+    declare_and_get_parameter(
+      "publish_robot_trajectory_dist_threshold", publish_robot_trajectory_dist_threshold_, 0.1);
+    declare_and_get_parameter(
+      "publish_robot_trajectory_angle_threshold", publish_robot_trajectory_angle_threshold_,
+      5.0 * M_PI / 180.0);
 
     try {
       for (int i = 0; i < ACT_N; i++) {
@@ -276,38 +284,67 @@ public:
     // robot_marker_publisher_->publish(heading);
   }
 
+  void reset_robot_trajectory()
+  {
+    robot_trajectory_.header.stamp = this->get_clock()->now();
+    robot_trajectory_.header.frame_id = "odom";
+    robot_trajectory_.poses.clear();
+  }
+
+  void publish_robot_trajectory()
+  {
+    geometry_msgs::msg::PoseStamped pose;
+    pose.header.stamp = this->get_clock()->now();
+    pose.header.frame_id = "odom";
+    pose.pose = odometry_.pose.pose;
+    // robot_trajectory_.posesの要素数が1以上のときは、前回値と比較して、
+    // 距離または角度のしきい値を超えている場合にのみ追加する
+
+    if (!robot_trajectory_.poses.empty()) {
+      const auto & last_pose = robot_trajectory_.poses.back();
+      double dx = pose.pose.position.x - last_pose.pose.position.x;
+      double dy = pose.pose.position.y - last_pose.pose.position.y;
+      double distance = std::sqrt(dx * dx + dy * dy);
+      double current_yaw = tf2::getYaw(pose.pose.orientation);
+      double prev_yaw = tf2::getYaw(last_pose.pose.orientation);
+      double yaw_diff = angle_diff(current_yaw, prev_yaw);
+      bool is_distance_out_of_threshold = distance >= publish_robot_trajectory_dist_threshold_;
+      bool is_angle_out_of_threshold =
+        std::abs(yaw_diff) >= publish_robot_trajectory_angle_threshold_;
+      if (is_distance_out_of_threshold == false && is_angle_out_of_threshold == false) {
+        return;
+      }
+    }
+
+    robot_trajectory_.poses.push_back(pose);
+    robot_trajectory_publisher_->publish(robot_trajectory_);
+
+    RCLCPP_INFO(
+      this->get_logger(), "robot_trajectory data size = %d", (int)robot_trajectory_.poses.size());
+  }
+
   void timer_callback()
   {
     if (act_step_ == ACT0_START) {
-      act_step_ = ACT0_MOVE;
+      act_step_ = ACT0;
       act_traj_follower_[0]->reset();
       pos_follower_->reset();
+      reset_robot_trajectory();
       // act0のpathをpublishする
       publish_path(0);
+      publish_robot_marker();
       RCLCPP_INFO(this->get_logger(), "Starting ACT0");
-    } else if (act_step_ == ACT0_MOVE) {
+    } else if (act_step_ == ACT0) {
       // 軌道追従の計算を行う
       std::pair<WayPoint, geometry_msgs::msg::Twist> ret = act_traj_follower_[0]->update(odometry_);
       // 指令値と目標のwaypointをpublishする
       publish_cmd_vel_and_target_pose(ret.first, ret.second);
-      // goal_range_以内に到達したらROTATEに遷移する
+      // 軌道をpublishする
+      publish_robot_trajectory();
+      // goal_range_以内に到達したらFINISHに遷移する
       if (act_traj_follower_[0]->is_finished()) {
         act_step_ = ACT0_FINISH;
         RCLCPP_INFO(this->get_logger(), "Finished ACT0_MOVE");
-        RCLCPP_INFO(
-          this->get_logger(), "x = %.3f, y = %.3f, yaw = %.3f", odometry_.pose.pose.position.x,
-          odometry_.pose.pose.position.y, tf2::getYaw(odometry_.pose.pose.orientation));
-      }
-    } else if (act_step_ == ACT0_ROTATE) {
-      // pos_followerで回転する
-      std::pair<WayPoint, geometry_msgs::msg::Twist> ret = pos_follower_->update(
-        odometry_, {act_traj_planner_[0]->x_.back(), act_traj_planner_[0]->y_.back(), M_PI / 2});
-      // 指令値と目標のwaypointをpublishする
-      publish_cmd_vel_and_target_pose(ret.first, ret.second);
-      // 収束したらFINISHに遷移する
-      if (pos_follower_->is_finished()) {
-        act_step_ = ACT0_FINISH;
-        RCLCPP_INFO(this->get_logger(), "Finished ACT0_ROTATE");
         RCLCPP_INFO(
           this->get_logger(), "x = %.3f, y = %.3f, yaw = %.3f", odometry_.pose.pose.position.x,
           odometry_.pose.pose.position.y, tf2::getYaw(odometry_.pose.pose.orientation));
@@ -316,14 +353,18 @@ public:
     } else if (act_step_ == ACT1_START) {
       act_step_ = ACT1;
       act_traj_follower_[1]->reset();
+      reset_robot_trajectory();
       // act1のpathをpublishする
       publish_path(1);
+      publish_robot_marker();
       RCLCPP_INFO(this->get_logger(), "Starting ACT1");
     } else if (act_step_ == ACT1) {
       // 軌道追従の計算を行う
       std::pair<WayPoint, geometry_msgs::msg::Twist> ret = act_traj_follower_[1]->update(odometry_);
       // 指令値と目標のwaypointをpublishする
       publish_cmd_vel_and_target_pose(ret.first, ret.second);
+      // 軌道をpublishする
+      publish_robot_trajectory();
       // goal_range_以内に到達したらROTATEに遷移する
       if (act_traj_follower_[1]->is_finished()) {
         act_step_ = ACT1_FINISH;
@@ -336,14 +377,18 @@ public:
     } else if (act_step_ == ACT2_START) {
       act_step_ = ACT2;
       act_traj_follower_[2]->reset();
+      reset_robot_trajectory();
       // act2のpathをpublishする
       publish_path(2);
+      publish_robot_marker();
       RCLCPP_INFO(this->get_logger(), "Starting ACT2");
     } else if (act_step_ == ACT2) {
       // 軌道追従の計算を行う
       std::pair<WayPoint, geometry_msgs::msg::Twist> ret = act_traj_follower_[2]->update(odometry_);
       // 指令値と目標のwaypointをpublishする
       publish_cmd_vel_and_target_pose(ret.first, ret.second);
+      // 軌道をpublishする
+      publish_robot_trajectory();
       // goal_range_以内に到達したらROTATEに遷移する
       if (act_traj_follower_[2]->is_finished()) {
         act_step_ = ACT2_FINISH;
@@ -544,6 +589,8 @@ public:
   rclcpp::Publisher<geometry_msgs::msg::PoseStamped>::SharedPtr target_pose_publisher_;
   // robot_markerのPublisher
   rclcpp::Publisher<visualization_msgs::msg::Marker>::SharedPtr robot_marker_publisher_;
+  // robot_trajectoryのPublisher
+  rclcpp::Publisher<nav_msgs::msg::Path>::SharedPtr robot_trajectory_publisher_;
   // ACTのPublisher
   rclcpp::Publisher<std_msgs::msg::Int32>::SharedPtr act_publisher_;
   // ACTのSubscription
@@ -552,6 +599,8 @@ public:
   // オドメトリ
   nav_msgs::msg::Odometry odometry_;
   int act_step_ = ACT_NONE;
+  // ロボットの軌道保管用
+  nav_msgs::msg::Path robot_trajectory_;
   // filepath
   std::string act_filebase_;
   // zone
@@ -573,6 +622,10 @@ public:
   double goal_angle_range_;
   double finish_time_threshold_;
   static constexpr double DT = 0.01;  //[s]
+  // 軌道出力の距離のしきい値
+  double publish_robot_trajectory_dist_threshold_;  //[m]
+  // 軌道出力の角度のしきい値
+  double publish_robot_trajectory_angle_threshold_;  //[rad]
 
   // trajectory planner
   std::vector<std::shared_ptr<TrajectoryPlanner>> act_traj_planner_;

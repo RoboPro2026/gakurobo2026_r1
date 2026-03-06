@@ -19,9 +19,8 @@
 constexpr int ACT_N = 3;
 constexpr int ACT_NONE = 0;
 constexpr int ACT0_START = 1;
-constexpr int ACT0_MOVE = 2;
-constexpr int ACT0_ROTATE = 3;
-constexpr int ACT0_FINISH = 4;
+constexpr int ACT0 = 2;
+constexpr int ACT0_FINISH = 3;
 constexpr int ACT1_START = 11;
 constexpr int ACT1 = 12;
 constexpr int ACT1_FINISH = 13;
