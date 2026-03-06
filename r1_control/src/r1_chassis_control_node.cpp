@@ -319,8 +319,6 @@ public:
     robot_trajectory_.poses.push_back(pose);
     robot_trajectory_publisher_->publish(robot_trajectory_);
 
-    RCLCPP_INFO(
-      this->get_logger(), "robot_trajectory data size = %d", (int)robot_trajectory_.poses.size());
   }
 
   void timer_callback()
