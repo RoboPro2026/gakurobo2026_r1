@@ -71,6 +71,8 @@ public:
   {
     idx_ = 0;
     finish_ = 0;
+    integral_error_ = {0.0, 0.0, 0.0};
+    prev_error_ = {0.0, 0.0, 0.0};
     last_out_of_range_time_ = rclcpp::Clock().now();
   }
 
@@ -80,10 +82,12 @@ public:
    * @param x_ref 目標位置(x_ref, y_ref, theta_ref)
    * @param x 現在の位置(x, y, theta)
    * @param v_ref 目標速度 (vx_refm vy_ref omega_ref)
-   * @return std::vector<double> 速度ベクトル(vx, vy, omega)
+   * @param v 現在の速度 (vx, vy, omega)
+   * @return std::vector<double> 速度ベクトル指令値(vx, vy, omega)
    */
   std::vector<double> control(
-    std::vector<double> x_ref, std::vector<double> x, std::vector<double> v_ref)
+    std::vector<double> x_ref, std::vector<double> x, std::vector<double> v_ref,
+    std::vector<double> v)
   {
     // PIDの実装になっているが、実際に使用しているのはPのみ。
     std::vector<double> ret(3);
@@ -92,9 +96,13 @@ public:
     error[1] = x_ref[1] - x[1];
     error[2] = angle_diff(x_ref[2], x[2]);
     // p制御+軌道FF
-    ret[0] = kp_pos_ * error[0] + kff_pos_ * v_ref[0];
-    ret[1] = kp_pos_ * error[1] + kff_pos_ * v_ref[1];
-    ret[2] = kp_angle_ * error[2] + kff_angle_ * v_ref[2];
+    // ret[0] = kp_pos_ * error[0] + kff_pos_ * v_ref[0];
+    // ret[1] = kp_pos_ * error[1] + kff_pos_ * v_ref[1];
+    // ret[2] = kp_angle_ * error[2] + kff_angle_ * v_ref[2];
+    // pd制御
+    ret[0] = kp_pos_ * error[0] + kd_pos_ * (v_ref[0] - v[0]);
+    ret[1] = kp_pos_ * error[1] + kd_pos_ * (v_ref[1] - v[1]);
+    ret[2] = kp_angle_ * error[2] + kd_angle_ * (v_ref[2] - v[2]);
     // for (int i = 0; i < 3; i++) {
     //   error[i] = angle_diff(x_ref[i], x[i]);
     //   integral_error_[i] += error[i] * dt_;
@@ -153,6 +161,8 @@ public:
     std::vector<double> x_ref = {wp.x, wp.y, wp.theta};
     std::vector<double> _x = {x, y, theta};
     std::vector<double> v_ref = {vx, vy, wp.omega};
+    std::vector<double> _v = {
+      odometry.twist.twist.linear.x, odometry.twist.twist.linear.y, odometry.twist.twist.angular.z};
 
     // 終了判定
     bool is_last_point = (idx_ == traj_planner_->array_size_ - 1);
@@ -173,7 +183,7 @@ public:
     // 足回りの速度ベクトルを計算
     std::vector<double> v_chassis;
     if (finish_ == 0) {
-      v_chassis = control(x_ref, _x, v_ref);
+      v_chassis = control(x_ref, _x, v_ref, _v);
     } else {
       v_chassis = {0.0, 0.0, 0.0};
     }

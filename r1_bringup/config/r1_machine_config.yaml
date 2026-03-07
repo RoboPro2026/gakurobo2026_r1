@@ -8,13 +8,13 @@ r1_chassis_control_node:
     # 位置制御のゲイン
     kp_pos: 0.7
     ki_pos: 0.0
-    kd_pos: 0.0
-    kff_pos: 0.5
+    kd_pos: 0.5
+    kff_pos: 0.0
     # 角度制御のゲイン
     kp_angle: 0.4
     ki_angle: 0.0
-    kd_angle: 0.0
-    kff_angle: 0.5
+    kd_angle: 0.5
+    kff_angle: 0.0
     # 制御の終了判定閾値
     goal_pos_range: 0.05
     goal_angle_range: 0.05 # 2度
