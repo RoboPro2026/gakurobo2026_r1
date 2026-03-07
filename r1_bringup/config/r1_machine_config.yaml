@@ -2,13 +2,13 @@ r1_chassis_control_node:
   ros__parameters:
     act_filebase: "src/gakurobo2026_r1/data/"
     zone: "blue"
-    timer_rate: 100.0
+    timer_rate: 25.0
     visualize_timer_rate: 10.0
     search_radius: 0.2
     # 位置制御のゲイン
     kp_pos: 0.7
     ki_pos: 0.0
-    kd_pos: 0.5
+    kd_pos: 1.0
     kff_pos: 0.0
     vel_limit: 2.0
     # 角度制御のゲイン
@@ -144,8 +144,7 @@ r1_mecanum_node:
     robot_length: 0.470
   #   # 484mm
     robot_width: 0.484
-    speed_limit: 50.0
-  #   # モーターの出力は歯数が34（モーター側）と歯数が42（ホイール側）で組みあわせているので
+    speed_limit: 100.0
   # モーターの出力は歯数が32（モーター側）と歯数が64（ホイール側）で組みあわせているので
   #   # 減速比は32 / 64 = 0.5
   #   # ギア比で割った値がモーターの出力となる
