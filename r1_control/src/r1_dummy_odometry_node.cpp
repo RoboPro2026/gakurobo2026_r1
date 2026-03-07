@@ -43,12 +43,15 @@ class MyNode : public rclcpp::Node
 public:
   MyNode() : Node("r1_dummy_odometry_node")
   {
+    this->declare_parameter<double>("timer_rate", 100.0);
+    timer_rate_ = this->get_parameter("timer_rate").as_double();
     odometry_publisher_ = this->create_publisher<nav_msgs::msg::Odometry>("/odometry", 10);
 
     target_pose_subscription_ = this->create_subscription<geometry_msgs::msg::PoseStamped>(
       "/target_pose", 10, std::bind(&MyNode::target_pose_callback, this, std::placeholders::_1));
 
-    timer_ = this->create_wall_timer(10ms, std::bind(&MyNode::timer_callback, this));
+    timer_ = this->create_wall_timer(
+      std::chrono::duration<double>(1.0 / timer_rate_), std::bind(&MyNode::timer_callback, this));
 
     this->declare_parameter<double>("tau", 0.5);
     tau_ = this->get_parameter("tau").as_double();
@@ -58,10 +61,11 @@ public:
 
   void timer_callback()
   {
-    double x = lpf(pose_.pose.position.x, prev_x_, tau_, 0.01);
-    double y = lpf(pose_.pose.position.y, prev_y_, tau_, 0.01);
+    const double dt = 1.0 / timer_rate_;
+    double x = lpf(pose_.pose.position.x, prev_x_, tau_, dt);
+    double y = lpf(pose_.pose.position.y, prev_y_, tau_, dt);
     double z = 0;
-    double theta = lpf(tf2::getYaw(pose_.pose.orientation), prev_theta_, tau_, 0.01);
+    double theta = lpf(tf2::getYaw(pose_.pose.orientation), prev_theta_, tau_, dt);
 
     prev_x_ = x;
     prev_y_ = y;
@@ -94,6 +98,7 @@ public:
   geometry_msgs::msg::PoseStamped pose_;
 
   // 時定数
+  double timer_rate_;
   double tau_;
   double prev_x_ = 0.0;
   double prev_y_ = 0.0;

@@ -1,6 +1,6 @@
 # r1_chassis_control_node
 
-`r1_chassis_control_node` は、CSV から生成した軌道（waypoint 列＋拘束条件）を `TrajectoryPlanner` で事前計算し、`/odometry` をフィードバックとして `TrajectoryFollower` により追従させ、足回り速度指令 `/cmd_vel` を出力する ROS 2 ノードです。制御周期は 10 ms（wall timer）です。
+`r1_chassis_control_node` は、CSV から生成した軌道（waypoint 列＋拘束条件）を `TrajectoryPlanner` で事前計算し、`/odometry` をフィードバックとして `TrajectoryFollower` により追従させ、足回り速度指令 `/cmd_vel` を出力する ROS 2 ノードです。制御周期は `timer_rate`、可視化系の周期は `visualize_timer_rate` でそれぞれ設定でき、デフォルトは制御 100 Hz・可視化 20 Hz です。
 
 現状の実装では ACT（動作シーケンス）は 3 個（`ACT_N = 3`、ACT0/ACT1/ACT2）です。
 
@@ -25,6 +25,8 @@
 
 | パラメータ名 | 型 | デフォルト値 | 説明 |
 | --- | --- | --- | --- |
+| `timer_rate` | double | `100.0` | 制御ループと `/chassis_act_status` の周期 publish に使う更新レート [Hz]。内部の追従器に渡す `dt` も `1.0 / timer_rate` になります。 |
+| `visualize_timer_rate` | double | `20.0` | `/target_pose`、`/robot_marker`、`/robot_trajectory` の可視化 publish に使う更新レート [Hz]。 |
 | `act_filebase` | string | `""` | 入力 CSV のベースパス。`<act_filebase><n>_robot_parameter.csv` と `<act_filebase><n>_waypoints.csv` を読みます（例は後述）。空の場合は起動時に Fatal で停止します。 |
 | `zone` | string | `"red"` | `"blue"` の場合、読み込んだ waypoint の `x` 座標を反転して軌道生成します（ゾーン対称対応）。 |
 | `search_radius` | double | `0.0` | 次の waypoint 探索の半径 [m]。現在位置からの距離がこの半径より大きい最初の点を「次の点」とみなします。 |
@@ -42,7 +44,7 @@
 
 ## ACT（状態遷移）
 
-`/chassis_act_ref` で受け取った値に応じて 10ms タイマ内で状態遷移します（同時に `/chassis_act_status` に現在状態を publish）。
+`/chassis_act_ref` で受け取った値に応じて `timer_rate` 周期の制御タイマ内で状態遷移します（同時に `/chassis_act_status` に現在状態を publish）。`/target_pose`、`/robot_marker`、`/robot_trajectory` は別の `visualize_timer_rate` 周期タイマで publish されます。
 
 - `0` (`ACT_NONE`): 何もしない
 - `1` (`ACT0_START`): ACT0 開始要求
@@ -90,7 +92,7 @@ omega_max,31.416     # 最大角速度 [rad/s]（超過チェック用）
 
 注意:
 
-- このノードの追従制御周期は 10ms 固定（`TrajectoryFollower::set_param(..., dt=0.01, ...)`）です。`dt` と整合する値を CSV 側にも設定してください。
+- このノードの追従制御周期は `1.0 / timer_rate` [s] です。CSV の `dt` と大きくずれると追従挙動に差が出るため、できるだけ整合する値を設定してください。
 
 ### `<n>_waypoints.csv` 形式
 
@@ -109,6 +111,8 @@ x, y, theta, v_trans
 ```bash
 source ~/ros2_ws/install/setup.bash
 ros2 run r1_control r1_chassis_control_node --ros-args \
+  -p timer_rate:=100.0 \
+  -p visualize_timer_rate:=20.0 \
   -p act_filebase:=/home/user/ros2_ws/trajectory \
   -p search_radius:=0.2 \
   -p kp_pos:=1.0 -p kff_pos:=0.75 \

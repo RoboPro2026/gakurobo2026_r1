@@ -10,4 +10,4 @@
 
 [r1_swerve_drive_node](./docs/r1_swerve_drive_node.md)
 
-[r1_sabacan_msgs_converter_node](./docs/r1_sabacan_msgs_converter_node)
+[r1_sabacan_msgs_converter_node](./docs/r1_sabacan_msgs_converter_node.md)

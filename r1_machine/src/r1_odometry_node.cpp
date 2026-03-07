@@ -39,16 +39,16 @@ public:
     set_odometry_subscription_ = this->create_subscription<std_msgs::msg::Float64MultiArray>(
       "/set_odometry", 10, std::bind(&MyNode::set_odometry_callback, this, std::placeholders::_1));
 
-    timer_ = this->create_wall_timer(10ms, std::bind(&MyNode::timer_callback, this));
-
     param_callback_handle_ = this->add_on_set_parameters_callback(
       std::bind(&MyNode::parameter_callback, this, std::placeholders::_1));
 
+    this->declare_parameter<double>("timer_rate", 100.0);
     this->declare_parameter<double>("wheel_radius", 0.025);
     this->declare_parameter<bool>("encoder_x_inverse", false);
     this->declare_parameter<bool>("encoder_y_inverse", false);
     this->declare_parameter<bool>("use_imu", true);
 
+    this->get_parameter("timer_rate", timer_rate_);
     this->get_parameter("wheel_radius", wheel_radius_);
 
     bool encoder_inverse[2];
@@ -58,6 +58,9 @@ public:
     encoder_y_direction_ = encoder_inverse[1] ? -1.0 : 1.0;
 
     this->get_parameter("use_imu", use_imu_);
+
+    timer_ = this->create_wall_timer(
+      std::chrono::duration<double>(1.0 / timer_rate_), std::bind(&MyNode::timer_callback, this));
   }
 
   rcl_interfaces::msg::SetParametersResult parameter_callback(
@@ -67,7 +70,19 @@ public:
     result.successful = true;
     for (const auto & param : parameters) {
       const auto & name = param.get_name();
-      if (name == "wheel_radius") {
+      if (name == "timer_rate") {
+        if (param.as_double() <= 0.0) {
+          result.successful = false;
+          result.reason = "timer_rate must be greater than 0.0";
+          RCLCPP_ERROR(this->get_logger(), "%s", result.reason.c_str());
+          continue;
+        }
+        timer_rate_ = param.as_double();
+        timer_ = this->create_wall_timer(
+          std::chrono::duration<double>(1.0 / timer_rate_),
+          std::bind(&MyNode::timer_callback, this));
+        RCLCPP_INFO(this->get_logger(), "Updated parameter: timer_rate = %.3f", timer_rate_);
+      } else if (name == "wheel_radius") {
         wheel_radius_ = param.as_double();
         RCLCPP_INFO(this->get_logger(), "Updated parameter: wheel_radius = %.3f", wheel_radius_);
       } else if (name == "encoder_x_inverse") {
@@ -230,6 +245,7 @@ private:
   double pos_y_ = 0.0;
   double imu_yaw_ = 0.0;                   // rad
   double imu_yaw_angular_velocity_ = 0.0;  // rad/s
+  double timer_rate_ = 100.0;
   double wheel_radius_ = 0.025;            // m
   double offset_pos_x_ = 0.0;              // m
   double offset_pos_y_ = 0.0;              // m

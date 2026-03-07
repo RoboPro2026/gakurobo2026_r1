@@ -357,7 +357,7 @@ def generate_launch_description():
     sabacan_robomasv2_node_id6 = create_sabacan_robomasv2_node(6)
 
     def create_sabacan_single_control_node(
-        board_id: int, motor_number: int, log_level="warn"
+        board_id: int, motor_number: int, control_cycle: float, log_level="warn"
     ) -> Node:
         return Node(
             package="sabacan_single_control",
@@ -365,35 +365,41 @@ def generate_launch_description():
             name=f"sabacan_single_control_node_id{board_id}_motor{motor_number}",
             parameters=[
                 # param_file,
-                {"board_id": board_id, "motor_number": motor_number},
+                {
+                    "board_id": board_id,
+                    "motor_number": motor_number,
+                    "control_cycle": control_cycle,
+                },
             ],
             arguments=["--ros-args", "--log-level", log_level],
         )
 
-    sabacan_single_control_id1_motor0 = create_sabacan_single_control_node(1, 0)
-    sabacan_single_control_id1_motor1 = create_sabacan_single_control_node(1, 1)
-    sabacan_single_control_id1_motor2 = create_sabacan_single_control_node(1, 2)
-    sabacan_single_control_id1_motor3 = create_sabacan_single_control_node(1, 3)
-    sabacan_single_control_id2_motor0 = create_sabacan_single_control_node(2, 0)
-    sabacan_single_control_id2_motor1 = create_sabacan_single_control_node(2, 1)
-    sabacan_single_control_id2_motor2 = create_sabacan_single_control_node(2, 2)
-    sabacan_single_control_id2_motor3 = create_sabacan_single_control_node(2, 3)
-    sabacan_single_control_id3_motor0 = create_sabacan_single_control_node(3, 0)
-    sabacan_single_control_id3_motor1 = create_sabacan_single_control_node(3, 1)
-    sabacan_single_control_id3_motor2 = create_sabacan_single_control_node(3, 2)
-    sabacan_single_control_id3_motor3 = create_sabacan_single_control_node(3, 3)
-    sabacan_single_control_id4_motor0 = create_sabacan_single_control_node(4, 0)
-    sabacan_single_control_id4_motor1 = create_sabacan_single_control_node(4, 1)
-    sabacan_single_control_id4_motor2 = create_sabacan_single_control_node(4, 2)
-    sabacan_single_control_id4_motor3 = create_sabacan_single_control_node(4, 3)
-    sabacan_single_control_id5_motor0 = create_sabacan_single_control_node(5, 0)
-    sabacan_single_control_id5_motor1 = create_sabacan_single_control_node(5, 1)
-    sabacan_single_control_id5_motor2 = create_sabacan_single_control_node(5, 2)
-    sabacan_single_control_id5_motor3 = create_sabacan_single_control_node(5, 3)
-    sabacan_single_control_id6_motor0 = create_sabacan_single_control_node(6, 0)
-    sabacan_single_control_id6_motor1 = create_sabacan_single_control_node(6, 1)
-    sabacan_single_control_id6_motor2 = create_sabacan_single_control_node(6, 2)
-    sabacan_single_control_id6_motor3 = create_sabacan_single_control_node(6, 3)
+    # 足回りは100Hz
+    sabacan_single_control_id1_motor0 = create_sabacan_single_control_node(1, 0, 100.0)
+    sabacan_single_control_id1_motor1 = create_sabacan_single_control_node(1, 1, 100.0)
+    sabacan_single_control_id1_motor2 = create_sabacan_single_control_node(1, 2, 100.0)
+    sabacan_single_control_id1_motor3 = create_sabacan_single_control_node(1, 3, 100.0)
+    # それ以外は25Hz(仮)
+    sabacan_single_control_id2_motor0 = create_sabacan_single_control_node(2, 0, 25.0)
+    sabacan_single_control_id2_motor1 = create_sabacan_single_control_node(2, 1, 25.0)
+    sabacan_single_control_id2_motor2 = create_sabacan_single_control_node(2, 2, 25.0)
+    sabacan_single_control_id2_motor3 = create_sabacan_single_control_node(2, 3, 25.0)
+    sabacan_single_control_id3_motor0 = create_sabacan_single_control_node(3, 0, 25.0)
+    sabacan_single_control_id3_motor1 = create_sabacan_single_control_node(3, 1, 25.0)
+    sabacan_single_control_id3_motor2 = create_sabacan_single_control_node(3, 2, 25.0)
+    sabacan_single_control_id3_motor3 = create_sabacan_single_control_node(3, 3, 25.0)
+    sabacan_single_control_id4_motor0 = create_sabacan_single_control_node(4, 0, 25.0)
+    sabacan_single_control_id4_motor1 = create_sabacan_single_control_node(4, 1, 25.0)
+    sabacan_single_control_id4_motor2 = create_sabacan_single_control_node(4, 2, 25.0)
+    sabacan_single_control_id4_motor3 = create_sabacan_single_control_node(4, 3, 25.0)
+    sabacan_single_control_id5_motor0 = create_sabacan_single_control_node(5, 0, 25.0)
+    sabacan_single_control_id5_motor1 = create_sabacan_single_control_node(5, 1, 25.0)
+    sabacan_single_control_id5_motor2 = create_sabacan_single_control_node(5, 2, 25.0)
+    sabacan_single_control_id5_motor3 = create_sabacan_single_control_node(5, 3, 25.0)
+    sabacan_single_control_id6_motor0 = create_sabacan_single_control_node(6, 0, 25.0)
+    sabacan_single_control_id6_motor1 = create_sabacan_single_control_node(6, 1, 25.0)
+    sabacan_single_control_id6_motor2 = create_sabacan_single_control_node(6, 2, 25.0)
+    sabacan_single_control_id6_motor3 = create_sabacan_single_control_node(6, 3, 25.0)
 
     def create_sabacan_gpio_node(board_id: int, log_level="warn") -> Node:
         return Node(

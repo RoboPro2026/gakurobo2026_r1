@@ -58,6 +58,10 @@ public:
 
   R1ChassisControlNode() : Node("r1_chassis_control_node")
   {
+    declare_and_get_parameter("timer_rate", timer_rate_, 100.0);
+    declare_and_get_parameter("visualize_timer_rate", visualize_timer_rate_, 10.0);
+    control_dt_ = 1.0 / timer_rate_;
+
     // 足回り速度指令値
     cmd_vel_publisher_ = this->create_publisher<geometry_msgs::msg::Twist>("/cmd_vel", 10);
     // 自己位置
@@ -126,19 +130,24 @@ public:
     for (int i = 0; i < ACT_N; i++) {
       act_traj_follower_[i] = std::make_shared<TrajectoryFollower>(act_traj_planner_[i].get());
       act_traj_follower_[i]->set_param(
-        kp_pos_, ki_pos_, kd_pos_, kff_pos_, kp_angle_, ki_angle_, kd_angle_, kff_angle_, DT,
-        search_radius_, goal_pos_range_, goal_angle_range_, finish_time_threshold_);
+        kp_pos_, ki_pos_, kd_pos_, kff_pos_, kp_angle_, ki_angle_, kd_angle_, kff_angle_,
+        control_dt_, search_radius_, goal_pos_range_, goal_angle_range_, finish_time_threshold_);
     }
 
     pos_follower_ = std::make_shared<PosFollower>();
     pos_follower_->set_param(
-      kp_pos_, ki_pos_, kd_pos_, kp_angle_, ki_angle_, kd_angle_, DT, goal_pos_range_,
+      kp_pos_, ki_pos_, kd_pos_, kp_angle_, ki_angle_, kd_angle_, control_dt_, goal_pos_range_,
       goal_angle_range_, finish_time_threshold_);
 
     act_step_ = ACT_NONE;
 
     // timer
-    timer_ = this->create_wall_timer(10ms, std::bind(&R1ChassisControlNode::timer_callback, this));
+    timer_ = this->create_wall_timer(
+      std::chrono::duration<double>(1.0 / timer_rate_),
+      std::bind(&R1ChassisControlNode::timer_callback, this));
+    visualize_timer_ = this->create_wall_timer(
+      std::chrono::duration<double>(1.0 / visualize_timer_rate_),
+      std::bind(&R1ChassisControlNode::visualize_timer_callback, this));
   }
 
   void odometry_callback(const nav_msgs::msg::Odometry::SharedPtr msg)
@@ -191,26 +200,27 @@ public:
     waypoints_publisher_->publish(path);
   }
 
-  void publish_cmd_vel_and_target_pose(
-    const WayPoint & waypoint, const geometry_msgs::msg::Twist & cmd_vel)
+  void update_target_pose(const WayPoint & waypoint)
   {
-    geometry_msgs::msg::PoseStamped target_pose;
-    target_pose.header.stamp = this->get_clock()->now();
+    latest_target_pose_.header.stamp = this->get_clock()->now();
     // デバッグのためにmapからodomに変更
     // target_pose.header.frame_id = "map";
-    target_pose.header.frame_id = "odom";
-    target_pose.pose.position.x = waypoint.x;
-    target_pose.pose.position.y = waypoint.y;
-    target_pose.pose.position.z = 0.0;
+    latest_target_pose_.header.frame_id = "odom";
+    latest_target_pose_.pose.position.x = waypoint.x;
+    latest_target_pose_.pose.position.y = waypoint.y;
+    latest_target_pose_.pose.position.z = 0.0;
     tf2::Quaternion q;
     q.setRPY(0.0, 0.0, waypoint.theta);
     q.normalize();
-    target_pose.pose.orientation.x = q.x();
-    target_pose.pose.orientation.y = q.y();
-    target_pose.pose.orientation.z = q.z();
-    target_pose.pose.orientation.w = q.w();
+    latest_target_pose_.pose.orientation.x = q.x();
+    latest_target_pose_.pose.orientation.y = q.y();
+    latest_target_pose_.pose.orientation.z = q.z();
+    latest_target_pose_.pose.orientation.w = q.w();
+    has_target_pose_ = true;
+  }
 
-    target_pose_publisher_->publish(target_pose);
+  void publish_cmd_vel(const geometry_msgs::msg::Twist & cmd_vel)
+  {
     cmd_vel_publisher_->publish(cmd_vel);
   }
 
@@ -293,6 +303,9 @@ public:
 
   void publish_robot_trajectory()
   {
+    if (!is_act_running()) {
+      return;
+    }
     geometry_msgs::msg::PoseStamped pose;
     pose.header.stamp = this->get_clock()->now();
     pose.header.frame_id = "odom";
@@ -323,6 +336,21 @@ public:
       this->get_logger(), "robot_trajectory data size = %d", (int)robot_trajectory_.poses.size());
   }
 
+  bool is_act_running() const
+  {
+    return act_step_ == ACT0 || act_step_ == ACT1 || act_step_ == ACT2;
+  }
+
+  void visualize_timer_callback()
+  {
+    if (has_target_pose_) {
+      latest_target_pose_.header.stamp = this->get_clock()->now();
+      target_pose_publisher_->publish(latest_target_pose_);
+    }
+    publish_robot_marker();
+    publish_robot_trajectory();
+  }
+
   void timer_callback()
   {
     if (act_step_ == ACT0_START) {
@@ -332,15 +360,13 @@ public:
       reset_robot_trajectory();
       // act0のpathをpublishする
       publish_path(0);
-      publish_robot_marker();
       RCLCPP_INFO(this->get_logger(), "Starting ACT0");
     } else if (act_step_ == ACT0) {
       // 軌道追従の計算を行う
       std::pair<WayPoint, geometry_msgs::msg::Twist> ret = act_traj_follower_[0]->update(odometry_);
       // 指令値と目標のwaypointをpublishする
-      publish_cmd_vel_and_target_pose(ret.first, ret.second);
-      // 軌道をpublishする
-      publish_robot_trajectory();
+      update_target_pose(ret.first);
+      publish_cmd_vel(ret.second);
       // goal_range_以内に到達したらFINISHに遷移する
       if (act_traj_follower_[0]->is_finished()) {
         act_step_ = ACT0_FINISH;
@@ -356,15 +382,13 @@ public:
       reset_robot_trajectory();
       // act1のpathをpublishする
       publish_path(1);
-      publish_robot_marker();
       RCLCPP_INFO(this->get_logger(), "Starting ACT1");
     } else if (act_step_ == ACT1) {
       // 軌道追従の計算を行う
       std::pair<WayPoint, geometry_msgs::msg::Twist> ret = act_traj_follower_[1]->update(odometry_);
       // 指令値と目標のwaypointをpublishする
-      publish_cmd_vel_and_target_pose(ret.first, ret.second);
-      // 軌道をpublishする
-      publish_robot_trajectory();
+      update_target_pose(ret.first);
+      publish_cmd_vel(ret.second);
       // goal_range_以内に到達したらROTATEに遷移する
       if (act_traj_follower_[1]->is_finished()) {
         act_step_ = ACT1_FINISH;
@@ -380,15 +404,13 @@ public:
       reset_robot_trajectory();
       // act2のpathをpublishする
       publish_path(2);
-      publish_robot_marker();
       RCLCPP_INFO(this->get_logger(), "Starting ACT2");
     } else if (act_step_ == ACT2) {
       // 軌道追従の計算を行う
       std::pair<WayPoint, geometry_msgs::msg::Twist> ret = act_traj_follower_[2]->update(odometry_);
       // 指令値と目標のwaypointをpublishする
-      publish_cmd_vel_and_target_pose(ret.first, ret.second);
-      // 軌道をpublishする
-      publish_robot_trajectory();
+      update_target_pose(ret.first);
+      publish_cmd_vel(ret.second);
       // goal_range_以内に到達したらROTATEに遷移する
       if (act_traj_follower_[2]->is_finished()) {
         act_step_ = ACT2_FINISH;
@@ -400,8 +422,6 @@ public:
     std_msgs::msg::Int32 act_status_msg;
     act_status_msg.data = act_step_;
     act_publisher_->publish(act_status_msg);
-    // robot_markerをpublishする
-    publish_robot_marker();
   }
 
   int generate_trajectory(int n)
@@ -596,8 +616,11 @@ public:
   // ACTのSubscription
   rclcpp::Subscription<std_msgs::msg::Int32>::SharedPtr act_subscription_;
   rclcpp::TimerBase::SharedPtr timer_;
+  rclcpp::TimerBase::SharedPtr visualize_timer_;
   // オドメトリ
   nav_msgs::msg::Odometry odometry_;
+  geometry_msgs::msg::PoseStamped latest_target_pose_;
+  bool has_target_pose_ = false;
   int act_step_ = ACT_NONE;
   // ロボットの軌道保管用
   nav_msgs::msg::Path robot_trajectory_;
@@ -621,7 +644,9 @@ public:
   double goal_pos_range_;
   double goal_angle_range_;
   double finish_time_threshold_;
-  static constexpr double DT = 0.01;  //[s]
+  double timer_rate_;
+  double visualize_timer_rate_;
+  double control_dt_;
   // 軌道出力の距離のしきい値
   double publish_robot_trajectory_dist_threshold_;  //[m]
   // 軌道出力の角度のしきい値

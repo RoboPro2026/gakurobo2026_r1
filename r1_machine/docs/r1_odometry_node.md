@@ -1,6 +1,6 @@
 # r1_odometry_node
 
-`r1_odometry_node` はメインボードから受け取る設置型エンコーダの速度と IMU のヨー角を用いて、ロボットの 2 次元オドメトリを計算し `nav_msgs/msg/Odometry` を `/odometry` トピックで配信する ROS 2 ノードです。周期 10 ms のタイマで定期的に姿勢と速度を更新しており、`odom` → `base_link` の座標系を前提としています。IMU を利用しない計測構成にも対応できるよう、ヨー角の参照はパラメータで無効化できます。
+`r1_odometry_node` はメインボードから受け取る設置型エンコーダの速度と IMU のヨー角を用いて、ロボットの 2 次元オドメトリを計算し `nav_msgs/msg/Odometry` を `/odometry` トピックで配信する ROS 2 ノードです。周期処理の更新レートは `timer_rate` で設定でき、デフォルトは 100 Hz（10 ms）です。`odom` → `base_link` の座標系を前提としています。IMU を利用しない計測構成にも対応できるよう、ヨー角の参照はパラメータで無効化できます。
 
 ## トピック
 
@@ -17,6 +17,7 @@
 
 | パラメータ名 | 型 | デフォルト値 | 説明 |
 | --- | --- | --- | --- |
+| `timer_rate` | double | `100.0` | `/odometry` の周期更新レート [Hz]。 |
 | `wheel_radius` | double | `0.025` | 設置ホイールの半径 [m]。エンコーダ角度から移動距離へ換算する際に使用します。 |
 | `encoder_x_inverse` | bool | `false` | X 方向エンコーダの正負を反転するか。`true` で時計回り/反時計回りの定義が逆転します。 |
 | `encoder_y_inverse` | bool | `false` | Y 方向エンコーダの正負を反転するか。`true` で時計回り/反時計回りの定義が逆転します。 |
@@ -38,7 +39,7 @@
 
   ```bash
   source ~/ros2_ws/install/setup.bash
-  ros2 run r1_machine r1_odometry_node
+  ros2 run r1_machine r1_odometry_node --ros-args -p timer_rate:=100.0
   ```
 
 - 主なデバッグコマンド:

@@ -193,6 +193,7 @@ public:
   rclcpp::Subscription<std_msgs::msg::Int32>::SharedPtr chassis_act_status_subscription_;
   // タイマー
   rclcpp::TimerBase::SharedPtr timer_publisher_;
+  double timer_rate_ = 100.0;
 
   // 速度指令値
   geometry_msgs::msg::Twist target_vel_;

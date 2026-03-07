@@ -1,6 +1,6 @@
 # r1_angle_motion_node
 
-`r1_angle_motion_node` は回転軸用 Robomas モータの位置制御と原点検出を行う ROS 2 ノードです。`/angle_motion_status` で取得したトルク・速度・角度・リミットスイッチを監視し、通常は角度指令を `/angle_motion_motor_ref` に出力します。原点検出要求が入ると速度モードへ切り替え、スイッチまたはトルク上昇を検出してオフセットを更新し、その場で位置モードに戻します。角度指令はラジアン単位で受け付け、減速比 `gear_ratio` でモータ角度へ換算します。
+`r1_angle_motion_node` は回転軸用 Robomas モータの位置制御と原点検出を行う ROS 2 ノードです。`/angle_motion_status` で取得したトルク・速度・角度・リミットスイッチを監視し、通常は角度指令を `/angle_motion_motor_ref` に出力します。原点検出要求が入ると速度モードへ切り替え、スイッチまたはトルク上昇を検出してオフセットを更新し、その場で位置モードに戻します。角度指令はラジアン単位で受け付け、減速比 `gear_ratio` でモータ角度へ換算します。周期処理の実行レートは `timer_rate` で変更できます。
 
 ## トピック
 
@@ -20,6 +20,7 @@
 
 | パラメータ名 | 型 | デフォルト値 | 説明 |
 | --- | --- | --- | --- |
+| `timer_rate` | double | `100.0` | 原点検出処理と `/angle_motion_mode_status` の周期更新レート [Hz]。 |
 | `use_low_switch` | bool | `true` | 低側リミットスイッチを原点検出判定に使うか。 |
 | `use_high_switch` | bool | `true` | 高側リミットスイッチを原点検出判定に使うか。 |
 | `torque_threshold` | double | `1.0` | 許容トルク [Nm]。この絶対値を超え続けたら原点とみなします。 |
@@ -37,7 +38,7 @@
 
 1. `/angle_motion_status` を受信してトルク・速度・角度・リミットスイッチ状態を内部に保持します。
 2. 通常は位置モード（`MODE_POSITION`）。`/angle_motion_position_ref` で受けた目標角度 [rad] を `angle_min`〜`angle_max` にクランプし、原点検出で決まる `angle_offset` を加算してから、`target_motor_angle = (target_angle) / gear_ratio` として `"POSITION"` 指令を配信します（`inverse_motor` で符号反転）。速度モード中はこのトピックを無視します。
-3. `/angle_motion_detect_origin` に `true` を送ると速度モード（原点検出）へ移行し、10 ms 周期のタイマで `"VELOCITY"` 指令 `origin_detect_speed` を流し続けます。検出条件は以下の OR です。  
+3. `/angle_motion_detect_origin` に `true` を送ると速度モード（原点検出）へ移行し、`timer_rate` 周期のタイマで `"VELOCITY"` 指令 `origin_detect_speed` を流し続けます。検出条件は以下の OR です。  
    - `use_low_switch`/`use_high_switch` が有効で、対応するスイッチがオン。  
    - `|torque| > torque_threshold` の状態が `origin_detect_threshold_time` 秒以上続く。
 4. 検出条件を満たすと、現在の `pos` から `angle_offset = gear_ratio * pos` を設定し、その場の角度で `"POSITION"` 指令を出して位置モードへ復帰します。`/angle_motion_detect_origin` に `false` を送れば手動でも位置モードへ戻せます（オフセット更新は行いません）。
@@ -48,7 +49,7 @@
 
   ```bash
   source ~/ros2_ws/install/setup.bash
-  ros2 run r1_machine r1_angle_motion_node
+  ros2 run r1_machine r1_angle_motion_node --ros-args -p timer_rate:=100.0
   ```
 
 - 原点検出を開始する:

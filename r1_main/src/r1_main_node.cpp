@@ -269,6 +269,7 @@ R1MainNode::R1MainNode() : Node("r1_main_node")
     std::bind(&R1MainNode::chassis_act_status_callback, this, std::placeholders::_1));
   // ========== パラメータ ==========
   // 足回り
+  declare_and_get_parameter("timer_rate", timer_rate_, 100.0);
   declare_and_get_parameter("chassis_max_velocity", CHASSIS_MAX_VELOCITY);
   declare_and_get_parameter("chassis_max_omega", CHASSIS_MAX_OMEGA);
 
@@ -365,12 +366,20 @@ R1MainNode::R1MainNode() : Node("r1_main_node")
   declare_and_get_parameter("spear_rotate_normal_pos", SPEAR_ROTATE_NORMAL_POS);
   declare_and_get_parameter("spear_rotate_combine_angle", SPEAR_ROTATE_COMBINE_ANGLE);
 
-  // タイマー
-  timer_publisher_ = this->create_wall_timer(10ms, std::bind(&R1MainNode::timer_callback, this));
+  if (timer_rate_ <= 0.0) {
+    RCLCPP_WARN(this->get_logger(), "timer_rate must be positive. Fallback to 100.0 Hz.");
+    timer_rate_ = 100.0;
+  }
 
-  simple_trapezoid_vx_ = SimpleTrapezoid(3.0, 0.01);  // 加速度1.0m/s^2、制御周期10ms
-  simple_trapezoid_vy_ = SimpleTrapezoid(3.0, 0.01);
-  simple_trapezoid_omega_ = SimpleTrapezoid(3.0, 0.01);
+  // タイマー
+  timer_publisher_ = this->create_wall_timer(
+    std::chrono::duration<double>(1.0 / timer_rate_),
+    std::bind(&R1MainNode::timer_callback, this));
+
+  const double timer_dt = 1.0 / timer_rate_;
+  simple_trapezoid_vx_ = SimpleTrapezoid(3.0, timer_dt);
+  simple_trapezoid_vy_ = SimpleTrapezoid(3.0, timer_dt);
+  simple_trapezoid_omega_ = SimpleTrapezoid(3.0, timer_dt);
 
   ps4_ = std::make_shared<PS4>("PS4");
 

@@ -58,9 +58,8 @@ public:
     parameter_callback_handler_ = this->add_on_set_parameters_callback(
       std::bind(&MyNode::parameter_callback, this, std::placeholders::_1));
 
-    timer_ = this->create_wall_timer(10ms, std::bind(&MyNode::timer_callback, this));
-
     // パラメータ宣言
+    this->declare_parameter("timer_rate", 100.0);
     this->declare_parameter("use_low_switch", true);
     this->declare_parameter("use_high_switch", true);
     this->declare_parameter("torque_threshold", 1.0);              // Nm
@@ -76,6 +75,7 @@ public:
     this->declare_parameter("inverse_high_switch_logic", false);
 
     // パラメータ取得
+    this->get_parameter("timer_rate", timer_rate_);
     this->get_parameter("use_low_switch", use_low_switch_);
     this->get_parameter("use_high_switch", use_high_switch_);
     this->get_parameter("torque_threshold", torque_threshold_);
@@ -90,6 +90,9 @@ public:
     motor_dir_ = inverse_motor ? -1.0 : 1.0;
     this->get_parameter("inverse_low_switch_logic", inverse_low_switch_logic_);
     this->get_parameter("inverse_high_switch_logic", inverse_high_switch_logic_);
+
+    timer_ = this->create_wall_timer(
+      std::chrono::duration<double>(1.0 / timer_rate_), std::bind(&MyNode::timer_callback, this));
   }
 
 private:
@@ -101,7 +104,19 @@ private:
 
     for (const auto & parameter : parameters) {
       const auto & name = parameter.get_name();
-      if (name == "use_low_switch") {
+      if (name == "timer_rate") {
+        if (parameter.as_double() <= 0.0) {
+          result.successful = false;
+          result.reason = "timer_rate must be greater than 0.0";
+          RCLCPP_ERROR(this->get_logger(), "%s", result.reason.c_str());
+          continue;
+        }
+        timer_rate_ = parameter.as_double();
+        timer_ = this->create_wall_timer(
+          std::chrono::duration<double>(1.0 / timer_rate_),
+          std::bind(&MyNode::timer_callback, this));
+        RCLCPP_INFO(this->get_logger(), "Updated parameter: timer_rate = %.3f", timer_rate_);
+      } else if (name == "use_low_switch") {
         use_low_switch_ = parameter.as_bool();
         RCLCPP_INFO(
           this->get_logger(), "Updated parameter: use_low_switch = %s",
@@ -307,6 +322,7 @@ private:
   bool high_switch_ = false;
   bool inverse_low_switch_logic_ = false;
   bool inverse_high_switch_logic_ = false;
+  double timer_rate_ = 100.0;
   double current_torque_ = 0.0;
   double current_speed_ = 0.0;
   double current_angle_ = 0.0;

@@ -10,6 +10,7 @@
  */
 
 #include <chrono>
+#include <functional>
 #include <limits>
 #include <vector>
 
@@ -73,6 +74,24 @@ class MyNode : public rclcpp::Node
 public:
   MyNode() : Node("r1_sabacan_msgs_converter_node")
   {
+    this->declare_parameter<double>("mecanum_timer_rate", 100.0);
+    this->declare_parameter<double>("odometry_encoder_timer_rate", 100.0);
+    this->declare_parameter<double>("kfs_timer_rate", 100.0);
+    this->declare_parameter<double>("expand_timer_rate", 100.0);
+    this->declare_parameter<double>("r2_lift_timer_rate", 100.0);
+    this->declare_parameter<double>("pole_timer_rate", 100.0);
+    this->declare_parameter<double>("spear_timer_rate", 100.0);
+    this->declare_parameter<double>("gpio_timer_rate", 100.0);
+    mecanum_timer_rate_ = this->get_parameter("mecanum_timer_rate").as_double();
+    odometry_encoder_timer_rate_ =
+      this->get_parameter("odometry_encoder_timer_rate").as_double();
+    kfs_timer_rate_ = this->get_parameter("kfs_timer_rate").as_double();
+    expand_timer_rate_ = this->get_parameter("expand_timer_rate").as_double();
+    r2_lift_timer_rate_ = this->get_parameter("r2_lift_timer_rate").as_double();
+    pole_timer_rate_ = this->get_parameter("pole_timer_rate").as_double();
+    spear_timer_rate_ = this->get_parameter("spear_timer_rate").as_double();
+    gpio_timer_rate_ = this->get_parameter("gpio_timer_rate").as_double();
+
     // ========== Publisherとsubscriptionの作成 ==========
     // sabacan_gpio_ref_publisher_の作成
     sabacan_gpio_ref_int_publisher_.resize(10);
@@ -486,8 +505,31 @@ public:
         spear_rotate_switch_,
         this->create_publisher<r1_msgs::msg::GpioInput>("/debug_spear_rotate_switch_status", 10)});
 
-    // 100Hzのタイマーを作成
-    timer_ = this->create_wall_timer(10ms, std::bind(&MyNode::timer_callback, this));
+    mecanum_timer_ = create_publish_timer(
+      mecanum_timer_rate_, std::bind(&MyNode::publish_mecanum_feedback, this));
+    odometry_encoder_timer_ = create_publish_timer(
+      odometry_encoder_timer_rate_, std::bind(&MyNode::publish_odometry_encoder, this));
+    kfs_timer_ =
+      create_publish_timer(kfs_timer_rate_, std::bind(&MyNode::publish_kfs_status, this));
+    expand_timer_ =
+      create_publish_timer(expand_timer_rate_, std::bind(&MyNode::publish_expand_status, this));
+    r2_lift_timer_ = create_publish_timer(
+      r2_lift_timer_rate_, std::bind(&MyNode::publish_r2_lift_status, this));
+    pole_timer_ =
+      create_publish_timer(pole_timer_rate_, std::bind(&MyNode::publish_pole_status, this));
+    spear_timer_ =
+      create_publish_timer(spear_timer_rate_, std::bind(&MyNode::publish_spear_status, this));
+    gpio_timer_ =
+      create_publish_timer(gpio_timer_rate_, std::bind(&MyNode::publish_gpio_status, this));
+  }
+
+  rclcpp::TimerBase::SharedPtr create_publish_timer(
+    double timer_rate, const std::function<void()> & callback)
+  {
+    if (timer_rate <= 0.0) {
+      return nullptr;
+    }
+    return this->create_wall_timer(std::chrono::duration<double>(1.0 / timer_rate), callback);
   }
 
   bool board_info_match(BoardInfo a, BoardInfo b)
@@ -952,46 +994,65 @@ public:
     sabacan_gpio_ref_float_publisher_[info.board_id]->publish(sabacan_msg);
   }
 
-  void timer_callback()
+  void publish_mecanum_feedback()
   {
-    // ロボマス制御
-    // 足回り
     auto msg_feedback = r1_msgs::msg::Mecanum();
     msg_feedback.fl_wheel_speed = mecanum_wheel_speeds_feedback_[FL];
     msg_feedback.fr_wheel_speed = mecanum_wheel_speeds_feedback_[FR];
     msg_feedback.rl_wheel_speed = mecanum_wheel_speeds_feedback_[RL];
     msg_feedback.rr_wheel_speed = mecanum_wheel_speeds_feedback_[RR];
     mecanum_wheel_speeds_feedback_publisher_->publish(msg_feedback);
-    // オドメトリ
+  }
+
+  void publish_odometry_encoder()
+  {
     auto odom_msg = r1_msgs::msg::OdometryEncoder();
     odom_msg.encoder_pos_x = odometry_encoder_pos_values_[X];
     odom_msg.encoder_pos_y = odometry_encoder_pos_values_[Y];
     odom_msg.encoder_speed_x = odometry_encoder_speed_values_[X];
     odom_msg.encoder_speed_y = odometry_encoder_speed_values_[Y];
     odometry_encoder_publisher_->publish(odom_msg);
-    // KFS回収機構
+  }
+
+  void publish_kfs_status()
+  {
     kfs_fx_linear_motion_status_publisher_->publish(kfs_fx_linear_motion_value_);
     kfs_fz_linear_motion_status_publisher_->publish(kfs_fz_linear_motion_value_);
     kfs_fyaw_angle_motion_status_publisher_->publish(kfs_fyaw_angle_motion_value_);
     kfs_rx_linear_motion_status_publisher_->publish(kfs_rx_linear_motion_value_);
     kfs_rz_linear_motion_status_publisher_->publish(kfs_rz_linear_motion_value_);
     kfs_ryaw_angle_motion_status_publisher_->publish(kfs_ryaw_angle_motion_value_);
-    // 展開
+  }
+
+  void publish_expand_status()
+  {
     front_expand_linear_motion_status_publisher_->publish(front_expand_linear_motion_value_);
     rear_expand_linear_motion_status_publisher_->publish(rear_expand_linear_motion_value_);
-    // R2昇降
+  }
+
+  void publish_r2_lift_status()
+  {
     r2_lift_motor_status_publisher_->publish(r2_lift_motor_value_);
-    // ポール
+  }
+
+  void publish_pole_status()
+  {
     pole_x1_linear_motion_status_publisher_->publish(pole_x1_linear_motion_value_);
     pole_x2_linear_motion_status_publisher_->publish(pole_x2_linear_motion_value_);
     pole_y_linear_motion_status_publisher_->publish(pole_y_linear_motion_value_);
     pole_roger_linear_motion_status_publisher_->publish(pole_roger_linear_motion_value_);
-    // やり
+  }
+
+  void publish_spear_status()
+  {
     spear_roger1_linear_motion_status_publisher_->publish(spear_roger1_linear_motion_value_);
     spear_roger2_linear_motion_status_publisher_->publish(spear_roger2_linear_motion_value_);
     spear_move_linear_motion_status_publisher_->publish(spear_move_linear_motion_value_);
     spear_rotate_angle_motion_status_publisher_->publish(spear_rotate_angle_motion_value_);
-    // GPIO
+  }
+
+  void publish_gpio_status()
+  {
     kfs_front_switch_status_publisher_->publish(kfs_front_switch_value_);
     kfs_rear_switch_status_publisher_->publish(kfs_rear_switch_value_);
     spear_move_switch_status_publisher_->publish(spear_move_switch_value_);
@@ -1256,7 +1317,23 @@ public:
   std::vector<DebugMotorInfo> debug_motor_;
   std::vector<DebugGPIOInputInfo> debug_gpio_input_;
 
-  rclcpp::TimerBase::SharedPtr timer_;
+  double mecanum_timer_rate_;
+  double odometry_encoder_timer_rate_;
+  double kfs_timer_rate_;
+  double expand_timer_rate_;
+  double r2_lift_timer_rate_;
+  double pole_timer_rate_;
+  double spear_timer_rate_;
+  double gpio_timer_rate_;
+
+  rclcpp::TimerBase::SharedPtr mecanum_timer_;
+  rclcpp::TimerBase::SharedPtr odometry_encoder_timer_;
+  rclcpp::TimerBase::SharedPtr kfs_timer_;
+  rclcpp::TimerBase::SharedPtr expand_timer_;
+  rclcpp::TimerBase::SharedPtr r2_lift_timer_;
+  rclcpp::TimerBase::SharedPtr pole_timer_;
+  rclcpp::TimerBase::SharedPtr spear_timer_;
+  rclcpp::TimerBase::SharedPtr gpio_timer_;
 };
 
 int main(int argc, char ** argv)
