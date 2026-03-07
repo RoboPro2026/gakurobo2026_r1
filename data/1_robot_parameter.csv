@@ -4,4 +4,4 @@ v_max,2.5
 a_max,2.0
 j_max,10.0
 omega_max,2.0
-robot_dt,1.0
+robot_dt,0.5

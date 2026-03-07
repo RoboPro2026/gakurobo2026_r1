@@ -12,17 +12,17 @@
 - Publish
   - `/cmd_vel` (`geometry_msgs/msg/Twist`): シャーシ速度指令。
   - `/waypoints` (`nav_msgs/msg/Path`): 読み込んだ軌道のサンプル点列。ACT 開始時に 1 回 publish。
-  - `/target_pose` (`geometry_msgs/msg/PoseStamped`): 現在追従している waypoint。可視化タイマで publish。
-  - `/cmd_vel_arrow` (`visualization_msgs/msg/Marker`): 現在の `cmd_vel` を矢印 Marker で可視化。
-  - `/robot_marker` (`visualization_msgs/msg/Marker`): 現在のロボット姿勢を CUBE Marker で可視化。
-  - `/robot_trajectory` (`nav_msgs/msg/Path`): 動作実行中の実軌跡。
+  - `/target_pose` (`geometry_msgs/msg/PoseStamped`): 現在追従している waypoint。`enable_visualization == true` のとき可視化タイマで publish。
+  - `/cmd_vel_arrow` (`visualization_msgs/msg/Marker`): 現在の `cmd_vel` を矢印 Marker で可視化。`enable_visualization == true` のときのみ publish。
+  - `/robot_marker` (`visualization_msgs/msg/Marker`): 現在のロボット姿勢を CUBE Marker で可視化。`enable_visualization == true` のときのみ publish。
+  - `/robot_trajectory` (`nav_msgs/msg/Path`): 動作実行中の実軌跡。`enable_visualization == true` のときのみ publish。
   - `/chassis_act_status` (`std_msgs/msg/Int32`): 現在の動作状態。
 
 `/waypoints`、`/target_pose`、`/cmd_vel_arrow`、`/robot_marker`、`/robot_trajectory` の `frame_id` はすべて `odom` です。
 
 ## 動作概要
 
-`/chassis_act_ref` で状態遷移指令を受けると、対応する軌道追従器を `reset()` し、`/waypoints` を publish して動作を開始します。動作中は制御タイマごとに `TrajectoryFollower::update()` を呼び、返ってきた waypoint を `/target_pose` に、速度指令を `/cmd_vel` に反映します。
+`/chassis_act_ref` で状態遷移指令を受けると、対応する軌道追従器を `reset()` し、`/waypoints` を publish して動作を開始します。動作中は制御タイマごとに `TrajectoryFollower::update()` を呼び、返ってきた waypoint を内部保持し、速度指令を `/cmd_vel` に反映します。`enable_visualization == true` のときは、可視化タイマ側で `/target_pose`、`/cmd_vel_arrow`、`/robot_marker`、`/robot_trajectory` を publish します。
 
 最終 waypoint に到達し、位置・角度・継続時間の条件を満たすと、その動作は完了状態に遷移します。現在の状態は `/chassis_act_status` に publish されます。
 
@@ -52,6 +52,7 @@
 | `finish_time_threshold` | double | `0.0` | 位置・角度条件を満たし続ける必要がある時間 [s]。 |
 | `publish_robot_trajectory_dist_threshold` | double | `0.1` | 実軌跡を追加 publish する最小移動距離 [m]。 |
 | `publish_robot_trajectory_angle_threshold` | double | `5.0 * M_PI / 180.0` | 実軌跡を追加 publish する最小姿勢変化量 [rad]。 |
+| `enable_visualization` | bool | `true` | `false` のとき可視化タイマは何も publish しません。 |
 | `arrow_scale` | double | `0.2` | `cmd_vel_arrow` の長さスケール。 |
 
 現行 YAML の主な設定値は以下です。
@@ -83,6 +84,7 @@ r1_chassis_control_node:
 注意:
 
 - `publish_robot_trajectory_dist_threshold` と `publish_robot_trajectory_angle_threshold` は YAML に未記載ならコード既定値を使います。
+- `enable_visualization` も YAML に未記載ならコード既定値 `true` を使います。
 - `act_filebase` が空、または CSV を開けない場合は起動時に Fatal で停止します。
 
 ## 入力ファイル
@@ -157,4 +159,4 @@ ros2 topic pub --once /chassis_act_ref std_msgs/msg/Int32 "{data: 1}"
 - `ros2 topic echo /waypoints`
 - `ros2 topic echo /robot_trajectory`
 
-`search_radius` が小さすぎると waypoint の進みが悪くなります。`zone == "blue"` では `x` だけ反転するため、軌道形状によっては向き制約との不整合が起きる点にも注意してください。
+`enable_visualization == false` のときは `/target_pose`、`/cmd_vel_arrow`、`/robot_marker`、`/robot_trajectory` は出ません。`search_radius` が小さすぎると waypoint の進みが悪くなります。`zone == "blue"` では `x` だけ反転するため、軌道形状によっては向き制約との不整合が起きる点にも注意してください。

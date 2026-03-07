@@ -118,6 +118,7 @@ public:
     declare_and_get_parameter(
       "publish_robot_trajectory_angle_threshold", publish_robot_trajectory_angle_threshold_,
       5.0 * M_PI / 180.0);
+    declare_and_get_parameter("enable_visualization", enable_visualization_, true);
     declare_and_get_parameter("arrow_scale", arrow_scale_, 0.2);
 
     try {
@@ -380,6 +381,9 @@ public:
 
   void visualize_timer_callback()
   {
+    if (!enable_visualization_) {
+      return;
+    }
     if (has_target_pose_) {
       latest_target_pose_.header.stamp = this->get_clock()->now();
       target_pose_publisher_->publish(latest_target_pose_);
@@ -694,6 +698,7 @@ public:
   double publish_robot_trajectory_dist_threshold_;  //[m]
   // 軌道出力の角度のしきい値
   double publish_robot_trajectory_angle_threshold_;  //[rad]
+  bool enable_visualization_;
   double arrow_scale_;
 
   // trajectory planner
