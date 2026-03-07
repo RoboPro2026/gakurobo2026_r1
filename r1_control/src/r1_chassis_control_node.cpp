@@ -51,7 +51,7 @@ public:
 
   void declare_and_get_parameter(const std::string & name, bool & value, bool default_value)
   {
-    this->declare_parameter<int>(name, default_value);
+    this->declare_parameter<bool>(name, default_value);
     this->get_parameter(name, value);
   }
 
