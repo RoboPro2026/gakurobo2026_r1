@@ -461,13 +461,11 @@ def generate_launch_description():
     #        ],
     #    )
 
-    # TODO: static_transform_publisherを使って、base_linkからlaserに変換する
-    # 例:
-    # lidar_tf = Node(
-    #     package="tf2_ros",
-    #     executable="static_transform_publisher",
-    #     arguments=["0.12", "0", "0.18", "0", "0", "0", "base_link", "laser"],
-    # )
+    lidar_tf_node = Node(
+        package="tf2_ros",
+        executable="static_transform_publisher",
+        arguments=["0.3325", "0.3245", "0.05", "3.14159", "0", "0.785398", "base_link", "laser"],
+    )
 
     urg_node2_launch = IncludeLaunchDescription(
         PythonLaunchDescriptionSource(
@@ -494,6 +492,7 @@ def generate_launch_description():
 
     # r1_mainのノードの起動を遅延させる
     normal_nodes = [
+        lidar_tf_node,
         urg_node2_launch,
         #        eth2can_node,
         ps4_node,
