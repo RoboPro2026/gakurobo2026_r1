@@ -33,15 +33,18 @@ public:
   }
 
   void set_param(
-    double kp_pos, double ki_pos, double kd_pos, double kp_angle, double ki_angle, double kd_angle,
-    double dt, double goal_pos_range, double goal_angle_range, double finish_time_threshold)
+    double kp_pos, double ki_pos, double kd_pos, double vel_limit, double kp_angle, double ki_angle,
+    double kd_angle, double omega_limit, double dt, double goal_pos_range, double goal_angle_range,
+    double finish_time_threshold)
   {
     kp_pos_ = kp_pos;
     ki_pos_ = ki_pos;
     kd_pos_ = kd_pos;
+    vel_limit_ = vel_limit;
     kp_angle_ = kp_angle;
     ki_angle_ = ki_angle;
     kd_angle_ = kd_angle;
+    omega_limit_ = omega_limit;
     dt_ = dt;
     goal_pos_range_ = goal_pos_range;
     goal_angle_range_ = goal_angle_range;
@@ -52,6 +55,10 @@ public:
   {
     finish_ = 0;
     last_out_of_range_time_ = rclcpp::Clock().now();
+    // 前回の偏差をリセット
+    prev_error_ = {0.0, 0.0, 0.0};
+    // 積分項をリセット
+    integral_error_ = {0.0, 0.0, 0.0};
   }
 
   std::vector<double> control(std::vector<double> x_ref, std::vector<double> x)
@@ -61,10 +68,24 @@ public:
     error[0] = x_ref[0] - x[0];
     error[1] = x_ref[1] - x[1];
     error[2] = angle_diff(x_ref[2], x[2]);
-    // p制御
-    ret[0] = 3.0 * kp_pos_ * error[0];
-    ret[1] = 3.0 * kp_pos_ * error[1];
-    ret[2] = 3.0 * kp_angle_ * error[2];
+    integral_error_[0] += error[0] * dt_;
+    integral_error_[1] += error[1] * dt_;
+    integral_error_[2] += error[2] * dt_;
+    const double derivative_x = (error[0] - prev_error_[0]) / dt_;
+    const double derivative_y = (error[1] - prev_error_[1]) / dt_;
+    const double derivative_theta = (error[2] - prev_error_[2]) / dt_;
+    // PID制御
+    ret[0] = kp_pos_ * error[0] + ki_pos_ * integral_error_[0] + kd_pos_ * derivative_x;
+    ret[1] = kp_pos_ * error[1] + ki_pos_ * integral_error_[1] + kd_pos_ * derivative_y;
+    ret[2] = kp_angle_ * error[2] + ki_angle_ * integral_error_[2] + kd_angle_ * derivative_theta;
+    // 出力を制限
+    ret[0] = std::clamp(ret[0], -vel_limit_, vel_limit_);
+    ret[1] = std::clamp(ret[1], -vel_limit_, vel_limit_);
+    ret[2] = std::clamp(ret[2], -omega_limit_, omega_limit_);
+    // 前回値を更新
+    prev_error_[0] = error[0];
+    prev_error_[1] = error[1];
+    prev_error_[2] = error[2];
     return ret;
   }
 
@@ -118,12 +139,16 @@ private:
   double kp_pos_ = 0.0;
   double ki_pos_ = 0.0;
   double kd_pos_ = 0.0;
+  double vel_limit_ = 0.0;
   double kp_angle_ = 0.0;
   double ki_angle_ = 0.0;
   double kd_angle_ = 0.0;
+  double omega_limit_ = 0.0;
   double dt_ = 0.0;
   double goal_pos_range_ = 0.05;
   double goal_angle_range_ = 0.05;
   double finish_time_threshold_ = 0.3;
   rclcpp::Time last_out_of_range_time_ = rclcpp::Clock().now();
+  std::vector<double> prev_error_{0.0, 0.0, 0.0};
+  std::vector<double> integral_error_{0.0, 0.0, 0.0};
 };

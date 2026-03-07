@@ -47,18 +47,21 @@ public:
   }
 
   void set_param(
-    double kp_pos, double ki_pos, double kd_pos, double kff_pos, double kp_angle, double ki_angle,
-    double kd_angle, double kff_angle, double dt, double search_radius, double goal_pos_range,
-    double goal_angle_range, double finish_time_threshold)
+    double kp_pos, double ki_pos, double kd_pos, double kff_pos, double vel_limit, double kp_angle,
+    double ki_angle, double kd_angle, double kff_angle, double omega_limit, double dt,
+    double search_radius, double goal_pos_range, double goal_angle_range,
+    double finish_time_threshold)
   {
     kp_pos_ = kp_pos;
     ki_pos_ = ki_pos;
     kd_pos_ = kd_pos;
     kff_pos_ = kff_pos;
+    vel_limit_ = vel_limit;
     kp_angle_ = kp_angle;
     ki_angle_ = ki_angle;
     kd_angle_ = kd_angle;
     kff_angle_ = kff_angle;
+    omega_limit_ = omega_limit;
     dt_ = dt;
     search_radius_ = search_radius;
     goal_pos_range_ = goal_pos_range;
@@ -71,9 +74,9 @@ public:
   {
     idx_ = 0;
     finish_ = 0;
-    integral_error_ = {0.0, 0.0, 0.0};
-    prev_error_ = {0.0, 0.0, 0.0};
     last_out_of_range_time_ = rclcpp::Clock().now();
+    // 積分項をリセット
+    integral_error_ = {0.0, 0.0, 0.0};
   }
 
   /**
@@ -95,23 +98,21 @@ public:
     error[0] = x_ref[0] - x[0];
     error[1] = x_ref[1] - x[1];
     error[2] = angle_diff(x_ref[2], x[2]);
+    integral_error_[0] += error[0] * dt_;
+    integral_error_[1] += error[1] * dt_;
+    integral_error_[2] += error[2] * dt_;
     // p制御+軌道FF
     // ret[0] = kp_pos_ * error[0] + kff_pos_ * v_ref[0];
     // ret[1] = kp_pos_ * error[1] + kff_pos_ * v_ref[1];
     // ret[2] = kp_angle_ * error[2] + kff_angle_ * v_ref[2];
-    // pd制御
-    ret[0] = kp_pos_ * error[0] + kd_pos_ * (v_ref[0] - v[0]);
-    ret[1] = kp_pos_ * error[1] + kd_pos_ * (v_ref[1] - v[1]);
-    ret[2] = kp_angle_ * error[2] + kd_angle_ * (v_ref[2] - v[2]);
-    // for (int i = 0; i < 3; i++) {
-    //   error[i] = angle_diff(x_ref[i], x[i]);
-    //   integral_error_[i] += error[i] * dt_;
-    //   [[maybe_unused]] const double derivative = (error[i] - prev_error_[i]) / dt_;
-    //   prev_error_[i] = error[i];
-    //   // p制御+軌道FF
-    //   ret[i] = kp_ * error[i] + kff_ * v_ref[i];
-    //   // ret[i] = kp_ * error[i] + ki_ * integral_error_[i] + kd_ * derivative + kff_ * v_ref[i];
-    // }
+    // PID制御
+    ret[0] = kp_pos_ * error[0] + ki_pos_ * integral_error_[0] + kd_pos_ * (v_ref[0] - v[0]);
+    ret[1] = kp_pos_ * error[1] + ki_pos_ * integral_error_[1] + kd_pos_ * (v_ref[1] - v[1]);
+    ret[2] = kp_angle_ * error[2] + ki_angle_ * integral_error_[2] + kd_angle_ * (v_ref[2] - v[2]);
+
+    ret[0] = std::clamp(ret[0], -vel_limit_, vel_limit_);
+    ret[1] = std::clamp(ret[1], -vel_limit_, vel_limit_);
+    ret[2] = std::clamp(ret[2], -omega_limit_, omega_limit_);
     return ret;
   }
 
@@ -207,14 +208,15 @@ private:
   double ki_pos_ = 0.0;
   double kd_pos_ = 0.0;
   double kff_pos_ = 0.0;
+  double vel_limit_ = 0.0;
   double kp_angle_ = 0.0;
   double ki_angle_ = 0.0;
   double kd_angle_ = 0.0;
   double kff_angle_ = 0.0;
+  double omega_limit_ = 0.0;
   double goal_pos_range_ = 0.01;        // ゴールとみなす距離の閾値
   double goal_angle_range_ = 0.01;      // ゴールとみなす位置の閾値
   double finish_time_threshold_ = 0.3;  // 収束時間の判定用しきい値
-  std::vector<double> prev_error_{0.0, 0.0, 0.0};
   std::vector<double> integral_error_{0.0, 0.0, 0.0};
   double dt_ = 0.0;
   int idx_ = 0;

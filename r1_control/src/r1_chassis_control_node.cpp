@@ -73,6 +73,9 @@ public:
     // target_poseのPublisher
     target_pose_publisher_ =
       this->create_publisher<geometry_msgs::msg::PoseStamped>("/target_pose", 10);
+    // cmd_vel_arrowのPublisher
+    cmd_vel_arrow_publisher_ =
+      this->create_publisher<visualization_msgs::msg::Marker>("/cmd_vel_arrow", 10);
     // robot_markerのPublisher
     robot_marker_publisher_ =
       this->create_publisher<visualization_msgs::msg::Marker>("/robot_marker", 10);
@@ -101,10 +104,12 @@ public:
     declare_and_get_parameter("ki_pos", ki_pos_, 0.0);
     declare_and_get_parameter("kd_pos", kd_pos_, 0.0);
     declare_and_get_parameter("kff_pos", kff_pos_, 0.0);
+    declare_and_get_parameter("vel_limit", vel_limit_, 0.0);
     declare_and_get_parameter("kp_angle", kp_angle_, 0.0);
     declare_and_get_parameter("ki_angle", ki_angle_, 0.0);
     declare_and_get_parameter("kd_angle", kd_angle_, 0.0);
     declare_and_get_parameter("kff_angle", kff_angle_, 0.0);
+    declare_and_get_parameter("omega_limit", omega_limit_, 0.0);
     declare_and_get_parameter("goal_pos_range", goal_pos_range_, 0.0);
     declare_and_get_parameter("goal_angle_range", goal_angle_range_, 0.0);
     declare_and_get_parameter("finish_time_threshold", finish_time_threshold_, 0.0);
@@ -113,6 +118,7 @@ public:
     declare_and_get_parameter(
       "publish_robot_trajectory_angle_threshold", publish_robot_trajectory_angle_threshold_,
       5.0 * M_PI / 180.0);
+    declare_and_get_parameter("arrow_scale", arrow_scale_, 0.2);
 
     try {
       for (int i = 0; i < ACT_N; i++) {
@@ -130,14 +136,15 @@ public:
     for (int i = 0; i < ACT_N; i++) {
       act_traj_follower_[i] = std::make_shared<TrajectoryFollower>(act_traj_planner_[i].get());
       act_traj_follower_[i]->set_param(
-        kp_pos_, ki_pos_, kd_pos_, kff_pos_, kp_angle_, ki_angle_, kd_angle_, kff_angle_,
-        control_dt_, search_radius_, goal_pos_range_, goal_angle_range_, finish_time_threshold_);
+        kp_pos_, ki_pos_, kd_pos_, kff_pos_, vel_limit_, kp_angle_, ki_angle_, kd_angle_,
+        kff_angle_, omega_limit_, control_dt_, search_radius_, goal_pos_range_, goal_angle_range_,
+        finish_time_threshold_);
     }
 
     pos_follower_ = std::make_shared<PosFollower>();
     pos_follower_->set_param(
-      kp_pos_, ki_pos_, kd_pos_, kp_angle_, ki_angle_, kd_angle_, control_dt_, goal_pos_range_,
-      goal_angle_range_, finish_time_threshold_);
+      kp_pos_, ki_pos_, kd_pos_, vel_limit_, kp_angle_, ki_angle_, kd_angle_, omega_limit_,
+      control_dt_, goal_pos_range_, goal_angle_range_, finish_time_threshold_);
 
     act_step_ = ACT_NONE;
 
@@ -219,9 +226,10 @@ public:
     has_target_pose_ = true;
   }
 
-  void publish_cmd_vel(const geometry_msgs::msg::Twist & cmd_vel)
+  void publish_cmd_vel(geometry_msgs::msg::Twist _cmd_vel)
   {
-    cmd_vel_publisher_->publish(cmd_vel);
+    cmd_vel_ = _cmd_vel;
+    cmd_vel_publisher_->publish(cmd_vel_);
   }
 
   void publish_robot_marker(void)
@@ -252,7 +260,7 @@ public:
     // marker.pose.orientation.y = 0.0;
     // marker.pose.orientation.z = 0.0;
     // marker.pose.orientation.w = 1.0;
-    marker.color.a = 1.0;  // 不透明
+    marker.color.a = 0.5;  // 不透明
     marker.color.r = 0.0;
     marker.color.g = 1.0;  // 緑色
     marker.color.b = 0.0;
@@ -294,6 +302,38 @@ public:
     // robot_marker_publisher_->publish(heading);
   }
 
+  void publish_cmd_vel_arrow()
+  {
+    auto & odom = odometry_;
+    visualization_msgs::msg::Marker marker;
+    marker.header.stamp = this->get_clock()->now();
+    marker.header.frame_id = "odom";
+    marker.ns = "arrow";
+    marker.id = 0;
+    marker.type = visualization_msgs::msg::Marker::ARROW;
+    marker.action = visualization_msgs::msg::Marker::ADD;
+    marker.pose.position.x = odom.pose.pose.position.x;
+    marker.pose.position.y = odom.pose.pose.position.y;
+    marker.pose.position.z = marker.scale.z / 2.0;
+    double marker_length = arrow_scale_ * std::hypot(cmd_vel_.linear.x, cmd_vel_.linear.y);
+    marker.scale.x = marker_length;
+    marker.scale.y = 0.1;
+    marker.scale.z = 0.1;
+    double cmd_vel_yaw = std::atan2(cmd_vel_.linear.y, cmd_vel_.linear.x);
+    tf2::Quaternion q;
+    q.setRPY(0.0, 0.0, cmd_vel_yaw);
+    q.normalize();
+    marker.pose.orientation.x = q.x();
+    marker.pose.orientation.y = q.y();
+    marker.pose.orientation.z = q.z();
+    marker.pose.orientation.w = q.w();
+    marker.color.a = 1.0;  // 不透明
+    marker.color.r = 0.0;
+    marker.color.g = 1.0;  // 緑色
+    marker.color.b = 0.0;
+    cmd_vel_arrow_publisher_->publish(marker);
+  }
+
   void reset_robot_trajectory()
   {
     robot_trajectory_.header.stamp = this->get_clock()->now();
@@ -331,7 +371,6 @@ public:
 
     robot_trajectory_.poses.push_back(pose);
     robot_trajectory_publisher_->publish(robot_trajectory_);
-
   }
 
   bool is_act_running() const
@@ -346,6 +385,7 @@ public:
       target_pose_publisher_->publish(latest_target_pose_);
     }
     publish_robot_marker();
+    publish_cmd_vel_arrow();
     publish_robot_trajectory();
   }
 
@@ -605,6 +645,8 @@ public:
   rclcpp::Publisher<nav_msgs::msg::Path>::SharedPtr waypoints_publisher_;
   // target_poseのPublisher
   rclcpp::Publisher<geometry_msgs::msg::PoseStamped>::SharedPtr target_pose_publisher_;
+  // cmd_vel_arrowのPublisher
+  rclcpp::Publisher<visualization_msgs::msg::Marker>::SharedPtr cmd_vel_arrow_publisher_;
   // robot_markerのPublisher
   rclcpp::Publisher<visualization_msgs::msg::Marker>::SharedPtr robot_marker_publisher_;
   // robot_trajectoryのPublisher
@@ -618,6 +660,7 @@ public:
   // オドメトリ
   nav_msgs::msg::Odometry odometry_;
   geometry_msgs::msg::PoseStamped latest_target_pose_;
+  geometry_msgs::msg::Twist cmd_vel_;
   bool has_target_pose_ = false;
   int act_step_ = ACT_NONE;
   // ロボットの軌道保管用
@@ -633,11 +676,13 @@ public:
   double ki_pos_;
   double kd_pos_;
   double kff_pos_;
+  double vel_limit_;
   // 角度[rad]制御のゲイン
   double kp_angle_;
   double ki_angle_;
   double kd_angle_;
   double kff_angle_;
+  double omega_limit_;
   // 制御の終了判定閾値
   double goal_pos_range_;
   double goal_angle_range_;
@@ -649,6 +694,7 @@ public:
   double publish_robot_trajectory_dist_threshold_;  //[m]
   // 軌道出力の角度のしきい値
   double publish_robot_trajectory_angle_threshold_;  //[rad]
+  double arrow_scale_;
 
   // trajectory planner
   std::vector<std::shared_ptr<TrajectoryPlanner>> act_traj_planner_;

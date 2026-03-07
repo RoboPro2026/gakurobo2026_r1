@@ -10,15 +10,18 @@ r1_chassis_control_node:
     ki_pos: 0.0
     kd_pos: 0.5
     kff_pos: 0.0
+    vel_limit: 2.0
     # 角度制御のゲイン
     kp_angle: 0.4
     ki_angle: 0.0
     kd_angle: 0.5
     kff_angle: 0.0
+    omega_limit: 3.14
     # 制御の終了判定閾値
     goal_pos_range: 0.05
     goal_angle_range: 0.05 # 2度
     finish_time_threshold: 1.0
+    arrow_scale: 3.0
 r1_dummy_odometry_node:
   ros__parameters:
     tau: 0.25
@@ -141,7 +144,7 @@ r1_mecanum_node:
     robot_length: 0.470
   #   # 484mm
     robot_width: 0.484
-    speed_limit: 30.0
+    speed_limit: 50.0
   #   # モーターの出力は歯数が34（モーター側）と歯数が42（ホイール側）で組みあわせているので
   # モーターの出力は歯数が32（モーター側）と歯数が64（ホイール側）で組みあわせているので
   #   # 減速比は32 / 64 = 0.5
