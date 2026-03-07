@@ -21,7 +21,7 @@ r1_chassis_control_node:
     goal_pos_range: 0.05
     goal_angle_range: 0.05 # 2度
     finish_time_threshold: 1.0
-    enable_visualization: false
+    enable_visualization: true
     arrow_scale: 3.0
 r1_dummy_odometry_node:
   ros__parameters:
