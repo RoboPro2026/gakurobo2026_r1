@@ -49,6 +49,12 @@ public:
     this->get_parameter(name, value);
   }
 
+  void declare_and_get_parameter(const std::string & name, bool & value, bool default_value)
+  {
+    this->declare_parameter<int>(name, default_value);
+    this->get_parameter(name, value);
+  }
+
   void declare_and_get_parameter(
     const std::string & name, std::string & value, const std::string & default_value)
   {
