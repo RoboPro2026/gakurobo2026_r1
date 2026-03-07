@@ -461,6 +461,16 @@ def generate_launch_description():
     #        ],
     #    )
 
+    urg_node2_launch = IncludeLaunchDescription(
+        PythonLaunchDescriptionSource(
+            os.path.join(
+                get_package_share_directory("r1_bringup"),
+                "launch",
+                "urg_node2.launch.py",
+            )
+        ),
+    )
+
     foxglove_node = Node(
         package="foxglove_bridge",
         executable="foxglove_bridge",
@@ -476,6 +486,7 @@ def generate_launch_description():
 
     # r1_mainのノードの起動を遅延させる
     normal_nodes = [
+        urg_node2_launch,
         #        eth2can_node,
         ps4_node,
         bno086_node,
