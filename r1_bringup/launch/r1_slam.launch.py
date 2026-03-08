@@ -104,5 +104,6 @@ def generate_launch_description():
             urg_node2_node_configure_event_handler,
             urg_node2_node_activate_event_handler,
             lidar_tf_node,
+            slam_toolbox
         ]
     )
