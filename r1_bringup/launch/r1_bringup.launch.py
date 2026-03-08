@@ -461,18 +461,12 @@ def generate_launch_description():
     #        ],
     #    )
 
-    lidar_tf_node = Node(
-        package="tf2_ros",
-        executable="static_transform_publisher",
-        arguments=["0.3325", "0.3245", "0.05", "3.14159", "0", "0.785398", "base_link", "laser"],
-    )
-
-    urg_node2_launch = IncludeLaunchDescription(
+    r1_slam_launch = IncludeLaunchDescription(
         PythonLaunchDescriptionSource(
             os.path.join(
                 get_package_share_directory("r1_bringup"),
                 "launch",
-                "urg_node2.launch.py",
+                "r1_slam.launch.py",
             )
         ),
     )
@@ -492,8 +486,7 @@ def generate_launch_description():
 
     # r1_mainのノードの起動を遅延させる
     normal_nodes = [
-        lidar_tf_node,
-        urg_node2_launch,
+        r1_slam_launch,
         #        eth2can_node,
         ps4_node,
         bno086_node,
