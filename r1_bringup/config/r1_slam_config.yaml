@@ -28,12 +28,12 @@ slam_toolbox:
     mode: mapping
     transform_publish_period: 0.02
     map_update_interval: 0.5
-    resolution: 0.05
-    max_laser_range: 12.0
+    resolution: 0.02
+    max_laser_range: 15.0
     minimum_time_interval: 0.1
 # スキャンマッチングの更新頻度と移動閾値
     minimum_travel_distance: 0.1    # 10cm動いたら更新
-    minimum_travel_heading: 0.05     # 約2.35度回転したら更新（ここを小さくすると回転に敏感に反応します）
+    minimum_travel_heading: 0.02     # 約1度回転したら更新（ここを小さくすると回転に敏感に反応します）
     
     # マッチングの精度向上
     use_scan_matching: true
@@ -41,9 +41,9 @@ slam_toolbox:
     
     # 探索範囲の設定（回転に弱い場合はここを調整）
     # 以下の値は標準的な値ですが、明示的に指定することで挙動を安定させます
-    correlation_search_space_dimension: 0.5
+    correlation_search_space_dimension: 1.0
     correlation_search_space_resolution: 0.01
-    correlation_search_space_smear_deviation: 0.1 
+    correlation_search_space_smear_deviation: 0.1
 
     # ループクローズ（一周回ってきた時の補正）
     do_loop_closing: true
