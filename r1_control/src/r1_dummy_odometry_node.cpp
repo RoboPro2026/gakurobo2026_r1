@@ -14,6 +14,7 @@
 #include <complex>
 #include <limits>
 
+#include "geometry_msgs/msg/transform_stamped.hpp"
 #include "geometry_msgs/msg/pose_stamped.hpp"
 #include "geometry_msgs/msg/twist.hpp"
 #include "nav_msgs/msg/odometry.hpp"
@@ -28,6 +29,7 @@
 #include "tf2/LinearMath/Quaternion.h"
 #include "tf2/utils.h"
 #include "tf2_geometry_msgs/tf2_geometry_msgs.hpp"
+#include "tf2_ros/transform_broadcaster.h"
 #include "visualization_msgs/msg/marker.hpp"
 
 using namespace std::chrono_literals;
@@ -46,6 +48,7 @@ public:
     this->declare_parameter<double>("timer_rate", 100.0);
     timer_rate_ = this->get_parameter("timer_rate").as_double();
     odometry_publisher_ = this->create_publisher<nav_msgs::msg::Odometry>("/odometry", 10);
+    tf_broadcaster_ = std::make_shared<tf2_ros::TransformBroadcaster>(*this);
 
     target_pose_subscription_ = this->create_subscription<geometry_msgs::msg::PoseStamped>(
       "/target_pose", 10, std::bind(&MyNode::target_pose_callback, this, std::placeholders::_1));
@@ -87,10 +90,21 @@ public:
     odom.pose.pose.orientation.z = q.z();
     odom.pose.pose.orientation.w = q.w();
     odometry_publisher_->publish(odom);
+
+    geometry_msgs::msg::TransformStamped odom_tf;
+    odom_tf.header = odom.header;
+    odom_tf.child_frame_id = odom.child_frame_id;
+    odom_tf.transform.translation.x = odom.pose.pose.position.x;
+    odom_tf.transform.translation.y = odom.pose.pose.position.y;
+    odom_tf.transform.translation.z = odom.pose.pose.position.z;
+    odom_tf.transform.rotation = odom.pose.pose.orientation;
+    tf_broadcaster_->sendTransform(odom_tf);
+
     RCLCPP_INFO(this->get_logger(), "Published odometry: x=%.3f, y=%.3f, z=%.3f", x, y, z);
   }
 
   rclcpp::Publisher<nav_msgs::msg::Odometry>::SharedPtr odometry_publisher_;
+  std::shared_ptr<tf2_ros::TransformBroadcaster> tf_broadcaster_;
   rclcpp::Subscription<geometry_msgs::msg::PoseStamped>::SharedPtr target_pose_subscription_;
   rclcpp::TimerBase::SharedPtr timer_;
 
