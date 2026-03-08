@@ -100,10 +100,10 @@ def generate_launch_description():
             DeclareLaunchArgument("auto_start", default_value="true"),
             DeclareLaunchArgument("node_name", default_value="urg_node2"),
             DeclareLaunchArgument("scan_topic_name", default_value="scan"),
-            lifecycle_node,
-            urg_node2_node_configure_event_handler,
-            urg_node2_node_activate_event_handler,
-            lidar_tf_node,
-            # slam_toolbox
+            # lifecycle_node,
+            # urg_node2_node_configure_event_handler,
+            # urg_node2_node_activate_event_handler,
+            # lidar_tf_node,
+            slam_toolbox,
         ]
     )
