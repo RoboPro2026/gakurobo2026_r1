@@ -13,10 +13,11 @@ urg_node2:
     diagnostics_tolerance : 0.05
     diagnostics_window_time : 5.0
     time_offset : 0.0
-    angle_min : -3.14
-    angle_max : 3.14
-    skip : 0
-    cluster : 1
+# -120~120
+    angle_min : -2.07
+    angle_max : 2.07
+    skip : 1
+    cluster : 2
 slam_toolbox:
   ros__parameters:
     odom_frame: odom
