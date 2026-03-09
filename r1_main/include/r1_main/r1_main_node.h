@@ -19,6 +19,7 @@
 #include <string>
 #include <variant>
 
+#include "geometry_msgs/msg/pose_with_covariance_stamped.hpp"
 #include "geometry_msgs/msg/twist.hpp"
 #include "magic_enum.hpp"
 #include "nav_msgs/msg/odometry.hpp"
@@ -187,6 +188,9 @@ public:
   rclcpp::Publisher<std_msgs::msg::Float64MultiArray>::SharedPtr set_odometry_publisher_;
   // オドメトリのSubscription
   rclcpp::Subscription<nav_msgs::msg::Odometry>::SharedPtr odometry_subscription_;
+  // initialposeのPublisher
+  rclcpp::Publisher<geometry_msgs::msg::PoseWithCovarianceStamped>::SharedPtr
+    initialpose_publisher_;
   // chassis_actのPublisher
   rclcpp::Publisher<std_msgs::msg::Int32>::SharedPtr chassis_act_ref_publisher_;
   // chassis_actのSubscription
@@ -413,6 +417,7 @@ public:
   // オドメトリ
   void odometry_callback(const nav_msgs::msg::Odometry::SharedPtr msg);
   void set_odometry(double x, double y, double yaw);
+  void set_initialpose(double x, double y, double yaw);
   // chassis_act
   void chassis_act_status_callback(const std_msgs::msg::Int32::SharedPtr msg);
   void publish_chassis_act_ref(int ref);
@@ -461,7 +466,6 @@ public:
   // 位置制御系のアクチュエータを初期位置に移動する
   void init_actuator(void);
   void actuator_update(void);
-  void set_emergency(bool enable);
   // ========== 原点検出関数 ==========
   // KFS回収
   void kfs_fx_detect_origin(void);
