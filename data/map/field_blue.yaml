@@ -1,4 +1,4 @@
-image: map4.pgm
+image: field_blue.pgm
 mode: trinary
 resolution: 0.05
 origin: [-6.1, -0.1, 0]
