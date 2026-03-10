@@ -91,12 +91,39 @@ def generate_launch_description():
         ],
     )
 
-    slam_toolbox = Node(
-        package="slam_toolbox",
-        executable="async_slam_toolbox_node",
-        name="slam_toolbox",
+    # slam_toolbox = Node(
+    #     package="slam_toolbox",
+    #     executable="async_slam_toolbox_node",
+    #     name="slam_toolbox",
+    #     output="screen",
+    #     parameters=[param_file],
+    # )
+
+    nav2_map_server = Node(
+        package="nav2_map_server",
+        executable="map_server",
+        name="map_server",
+        output="screen",
+        parameters=[{"yaml_filename": "src/gakurobo2026_r1/data/map/field_blue.yaml"}],
+    )
+    nav2_amcl = Node(
+        package="nav2_amcl",
+        executable="amcl",
+        name="amcl",
         output="screen",
         parameters=[param_file],
+    )
+    nav2_lifecycle_manager = Node(
+        package="nav2_lifecycle_manager",
+        executable="lifecycle_manager",
+        name="lifecycle_manager_localization",
+        output="screen",
+        parameters=[
+            {
+                "autostart": True,
+                "node_names": ["map_server", "amcl"],
+            }
+        ],
     )
 
     # パラメータについて
@@ -112,6 +139,9 @@ def generate_launch_description():
             urg_node2_node_configure_event_handler,
             urg_node2_node_activate_event_handler,
             lidar_tf_node,
-            slam_toolbox
+            # slam_toolbox,
+            nav2_map_server,
+            nav2_amcl,
+            nav2_lifecycle_manager,
         ]
     )
