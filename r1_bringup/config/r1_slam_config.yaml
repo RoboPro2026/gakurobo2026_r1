@@ -20,43 +20,94 @@ urg_node2:
     cluster : 1
 amcl:
   ros__parameters:
-    use_sim_time: false
+    use_sim_time: false   # シミュレーション時間を使うか。実機では通常 false
 
-    base_frame_id: "base_link"
-    odom_frame_id: "odom"
-    global_frame_id: "map"
+    base_frame_id: "base_link"   # ロボット本体の座標フレーム
+    odom_frame_id: "odom"        # オドメトリ座標系
+    global_frame_id: "map"       # 地図座標系
 
-    scan_topic: /scan
-    tf_broadcast: true
+    scan_topic: /scan            # 購読する LaserScan トピック
+    tf_broadcast: true           # AMCL が map->odom の TF を publish するか
 
     robot_model_type: "nav2_amcl::OmniMotionModel"
+    # 運動モデル
+    # DifferentialMotionModel: 差動二輪向け
+    # OmniMotionModel: mecanum / omni 向け
+    # Nav2 AMCL は plugin 名で指定する形式 :contentReference[oaicite:1]{index=1}
 
-    alpha1: 0.2
-    alpha2: 0.2
-    alpha3: 0.2
-    alpha4: 0.2
-    alpha5: 0.2
+    alpha1: 0.05   # 回転によって生じる回転誤差
+    alpha2: 0.05   # 並進によって生じる回転誤差
+    alpha3: 0.05   # 並進によって生じる並進誤差
+    alpha4: 0.05   # 回転によって生じる並進誤差
+    alpha5: 0.1   # Omni 専用の並進ノイズ
+    # 値を大きくすると odom を信用しにくくなる
 
-    min_particles: 500
-    max_particles: 2000
+    min_particles: 500   # 粒子数の最小値
+    max_particles: 3000  # 粒子数の最大値。増やすと計算量も増える
 
     set_initial_pose: false
+    # true にすると initial_pose パラメータから初期位置を与える
+    # false の場合は /initialpose などを待つ
+
     always_reset_initial_pose: false
+    # reset 時に毎回初期位置の再指定を必須にするか
 
     laser_model_type: "likelihood_field"
-    max_beams: 60
+    # LaserScan と地図の一致度モデル
+    # beam / likelihood_field / likelihood_field_prob が使える
+    # likelihood_field_prob は beamskip 機能も使える 
+
+    max_beams: 150
+    # 各 scan から等間隔に何本使うか
+    # 既定値は 60。増やしすぎると計算量とノイズ感度が上がる
 
     update_min_d: 0.05
     update_min_a: 0.05
+    # AMCL を更新する最小移動量
+    # update_min_d: 並進[m]
+    # update_min_a: 回転[rad]
+    # 既定値は 0.25[m], 0.2[rad]
 
     transform_tolerance: 0.2
+    # publish する TF が少し未来まで有効であるとみなす余裕時間[s]
+    # 既定値は 1.0s
+
+    laser_likelihood_max_dist: 0.5
+    # 追加: likelihood_field で使う重要パラメータ
+    # 地図障害物からどこまでの距離を尤度計算に使うか[m]
+    # 大きすぎると遠くの曖昧な一致まで拾いやすい
+    # 既定値は 2.0m
+
+    laser_min_range: 0.0
+    # 追加: AMCL が使う最小レンジ[m]
+    # 近すぎる点や自己映りを無視したいときに有効
+    # 既定値 -1.0 は LiDAR 側の最小値を使う
+
+    laser_max_range: 7.0
+    # 追加: AMCL が使う最大レンジ[m]
+    # 遠距離ノイズや不安定な反射を切りたいときに有効
+    # 既定値 100.0、-1.0 で LiDAR 側最大値を使う
 
     z_hit: 0.8
+    # 期待どおりの障害物を観測したときの重み
+
     z_short: 0.08
+    # 予想より短い距離を観測したときの重み
+    # 人や一時障害物があるときに効く
+
     z_max: 0.05
+    # 最大レンジ観測の重み
+
     z_rand: 0.1
+    # ランダムノイズ観測の重み
+
     sigma_hit: 0.1
+    # z_hit のガウス分布の標準偏差[m]
+    # 小さいほど scan と map の一致に厳しくなる
+    # 既定値は 0.2
+
     lambda_short: 0.1
+    # z_short の指数分布パラメータ
 # slam_toolbox:
 #   ros__parameters:
 #     odom_frame: odom

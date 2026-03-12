@@ -251,8 +251,8 @@ public:
     marker.id = 0;
     marker.type = visualization_msgs::msg::Marker::CUBE;
     marker.action = visualization_msgs::msg::Marker::ADD;
-    marker.scale.x = 0.5;
-    marker.scale.y = 0.5;
+    marker.scale.x = 0.6;
+    marker.scale.y = 0.6;
     marker.scale.z = 0.1;
     marker.pose.position.x = odom.pose.pose.position.x;
     marker.pose.position.y = odom.pose.pose.position.y;
