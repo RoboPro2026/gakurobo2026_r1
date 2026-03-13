@@ -18,8 +18,8 @@ r1_chassis_control_node:
     kff_angle: 0.0
     omega_limit: 3.14
     # 制御の終了判定閾値
-    goal_pos_range: 0.05
-    goal_angle_range: 0.05 # 2度
+    goal_pos_range: 0.02
+    goal_angle_range: 0.017 # 1度
     finish_time_threshold: 1.0
     enable_visualization: true
     arrow_scale: 3.0
