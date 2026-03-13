@@ -838,21 +838,27 @@ void R1MainNode::set_odometry(double x, double y, double yaw)
   RCLCPP_INFO(this->get_logger(), "set odometry x: %f, y: %f, yaw: %f", x, y, yaw);
 }
 
-void R1MainNode::set_initialpose(double x, double y, double yaw)
+void R1MainNode::set_initialpose(double x, double y, double yaw, double delay_sec)
 {
-  geometry_msgs::msg::PoseWithCovarianceStamped msg;
-  msg.header.stamp = this->get_clock()->now();
-  msg.header.frame_id = "map";
-  msg.pose.pose.position.x = x;
-  msg.pose.pose.position.y = y;
-  tf2::Quaternion q;
-  q.setRPY(0.0, 0.0, yaw);
-  msg.pose.pose.orientation.x = q.x();
-  msg.pose.pose.orientation.y = q.y();
-  msg.pose.pose.orientation.z = q.z();
-  msg.pose.pose.orientation.w = q.w();
-  initialpose_publisher_->publish(msg);
-  RCLCPP_INFO(this->get_logger(), "publish initialpose x: %f, y: %f, yaw: %f", x, y, yaw);
+  // setTimeout風でdelay_sec秒後にinitialposeをpublishする
+  initialpose_publish_timer_ =
+    this->create_wall_timer(std::chrono::duration<double>(delay_sec), [this, x, y, yaw]() {
+      geometry_msgs::msg::PoseWithCovarianceStamped msg;
+      msg.header.stamp = this->get_clock()->now();
+      msg.header.frame_id = "map";
+      msg.pose.pose.position.x = x;
+      msg.pose.pose.position.y = y;
+      tf2::Quaternion q;
+      q.setRPY(0.0, 0.0, yaw);
+      msg.pose.pose.orientation.x = q.x();
+      msg.pose.pose.orientation.y = q.y();
+      msg.pose.pose.orientation.z = q.z();
+      msg.pose.pose.orientation.w = q.w();
+      initialpose_publisher_->publish(msg);
+      RCLCPP_INFO(this->get_logger(), "publish initialpose x: %f, y: %f, yaw: %f", x, y, yaw);
+      // タイマーは1回だけ実行するので、初期化する
+      initialpose_publish_timer_->cancel();
+    });
 }
 
 void R1MainNode::publish_chassis_act_ref(int ref)

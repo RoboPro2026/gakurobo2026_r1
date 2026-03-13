@@ -191,6 +191,8 @@ public:
   // initialposeのPublisher
   rclcpp::Publisher<geometry_msgs::msg::PoseWithCovarianceStamped>::SharedPtr
     initialpose_publisher_;
+  // initialposeをPublish時に、遅延させる用のtimer
+  rclcpp::TimerBase::SharedPtr initialpose_publish_timer_;
   // chassis_actのPublisher
   rclcpp::Publisher<std_msgs::msg::Int32>::SharedPtr chassis_act_ref_publisher_;
   // chassis_actのSubscription
@@ -417,7 +419,7 @@ public:
   // オドメトリ
   void odometry_callback(const nav_msgs::msg::Odometry::SharedPtr msg);
   void set_odometry(double x, double y, double yaw);
-  void set_initialpose(double x, double y, double yaw);
+  void set_initialpose(double x, double y, double yaw, double delay_sec = 0.2);
   // chassis_act
   void chassis_act_status_callback(const std_msgs::msg::Int32::SharedPtr msg);
   void publish_chassis_act_ref(int ref);
