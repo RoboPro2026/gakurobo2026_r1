@@ -275,16 +275,18 @@ public:
   void publish_cmd_vel_arrow()
   {
     // TODO: ここのframe_idがodomなので、mapかbase_linkに治す
-    auto & odom = odometry_;
+    // auto & odom = odometry_;
     visualization_msgs::msg::Marker marker;
     marker.header.stamp = this->get_clock()->now();
-    marker.header.frame_id = "odom";
+    marker.header.frame_id = "base_link";
     marker.ns = "arrow";
     marker.id = 0;
     marker.type = visualization_msgs::msg::Marker::ARROW;
     marker.action = visualization_msgs::msg::Marker::ADD;
-    marker.pose.position.x = odom.pose.pose.position.x;
-    marker.pose.position.y = odom.pose.pose.position.y;
+    // marker.pose.position.x = odom.pose.pose.position.x;
+    // marker.pose.position.y = odom.pose.pose.position.y;
+    marker.pose.position.x = 0.0;
+    marker.pose.position.y = 0.0;
     marker.pose.position.z = marker.scale.z / 2.0;
     double marker_length = arrow_scale_ * std::hypot(cmd_vel_.linear.x, cmd_vel_.linear.y);
     marker.scale.x = marker_length;
@@ -312,25 +314,38 @@ public:
     robot_trajectory_.poses.clear();
   }
 
+  /**
+   * @brief ロボットの軌道（map座標系）をpublishする。
+   * 
+   */
   void publish_robot_trajectory()
   {
     if (!is_act_running()) {
       return;
     }
-    geometry_msgs::msg::PoseStamped pose;
-    pose.header.stamp = this->get_clock()->now();
-    pose.header.frame_id = "map";
-    pose.pose = odometry_.pose.pose;
+    geometry_msgs::msg::PoseStamped pose_map;
+    geometry_msgs::msg::PoseStamped pose_odom;
+    pose_odom.header = odometry_.header;
+    pose_odom.pose = odometry_.pose.pose;
+    try {
+      // odomからmapへのtf変換を行う。
+      pose_map = tf_buffer_.transform(pose_odom, "map", tf2::durationFromSec(0.01));
+    } catch (const tf2::TransformException & ex) {
+      RCLCPP_WARN_THROTTLE(
+        this->get_logger(), *this->get_clock(), 1000, "Failed to transform odometry pose: %s",
+        ex.what());
+      return;
+    }
     // robot_trajectory_.posesの要素数が1以上のときは、前回値と比較して、
     // 距離または角度のしきい値を超えている場合にのみ追加する
 
     if (!robot_trajectory_.poses.empty()) {
-      const auto & last_pose = robot_trajectory_.poses.back();
-      double dx = pose.pose.position.x - last_pose.pose.position.x;
-      double dy = pose.pose.position.y - last_pose.pose.position.y;
+      const auto & last_pose_map = robot_trajectory_.poses.back();
+      double dx = pose_map.pose.position.x - last_pose_map.pose.position.x;
+      double dy = pose_map.pose.position.y - last_pose_map.pose.position.y;
       double distance = std::sqrt(dx * dx + dy * dy);
-      double current_yaw = tf2::getYaw(pose.pose.orientation);
-      double prev_yaw = tf2::getYaw(last_pose.pose.orientation);
+      double current_yaw = tf2::getYaw(pose_map.pose.orientation);
+      double prev_yaw = tf2::getYaw(last_pose_map.pose.orientation);
       double yaw_diff = angle_diff(current_yaw, prev_yaw);
       bool is_distance_out_of_threshold = distance >= publish_robot_trajectory_dist_threshold_;
       bool is_angle_out_of_threshold =
@@ -340,7 +355,7 @@ public:
       }
     }
 
-    robot_trajectory_.poses.push_back(pose);
+    robot_trajectory_.poses.push_back(pose_map);
     robot_trajectory_publisher_->publish(robot_trajectory_);
   }
 
