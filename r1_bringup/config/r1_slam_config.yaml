@@ -52,10 +52,55 @@ amcl:
     always_reset_initial_pose: false
     # reset 時に毎回初期位置の再指定を必須にするか
 
-    laser_model_type: "likelihood_field"
-    # LaserScan と地図の一致度モデル
-    # beam / likelihood_field / likelihood_field_prob が使える
-    # likelihood_field_prob は beamskip 機能も使える 
+    laser_model_type: "likelihood_field_prob"
+    # LaserScan と map の一致度計算モデル
+    # likelihood_field_prob は likelihood_field の拡張版で
+    # beamskip（不一致ビームの除外）を使用できる
+    # map に存在しない障害物（人・他ロボットなど）がある環境で有効
+    #
+    # 既定値: "likelihood_field"
+
+    do_beamskip: true
+    # beamskip を有効にする
+    # map と一致しない LaserScan のビームを無視して
+    # localization の破綻を防ぐ
+    #
+    # false: beamskip を使わない
+    #
+    # 既定値: false
+
+    beam_skip_distance: 0.5
+    # map 上の障害物からこの距離以上離れているビームを
+    # 「一致していないビーム」と判定する距離 [m]
+    #
+    # 小さくすると厳しく判定
+    # 大きくするとノイズにも寛容になる
+    #
+    # 一般的な調整範囲: 0.3 ～ 1.0 m
+    #
+    # 既定値: 0.5
+
+    beam_skip_threshold: 0.3
+    # 全ビームのうち何割が不一致なら
+    # beamskip を発動するか
+    #
+    # 例: 0.3 → 30% のビームが map と一致しない場合に skip
+    #
+    # 小さいほど beamskip が発動しやすい
+    #
+    # 一般的な調整範囲: 0.2 ～ 0.5
+    #
+    # 既定値: 0.3
+
+    beam_skip_error_threshold: 0.9
+    # もしこの割合以上のビームが不一致なら
+    # beamskip を無効化する
+    #
+    # 例: 0.9 → 90%以上のビームが不一致なら
+    # 本当に位置がズレていると判断して
+    # beamskip を使わず通常の更新を行う
+    #
+    # 既定値: 0.9
 
     max_beams: 150
     # 各 scan から等間隔に何本使うか
