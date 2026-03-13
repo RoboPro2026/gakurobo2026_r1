@@ -311,7 +311,7 @@ public:
    */
   void publish_robot_trajectory()
   {
-    if (!is_act_running()) {
+    if (act_step_ == ACT_NONE) {
       return;
     }
     geometry_msgs::msg::PoseStamped pose_map;
@@ -348,11 +348,6 @@ public:
 
     robot_trajectory_.poses.push_back(pose_map);
     robot_trajectory_publisher_->publish(robot_trajectory_);
-  }
-
-  bool is_act_running() const
-  {
-    return act_step_ == ACT0 || act_step_ == ACT1 || act_step_ == ACT2;
   }
 
   void visualize_timer_callback()
