@@ -66,6 +66,9 @@ public:
 
   R1ChassisControlNode() : Node("r1_chassis_control_node")
   {
+    tf_buffer_ = std::make_shared<tf2_ros::Buffer>(this->get_clock());
+    tf_listener_ = std::make_shared<tf2_ros::TransformListener>(*tf_buffer_);
+
     declare_and_get_parameter("timer_rate", timer_rate_, 100.0);
     declare_and_get_parameter("visualize_timer_rate", visualize_timer_rate_, 10.0);
     control_dt_ = 1.0 / timer_rate_;
@@ -143,7 +146,8 @@ public:
     }
 
     for (int i = 0; i < ACT_N; i++) {
-      act_traj_follower_[i] = std::make_shared<TrajectoryFollower>(act_traj_planner_[i].get());
+      act_traj_follower_[i] =
+        std::make_shared<TrajectoryFollower>(act_traj_planner_[i], tf_buffer_, tf_listener_);
       act_traj_follower_[i]->set_param(
         kp_pos_, ki_pos_, kd_pos_, kff_pos_, vel_limit_, kp_angle_, ki_angle_, kd_angle_,
         kff_angle_, omega_limit_, control_dt_, search_radius_, goal_pos_range_, goal_angle_range_,
@@ -316,7 +320,7 @@ public:
     pose_odom.pose = odometry_.pose.pose;
     try {
       // odomからmapへのtf変換を行う。
-      pose_map = tf_buffer_.transform(pose_odom, "map", tf2::durationFromSec(0.01));
+      pose_map = tf_buffer_->transform(pose_odom, "map", tf2::durationFromSec(0.01));
     } catch (const tf2::TransformException & ex) {
       RCLCPP_WARN_THROTTLE(
         this->get_logger(), *this->get_clock(), 1000, "Failed to transform odometry pose: %s",
@@ -635,8 +639,8 @@ public:
   rclcpp::TimerBase::SharedPtr timer_;
   rclcpp::TimerBase::SharedPtr visualize_timer_;
   // tf関連
-  tf2_ros::Buffer tf_buffer_{this->get_clock()};
-  tf2_ros::TransformListener tf_listener_{tf_buffer_};
+  std::shared_ptr<tf2_ros::Buffer> tf_buffer_;
+  std::shared_ptr<tf2_ros::TransformListener> tf_listener_;
   // オドメトリ
   nav_msgs::msg::Odometry odometry_;
   geometry_msgs::msg::PoseStamped latest_target_pose_;
