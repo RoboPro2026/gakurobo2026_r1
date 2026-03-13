@@ -239,11 +239,8 @@ public:
 
   void publish_robot_marker(void)
   {
-    // auto & odom = odometry_;
     visualization_msgs::msg::Marker marker;
     marker.header.stamp = this->get_clock()->now();
-    // NOTE: base_linkだとうまく動かないのでodomにしている
-    // marker.header.frame_id = "odom";
     marker.header.frame_id = "base_link";
     marker.ns = "robot";
     marker.id = 0;
@@ -252,15 +249,9 @@ public:
     marker.scale.x = 0.6;
     marker.scale.y = 0.6;
     marker.scale.z = 0.1;
-    // marker.pose.position.x = odom.pose.pose.position.x;
-    // marker.pose.position.y = odom.pose.pose.position.y;
-    // marker.pose.position.x = 0.0;
-    // marker.pose.position.y = 0.0;
+    marker.pose.position.x = 0.0;
+    marker.pose.position.y = 0.0;
     marker.pose.position.z = marker.scale.z / 2.0;
-    // marker.pose.orientation.x = odom.pose.pose.orientation.x;
-    // marker.pose.orientation.y = odom.pose.pose.orientation.y;
-    // marker.pose.orientation.z = odom.pose.pose.orientation.z;
-    // marker.pose.orientation.w = odom.pose.pose.orientation.w;
     marker.pose.orientation.x = 0.0;
     marker.pose.orientation.y = 0.0;
     marker.pose.orientation.z = 0.0;
@@ -274,8 +265,6 @@ public:
 
   void publish_cmd_vel_arrow()
   {
-    // TODO: ここのframe_idがodomなので、mapかbase_linkに治す
-    // auto & odom = odometry_;
     visualization_msgs::msg::Marker marker;
     marker.header.stamp = this->get_clock()->now();
     marker.header.frame_id = "base_link";
@@ -283,8 +272,6 @@ public:
     marker.id = 0;
     marker.type = visualization_msgs::msg::Marker::ARROW;
     marker.action = visualization_msgs::msg::Marker::ADD;
-    // marker.pose.position.x = odom.pose.pose.position.x;
-    // marker.pose.position.y = odom.pose.pose.position.y;
     marker.pose.position.x = 0.0;
     marker.pose.position.y = 0.0;
     marker.pose.position.z = marker.scale.z / 2.0;
