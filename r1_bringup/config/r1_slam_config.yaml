@@ -52,7 +52,8 @@ amcl:
     always_reset_initial_pose: false
     # reset 時に毎回初期位置の再指定を必須にするか
 
-    laser_model_type: "likelihood_field_prob"
+    # laser_model_type: "likelihood_field_prob"
+    laser_model_type: "likelihool_field"
     # LaserScan と map の一致度計算モデル
     # likelihood_field_prob は likelihood_field の拡張版で
     # beamskip（不一致ビームの除外）を使用できる
@@ -60,7 +61,7 @@ amcl:
     #
     # 既定値: "likelihood_field"
 
-    do_beamskip: true
+    do_beamskip: false
     # beamskip を有効にする
     # map と一致しない LaserScan のビームを無視して
     # localization の破綻を防ぐ
