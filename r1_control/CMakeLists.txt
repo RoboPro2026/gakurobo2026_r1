@@ -53,6 +53,7 @@ ament_target_dependencies(r1_chassis_control_node
   std_msgs
   tf2
   tf2_geometry_msgs
+  tf2_ros
   visualization_msgs
 )
 
@@ -63,6 +64,7 @@ ament_target_dependencies(r1_dummy_odometry_node
   std_msgs
   tf2
   tf2_geometry_msgs
+  tf2_ros
   visualization_msgs
 )
 

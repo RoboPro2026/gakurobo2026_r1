@@ -261,6 +261,9 @@ R1MainNode::R1MainNode() : Node("r1_main_node")
   // オドメトリのSubscription
   odometry_subscription_ = this->create_subscription<nav_msgs::msg::Odometry>(
     "/odometry", 10, std::bind(&R1MainNode::odometry_callback, this, std::placeholders::_1));
+  // initialposeのPublisher
+  initialpose_publisher_ =
+    this->create_publisher<geometry_msgs::msg::PoseWithCovarianceStamped>("/initialpose", 10);
   // chassis_actのPublisher
   chassis_act_ref_publisher_ = this->create_publisher<std_msgs::msg::Int32>("/chassis_act_ref", 10);
   // chassis_actのSubscription
@@ -373,8 +376,7 @@ R1MainNode::R1MainNode() : Node("r1_main_node")
 
   // タイマー
   timer_publisher_ = this->create_wall_timer(
-    std::chrono::duration<double>(1.0 / timer_rate_),
-    std::bind(&R1MainNode::timer_callback, this));
+    std::chrono::duration<double>(1.0 / timer_rate_), std::bind(&R1MainNode::timer_callback, this));
 
   const double timer_dt = 1.0 / timer_rate_;
   simple_trapezoid_vx_ = SimpleTrapezoid(3.0, timer_dt);
@@ -834,6 +836,29 @@ void R1MainNode::set_odometry(double x, double y, double yaw)
   msg.data.push_back(yaw);
   set_odometry_publisher_->publish(msg);
   RCLCPP_INFO(this->get_logger(), "set odometry x: %f, y: %f, yaw: %f", x, y, yaw);
+}
+
+void R1MainNode::set_initialpose(double x, double y, double yaw, double delay_sec)
+{
+  // setTimeout風でdelay_sec秒後にinitialposeをpublishする
+  initialpose_publish_timer_ =
+    this->create_wall_timer(std::chrono::duration<double>(delay_sec), [this, x, y, yaw]() {
+      geometry_msgs::msg::PoseWithCovarianceStamped msg;
+      msg.header.stamp = this->get_clock()->now();
+      msg.header.frame_id = "map";
+      msg.pose.pose.position.x = x;
+      msg.pose.pose.position.y = y;
+      tf2::Quaternion q;
+      q.setRPY(0.0, 0.0, yaw);
+      msg.pose.pose.orientation.x = q.x();
+      msg.pose.pose.orientation.y = q.y();
+      msg.pose.pose.orientation.z = q.z();
+      msg.pose.pose.orientation.w = q.w();
+      initialpose_publisher_->publish(msg);
+      RCLCPP_INFO(this->get_logger(), "publish initialpose x: %f, y: %f, yaw: %f", x, y, yaw);
+      // タイマーは1回だけ実行するので、初期化する
+      initialpose_publish_timer_->cancel();
+    });
 }
 
 void R1MainNode::publish_chassis_act_ref(int ref)
@@ -1984,6 +2009,7 @@ void R1MainNode::auto_act0(void)
       // 青のスタートゾーン
       set_mecanum_yaw(0.0);
       set_odometry(-5.5, 0.5, 0.0);
+      set_initialpose(-5.5, 0.5, 0.0);
     }
     if (ps4_->is_pushed_cross()) {
       // 位置制御のプログラム実行

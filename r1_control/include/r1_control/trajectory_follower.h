@@ -22,6 +22,8 @@
 #include "tf2/LinearMath/Quaternion.h"
 #include "tf2/utils.h"
 #include "tf2_geometry_msgs/tf2_geometry_msgs.hpp"
+#include "tf2_ros/buffer.h"
+#include "tf2_ros/transform_listener.h"
 
 struct WayPoint
 {
@@ -38,10 +40,14 @@ struct WayPoint
 class TrajectoryFollower
 {
 public:
-  TrajectoryFollower(TrajectoryPlanner * traj_planner)
+  TrajectoryFollower(
+    std::shared_ptr<TrajectoryPlanner> traj_planner, std::shared_ptr<tf2_ros::Buffer> tf_buffer,
+    std::shared_ptr<tf2_ros::TransformListener> tf_listener)
   : logger_(rclcpp::get_logger("trajectory_follower"))
   {
     traj_planner_ = traj_planner;
+    tf_buffer_ = tf_buffer;
+    tf_listener_ = tf_listener;
     finish_ = 0;
     last_out_of_range_time_ = rclcpp::Clock().now();
   }
@@ -124,12 +130,35 @@ public:
    */
   std::pair<WayPoint, geometry_msgs::msg::Twist> update(nav_msgs::msg::Odometry odometry)
   {
+    // odomの位置を取得
     double x = odometry.pose.pose.position.x;
     double y = odometry.pose.pose.position.y;
     double theta = tf2::getYaw(odometry.pose.pose.orientation);
     double dx = 0.0, dy = 0.0, dist = 0.0;
     // 現在位置から次のwaypointを探索
     while (idx_ < traj_planner_->array_size_) {
+      // 目標位置を取得
+      // 目標位置はmap座標系のものをodom座標系に変換して使用する
+      // odom座標系にて制御を行う理由は、map座標系で制御を行うと、map->odomのtfが変化したときに現在位置が急激にずれるのを防ぐため
+      double x_map = traj_planner_->x_[idx_];
+      double y_map = traj_planner_->y_[idx_];
+      double theta_map = traj_planner_->theta_[idx_];
+      geometry_msgs::msg::PoseStamped pose_map;
+      pose_map.header.frame_id = "map";
+      pose_map.pose.position.x = x_map;
+      pose_map.pose.position.y = y_map;
+      pose_map.pose.position.z = 0.0;
+      tf2::Quaternion q;
+      q.setRPY(0.0, 0.0, theta_map);
+      pose_map.pose.orientation = tf2::toMsg(q);
+      geometry_msgs::msg::PoseStamped pose_odom;
+      try {
+        tf_buffer_->transform(pose_map, pose_odom, "odom", tf2::durationFromSec(0.01));
+      } catch (tf2::TransformException & ex) {
+        RCLCPP_WARN(logger_, "Could not transform pose from map to odom: %s", ex.what());
+        break;
+      }
+      // 目標位置と現在位置の距離を計算
       dx = traj_planner_->x_[idx_] - x;
       dy = traj_planner_->y_[idx_] - y;
       dist = std::sqrt(dx * dx + dy * dy);
@@ -200,8 +229,10 @@ public:
   int is_finished() { return finish_; }
 
 private:
-  TrajectoryPlanner * traj_planner_;
+  std::shared_ptr<TrajectoryPlanner> traj_planner_;
   rclcpp::Logger logger_;
+  std::shared_ptr<tf2_ros::Buffer> tf_buffer_;
+  std::shared_ptr<tf2_ros::TransformListener> tf_listener_;
   // 探索半径[m]
   double search_radius_ = 0.0;
   double kp_pos_ = 0.0;

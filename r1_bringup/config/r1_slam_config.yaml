@@ -1,0 +1,189 @@
+# urg_node2のパラメータ参考：https://github.com/Hokuyo-aut/urg_node2/blob/f02d8af22db2a4322217f4c5803494f4ca2903ff/config/params_serial.yaml
+urg_node2:
+  ros__parameters:
+    serial_port: /dev/ttyACM0
+    serial_baud: 115200
+    frame_id : 'laser'
+    calibrate_time : true
+    synchronize_time : true
+    publish_intensity : false
+    publish_multiecho : false
+    error_limit : 4
+    error_reset_period : 5.0
+    diagnostics_tolerance : 0.05
+    diagnostics_window_time : 5.0
+    time_offset : 0.0
+# -120~120
+    angle_min : -2.07
+    angle_max : 2.07
+    skip : 0
+    cluster : 1
+amcl:
+  ros__parameters:
+    use_sim_time: false   # シミュレーション時間を使うか。実機では通常 false
+
+    base_frame_id: "base_link"   # ロボット本体の座標フレーム
+    odom_frame_id: "odom"        # オドメトリ座標系
+    global_frame_id: "map"       # 地図座標系
+
+    scan_topic: /scan            # 購読する LaserScan トピック
+    tf_broadcast: true           # AMCL が map->odom の TF を publish するか
+
+    robot_model_type: "nav2_amcl::OmniMotionModel"
+    # 運動モデル
+    # DifferentialMotionModel: 差動二輪向け
+    # OmniMotionModel: mecanum / omni 向け
+    # Nav2 AMCL は plugin 名で指定する形式 :contentReference[oaicite:1]{index=1}
+
+    alpha1: 0.05   # 回転によって生じる回転誤差
+    alpha2: 0.05   # 並進によって生じる回転誤差
+    alpha3: 0.05   # 並進によって生じる並進誤差
+    alpha4: 0.05   # 回転によって生じる並進誤差
+    alpha5: 0.1   # Omni 専用の並進ノイズ
+    # 値を大きくすると odom を信用しにくくなる
+
+    min_particles: 500   # 粒子数の最小値
+    max_particles: 3000  # 粒子数の最大値。増やすと計算量も増える
+
+    set_initial_pose: false
+    # true にすると initial_pose パラメータから初期位置を与える
+    # false の場合は /initialpose などを待つ
+
+    always_reset_initial_pose: false
+    # reset 時に毎回初期位置の再指定を必須にするか
+
+    # laser_model_type: "likelihood_field_prob"
+    laser_model_type: "likelihool_field"
+    # LaserScan と map の一致度計算モデル
+    # likelihood_field_prob は likelihood_field の拡張版で
+    # beamskip（不一致ビームの除外）を使用できる
+    # map に存在しない障害物（人・他ロボットなど）がある環境で有効
+    #
+    # 既定値: "likelihood_field"
+
+    do_beamskip: false
+    # beamskip を有効にする
+    # map と一致しない LaserScan のビームを無視して
+    # localization の破綻を防ぐ
+    #
+    # false: beamskip を使わない
+    #
+    # 既定値: false
+
+    beam_skip_distance: 0.5
+    # map 上の障害物からこの距離以上離れているビームを
+    # 「一致していないビーム」と判定する距離 [m]
+    #
+    # 小さくすると厳しく判定
+    # 大きくするとノイズにも寛容になる
+    #
+    # 一般的な調整範囲: 0.3 ～ 1.0 m
+    #
+    # 既定値: 0.5
+
+    beam_skip_threshold: 0.3
+    # 全ビームのうち何割が不一致なら
+    # beamskip を発動するか
+    #
+    # 例: 0.3 → 30% のビームが map と一致しない場合に skip
+    #
+    # 小さいほど beamskip が発動しやすい
+    #
+    # 一般的な調整範囲: 0.2 ～ 0.5
+    #
+    # 既定値: 0.3
+
+    beam_skip_error_threshold: 0.9
+    # もしこの割合以上のビームが不一致なら
+    # beamskip を無効化する
+    #
+    # 例: 0.9 → 90%以上のビームが不一致なら
+    # 本当に位置がズレていると判断して
+    # beamskip を使わず通常の更新を行う
+    #
+    # 既定値: 0.9
+
+    max_beams: 150
+    # 各 scan から等間隔に何本使うか
+    # 既定値は 60。増やしすぎると計算量とノイズ感度が上がる
+
+    update_min_d: 0.05
+    update_min_a: 0.05
+    # AMCL を更新する最小移動量
+    # update_min_d: 並進[m]
+    # update_min_a: 回転[rad]
+    # 既定値は 0.25[m], 0.2[rad]
+
+    transform_tolerance: 0.2
+    # publish する TF が少し未来まで有効であるとみなす余裕時間[s]
+    # 既定値は 1.0s
+
+    laser_likelihood_max_dist: 0.5
+    # 追加: likelihood_field で使う重要パラメータ
+    # 地図障害物からどこまでの距離を尤度計算に使うか[m]
+    # 大きすぎると遠くの曖昧な一致まで拾いやすい
+    # 既定値は 2.0m
+
+    laser_min_range: 0.0
+    # 追加: AMCL が使う最小レンジ[m]
+    # 近すぎる点や自己映りを無視したいときに有効
+    # 既定値 -1.0 は LiDAR 側の最小値を使う
+
+    laser_max_range: 20.0
+    # 追加: AMCL が使う最大レンジ[m]
+    # 遠距離ノイズや不安定な反射を切りたいときに有効
+    # 既定値 100.0、-1.0 で LiDAR 側最大値を使う
+
+    z_hit: 0.8
+    # 期待どおりの障害物を観測したときの重み
+
+    z_short: 0.08
+    # 予想より短い距離を観測したときの重み
+    # 人や一時障害物があるときに効く
+
+    z_max: 0.05
+    # 最大レンジ観測の重み
+
+    z_rand: 0.1
+    # ランダムノイズ観測の重み
+
+    sigma_hit: 0.1
+    # z_hit のガウス分布の標準偏差[m]
+    # 小さいほど scan と map の一致に厳しくなる
+    # 既定値は 0.2
+
+    lambda_short: 0.1
+    # z_short の指数分布パラメータ
+# slam_toolbox:
+#   ros__parameters:
+#     odom_frame: odom
+#     map_frame: map
+#     base_frame: base_link
+#     scan_topic: /scan
+#     # 動作中にマップを作るときはmapping、すでに作ったマップを使うときはlocalization
+#     mode: localization
+#     map: src/gakurobo2026_r1/data/map/field_blue.yaml
+#     transform_publish_period: 0.02
+#     # map_update_interval: 0.5
+#     map_update_interval: 0.2
+#     resolution: 0.05
+#     max_laser_range: 20.0
+#     minimum_time_interval: 0.1
+# # スキャンマッチングの更新頻度と移動閾値
+#     minimum_travel_distance: 0.1    # 10cm動いたら更新
+#     minimum_travel_heading: 0.02     # 約1度回転したら更新（ここを小さくすると回転に敏感に反応します）
+    
+#     # マッチングの精度向上
+#     use_scan_matching: true
+#     use_scan_barycenter: true
+    
+#     # 探索範囲の設定（回転に弱い場合はここを調整）
+#     # 以下の値は標準的な値ですが、明示的に指定することで挙動を安定させます
+#     correlation_search_space_dimension: 1.0
+#     correlation_search_space_resolution: 0.01
+#     correlation_search_space_smear_deviation: 0.1
+
+#     # ループクローズ（一周回ってきた時の補正）
+#     do_loop_closing: true
+#     loop_search_maximum_distance: 3.0
+#     loop_match_minimum_chain_size: 10

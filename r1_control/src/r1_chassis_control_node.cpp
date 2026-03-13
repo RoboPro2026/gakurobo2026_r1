@@ -30,6 +30,8 @@
 #include "std_msgs/msg/int32.hpp"
 #include "tf2/LinearMath/Matrix3x3.h"
 #include "tf2/LinearMath/Quaternion.h"
+#include "tf2_ros/buffer.h"
+#include "tf2_ros/transform_listener.h"
 #include "visualization_msgs/msg/marker.hpp"
 
 using namespace std::chrono_literals;
@@ -64,6 +66,9 @@ public:
 
   R1ChassisControlNode() : Node("r1_chassis_control_node")
   {
+    tf_buffer_ = std::make_shared<tf2_ros::Buffer>(this->get_clock());
+    tf_listener_ = std::make_shared<tf2_ros::TransformListener>(*tf_buffer_);
+
     declare_and_get_parameter("timer_rate", timer_rate_, 100.0);
     declare_and_get_parameter("visualize_timer_rate", visualize_timer_rate_, 10.0);
     control_dt_ = 1.0 / timer_rate_;
@@ -141,7 +146,8 @@ public:
     }
 
     for (int i = 0; i < ACT_N; i++) {
-      act_traj_follower_[i] = std::make_shared<TrajectoryFollower>(act_traj_planner_[i].get());
+      act_traj_follower_[i] =
+        std::make_shared<TrajectoryFollower>(act_traj_planner_[i], tf_buffer_, tf_listener_);
       act_traj_follower_[i]->set_param(
         kp_pos_, ki_pos_, kd_pos_, kff_pos_, vel_limit_, kp_angle_, ki_angle_, kd_angle_,
         kff_angle_, omega_limit_, control_dt_, search_radius_, goal_pos_range_, goal_angle_range_,
@@ -182,9 +188,7 @@ public:
   {
     nav_msgs::msg::Path path;
     path.header.stamp = this->get_clock()->now();
-    path.header.frame_id = "odom";
-    // NOTE: デバッグのためにodomにしている
-    // path.header.frame_id = "odom";
+    path.header.frame_id = "map";
 
     int inc = 20;  // 表示間隔。pathはデバッグ用に使用するので、点の数を間引く
 
@@ -217,9 +221,7 @@ public:
   void update_target_pose(const WayPoint & waypoint)
   {
     latest_target_pose_.header.stamp = this->get_clock()->now();
-    // デバッグのためにmapからodomに変更
-    // target_pose.header.frame_id = "map";
-    latest_target_pose_.header.frame_id = "odom";
+    latest_target_pose_.header.frame_id = "map";
     latest_target_pose_.pose.position.x = waypoint.x;
     latest_target_pose_.pose.position.y = waypoint.y;
     latest_target_pose_.pose.position.z = 0.0;
@@ -241,86 +243,41 @@ public:
 
   void publish_robot_marker(void)
   {
-    auto & odom = odometry_;
     visualization_msgs::msg::Marker marker;
     marker.header.stamp = this->get_clock()->now();
-    // NOTE: base_linkだとうまく動かないのでodomにしている
-    marker.header.frame_id = "odom";
-    // marker.header.frame_id = "base_link";
+    marker.header.frame_id = "base_link";
     marker.ns = "robot";
     marker.id = 0;
     marker.type = visualization_msgs::msg::Marker::CUBE;
     marker.action = visualization_msgs::msg::Marker::ADD;
-    marker.scale.x = 0.5;
-    marker.scale.y = 0.5;
+    marker.scale.x = 0.6;
+    marker.scale.y = 0.6;
     marker.scale.z = 0.1;
-    marker.pose.position.x = odom.pose.pose.position.x;
-    marker.pose.position.y = odom.pose.pose.position.y;
-    // marker.pose.position.x = 0.0;
-    // marker.pose.position.y = 0.0;
+    marker.pose.position.x = 0.0;
+    marker.pose.position.y = 0.0;
     marker.pose.position.z = marker.scale.z / 2.0;
-    marker.pose.orientation.x = odom.pose.pose.orientation.x;
-    marker.pose.orientation.y = odom.pose.pose.orientation.y;
-    marker.pose.orientation.z = odom.pose.pose.orientation.z;
-    marker.pose.orientation.w = odom.pose.pose.orientation.w;
-    // marker.pose.orientation.x = 0.0;
-    // marker.pose.orientation.y = 0.0;
-    // marker.pose.orientation.z = 0.0;
-    // marker.pose.orientation.w = 1.0;
+    marker.pose.orientation.x = 0.0;
+    marker.pose.orientation.y = 0.0;
+    marker.pose.orientation.z = 0.0;
+    marker.pose.orientation.w = 1.0;
     marker.color.a = 0.5;  // 不透明
     marker.color.r = 0.0;
     marker.color.g = 1.0;  // 緑色
     marker.color.b = 0.0;
     robot_marker_publisher_->publish(marker);
-
-    // ロボットの0度方向(前方)を示す線を描画
-    // tf2::Quaternion q(
-    //   odom.pose.pose.orientation.x, odom.pose.pose.orientation.y, odom.pose.pose.orientation.z,
-    //   odom.pose.pose.orientation.w);
-    // double roll = 0.0, pitch = 0.0, yaw = 0.0;
-    // tf2::Matrix3x3(q).getRPY(roll, pitch, yaw);
-
-    // constexpr double heading_length = 0.7;  // [m]
-    // visualization_msgs::msg::Marker heading;
-    // heading.header = marker.header;
-    // heading.ns = "robot_heading";
-    // heading.id = 1;
-    // heading.type = visualization_msgs::msg::Marker::LINE_STRIP;
-    // heading.action = visualization_msgs::msg::Marker::ADD;
-    // heading.pose.orientation.w = 1.0;  // points are in the header frame
-    // heading.scale.x = 0.03;            // line width
-    // heading.color.a = 1.0;
-    // heading.color.r = 1.0;  // 赤
-    // heading.color.g = 0.0;
-    // heading.color.b = 0.0;
-
-    // geometry_msgs::msg::Point p0;
-    // p0.x = odom.pose.pose.position.x;
-    // p0.y = odom.pose.pose.position.y;
-    // p0.z = marker.scale.z;  // cube上面付近
-
-    // geometry_msgs::msg::Point p1;
-    // p1.x = p0.x + heading_length * std::cos(yaw);
-    // p1.y = p0.y + heading_length * std::sin(yaw);
-    // p1.z = p0.z;
-
-    // heading.points.push_back(p0);
-    // heading.points.push_back(p1);
-    // robot_marker_publisher_->publish(heading);
   }
 
   void publish_cmd_vel_arrow()
   {
-    auto & odom = odometry_;
     visualization_msgs::msg::Marker marker;
     marker.header.stamp = this->get_clock()->now();
-    marker.header.frame_id = "odom";
+    marker.header.frame_id = "base_link";
     marker.ns = "arrow";
     marker.id = 0;
     marker.type = visualization_msgs::msg::Marker::ARROW;
     marker.action = visualization_msgs::msg::Marker::ADD;
-    marker.pose.position.x = odom.pose.pose.position.x;
-    marker.pose.position.y = odom.pose.pose.position.y;
+    marker.pose.position.x = 0.0;
+    marker.pose.position.y = 0.0;
     marker.pose.position.z = marker.scale.z / 2.0;
     double marker_length = arrow_scale_ * std::hypot(cmd_vel_.linear.x, cmd_vel_.linear.y);
     marker.scale.x = marker_length;
@@ -344,29 +301,42 @@ public:
   void reset_robot_trajectory()
   {
     robot_trajectory_.header.stamp = this->get_clock()->now();
-    robot_trajectory_.header.frame_id = "odom";
+    robot_trajectory_.header.frame_id = "map";
     robot_trajectory_.poses.clear();
   }
 
+  /**
+   * @brief ロボットの軌道（map座標系）をpublishする。
+   * 
+   */
   void publish_robot_trajectory()
   {
-    if (!is_act_running()) {
+    if (act_step_ == ACT_NONE) {
       return;
     }
-    geometry_msgs::msg::PoseStamped pose;
-    pose.header.stamp = this->get_clock()->now();
-    pose.header.frame_id = "odom";
-    pose.pose = odometry_.pose.pose;
+    geometry_msgs::msg::PoseStamped pose_map;
+    geometry_msgs::msg::PoseStamped pose_odom;
+    pose_odom.header = odometry_.header;
+    pose_odom.pose = odometry_.pose.pose;
+    try {
+      // odomからmapへのtf変換を行う。
+      pose_map = tf_buffer_->transform(pose_odom, "map", tf2::durationFromSec(0.01));
+    } catch (const tf2::TransformException & ex) {
+      RCLCPP_WARN_THROTTLE(
+        this->get_logger(), *this->get_clock(), 1000, "Failed to transform odometry pose: %s",
+        ex.what());
+      return;
+    }
     // robot_trajectory_.posesの要素数が1以上のときは、前回値と比較して、
     // 距離または角度のしきい値を超えている場合にのみ追加する
 
     if (!robot_trajectory_.poses.empty()) {
-      const auto & last_pose = robot_trajectory_.poses.back();
-      double dx = pose.pose.position.x - last_pose.pose.position.x;
-      double dy = pose.pose.position.y - last_pose.pose.position.y;
+      const auto & last_pose_map = robot_trajectory_.poses.back();
+      double dx = pose_map.pose.position.x - last_pose_map.pose.position.x;
+      double dy = pose_map.pose.position.y - last_pose_map.pose.position.y;
       double distance = std::sqrt(dx * dx + dy * dy);
-      double current_yaw = tf2::getYaw(pose.pose.orientation);
-      double prev_yaw = tf2::getYaw(last_pose.pose.orientation);
+      double current_yaw = tf2::getYaw(pose_map.pose.orientation);
+      double prev_yaw = tf2::getYaw(last_pose_map.pose.orientation);
       double yaw_diff = angle_diff(current_yaw, prev_yaw);
       bool is_distance_out_of_threshold = distance >= publish_robot_trajectory_dist_threshold_;
       bool is_angle_out_of_threshold =
@@ -376,13 +346,8 @@ public:
       }
     }
 
-    robot_trajectory_.poses.push_back(pose);
+    robot_trajectory_.poses.push_back(pose_map);
     robot_trajectory_publisher_->publish(robot_trajectory_);
-  }
-
-  bool is_act_running() const
-  {
-    return act_step_ == ACT0 || act_step_ == ACT1 || act_step_ == ACT2;
   }
 
   void visualize_timer_callback()
@@ -665,8 +630,12 @@ public:
   rclcpp::Publisher<std_msgs::msg::Int32>::SharedPtr act_publisher_;
   // ACTのSubscription
   rclcpp::Subscription<std_msgs::msg::Int32>::SharedPtr act_subscription_;
+  // timer
   rclcpp::TimerBase::SharedPtr timer_;
   rclcpp::TimerBase::SharedPtr visualize_timer_;
+  // tf関連
+  std::shared_ptr<tf2_ros::Buffer> tf_buffer_;
+  std::shared_ptr<tf2_ros::TransformListener> tf_listener_;
   // オドメトリ
   nav_msgs::msg::Odometry odometry_;
   geometry_msgs::msg::PoseStamped latest_target_pose_;
