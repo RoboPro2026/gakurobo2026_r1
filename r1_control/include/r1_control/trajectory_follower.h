@@ -53,17 +53,25 @@ public:
   }
 
   void set_param(
-    double kp_pos, double ki_pos, double kd_pos, double vel_i_limit, double kp_angle,
-    double ki_angle, double kd_angle, double omega_i_limit, double dt, double search_radius,
+    double kp_pos_normal, double ki_pos_normal, double kd_pos_normal, double kp_pos_goal,
+    double ki_pos_goal, double kd_pos_goal, double vel_i_limit, double kp_angle_normal,
+    double ki_angle_normal, double kd_angle_normal, double kp_angle_goal, double ki_angle_goal,
+    double kd_angle_goal, double omega_i_limit, double dt, double search_radius,
     double goal_pos_range, double goal_angle_range, double finish_time_threshold)
   {
-    kp_pos_ = kp_pos;
-    ki_pos_ = ki_pos;
-    kd_pos_ = kd_pos;
+    kp_pos_normal_ = kp_pos_normal;
+    ki_pos_normal_ = ki_pos_normal;
+    kd_pos_normal_ = kd_pos_normal;
+    kp_pos_goal_ = kp_pos_goal;
+    ki_pos_goal_ = ki_pos_goal;
+    kd_pos_goal_ = kd_pos_goal;
     vel_i_limit_ = vel_i_limit;
-    kp_angle_ = kp_angle;
-    ki_angle_ = ki_angle;
-    kd_angle_ = kd_angle;
+    kp_angle_normal_ = kp_angle_normal;
+    ki_angle_normal_ = ki_angle_normal;
+    kd_angle_normal_ = kd_angle_normal;
+    kp_angle_goal_ = kp_angle_goal;
+    ki_angle_goal_ = ki_angle_goal;
+    kd_angle_goal_ = kd_angle_goal;
     omega_i_limit_ = omega_i_limit;
     dt_ = dt;
     search_radius_ = search_radius;
@@ -76,6 +84,7 @@ public:
   void reset()
   {
     idx_ = 0;
+    is_last_point_ = false;
     finish_ = 0;
     last_out_of_range_time_ = rclcpp::Clock().now();
     // 積分項をリセット
@@ -95,6 +104,23 @@ public:
     std::vector<double> x_ref, std::vector<double> x, std::vector<double> v_ref,
     std::vector<double> v)
   {
+    double kp_pos, ki_pos, kd_pos, kp_angle, ki_angle, kd_angle;
+    // 最後のwaypointのときはゴール用ゲインを使用する。そうでなければ、通常時のゲインを使用する。
+    if (is_last_point_) {
+      kp_pos = kp_pos_goal_;
+      ki_pos = ki_pos_goal_;
+      kd_pos = kd_pos_goal_;
+      kp_angle = kp_angle_goal_;
+      ki_angle = ki_angle_goal_;
+      kd_angle = kd_angle_goal_;
+    } else {
+      kp_pos = kp_pos_normal_;
+      ki_pos = ki_pos_normal_;
+      kd_pos = kd_pos_normal_;
+      kp_angle = kp_angle_normal_;
+      ki_angle = ki_angle_normal_;
+      kd_angle = kd_angle_normal_;
+    }
     std::vector<double> ret(3);
     std::vector<double> error(3);
     error[0] = x_ref[0] - x[0];
@@ -104,19 +130,19 @@ public:
     integral_error_[1] += error[1] * dt_;
     integral_error_[2] += error[2] * dt_;
     // 積分器のリミッター。kiが0でないことを確認してから実行する。
-    if (std::abs(ki_pos_) >= 1e-100) {
-      double limit = vel_i_limit_ / ki_pos_;
+    if (std::abs(ki_pos) >= 1e-100) {
+      double limit = vel_i_limit_ / ki_pos;
       integral_error_[0] = std::clamp(integral_error_[0], -limit, limit);
       integral_error_[1] = std::clamp(integral_error_[1], -limit, limit);
     }
-    if (std::abs(ki_angle_) >= 1e-100) {
-      double limit = omega_i_limit_ / ki_angle_;
+    if (std::abs(ki_angle) >= 1e-100) {
+      double limit = omega_i_limit_ / ki_angle;
       integral_error_[2] = std::clamp(integral_error_[2], -limit, limit);
     }
     // PID制御(DはFFとFB)
-    ret[0] = kp_pos_ * error[0] + ki_pos_ * integral_error_[0] + kd_pos_ * (v_ref[0] - v[0]);
-    ret[1] = kp_pos_ * error[1] + ki_pos_ * integral_error_[1] + kd_pos_ * (v_ref[1] - v[1]);
-    ret[2] = kp_angle_ * error[2] + ki_angle_ * integral_error_[2] + kd_angle_ * (v_ref[2] - v[2]);
+    ret[0] = kp_pos * error[0] + ki_pos * integral_error_[0] + kd_pos * (v_ref[0] - v[0]);
+    ret[1] = kp_pos * error[1] + ki_pos * integral_error_[1] + kd_pos * (v_ref[1] - v[1]);
+    ret[2] = kp_angle * error[2] + ki_angle * integral_error_[2] + kd_angle * (v_ref[2] - v[2]);
 
     return ret;
   }
@@ -194,18 +220,18 @@ public:
       odometry.twist.twist.linear.x, odometry.twist.twist.linear.y, odometry.twist.twist.angular.z};
 
     // 終了判定
-    bool is_last_point = (idx_ == traj_planner_->array_size_ - 1);
+    is_last_point_ = (idx_ == traj_planner_->array_size_ - 1);
     bool is_pos_goal = (dist < goal_pos_range_);
     bool is_angle_goal = (std::abs(angle_diff(theta, wp.theta)) < goal_angle_range_);
     // 範囲外のときは、収束判定用変数を更新
-    if (is_last_point == false || is_pos_goal == false || is_angle_goal == false) {
+    if (is_last_point_ || is_pos_goal == false || is_angle_goal == false) {
       last_out_of_range_time_ = rclcpp::Clock().now();
     }
     // 収束したかの終了判定
     bool is_time_ok =
       (rclcpp::Clock().now() - last_out_of_range_time_).seconds() > finish_time_threshold_;
 
-    if (is_last_point && is_pos_goal && is_angle_goal && is_time_ok) {
+    if (is_last_point_ && is_pos_goal && is_angle_goal && is_time_ok) {
       finish_ = 1;
     }
 
@@ -234,20 +260,34 @@ private:
   std::shared_ptr<tf2_ros::TransformListener> tf_listener_;
   // 探索半径[m]
   double search_radius_ = 0.0;
-  double kp_pos_ = 0.0;
-  double ki_pos_ = 0.0;
-  double kd_pos_ = 0.0;
+  // 通常時のPID位置ゲイン
+  double kp_pos_normal_ = 0.0;
+  double ki_pos_normal_ = 0.0;
+  double kd_pos_normal_ = 0.0;
+  // ゴール時のPID位置ゲイン
+  double kp_pos_goal_ = 0.0;
+  double ki_pos_goal_ = 0.0;
+  double kd_pos_goal_ = 0.0;
+  // 積分器のリミッター
   double vel_i_limit_ = 0.0;
-  double kp_angle_ = 0.0;
-  double ki_angle_ = 0.0;
-  double kd_angle_ = 0.0;
+  // 通常時のPID角度ゲイン
+  double kp_angle_normal_ = 0.0;
+  double ki_angle_normal_ = 0.0;
+  double kd_angle_normal_ = 0.0;
+  // ゴール時のPID角度ゲイン
+  double kp_angle_goal_ = 0.0;
+  double ki_angle_goal_ = 0.0;
+  double kd_angle_goal_ = 0.0;
+  // 積分器のリミッター
   double omega_i_limit_ = 0.0;
+
   double goal_pos_range_ = 0.01;        // ゴールとみなす距離の閾値
   double goal_angle_range_ = 0.01;      // ゴールとみなす位置の閾値
   double finish_time_threshold_ = 0.3;  // 収束時間の判定用しきい値
   std::vector<double> integral_error_{0.0, 0.0, 0.0};
   double dt_ = 0.0;
   int idx_ = 0;
+  bool is_last_point_ = false;
   int finish_ = 0;
   rclcpp::Time last_out_of_range_time_ = rclcpp::Clock().now();
 };
