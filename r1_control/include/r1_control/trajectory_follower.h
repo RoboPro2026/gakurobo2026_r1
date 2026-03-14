@@ -54,10 +54,11 @@ public:
 
   void set_param(
     double kp_pos_normal, double ki_pos_normal, double kd_pos_normal, double kp_pos_goal,
-    double ki_pos_goal, double kd_pos_goal, double vel_i_limit, double kp_angle_normal,
-    double ki_angle_normal, double kd_angle_normal, double kp_angle_goal, double ki_angle_goal,
-    double kd_angle_goal, double omega_i_limit, double dt, double search_radius,
-    double goal_pos_range, double goal_angle_range, double finish_time_threshold)
+    double ki_pos_goal, double kd_pos_goal, double vel_i_limit, double vel_output_limit,
+    double kp_angle_normal, double ki_angle_normal, double kd_angle_normal, double kp_angle_goal,
+    double ki_angle_goal, double kd_angle_goal, double omega_i_limit, double omega_output_limit,
+    double dt, double search_radius, double goal_pos_range, double goal_angle_range,
+    double finish_time_threshold)
   {
     kp_pos_normal_ = kp_pos_normal;
     ki_pos_normal_ = ki_pos_normal;
@@ -66,6 +67,7 @@ public:
     ki_pos_goal_ = ki_pos_goal;
     kd_pos_goal_ = kd_pos_goal;
     vel_i_limit_ = vel_i_limit;
+    vel_output_limit_ = vel_output_limit;
     kp_angle_normal_ = kp_angle_normal;
     ki_angle_normal_ = ki_angle_normal;
     kd_angle_normal_ = kd_angle_normal;
@@ -73,6 +75,7 @@ public:
     ki_angle_goal_ = ki_angle_goal;
     kd_angle_goal_ = kd_angle_goal;
     omega_i_limit_ = omega_i_limit;
+    omega_output_limit_ = omega_output_limit;
     dt_ = dt;
     search_radius_ = search_radius;
     goal_pos_range_ = goal_pos_range;
@@ -143,7 +146,11 @@ public:
     ret[0] = kp_pos * error[0] + ki_pos * integral_error_[0] + kd_pos * (v_ref[0] - v[0]);
     ret[1] = kp_pos * error[1] + ki_pos * integral_error_[1] + kd_pos * (v_ref[1] - v[1]);
     ret[2] = kp_angle * error[2] + ki_angle * integral_error_[2] + kd_angle * (v_ref[2] - v[2]);
-
+    // PID制御の出力制限
+    // 本当はやりたくないが、出力制限をしないと危ない挙動をするときがあるため
+    ret[0] = std::clamp(ret[0], -vel_output_limit_, vel_output_limit_);
+    ret[1] = std::clamp(ret[1], -vel_output_limit_, vel_output_limit_);
+    ret[2] = std::clamp(ret[2], -omega_output_limit_, omega_output_limit_);
     return ret;
   }
 
@@ -270,6 +277,8 @@ private:
   double kd_pos_goal_ = 0.0;
   // 積分器のリミッター
   double vel_i_limit_ = 0.0;
+  // PID制御の出力リミッター
+  double vel_output_limit_ = 0.0;
   // 通常時のPID角度ゲイン
   double kp_angle_normal_ = 0.0;
   double ki_angle_normal_ = 0.0;
@@ -280,6 +289,8 @@ private:
   double kd_angle_goal_ = 0.0;
   // 積分器のリミッター
   double omega_i_limit_ = 0.0;
+  // PID制御の出力リミッター
+  double omega_output_limit_ = 0.0;
 
   double goal_pos_range_ = 0.01;        // ゴールとみなす距離の閾値
   double goal_angle_range_ = 0.01;      // ゴールとみなす位置の閾値
