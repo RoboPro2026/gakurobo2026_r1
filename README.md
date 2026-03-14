@@ -16,7 +16,7 @@ git submodule update --init --recursive
 
 ## インストール(apt)
 ```
-sudo apt install -y ros-humble-magic-enum ros-humble-xacro ros-humble-slam-toolbox ros-humble-navigation2 ros-humble-nav2-bringup ros-humble-laser-filters
+sudo apt install -y python3-rosdep2 ros-humble-magic-enum ros-humble-xacro ros-humble-slam-toolbox ros-humble-navigation2 ros-humble-nav2-bringup ros-humble-laser-filters
 # for eigen
 sudo apt install -y libeigen3-dev
 # for pybind11
@@ -39,6 +39,7 @@ source .venv/bin/activate
 
 # urg_node
 ```
+cd ~/ros2_ws/src/gakurobo2026_r1
 rosdep update
 rosdep install -i --from-paths urg_node2
 ```
