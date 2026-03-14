@@ -9,12 +9,12 @@ r1_chassis_control_node:
     kp_pos: 1.0
     ki_pos: 0.1
     kd_pos: 1.0
-    vel_limit: 2.0
+    vel_i_limit: 0.2
     # 角度制御のゲイン
     kp_angle: 1.0
     ki_angle: 0.1
     kd_angle: 1.0
-    omega_limit: 3.14
+    omega_i_limit: 0.157
     # 制御の終了判定閾値
     goal_pos_range: 0.05
     goal_angle_range: 0.05 # 2度

@@ -53,18 +53,18 @@ public:
   }
 
   void set_param(
-    double kp_pos, double ki_pos, double kd_pos, double vel_limit, double kp_angle, double ki_angle,
-    double kd_angle, double omega_limit, double dt, double search_radius, double goal_pos_range,
-    double goal_angle_range, double finish_time_threshold)
+    double kp_pos, double ki_pos, double kd_pos, double vel_i_limit, double kp_angle,
+    double ki_angle, double kd_angle, double omega_i_limit, double dt, double search_radius,
+    double goal_pos_range, double goal_angle_range, double finish_time_threshold)
   {
     kp_pos_ = kp_pos;
     ki_pos_ = ki_pos;
     kd_pos_ = kd_pos;
-    vel_limit_ = vel_limit;
+    vel_i_limit_ = vel_i_limit;
     kp_angle_ = kp_angle;
     ki_angle_ = ki_angle;
     kd_angle_ = kd_angle;
-    omega_limit_ = omega_limit;
+    omega_i_limit_ = omega_i_limit;
     dt_ = dt;
     search_radius_ = search_radius;
     goal_pos_range_ = goal_pos_range;
@@ -95,7 +95,6 @@ public:
     std::vector<double> x_ref, std::vector<double> x, std::vector<double> v_ref,
     std::vector<double> v)
   {
-    // PIDの実装になっているが、実際に使用しているのはPのみ。
     std::vector<double> ret(3);
     std::vector<double> error(3);
     error[0] = x_ref[0] - x[0];
@@ -104,14 +103,21 @@ public:
     integral_error_[0] += error[0] * dt_;
     integral_error_[1] += error[1] * dt_;
     integral_error_[2] += error[2] * dt_;
+    // 積分器のリミッター。kiが0でないことを確認してから実行する。
+    if (std::abs(ki_pos_) >= 1e-100) {
+      double limit = vel_i_limit_ / ki_pos_;
+      integral_error_[0] = std::clamp(integral_error_[0], -limit, limit);
+      integral_error_[1] = std::clamp(integral_error_[1], -limit, limit);
+    }
+    if (std::abs(ki_angle_) >= 1e-100) {
+      double limit = omega_i_limit_ / ki_angle_;
+      integral_error_[2] = std::clamp(integral_error_[2], -limit, limit);
+    }
     // PID制御(DはFFとFB)
     ret[0] = kp_pos_ * error[0] + ki_pos_ * integral_error_[0] + kd_pos_ * (v_ref[0] - v[0]);
     ret[1] = kp_pos_ * error[1] + ki_pos_ * integral_error_[1] + kd_pos_ * (v_ref[1] - v[1]);
     ret[2] = kp_angle_ * error[2] + ki_angle_ * integral_error_[2] + kd_angle_ * (v_ref[2] - v[2]);
 
-    ret[0] = std::clamp(ret[0], -vel_limit_, vel_limit_);
-    ret[1] = std::clamp(ret[1], -vel_limit_, vel_limit_);
-    ret[2] = std::clamp(ret[2], -omega_limit_, omega_limit_);
     return ret;
   }
 
@@ -231,11 +237,11 @@ private:
   double kp_pos_ = 0.0;
   double ki_pos_ = 0.0;
   double kd_pos_ = 0.0;
-  double vel_limit_ = 0.0;
+  double vel_i_limit_ = 0.0;
   double kp_angle_ = 0.0;
   double ki_angle_ = 0.0;
   double kd_angle_ = 0.0;
-  double omega_limit_ = 0.0;
+  double omega_i_limit_ = 0.0;
   double goal_pos_range_ = 0.01;        // ゴールとみなす距離の閾値
   double goal_angle_range_ = 0.01;      // ゴールとみなす位置の閾値
   double finish_time_threshold_ = 0.3;  // 収束時間の判定用しきい値

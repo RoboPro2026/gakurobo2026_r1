@@ -33,18 +33,18 @@ public:
   }
 
   void set_param(
-    double kp_pos, double ki_pos, double kd_pos, double vel_limit, double kp_angle, double ki_angle,
-    double kd_angle, double omega_limit, double dt, double goal_pos_range, double goal_angle_range,
-    double finish_time_threshold)
+    double kp_pos, double ki_pos, double kd_pos, double vel_i_limit, double kp_angle,
+    double ki_angle, double kd_angle, double omega_i_limit, double dt, double goal_pos_range,
+    double goal_angle_range, double finish_time_threshold)
   {
     kp_pos_ = kp_pos;
     ki_pos_ = ki_pos;
     kd_pos_ = kd_pos;
-    vel_limit_ = vel_limit;
+    vel_i_limit_ = vel_i_limit;
     kp_angle_ = kp_angle;
     ki_angle_ = ki_angle;
     kd_angle_ = kd_angle;
-    omega_limit_ = omega_limit;
+    omega_i_limit_ = omega_i_limit;
     dt_ = dt;
     goal_pos_range_ = goal_pos_range;
     goal_angle_range_ = goal_angle_range;
@@ -71,6 +71,17 @@ public:
     integral_error_[0] += error[0] * dt_;
     integral_error_[1] += error[1] * dt_;
     integral_error_[2] += error[2] * dt_;
+    // 積分器のリミッター。kiが0でないことを確認してから実行する。
+    if (std::abs(ki_pos_) >= 1e-100) {
+      double limit = vel_i_limit_ / ki_pos_;
+      integral_error_[0] = std::clamp(integral_error_[0], -limit, limit);
+      integral_error_[1] = std::clamp(integral_error_[1], -limit, limit);
+    }
+    if (std::abs(ki_angle_) >= 1e-100) {
+      double limit = omega_i_limit_ / ki_angle_;
+      integral_error_[2] = std::clamp(integral_error_[2], -limit, limit);
+    }
+
     const double derivative_x = (error[0] - prev_error_[0]) / dt_;
     const double derivative_y = (error[1] - prev_error_[1]) / dt_;
     const double derivative_theta = (error[2] - prev_error_[2]) / dt_;
@@ -78,10 +89,6 @@ public:
     ret[0] = kp_pos_ * error[0] + ki_pos_ * integral_error_[0] + kd_pos_ * derivative_x;
     ret[1] = kp_pos_ * error[1] + ki_pos_ * integral_error_[1] + kd_pos_ * derivative_y;
     ret[2] = kp_angle_ * error[2] + ki_angle_ * integral_error_[2] + kd_angle_ * derivative_theta;
-    // 出力を制限
-    ret[0] = std::clamp(ret[0], -vel_limit_, vel_limit_);
-    ret[1] = std::clamp(ret[1], -vel_limit_, vel_limit_);
-    ret[2] = std::clamp(ret[2], -omega_limit_, omega_limit_);
     // 前回値を更新
     prev_error_[0] = error[0];
     prev_error_[1] = error[1];
@@ -139,11 +146,11 @@ private:
   double kp_pos_ = 0.0;
   double ki_pos_ = 0.0;
   double kd_pos_ = 0.0;
-  double vel_limit_ = 0.0;
+  double vel_i_limit_ = 0.0;
   double kp_angle_ = 0.0;
   double ki_angle_ = 0.0;
   double kd_angle_ = 0.0;
-  double omega_limit_ = 0.0;
+  double omega_i_limit_ = 0.0;
   double dt_ = 0.0;
   double goal_pos_range_ = 0.05;
   double goal_angle_range_ = 0.05;
