@@ -224,7 +224,7 @@ public:
     bool is_pos_goal = (dist < goal_pos_range_);
     bool is_angle_goal = (std::abs(angle_diff(theta, wp.theta)) < goal_angle_range_);
     // 範囲外のときは、収束判定用変数を更新
-    if (is_last_point_ || is_pos_goal == false || is_angle_goal == false) {
+    if (is_last_point_ == false || is_pos_goal == false || is_angle_goal == false) {
       last_out_of_range_time_ = rclcpp::Clock().now();
     }
     // 収束したかの終了判定
