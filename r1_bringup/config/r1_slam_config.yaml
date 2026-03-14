@@ -5,7 +5,8 @@ urg_node2:
     serial_baud: 115200
     frame_id : 'laser'
     calibrate_time : true
-    synchronize_time : true
+    # synchronize_time : true
+    synchronize_time : false
     publish_intensity : false
     publish_multiecho : false
     error_limit : 4
@@ -35,15 +36,15 @@ amcl:
     # OmniMotionModel: mecanum / omni 向け
     # Nav2 AMCL は plugin 名で指定する形式 :contentReference[oaicite:1]{index=1}
 
-    alpha1: 0.05   # 回転によって生じる回転誤差
+    alpha1: 0.1   # 回転によって生じる回転誤差
     alpha2: 0.05   # 並進によって生じる回転誤差
     alpha3: 0.05   # 並進によって生じる並進誤差
-    alpha4: 0.05   # 回転によって生じる並進誤差
-    alpha5: 0.1   # Omni 専用の並進ノイズ
+    alpha4: 0.1   # 回転によって生じる並進誤差
+    alpha5: 0.15   # Omni 専用の並進ノイズ
     # 値を大きくすると odom を信用しにくくなる
 
     # min_particles: 500   # 粒子数の最小値
-    min_particles: 100   # 粒子数の最小値
+    min_particles: 1000   # 粒子数の最小値
     max_particles: 3000  # 粒子数の最大値。増やすと計算量も増える
 
     set_initial_pose: false
