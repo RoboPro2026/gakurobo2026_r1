@@ -53,20 +53,17 @@ public:
   }
 
   void set_param(
-    double kp_pos, double ki_pos, double kd_pos, double kff_pos, double vel_limit, double kp_angle,
-    double ki_angle, double kd_angle, double kff_angle, double omega_limit, double dt,
-    double search_radius, double goal_pos_range, double goal_angle_range,
-    double finish_time_threshold)
+    double kp_pos, double ki_pos, double kd_pos, double vel_limit, double kp_angle, double ki_angle,
+    double kd_angle, double omega_limit, double dt, double search_radius, double goal_pos_range,
+    double goal_angle_range, double finish_time_threshold)
   {
     kp_pos_ = kp_pos;
     ki_pos_ = ki_pos;
     kd_pos_ = kd_pos;
-    kff_pos_ = kff_pos;
     vel_limit_ = vel_limit;
     kp_angle_ = kp_angle;
     ki_angle_ = ki_angle;
     kd_angle_ = kd_angle;
-    kff_angle_ = kff_angle;
     omega_limit_ = omega_limit;
     dt_ = dt;
     search_radius_ = search_radius;
@@ -86,7 +83,7 @@ public:
   }
 
   /**
-   * @brief P制御+軌道FFを行う。（位置制御）
+   * @brief PID制御を行う（位置制御）
    * 
    * @param x_ref 目標位置(x_ref, y_ref, theta_ref)
    * @param x 現在の位置(x, y, theta)
@@ -107,11 +104,7 @@ public:
     integral_error_[0] += error[0] * dt_;
     integral_error_[1] += error[1] * dt_;
     integral_error_[2] += error[2] * dt_;
-    // p制御+軌道FF
-    // ret[0] = kp_pos_ * error[0] + kff_pos_ * v_ref[0];
-    // ret[1] = kp_pos_ * error[1] + kff_pos_ * v_ref[1];
-    // ret[2] = kp_angle_ * error[2] + kff_angle_ * v_ref[2];
-    // PID制御
+    // PID制御(DはFFとFB)
     ret[0] = kp_pos_ * error[0] + ki_pos_ * integral_error_[0] + kd_pos_ * (v_ref[0] - v[0]);
     ret[1] = kp_pos_ * error[1] + ki_pos_ * integral_error_[1] + kd_pos_ * (v_ref[1] - v[1]);
     ret[2] = kp_angle_ * error[2] + ki_angle_ * integral_error_[2] + kd_angle_ * (v_ref[2] - v[2]);
@@ -238,12 +231,10 @@ private:
   double kp_pos_ = 0.0;
   double ki_pos_ = 0.0;
   double kd_pos_ = 0.0;
-  double kff_pos_ = 0.0;
   double vel_limit_ = 0.0;
   double kp_angle_ = 0.0;
   double ki_angle_ = 0.0;
   double kd_angle_ = 0.0;
-  double kff_angle_ = 0.0;
   double omega_limit_ = 0.0;
   double goal_pos_range_ = 0.01;        // ゴールとみなす距離の閾値
   double goal_angle_range_ = 0.01;      // ゴールとみなす位置の閾値

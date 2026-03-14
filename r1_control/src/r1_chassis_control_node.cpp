@@ -114,12 +114,10 @@ public:
     declare_and_get_parameter("kp_pos", kp_pos_, 0.0);
     declare_and_get_parameter("ki_pos", ki_pos_, 0.0);
     declare_and_get_parameter("kd_pos", kd_pos_, 0.0);
-    declare_and_get_parameter("kff_pos", kff_pos_, 0.0);
     declare_and_get_parameter("vel_limit", vel_limit_, 0.0);
     declare_and_get_parameter("kp_angle", kp_angle_, 0.0);
     declare_and_get_parameter("ki_angle", ki_angle_, 0.0);
     declare_and_get_parameter("kd_angle", kd_angle_, 0.0);
-    declare_and_get_parameter("kff_angle", kff_angle_, 0.0);
     declare_and_get_parameter("omega_limit", omega_limit_, 0.0);
     declare_and_get_parameter("goal_pos_range", goal_pos_range_, 0.0);
     declare_and_get_parameter("goal_angle_range", goal_angle_range_, 0.0);
@@ -149,9 +147,8 @@ public:
       act_traj_follower_[i] =
         std::make_shared<TrajectoryFollower>(act_traj_planner_[i], tf_buffer_, tf_listener_);
       act_traj_follower_[i]->set_param(
-        kp_pos_, ki_pos_, kd_pos_, kff_pos_, vel_limit_, kp_angle_, ki_angle_, kd_angle_,
-        kff_angle_, omega_limit_, control_dt_, search_radius_, goal_pos_range_, goal_angle_range_,
-        finish_time_threshold_);
+        kp_pos_, ki_pos_, kd_pos_, vel_limit_, kp_angle_, ki_angle_, kd_angle_, omega_limit_,
+        control_dt_, search_radius_, goal_pos_range_, goal_angle_range_, finish_time_threshold_);
     }
 
     pos_follower_ = std::make_shared<PosFollower>();
@@ -654,13 +651,11 @@ public:
   double kp_pos_;
   double ki_pos_;
   double kd_pos_;
-  double kff_pos_;
   double vel_limit_;
   // 角度[rad]制御のゲイン
   double kp_angle_;
   double ki_angle_;
   double kd_angle_;
-  double kff_angle_;
   double omega_limit_;
   // 制御の終了判定閾値
   double goal_pos_range_;
