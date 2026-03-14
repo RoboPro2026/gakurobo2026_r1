@@ -25,7 +25,7 @@ scan_to_scan_filter_chain:
       name: median
       type: laser_filters/LaserMedianFilter
       params:
-        number_of_observations: 3
+        number_of_observations: 10
 amcl:
   ros__parameters:
     use_sim_time: false   # シミュレーション時間を使うか。実機では通常 false
@@ -116,10 +116,12 @@ amcl:
     # 各 scan から等間隔に何本使うか
     # 既定値は 60。増やしすぎると計算量とノイズ感度が上がる
 
+    update_min_d: 0.025
+    update_min_a: 0.025
     # update_min_d: 0.05
     # update_min_a: 0.05
-    update_min_d: 0.1
-    update_min_a: 0.1
+    # update_min_d: 0.1
+    # update_min_a: 0.1
     # AMCL を更新する最小移動量
     # update_min_d: 並進[m]
     # update_min_a: 回転[rad]
