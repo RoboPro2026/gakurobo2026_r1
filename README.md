@@ -16,7 +16,7 @@ git submodule update --init --recursive
 
 ## インストール(apt)
 ```
-sudo apt install -y ros-humble-magic-enum ros-humble-xacro ros-humble-slam-toolbox ros-humble-navigation2 ros-humble-nav2-bringup
+sudo apt install -y ros-humble-magic-enum ros-humble-xacro ros-humble-slam-toolbox ros-humble-navigation2 ros-humble-nav2-bringup ros-humble-laser-filters
 # for eigen
 sudo apt install libeigen3-dev
 # for pybind11

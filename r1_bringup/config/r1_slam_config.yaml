@@ -19,6 +19,13 @@ urg_node2:
     angle_max : 2.07
     skip : 0
     cluster : 1
+scan_to_scan_filter_chain:
+  ros__parameters:
+    filter1:
+      name: median
+      type: laser_filters/LaserMedianFilter
+      params:
+        number_of_observations: 3
 amcl:
   ros__parameters:
     use_sim_time: false   # シミュレーション時間を使うか。実機では通常 false
