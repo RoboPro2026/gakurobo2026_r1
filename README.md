@@ -3,7 +3,7 @@
 ## clone方法
 ```
 cd ~/ros2_ws/src
-git clone --recurse-submodules https://github.com/RoboPro2026/gakurobo2026_r1.git
+git clone --recurse-submodules git@github.com:RoboPro2026/gakurobo2026_r1.git
 ```
 
 ## submoduleの更新方法
@@ -18,9 +18,9 @@ git submodule update --init --recursive
 ```
 sudo apt install -y ros-humble-magic-enum ros-humble-xacro ros-humble-slam-toolbox ros-humble-navigation2 ros-humble-nav2-bringup ros-humble-laser-filters
 # for eigen
-sudo apt install libeigen3-dev
+sudo apt install -y libeigen3-dev
 # for pybind11
-sudo apt install pybind11-dev
+sudo apt install -y pybind11-dev
 ```
 
 ## インストール(pip)
