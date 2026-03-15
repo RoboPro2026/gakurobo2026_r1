@@ -9,8 +9,8 @@ r1_chassis_control_node:
     kp_pos_normal: 1.0
     ki_pos_normal: 0.1
     kd_pos_normal: 1.0
-    kp_pos_goal: 3.0
-    ki_pos_goal: 0.25
+    kp_pos_goal: 1.5
+    ki_pos_goal: 0.75
     kd_pos_goal: 0.0
     vel_i_limit: 0.2
     vel_output_limit: 2.5
@@ -18,8 +18,8 @@ r1_chassis_control_node:
     kp_angle_normal: 0.8
     ki_angle_normal: 0.0
     kd_angle_normal: 1.0
-    kp_angle_goal: 3.0
-    ki_angle_goal: 0.25
+    kp_angle_goal: 1.5
+    ki_angle_goal: 1.0
     kd_angle_goal: 0.0
     omega_i_limit: 0.157
     omega_output_limit: 3.5
