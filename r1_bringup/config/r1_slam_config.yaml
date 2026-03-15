@@ -24,20 +24,20 @@ r1_laser_filter_node:
     scan_topic: /scan
     filtered_scan_topic: /scan_filtered
     threshold: 0.8
-# scan_to_scan_filter_chain:
-#   ros__parameters:
-#     filter1:
-#       name: speckle
-#       type: laser_filters/LaserScanSpeckleFilter
-#       params:
-#         filter_type: 1
-#         max_range: 20.0
-#         max_range_difference: 0.08
-#     filter2:
-#       name: median
-#       type: laser_filters/LaserMedianFilter
-#       params:
-#         number_of_observations: 8
+scan_to_scan_filter_chain:
+  ros__parameters:
+    filter1:
+      name: speckle
+      type: laser_filters/LaserScanSpeckleFilter
+      params:
+        filter_type: 1
+        max_range: 20.0
+        max_range_difference: 0.08
+    filter2:
+      name: median
+      type: laser_filters/LaserMedianFilter
+      params:
+        number_of_observations: 8
 
 amcl:
   ros__parameters:
@@ -47,7 +47,7 @@ amcl:
     odom_frame_id: "odom"        # オドメトリ座標系
     global_frame_id: "map"       # 地図座標系
 
-    scan_topic: /scan            # 購読する LaserScan トピック
+    scan_topic: /scan_filtered            # 購読する LaserScan トピック
     tf_broadcast: true           # AMCL が map->odom の TF を publish するか
 
     robot_model_type: "nav2_amcl::OmniMotionModel"

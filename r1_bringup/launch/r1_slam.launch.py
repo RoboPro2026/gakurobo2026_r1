@@ -99,24 +99,24 @@ def generate_launch_description():
     #     parameters=[param_file],
     # )
 
-    r1_laser_filter_node = Node(
-        package="r1_control",
-        executable="r1_laser_filter_node",
-        name="r1_laser_filter_node",
-        output="screen",
-        parameters=[param_file],
-    )
-
-    # laser_filters = Node(
-    #     package="laser_filters",
-    #     executable="scan_to_scan_filter_chain",
-    #     name="scan_filter_chain",
-    #     parameters=["config/laser_filter.yaml"],
-    #     remappings=[
-    #         ("scan", "/scan"),
-    #         ("scan_filtered", "/scan_filtered"),
-    #     ],
+    # r1_laser_filter_node = Node(
+    #     package="r1_control",
+    #     executable="r1_laser_filter_node",
+    #     name="r1_laser_filter_node",
+    #     output="screen",
+    #     parameters=[param_file],
     # )
+
+    laser_filters = Node(
+        package="laser_filters",
+        executable="scan_to_scan_filter_chain",
+        name="scan_filter_chain",
+        parameters=["config/laser_filter.yaml"],
+        remappings=[
+            ("scan", "/scan"),
+            ("scan_filtered", "/scan_filtered"),
+        ],
+    )
 
     nav2_map_server = Node(
         package="nav2_map_server",
@@ -159,8 +159,8 @@ def generate_launch_description():
             urg_node2_node_activate_event_handler,
             lidar_tf_node,
             # slam_toolbox,
-            r1_laser_filter_node,
-            # laser_filters,
+            # r1_laser_filter_node,
+            laser_filters,
             nav2_map_server,
             nav2_amcl,
             nav2_lifecycle_manager,
