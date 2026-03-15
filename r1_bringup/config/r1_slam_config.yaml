@@ -22,10 +22,17 @@ urg_node2:
 scan_to_scan_filter_chain:
   ros__parameters:
     filter1:
+      name: speckle
+      type: laser_filters/LaserScanSpeckleFilter
+      params:
+        filter_type: 1
+        max_range: 20.0
+        max_range_difference: 0.08
+    filter2:
       name: median
       type: laser_filters/LaserMedianFilter
       params:
-        number_of_observations: 10
+        number_of_observations: 8
 amcl:
   ros__parameters:
     use_sim_time: false   # シミュレーション時間を使うか。実機では通常 false
@@ -160,7 +167,7 @@ amcl:
     z_rand: 0.1
     # ランダムノイズ観測の重み
 
-    sigma_hit: 0.1
+    sigma_hit: 0.2
     # z_hit のガウス分布の標準偏差[m]
     # 小さいほど scan と map の一致に厳しくなる
     # 既定値は 0.2
