@@ -65,17 +65,23 @@ public:
         continue;
       }
 
-      // scan[i]とscan[i+1]の内積からcosの値を求める
+      // scan[i+1] - scan[i]のベクトルを求める
       double theta1 = msg->angle_min + i * msg->angle_increment;
       double theta2 = msg->angle_min + (i + 1) * msg->angle_increment;
       double x1 = msg->ranges[i] * std::cos(theta1);
       double y1 = msg->ranges[i] * std::sin(theta1);
       double x2 = msg->ranges[i + 1] * std::cos(theta2);
       double y2 = msg->ranges[i + 1] * std::sin(theta2);
-      double dot = x1 * x2 + y1 * y2;
-      double norm1 = std::sqrt(x1 * x1 + y1 * y1);
-      double norm2 = std::sqrt(x2 * x2 + y2 * y2);
-      double cos_value = dot / (norm1 * norm2);
+      double vx = x2 - x1;
+      double vy = y2 - y1;
+      // scan[i]とscan[i+1]の原点から中点のベクトルを求める
+      double mx = (x1 + x2) / 2.0;
+      double my = (y1 + y2) / 2.0;
+      // scan[i+1] - scan[i]のベクトルとscan[i]とscan[i+1]の原点から中点のベクトルの内積を求める
+      double dot = vx * mx + vy * my;
+      double v_norm = std::sqrt(vx * vx + vy * vy);
+      double m_norm = std::sqrt(mx * mx + my * my);
+      double cos_value = dot / (v_norm * m_norm);
       // 内積から求めたcosの値がしきい値以上のときであれば、scan[i]は除外する
       // 本来は90度に近いときが良いscanなので、cosの値が小さい時(0度や180度に近いとき)を除外する
       if (std::abs(cos_value) >= threshold_) {
