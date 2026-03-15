@@ -14,11 +14,12 @@
 #include <complex>
 #include <limits>
 
-#include "geometry_msgs/msg/transform_stamped.hpp"
 #include "geometry_msgs/msg/pose_stamped.hpp"
+#include "geometry_msgs/msg/transform_stamped.hpp"
 #include "geometry_msgs/msg/twist.hpp"
 #include "nav_msgs/msg/odometry.hpp"
 #include "nav_msgs/msg/path.hpp"
+#include "r1_util/r1_util.h"
 #include "rcl_interfaces/msg/floating_point_range.hpp"
 #include "rcl_interfaces/msg/parameter_descriptor.hpp"
 #include "rclcpp/rclcpp.hpp"
@@ -30,15 +31,8 @@
 #include "tf2/utils.h"
 #include "tf2_geometry_msgs/tf2_geometry_msgs.hpp"
 #include "tf2_ros/transform_broadcaster.h"
-#include "visualization_msgs/msg/marker.hpp"
 
 using namespace std::chrono_literals;
-
-double lpf(double x, double prev_y, double tau, double dt)
-{
-  double alpha = dt / (tau + dt);
-  return alpha * x + (1 - alpha) * prev_y;
-}
 
 class MyNode : public rclcpp::Node
 {

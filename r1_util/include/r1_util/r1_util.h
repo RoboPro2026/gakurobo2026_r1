@@ -28,6 +28,30 @@ constexpr int ACT2_START = 21;
 constexpr int ACT2 = 22;
 constexpr int ACT2_FINISH = 23;
 
+/**
+ * @brief 1次のローパスフィルタ
+ * 
+ * @param x 現在の入力
+ * @param prev_y 限界の出力
+ * @param tau 時定数[s]
+ * @param dt 制御周期[s]
+ * @return double 出力 y = alpha * x + (1 - alpha) * prev_y
+ * ただし alpha = dt / (tau + dt)
+ */
+double lpf(double x, double prev_y, double tau, double dt)
+{
+  double alpha = dt / (tau + dt);
+  return alpha * x + (1 - alpha) * prev_y;
+}
+
+/**
+ * @brief 指定した開始点から終了点までの範囲を、指定した数だけ等間隔に分割して配列を生成する
+ * 
+ * @param start 開始点
+ * @param end 終了点
+ * @param num 分割数
+ * @return std::vector<double> 
+ */
 std::vector<double> linspace(double start, double end, int num)
 {
   std::vector<double> x(num);

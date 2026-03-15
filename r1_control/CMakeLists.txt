@@ -8,6 +8,7 @@ endif()
 
 # find dependencies
 find_package(ament_cmake REQUIRED)
+find_package(sensor_msgs REQUIRED)
 find_package(std_msgs REQUIRED)
 find_package(geometry_msgs REQUIRED)
 find_package(tf2 REQUIRED)
@@ -27,6 +28,7 @@ add_executable(test_trajectory_planner_node example/test_trajectory_planner_node
 add_executable(test_trapezoid_node example/test_trapezoid_node.cpp)
 add_executable(r1_chassis_control_node src/r1_chassis_control_node.cpp)
 add_executable(r1_dummy_odometry_node src/r1_dummy_odometry_node.cpp)
+add_executable(r1_laser_filter_node src/r1_laser_filter_node.cpp)
 
 pybind11_add_module(trajectory_planner src/trajectory_planner.cpp)
 
@@ -65,7 +67,17 @@ ament_target_dependencies(r1_dummy_odometry_node
   tf2
   tf2_geometry_msgs
   tf2_ros
-  visualization_msgs
+)
+
+ament_target_dependencies(r1_laser_filter_node
+  geometry_msgs
+  nav_msgs
+  rclcpp
+  sensor_msgs
+  std_msgs
+  tf2
+  tf2_geometry_msgs
+  tf2_ros 
 )
 
 target_link_libraries(test_minimum_jerk_node r1_util::r1_util)
@@ -74,6 +86,7 @@ target_link_libraries(test_trajectory_planner_node r1_util::r1_util)
 target_link_libraries(test_trapezoid_node r1_util::r1_util)
 target_link_libraries(r1_chassis_control_node r1_util::r1_util)
 target_link_libraries(r1_dummy_odometry_node r1_util::r1_util)
+target_link_libraries(r1_laser_filter_node r1_util::r1_util)
 
 target_include_directories(test_minimum_jerk_node PUBLIC
   $<BUILD_INTERFACE:${EIGEN3_INCLUDE_DIR}>
@@ -117,6 +130,12 @@ target_include_directories(r1_dummy_odometry_node PUBLIC
   $<INSTALL_INTERFACE:include>
 )
 
+target_include_directories(r1_laser_filter_node PUBLIC
+  $<BUILD_INTERFACE:${EIGEN3_INCLUDE_DIR}>
+  $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+  $<INSTALL_INTERFACE:include>
+)
+
 target_link_libraries(trajectory_planner
   PRIVATE
     rclcpp::rclcpp
@@ -144,6 +163,10 @@ install(TARGETS r1_chassis_control_node
 )
 
 install(TARGETS r1_dummy_odometry_node
+  DESTINATION lib/${PROJECT_NAME}
+)
+
+install(TARGETS r1_laser_filter_node
   DESTINATION lib/${PROJECT_NAME}
 )
 
