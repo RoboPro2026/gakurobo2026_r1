@@ -62,7 +62,7 @@ amcl:
     # reset 時に毎回初期位置の再指定を必須にするか
 
     # laser_model_type: "likelihood_field_prob"
-    laser_model_type: "likelihool_field"
+    laser_model_type: "likelihood_field"
     # LaserScan と map の一致度計算モデル
     # likelihood_field_prob は likelihood_field の拡張版で
     # beamskip（不一致ビームの除外）を使用できる
