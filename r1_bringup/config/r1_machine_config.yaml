@@ -24,8 +24,8 @@ r1_chassis_control_node:
     omega_i_limit: 0.157
     omega_output_limit: 3.5
     # 制御の終了判定閾値
-    goal_pos_range: 0.035
-    goal_angle_range: 0.035
+    goal_pos_range: 0.04
+    goal_angle_range: 0.04
     finish_time_threshold: 1.0
     enable_visualization: true
     arrow_scale: 3.0

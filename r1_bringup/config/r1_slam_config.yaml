@@ -22,7 +22,7 @@ urg_node2:
 r1_laser_filter_node:
   ros__parameters:
     scan_topic: /scan
-    filtered_scan_topic: /scan_filtered
+    filtered_scan_topic: /scan_filtered_r1
     threshold: 0.8
 scan_to_scan_filter_chain:
   ros__parameters:
