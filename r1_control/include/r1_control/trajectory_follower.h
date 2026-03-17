@@ -147,6 +147,7 @@ public:
     ret[0] = kp_pos * error[0] + ki_pos * integral_error_[0] + kd_pos * (v_ref[0] - v[0]);
     ret[1] = kp_pos * error[1] + ki_pos * integral_error_[1] + kd_pos * (v_ref[1] - v[1]);
     ret[2] = kp_angle * error[2] + ki_angle * integral_error_[2] + kd_angle * (v_ref[2] - v[2]);
+
     // PID制御の出力制限
     // 本当はやりたくないが、出力制限をしないと危ない挙動をするときがあるため
     ret[0] = std::clamp(ret[0], -vel_output_limit_, vel_output_limit_);
