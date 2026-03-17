@@ -2,26 +2,26 @@ r1_chassis_control_node:
   ros__parameters:
     act_filebase: "src/gakurobo2026_r1/data/"
     zone: "blue"
-    timer_rate: 50.0
+    timer_rate: 100.0
     visualize_timer_rate: 10.0
     # trueのときはmap座標系を使用してtf変換を行う。falseのときはodom座標系を使用する
     # つまりtrueのときはLidarを使用し、falseのときはLidarは使用せずに制御する
     use_map: true
     search_radius: 0.2
     # 位置制御のゲイン
-    kp_pos_normal: 1.0
-    ki_pos_normal: 0.1
+    kp_pos_normal: 2.0
+    ki_pos_normal: 0.0
     kd_pos_normal: 1.0
-    kp_pos_goal: 2.0
+    kp_pos_goal: 3.0
     ki_pos_goal: 0.0
     kd_pos_goal: 0.0
     vel_i_limit: 0.3
     vel_output_limit: 2.5
     # 角度制御のゲイン
-    kp_angle_normal: 0.8
-    ki_angle_normal: 0.1
+    kp_angle_normal: 2.0
+    ki_angle_normal: 0.0
     kd_angle_normal: 1.0
-    kp_angle_goal: 2.0
+    kp_angle_goal: 3.0
     ki_angle_goal: 0.0
     kd_angle_goal: 0.0
     omega_i_limit: 0.2
