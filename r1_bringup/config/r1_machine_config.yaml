@@ -7,7 +7,8 @@ r1_chassis_control_node:
     # trueのときはmap座標系を使用してtf変換を行う。falseのときはodom座標系を使用する
     # つまりtrueのときはLidarを使用し、falseのときはLidarは使用せずに制御する
     use_map: true
-    search_radius: 0.2
+    search_radius: 0.2  # 最低先読み距離 [m]
+    lookahead_time: 0.3 # 速度に応じて先読み距離を伸ばす時間 [s]
     # 位置制御のゲイン
     kp_pos_normal: 2.0
     ki_pos_normal: 0.0

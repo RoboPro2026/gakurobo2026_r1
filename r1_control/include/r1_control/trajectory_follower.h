@@ -11,7 +11,9 @@
 
 #pragma once
 
+#include <algorithm>
 #include <cmath>
+#include <limits>
 
 #include "geometry_msgs/msg/twist.hpp"
 #include "nav_msgs/msg/odometry.hpp"
@@ -57,8 +59,8 @@ public:
     double kp_pos_goal, double ki_pos_goal, double kd_pos_goal, double vel_i_limit,
     double vel_output_limit, double kp_angle_normal, double ki_angle_normal, double kd_angle_normal,
     double kp_angle_goal, double ki_angle_goal, double kd_angle_goal, double omega_i_limit,
-    double omega_output_limit, double dt, double search_radius, double goal_pos_range,
-    double goal_angle_range, double finish_time_threshold)
+    double omega_output_limit, double dt, double search_radius, double lookahead_time,
+    double goal_pos_range, double goal_angle_range, double finish_time_threshold)
   {
     use_map_ = use_map;
     kp_pos_normal_ = kp_pos_normal;
@@ -79,6 +81,7 @@ public:
     omega_output_limit_ = omega_output_limit;
     dt_ = dt;
     search_radius_ = search_radius;
+    lookahead_time_ = lookahead_time;
     goal_pos_range_ = goal_pos_range;
     goal_angle_range_ = goal_angle_range;
     finish_time_threshold_ = finish_time_threshold;
@@ -98,6 +101,38 @@ public:
     integral_error_ = {0.0, 0.0, 0.0};
     // 微分項をリセット
     derivative_error_ = {0.0, 0.0, 0.0};
+  }
+
+  // 軌道配列上の index から map 座標系の姿勢を組み立てる。
+  geometry_msgs::msg::PoseStamped make_map_pose(int index) const
+  {
+    geometry_msgs::msg::PoseStamped pose_map;
+    pose_map.header.frame_id = "map";
+    pose_map.pose.position.x = traj_planner_->x_[index];
+    pose_map.pose.position.y = traj_planner_->y_[index];
+    pose_map.pose.position.z = 0.0;
+    tf2::Quaternion q;
+    q.setRPY(0.0, 0.0, traj_planner_->theta_[index]);
+    q.normalize();
+    pose_map.pose.orientation = tf2::toMsg(q);
+    return pose_map;
+  }
+
+  // 制御は odom 座標系で行うため、必要に応じて map -> odom 変換を行う。
+  bool to_odom_pose(
+    const geometry_msgs::msg::PoseStamped & pose_map, geometry_msgs::msg::PoseStamped & pose_odom)
+  {
+    if (!use_map_) {
+      pose_odom = pose_map;
+      return true;
+    }
+    try {
+      tf_buffer_->transform(pose_map, pose_odom, "odom", tf2::durationFromSec(0.01));
+      return true;
+    } catch (const tf2::TransformException & ex) {
+      RCLCPP_WARN(logger_, "Could not transform pose from map to odom: %s", ex.what());
+      return false;
+    }
   }
 
   /**
@@ -179,68 +214,126 @@ public:
    */
   std::pair<WayPoint, geometry_msgs::msg::Twist> update(nav_msgs::msg::Odometry odometry)
   {
-    // odomの位置を取得
+    geometry_msgs::msg::PoseStamped current_pose_odom;
+    current_pose_odom.header = odometry.header;
+    current_pose_odom.pose = odometry.pose.pose;
+
     double x = odometry.pose.pose.position.x;
     double y = odometry.pose.pose.position.y;
     double theta = tf2::getYaw(odometry.pose.pose.orientation);
-    double dx = 0.0, dy = 0.0, dist = 0.0;
-    geometry_msgs::msg::PoseStamped target_map;
-    geometry_msgs::msg::PoseStamped target_odom;
-
-    // 現在位置から次のwaypointを探索
-    while (idx_ < traj_planner_->array_size_) {
-      // 目標位置を取得
-      // 目標位置はmap座標系のものをodom座標系に変換して使用する
-      // odom座標系にて制御を行う理由は、map座標系で制御を行うと、map->odomのtfが変化したときに現在位置が急激にずれるのを防ぐため
-      target_map.header.frame_id = "map";
-      target_map.pose.position.x = traj_planner_->x_[idx_];
-      target_map.pose.position.y = traj_planner_->y_[idx_];
-      target_map.pose.position.z = 0.0;
-      tf2::Quaternion q;
-      q.setRPY(0.0, 0.0, traj_planner_->theta_[idx_]);
-      target_map.pose.orientation = tf2::toMsg(q);
-      if (use_map_) {
-        // use_map_がtrueのときは、map座標系の目標位置をodom座標系に変換する。
-        try {
-          tf_buffer_->transform(target_map, target_odom, "odom", tf2::durationFromSec(0.01));
-        } catch (tf2::TransformException & ex) {
-          RCLCPP_WARN(logger_, "Could not transform pose from map to odom: %s", ex.what());
-          break;
+    double search_x = x;
+    double search_y = y;
+    if (use_map_) {
+      // 最寄り点探索だけは軌道と同じ map 座標系で行い、TF のずれで探索が不安定になるのを避ける。
+      geometry_msgs::msg::PoseStamped current_pose_map;
+      try {
+        // map->odomに座標変換
+        current_pose_map =
+          tf_buffer_->transform(current_pose_odom, "map", tf2::durationFromSec(0.01));
+      } catch (const tf2::TransformException & ex) {
+        RCLCPP_WARN(logger_, "Could not transform pose from odom to map: %s", ex.what());
+        // 失敗したときは適当なwaypointとcmd_velを返す。
+        geometry_msgs::msg::Twist cmd_vel;
+        WayPoint wp_map{};
+        if (traj_planner_->array_size_ > 0) {
+          wp_map.x = traj_planner_->x_[idx_];
+          wp_map.y = traj_planner_->y_[idx_];
+          wp_map.theta = traj_planner_->theta_[idx_];
+          wp_map.v_trans = traj_planner_->v_trans_[idx_];
+          wp_map.a_trans = traj_planner_->a_trans_[idx_];
+          wp_map.j_trans = traj_planner_->j_trans_[idx_];
+          wp_map.omega = traj_planner_->omega_[idx_];
+          wp_map.curvature = traj_planner_->curvature_[idx_];
         }
-      } else {
-        // use_map_がfalseのときは、map座標系の目標位置をそのまま使用する。
-        // つまり、Lidarは使用しないということ。
-        target_odom = target_map;
+        // 目標点が座標変換できない周期は無理に追従せず、ゼロ指令で抜ける。
+        return std::make_pair(wp_map, cmd_vel);
       }
-      // 目標位置と現在位置の距離を計算
-      dx = target_odom.pose.position.x - x;
-      dy = target_odom.pose.position.y - y;
-      dist = std::sqrt(dx * dx + dy * dy);
-      if (dist > search_radius_) {
-        break;
-      }
-      idx_++;
+      search_x = current_pose_map.pose.position.x;
+      search_y = current_pose_map.pose.position.y;
     }
 
-    if (idx_ >= traj_planner_->array_size_ - 1) {
-      idx_ = traj_planner_->array_size_ - 1;
+    // 直前の index 以降だけを対象に最寄り点を探し、軌道上を後戻りしないようにする。
+    int nearest_index = idx_;
+    double nearest_dist = 1e9;
+    for (int i = idx_; i < traj_planner_->array_size_; ++i) {
+      double dx = traj_planner_->x_[i] - search_x;
+      double dy = traj_planner_->y_[i] - search_y;
+      double dist = dx * dx + dy * dy;
+      if (dist < nearest_dist) {
+        nearest_dist = dist;
+        nearest_index = i;
+      }
+    }
+    idx_ = nearest_index;
+
+    // 最寄り点から少し先を追うことで、高速時に古い waypoint へ引き戻される挙動を抑える。
+    // search_radius_ は最低保証の先読み距離として使い、低速でも目標点が近すぎないようにする。
+    // 速度が高いときは v_trans * lookahead_time_ を使って先読み距離を伸ばす。
+    double lookahead_dist =
+      std::max(search_radius_, std::abs(traj_planner_->v_trans_[nearest_index]) * lookahead_time_);
+    int target_index = nearest_index;
+    double target_distance = traj_planner_->distance_[nearest_index] + lookahead_dist;
+    // 軌道距離 distance_ を基準にして目標点を進めることで、曲線でも一定の先読み量を保ちやすくする。
+    while (target_index + 1 < traj_planner_->array_size_ &&
+           traj_planner_->distance_[target_index] < target_distance) {
+      target_index++;
     }
 
-    // 次のwaypoint（odom座標系）を取得
+    geometry_msgs::msg::PoseStamped target_map = make_map_pose(target_index);
+    geometry_msgs::msg::PoseStamped target_odom;
+    if (!to_odom_pose(target_map, target_odom)) {
+      // 目標点の座標変換に失敗したときは、適当な値を返す。
+      geometry_msgs::msg::Twist cmd_vel;
+      WayPoint wp_map;
+      wp_map.x = traj_planner_->x_[target_index];
+      wp_map.y = traj_planner_->y_[target_index];
+      wp_map.theta = traj_planner_->theta_[target_index];
+      wp_map.v_trans = traj_planner_->v_trans_[target_index];
+      wp_map.a_trans = traj_planner_->a_trans_[target_index];
+      wp_map.j_trans = traj_planner_->j_trans_[target_index];
+      wp_map.omega = traj_planner_->omega_[target_index];
+      wp_map.curvature = traj_planner_->curvature_[target_index];
+      return std::make_pair(wp_map, cmd_vel);
+    }
+
+    double dx = target_odom.pose.position.x - x;
+    double dy = target_odom.pose.position.y - y;
+    double dist = std::sqrt(dx * dx + dy * dy);
+
     WayPoint wp_odom;
     wp_odom.x = target_odom.pose.position.x;
     wp_odom.y = target_odom.pose.position.y;
     wp_odom.theta = tf2::getYaw(target_odom.pose.orientation);
-    wp_odom.v_trans = traj_planner_->v_trans_[idx_];
-    wp_odom.a_trans = traj_planner_->a_trans_[idx_];
-    wp_odom.j_trans = traj_planner_->j_trans_[idx_];
-    wp_odom.omega = traj_planner_->omega_[idx_];
-    wp_odom.curvature = traj_planner_->curvature_[idx_];
+    wp_odom.v_trans = traj_planner_->v_trans_[target_index];
+    wp_odom.a_trans = traj_planner_->a_trans_[target_index];
+    wp_odom.j_trans = traj_planner_->j_trans_[target_index];
+    wp_odom.omega = traj_planner_->omega_[target_index];
+    wp_odom.curvature = traj_planner_->curvature_[target_index];
 
-    // 現在の位置のnext_waypointから、角度を計算
-    double arg = std::atan2(wp_odom.y - y, wp_odom.x - x);
-    double vx = wp_odom.v_trans * std::cos(arg);
-    double vy = wp_odom.v_trans * std::sin(arg);
+    // 並進FF軌道の接線方向に合わせる。
+    // 接戦方向を軌道から取る理由は、現在位置とwaypointから取るとうまく行かなかったから。
+    int tangent_from_index = target_index;
+    int tangent_to_index = std::min(target_index + 1, traj_planner_->array_size_ - 1);
+    if (tangent_to_index == tangent_from_index) {
+      tangent_from_index = std::max(target_index - 1, 0);
+    }
+    geometry_msgs::msg::PoseStamped tangent_from_odom;
+    geometry_msgs::msg::PoseStamped tangent_to_odom;
+    bool tangent_ok = to_odom_pose(make_map_pose(tangent_from_index), tangent_from_odom) &&
+                      to_odom_pose(make_map_pose(tangent_to_index), tangent_to_odom);
+
+    // 接線がうまく取れないときは軌道に設定された姿勢角を使う。
+    double tangent_heading = wp_odom.theta;
+    if (tangent_ok) {
+      double tangent_dx = tangent_to_odom.pose.position.x - tangent_from_odom.pose.position.x;
+      double tangent_dy = tangent_to_odom.pose.position.y - tangent_from_odom.pose.position.y;
+      if (std::hypot(tangent_dx, tangent_dy) > 1e-6) {
+        tangent_heading = std::atan2(tangent_dy, tangent_dx);
+      }
+    }
+
+    double vx = wp_odom.v_trans * std::cos(tangent_heading);
+    double vy = wp_odom.v_trans * std::sin(tangent_heading);
 
     std::vector<double> x_ref = {wp_odom.x, wp_odom.y, wp_odom.theta};
     std::vector<double> _x = {x, y, theta};
@@ -249,7 +342,7 @@ public:
       odometry.twist.twist.linear.x, odometry.twist.twist.linear.y, odometry.twist.twist.angular.z};
 
     // 終了判定
-    is_last_point_ = (idx_ == traj_planner_->array_size_ - 1);
+    is_last_point_ = (target_index == traj_planner_->array_size_ - 1);
     bool is_pos_goal = (dist < goal_pos_range_);
     bool is_angle_goal = (std::abs(angle_diff(theta, wp_odom.theta)) < goal_angle_range_);
     // 範囲外のときは、収束判定用変数を更新
@@ -257,6 +350,7 @@ public:
       last_out_of_range_time_ = rclcpp::Clock().now();
     }
     // 収束したかの終了判定
+    // 一瞬だけ閾値内に入った場合ではなく、一定時間収束し続けたときだけ完了とみなす。
     bool is_time_ok =
       (rclcpp::Clock().now() - last_out_of_range_time_).seconds() > finish_time_threshold_;
 
@@ -306,6 +400,8 @@ private:
   bool use_map_;
   // 探索半径[m]
   double search_radius_ = 0.0;
+  // 速度に応じて先読み距離を伸ばすための時間[s]
+  double lookahead_time_ = 0.3;
   // 通常時のPID位置ゲイン
   double kp_pos_normal_ = 0.0;
   double ki_pos_normal_ = 0.0;

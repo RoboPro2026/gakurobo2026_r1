@@ -122,6 +122,7 @@ public:
     declare_and_get_parameter("zone", zone_, "red");
     declare_and_get_parameter("use_map", use_map_, true);
     declare_and_get_parameter("search_radius", search_radius_, 0.0);
+    declare_and_get_parameter("lookahead_time", lookahead_time_, 0.3);
     declare_and_get_parameter("kp_pos_normal", kp_pos_normal_, 0.0);
     declare_and_get_parameter("ki_pos_normal", ki_pos_normal_, 0.0);
     declare_and_get_parameter("kd_pos_normal", kd_pos_normal_, 0.0);
@@ -169,8 +170,8 @@ public:
         use_map_, kp_pos_normal_, ki_pos_normal_, kd_pos_normal_, kp_pos_goal_, ki_pos_goal_,
         kd_pos_goal_, vel_i_limit_, vel_output_limit_, kp_angle_normal_, ki_angle_normal_,
         kd_angle_normal_, kp_angle_goal_, ki_angle_goal_, kd_angle_goal_, omega_i_limit_,
-        omega_output_limit_, control_dt_, search_radius_, goal_pos_range_, goal_angle_range_,
-        finish_time_threshold_);
+        omega_output_limit_, control_dt_, search_radius_, lookahead_time_, goal_pos_range_,
+        goal_angle_range_, finish_time_threshold_);
     }
 
     pos_follower_ = std::make_shared<PosFollower>();
@@ -695,6 +696,7 @@ public:
   // mapを使用するか（Lidarを使用するか）
   bool use_map_;
   double search_radius_;  // 経路追従のための探索半径
+  double lookahead_time_;
   // 通常時の位置[m]制御のゲイン
   double kp_pos_normal_;
   double ki_pos_normal_;
