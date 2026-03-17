@@ -172,9 +172,9 @@ public:
   }
 
   /**
-   * @brief 現在位置から次のwaypointを探索し、軌道追従を行う。WayPointと速度ベクトルを返す。
+   * @brief 現在位置から次のwaypointを探索し、軌道追従を行う。map座標系のWayPointと速度ベクトルを返す。
    * 
-   * @param _x 現在の位置(x, y, theta)
+   * @param _x odom座標系の現在位置(x, y, theta)
    * @return std::pair<WayPoint, geometry_msgs::msg::Twist> WayPointは次のwaypoint、geometry_msgs::msg::Twistは速度ベクトル(vx, vy, omega)
    */
   std::pair<WayPoint, geometry_msgs::msg::Twist> update(nav_msgs::msg::Odometry odometry)
@@ -184,31 +184,25 @@ public:
     double y = odometry.pose.pose.position.y;
     double theta = tf2::getYaw(odometry.pose.pose.orientation);
     double dx = 0.0, dy = 0.0, dist = 0.0;
+    geometry_msgs::msg::PoseStamped target_map;
+    geometry_msgs::msg::PoseStamped target_odom;
+
     // 現在位置から次のwaypointを探索
     while (idx_ < traj_planner_->array_size_) {
       // 目標位置を取得
       // 目標位置はmap座標系のものをodom座標系に変換して使用する
       // odom座標系にて制御を行う理由は、map座標系で制御を行うと、map->odomのtfが変化したときに現在位置が急激にずれるのを防ぐため
-      double x_map = traj_planner_->x_[idx_];
-      double y_map = traj_planner_->y_[idx_];
-      double theta_map = traj_planner_->theta_[idx_];
-      geometry_msgs::msg::PoseStamped pose_map;
-      pose_map.header.frame_id = "map";
-      pose_map.pose.position.x = x_map;
-      pose_map.pose.position.y = y_map;
-      pose_map.pose.position.z = 0.0;
+      target_map.header.frame_id = "map";
+      target_map.pose.position.x = traj_planner_->x_[idx_];
+      target_map.pose.position.y = traj_planner_->y_[idx_];
+      target_map.pose.position.z = 0.0;
       tf2::Quaternion q;
-      q.setRPY(0.0, 0.0, theta_map);
-      pose_map.pose.orientation = tf2::toMsg(q);
-      geometry_msgs::msg::PoseStamped pose_odom;
+      q.setRPY(0.0, 0.0, traj_planner_->theta_[idx_]);
+      target_map.pose.orientation = tf2::toMsg(q);
       if (use_map_) {
         // use_map_がtrueのときは、map座標系の目標位置をodom座標系に変換する。
         try {
-          tf_buffer_->transform(pose_map, pose_odom, "odom", tf2::durationFromSec(0.01));
-          // x, y, thetaをodomに更新
-          x = odometry.pose.pose.position.x;
-          y = odometry.pose.pose.position.y;
-          theta = tf2::getYaw(odometry.pose.pose.orientation);
+          tf_buffer_->transform(target_map, target_odom, "odom", tf2::durationFromSec(0.01));
         } catch (tf2::TransformException & ex) {
           RCLCPP_WARN(logger_, "Could not transform pose from map to odom: %s", ex.what());
           break;
@@ -216,11 +210,11 @@ public:
       } else {
         // use_map_がfalseのときは、map座標系の目標位置をそのまま使用する。
         // つまり、Lidarは使用しないということ。
-        pose_odom = pose_map;
+        target_odom = target_map;
       }
       // 目標位置と現在位置の距離を計算
-      dx = traj_planner_->x_[idx_] - x;
-      dy = traj_planner_->y_[idx_] - y;
+      dx = target_odom.pose.position.x - x;
+      dy = target_odom.pose.position.y - y;
       dist = std::sqrt(dx * dx + dy * dy);
       if (dist > search_radius_) {
         break;
@@ -232,32 +226,32 @@ public:
       idx_ = traj_planner_->array_size_ - 1;
     }
 
-    // 次のwaypointを更新
-    WayPoint wp;
-    wp.x = traj_planner_->x_[idx_];
-    wp.y = traj_planner_->y_[idx_];
-    wp.theta = traj_planner_->theta_[idx_];
-    wp.v_trans = traj_planner_->v_trans_[idx_];
-    wp.a_trans = traj_planner_->a_trans_[idx_];
-    wp.j_trans = traj_planner_->j_trans_[idx_];
-    wp.omega = traj_planner_->omega_[idx_];
-    wp.curvature = traj_planner_->curvature_[idx_];
+    // 次のwaypoint（odom座標系）を取得
+    WayPoint wp_odom;
+    wp_odom.x = target_odom.pose.position.x;
+    wp_odom.y = target_odom.pose.position.y;
+    wp_odom.theta = tf2::getYaw(target_odom.pose.orientation);
+    wp_odom.v_trans = traj_planner_->v_trans_[idx_];
+    wp_odom.a_trans = traj_planner_->a_trans_[idx_];
+    wp_odom.j_trans = traj_planner_->j_trans_[idx_];
+    wp_odom.omega = traj_planner_->omega_[idx_];
+    wp_odom.curvature = traj_planner_->curvature_[idx_];
 
     // 現在の位置のnext_waypointから、角度を計算
-    double arg = std::atan2(wp.y - y, wp.x - x);
-    double vx = wp.v_trans * std::cos(arg);
-    double vy = wp.v_trans * std::sin(arg);
+    double arg = std::atan2(wp_odom.y - y, wp_odom.x - x);
+    double vx = wp_odom.v_trans * std::cos(arg);
+    double vy = wp_odom.v_trans * std::sin(arg);
 
-    std::vector<double> x_ref = {wp.x, wp.y, wp.theta};
+    std::vector<double> x_ref = {wp_odom.x, wp_odom.y, wp_odom.theta};
     std::vector<double> _x = {x, y, theta};
-    std::vector<double> v_ref = {vx, vy, wp.omega};
+    std::vector<double> v_ref = {vx, vy, wp_odom.omega};
     std::vector<double> _v = {
       odometry.twist.twist.linear.x, odometry.twist.twist.linear.y, odometry.twist.twist.angular.z};
 
     // 終了判定
     is_last_point_ = (idx_ == traj_planner_->array_size_ - 1);
     bool is_pos_goal = (dist < goal_pos_range_);
-    bool is_angle_goal = (std::abs(angle_diff(theta, wp.theta)) < goal_angle_range_);
+    bool is_angle_goal = (std::abs(angle_diff(theta, wp_odom.theta)) < goal_angle_range_);
     // 範囲外のときは、収束判定用変数を更新
     if (is_last_point_ == false || is_pos_goal == false || is_angle_goal == false) {
       last_out_of_range_time_ = rclcpp::Clock().now();
@@ -278,12 +272,23 @@ public:
       v_chassis = {0.0, 0.0, 0.0};
     }
 
+    // 速度指令値
     geometry_msgs::msg::Twist cmd_vel;
     cmd_vel.linear.x = v_chassis[0];
     cmd_vel.linear.y = v_chassis[1];
     cmd_vel.angular.z = v_chassis[2];
+    // map座標系のwaypoint
+    WayPoint wp_map;
+    wp_map.x = traj_planner_->x_[idx_];
+    wp_map.y = traj_planner_->y_[idx_];
+    wp_map.theta = traj_planner_->theta_[idx_];
+    wp_map.v_trans = traj_planner_->v_trans_[idx_];
+    wp_map.a_trans = traj_planner_->a_trans_[idx_];
+    wp_map.j_trans = traj_planner_->j_trans_[idx_];
+    wp_map.omega = traj_planner_->omega_[idx_];
+    wp_map.curvature = traj_planner_->curvature_[idx_];
 
-    return std::make_pair(wp, cmd_vel);
+    return std::make_pair(wp_map, cmd_vel);
   }
 
   int is_finished() { return finish_; }
