@@ -55,25 +55,34 @@ public:
   }
 
   void set_param(
-    bool use_map, double kp_pos_normal, double ki_pos_normal, double kd_pos_normal,
-    double kp_pos_goal, double ki_pos_goal, double kd_pos_goal, double vel_i_limit,
-    double vel_output_limit, double kp_angle_normal, double ki_angle_normal, double kd_angle_normal,
+    bool use_map, double kp_pos_tangent_usual, double ki_pos_tangent_usual,
+    double kd_pos_tangent_usual, double kp_pos_tangent_goal, double ki_pos_tangent_goal,
+    double kd_pos_tangent_goal, double kp_pos_normal_usual, double ki_pos_normal_usual,
+    double kd_pos_normal_usual, double kp_pos_normal_goal, double ki_pos_normal_goal,
+    double kd_pos_normal_goal, double vel_i_limit, double vel_output_limit,
+    double kp_angle_usual, double ki_angle_usual, double kd_angle_usual,
     double kp_angle_goal, double ki_angle_goal, double kd_angle_goal, double omega_i_limit,
     double omega_output_limit, double dt, double search_radius, double lookahead_time,
     double goal_pos_range, double goal_angle_range, double finish_time_threshold)
   {
     use_map_ = use_map;
-    kp_pos_normal_ = kp_pos_normal;
-    ki_pos_normal_ = ki_pos_normal;
-    kd_pos_normal_ = kd_pos_normal;
-    kp_pos_goal_ = kp_pos_goal;
-    ki_pos_goal_ = ki_pos_goal;
-    kd_pos_goal_ = kd_pos_goal;
+    kp_pos_tangent_usual_ = kp_pos_tangent_usual;
+    ki_pos_tangent_usual_ = ki_pos_tangent_usual;
+    kd_pos_tangent_usual_ = kd_pos_tangent_usual;
+    kp_pos_tangent_goal_ = kp_pos_tangent_goal;
+    ki_pos_tangent_goal_ = ki_pos_tangent_goal;
+    kd_pos_tangent_goal_ = kd_pos_tangent_goal;
+    kp_pos_normal_usual_ = kp_pos_normal_usual;
+    ki_pos_normal_usual_ = ki_pos_normal_usual;
+    kd_pos_normal_usual_ = kd_pos_normal_usual;
+    kp_pos_normal_goal_ = kp_pos_normal_goal;
+    ki_pos_normal_goal_ = ki_pos_normal_goal;
+    kd_pos_normal_goal_ = kd_pos_normal_goal;
     vel_i_limit_ = vel_i_limit;
     vel_output_limit_ = vel_output_limit;
-    kp_angle_normal_ = kp_angle_normal;
-    ki_angle_normal_ = ki_angle_normal;
-    kd_angle_normal_ = kd_angle_normal;
+    kp_angle_usual_ = kp_angle_usual;
+    ki_angle_usual_ = ki_angle_usual;
+    kd_angle_usual_ = kd_angle_usual;
     kp_angle_goal_ = kp_angle_goal;
     ki_angle_goal_ = ki_angle_goal;
     kd_angle_goal_ = kd_angle_goal;
@@ -94,12 +103,10 @@ public:
     is_last_point_ = false;
     finish_ = 0;
     last_out_of_range_time_ = rclcpp::Clock().now();
-    // 偏差をリセット
+    // 制御で使う接線/法線/角度誤差をリセット
     error_ = {0.0, 0.0, 0.0};
     prev_error_ = {0.0, 0.0, 0.0};
-    // 積分項をリセット
     integral_error_ = {0.0, 0.0, 0.0};
-    // 微分項をリセット
     derivative_error_ = {0.0, 0.0, 0.0};
   }
 
@@ -146,55 +153,87 @@ public:
    */
   std::vector<double> control(
     std::vector<double> x_ref, std::vector<double> x, std::vector<double> v_ref,
-    std::vector<double> v)
+    std::vector<double> v, double tangent_heading)
   {
-    double kp_pos, ki_pos, kd_pos, kp_angle, ki_angle, kd_angle;
+    // 接線方向と法線方向のPID制御を分けて行う。
+    // 接線方向は軌道に沿って進むための制御、法線方向は軌道からの横ずれを補正するための制御となる。
+    (void)v;
+    double kp_pos_tangent, ki_pos_tangent, kd_pos_tangent;
+    double kp_pos_lateral, ki_pos_lateral, kd_pos_lateral;
+    double kp_angle, ki_angle, kd_angle;
     // 最後のwaypointのときはゴール用ゲインを使用する。そうでなければ、通常時のゲインを使用する。
     if (is_last_point_) {
-      kp_pos = kp_pos_goal_;
-      ki_pos = ki_pos_goal_;
-      kd_pos = kd_pos_goal_;
+      kp_pos_tangent = kp_pos_tangent_goal_;
+      ki_pos_tangent = ki_pos_tangent_goal_;
+      kd_pos_tangent = kd_pos_tangent_goal_;
+      kp_pos_lateral = kp_pos_normal_goal_;
+      ki_pos_lateral = ki_pos_normal_goal_;
+      kd_pos_lateral = kd_pos_normal_goal_;
       kp_angle = kp_angle_goal_;
       ki_angle = ki_angle_goal_;
       kd_angle = kd_angle_goal_;
     } else {
-      kp_pos = kp_pos_normal_;
-      ki_pos = ki_pos_normal_;
-      kd_pos = kd_pos_normal_;
-      kp_angle = kp_angle_normal_;
-      ki_angle = ki_angle_normal_;
-      kd_angle = kd_angle_normal_;
+      kp_pos_tangent = kp_pos_tangent_usual_;
+      ki_pos_tangent = ki_pos_tangent_usual_;
+      kd_pos_tangent = kd_pos_tangent_usual_;
+      kp_pos_lateral = kp_pos_normal_usual_;
+      ki_pos_lateral = ki_pos_normal_usual_;
+      kd_pos_lateral = kd_pos_normal_usual_;
+      kp_angle = kp_angle_usual_;
+      ki_angle = ki_angle_usual_;
+      kd_angle = kd_angle_usual_;
     }
     std::vector<double> ret(3);
-    error_[0] = x_ref[0] - x[0];
-    error_[1] = x_ref[1] - x[1];
+    // 位置誤差は軌道の接線方向/法線方向へ分解して制御する。
+    double dx = x_ref[0] - x[0];
+    double dy = x_ref[1] - x[1];
+    double cos_heading = std::cos(tangent_heading);
+    double sin_heading = std::sin(tangent_heading);
+    error_[0] = cos_heading * dx + sin_heading * dy;
+    error_[1] = -sin_heading * dx + cos_heading * dy;
     error_[2] = angle_diff(x_ref[2], x[2]);
+    // 接線方向は「軌道に沿ってどれだけ進み遅れているか」、
+    // 法線方向は「軌道からどれだけ横にずれているか」を表す。
     integral_error_[0] += error_[0] * dt_;
     integral_error_[1] += error_[1] * dt_;
     integral_error_[2] += error_[2] * dt_;
     derivative_error_[0] = (error_[0] - prev_error_[0]) / dt_;
     derivative_error_[1] = (error_[1] - prev_error_[1]) / dt_;
     derivative_error_[2] = (error_[2] - prev_error_[2]) / dt_;
+
+    // feedforward も同じ座標系へ変換する。現在の実装では概ね [v_trans, 0, omega] になる。
+    double v_ref_tangent = cos_heading * v_ref[0] + sin_heading * v_ref[1];
+    double v_ref_normal = -sin_heading * v_ref[0] + cos_heading * v_ref[1];
     // 積分器のリミッター。kiが0でないことを確認してから実行する。
-    if (std::abs(ki_pos) >= 1e-100) {
-      double limit = vel_i_limit_ / ki_pos;
+    if (std::abs(ki_pos_tangent) >= 1e-100) {
+      double limit = vel_i_limit_ / std::abs(ki_pos_tangent);
       integral_error_[0] = std::clamp(integral_error_[0], -limit, limit);
+    }
+    if (std::abs(ki_pos_lateral) >= 1e-100) {
+      double limit = vel_i_limit_ / std::abs(ki_pos_lateral);
       integral_error_[1] = std::clamp(integral_error_[1], -limit, limit);
     }
     if (std::abs(ki_angle) >= 1e-100) {
-      double limit = omega_i_limit_ / ki_angle;
+      double limit = omega_i_limit_ / std::abs(ki_angle);
       integral_error_[2] = std::clamp(integral_error_[2], -limit, limit);
     }
-    // PID制御+速度FF
-    ret[0] =
-      kp_pos * error_[0] + ki_pos * integral_error_[0] + kd_pos * derivative_error_[0] + v_ref[0];
-    ret[1] =
-      kp_pos * error_[1] + ki_pos * integral_error_[1] + kd_pos * derivative_error_[1] + v_ref[1];
-    ret[2] = kp_angle * error_[2] + ki_angle * integral_error_[2] +
-             kd_angle * derivative_error_[2] + v_ref[2];
+    // 接線方向は軌道に沿って進ませ、法線方向は軌道へ戻す役割を持つ。
+    // これにより、前進のための指令と横ずれ補正の指令を分離できる。
+    double tangent_cmd =
+      kp_pos_tangent * error_[0] + ki_pos_tangent * integral_error_[0] +
+      kd_pos_tangent * derivative_error_[0] + v_ref_tangent;
+    double normal_cmd =
+      kp_pos_lateral * error_[1] + ki_pos_lateral * integral_error_[1] +
+      kd_pos_lateral * derivative_error_[1] + v_ref_normal;
+
+    // 接線/法線で作った補正を odom 座標系の x,y へ戻して、下流ノードへ渡す。
+    ret[0] = tangent_cmd * cos_heading - normal_cmd * sin_heading;
+    ret[1] = tangent_cmd * sin_heading + normal_cmd * cos_heading;
+    ret[2] =
+      kp_angle * error_[2] + ki_angle * integral_error_[2] + kd_angle * derivative_error_[2] +
+      v_ref[2];
 
     // PID制御の出力制限
-    // 本当はやりたくないが、出力制限をしないと危ない挙動をするときがあるため
     ret[0] = std::clamp(ret[0], -vel_output_limit_, vel_output_limit_);
     ret[1] = std::clamp(ret[1], -vel_output_limit_, vel_output_limit_);
     ret[2] = std::clamp(ret[2], -omega_output_limit_, omega_output_limit_);
@@ -361,7 +400,7 @@ public:
     // 足回りの速度ベクトルを計算
     std::vector<double> v_chassis;
     if (finish_ == 0) {
-      v_chassis = control(x_ref, _x, v_ref, _v);
+      v_chassis = control(x_ref, _x, v_ref, _v, tangent_heading);
     } else {
       v_chassis = {0.0, 0.0, 0.0};
     }
@@ -402,22 +441,30 @@ private:
   double search_radius_ = 0.0;
   // 速度に応じて先読み距離を伸ばすための時間[s]
   double lookahead_time_ = 0.3;
-  // 通常時のPID位置ゲイン
-  double kp_pos_normal_ = 0.0;
-  double ki_pos_normal_ = 0.0;
-  double kd_pos_normal_ = 0.0;
-  // ゴール時のPID位置ゲイン
-  double kp_pos_goal_ = 0.0;
-  double ki_pos_goal_ = 0.0;
-  double kd_pos_goal_ = 0.0;
+  // 通常時の接線方向 PID 位置ゲイン
+  double kp_pos_tangent_usual_ = 0.0;
+  double ki_pos_tangent_usual_ = 0.0;
+  double kd_pos_tangent_usual_ = 0.0;
+  // ゴール時の接線方向 PID 位置ゲイン
+  double kp_pos_tangent_goal_ = 0.0;
+  double ki_pos_tangent_goal_ = 0.0;
+  double kd_pos_tangent_goal_ = 0.0;
+  // 通常時の法線方向 PID 位置ゲイン
+  double kp_pos_normal_usual_ = 0.0;
+  double ki_pos_normal_usual_ = 0.0;
+  double kd_pos_normal_usual_ = 0.0;
+  // ゴール時の法線方向 PID 位置ゲイン
+  double kp_pos_normal_goal_ = 0.0;
+  double ki_pos_normal_goal_ = 0.0;
+  double kd_pos_normal_goal_ = 0.0;
   // 積分器のリミッター
   double vel_i_limit_ = 0.0;
   // PID制御の出力リミッター
   double vel_output_limit_ = 0.0;
   // 通常時のPID角度ゲイン
-  double kp_angle_normal_ = 0.0;
-  double ki_angle_normal_ = 0.0;
-  double kd_angle_normal_ = 0.0;
+  double kp_angle_usual_ = 0.0;
+  double ki_angle_usual_ = 0.0;
+  double kd_angle_usual_ = 0.0;
   // ゴール時のPID角度ゲイン
   double kp_angle_goal_ = 0.0;
   double ki_angle_goal_ = 0.0;
@@ -430,6 +477,7 @@ private:
   double goal_pos_range_ = 0.01;        // ゴールとみなす距離の閾値
   double goal_angle_range_ = 0.01;      // ゴールとみなす位置の閾値
   double finish_time_threshold_ = 0.3;  // 収束時間の判定用しきい値
+  // 接線方向・法線方向・角度誤差
   std::vector<double> error_{0.0, 0.0, 0.0};
   std::vector<double> prev_error_{0.0, 0.0, 0.0};
   std::vector<double> integral_error_{0.0, 0.0, 0.0};

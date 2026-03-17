@@ -10,18 +10,26 @@ r1_chassis_control_node:
     search_radius: 0.2  # 最低先読み距離 [m]
     lookahead_time: 0.3 # 速度に応じて先読み距離を伸ばす時間 [s]
     # 位置制御のゲイン
-    kp_pos_normal: 2.0
-    ki_pos_normal: 0.0
-    kd_pos_normal: 0.0
-    kp_pos_goal: 3.0
-    ki_pos_goal: 0.0
-    kd_pos_goal: 0.0
+    # 接線方向は軌道に沿って進むためのゲイン
+    kp_pos_tangent_usual: 2.0
+    ki_pos_tangent_usual: 0.0
+    kd_pos_tangent_usual: 0.0
+    kp_pos_tangent_goal: 3.0
+    ki_pos_tangent_goal: 0.0
+    kd_pos_tangent_goal: 0.0
+    # 法線方向は軌道への横ずれを戻すためのゲイン
+    kp_pos_normal_usual: 2.0
+    ki_pos_normal_usual: 0.0
+    kd_pos_normal_usual: 0.0
+    kp_pos_normal_goal: 3.0
+    ki_pos_normal_goal: 0.0
+    kd_pos_normal_goal: 0.0
     vel_i_limit: 0.3
     vel_output_limit: 2.5
     # 角度制御のゲイン
-    kp_angle_normal: 2.0
-    ki_angle_normal: 0.0
-    kd_angle_normal: 0.0
+    kp_angle_usual: 2.0
+    ki_angle_usual: 0.0
+    kd_angle_usual: 0.0
     kp_angle_goal: 3.0
     ki_angle_goal: 0.0
     kd_angle_goal: 0.0

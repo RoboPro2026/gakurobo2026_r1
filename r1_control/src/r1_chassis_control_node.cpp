@@ -101,12 +101,12 @@ public:
       "/chassis_act_ref", 10,
       std::bind(&R1ChassisControlNode::act_callback, this, std::placeholders::_1));
 
-    // chassis_error_xのPublisher
-    chassis_error_x_publisher_ =
-      this->create_publisher<std_msgs::msg::Float64>("/chassis_error_x", 10);
-    // chassis_error_yのPublisher
-    chassis_error_y_publisher_ =
-      this->create_publisher<std_msgs::msg::Float64>("/chassis_error_y", 10);
+    // chassis_error_tangentのPublisher
+    chassis_error_tangent_publisher_ =
+      this->create_publisher<std_msgs::msg::Float64>("/chassis_error_tangent", 10);
+    // chassis_error_lateralのPublisher
+    chassis_error_lateral_publisher_ =
+      this->create_publisher<std_msgs::msg::Float64>("/chassis_error_lateral", 10);
     // chassis_error_thetaのPublisher
     chassis_error_theta_publisher_ =
       this->create_publisher<std_msgs::msg::Float64>("/chassis_error_theta", 10);
@@ -123,17 +123,23 @@ public:
     declare_and_get_parameter("use_map", use_map_, true);
     declare_and_get_parameter("search_radius", search_radius_, 0.0);
     declare_and_get_parameter("lookahead_time", lookahead_time_, 0.3);
-    declare_and_get_parameter("kp_pos_normal", kp_pos_normal_, 0.0);
-    declare_and_get_parameter("ki_pos_normal", ki_pos_normal_, 0.0);
-    declare_and_get_parameter("kd_pos_normal", kd_pos_normal_, 0.0);
-    declare_and_get_parameter("kp_pos_goal", kp_pos_goal_, 0.0);
-    declare_and_get_parameter("ki_pos_goal", ki_pos_goal_, 0.0);
-    declare_and_get_parameter("kd_pos_goal", kd_pos_goal_, 0.0);
+    declare_and_get_parameter("kp_pos_tangent_usual", kp_pos_tangent_usual_, 0.0);
+    declare_and_get_parameter("ki_pos_tangent_usual", ki_pos_tangent_usual_, 0.0);
+    declare_and_get_parameter("kd_pos_tangent_usual", kd_pos_tangent_usual_, 0.0);
+    declare_and_get_parameter("kp_pos_tangent_goal", kp_pos_tangent_goal_, 0.0);
+    declare_and_get_parameter("ki_pos_tangent_goal", ki_pos_tangent_goal_, 0.0);
+    declare_and_get_parameter("kd_pos_tangent_goal", kd_pos_tangent_goal_, 0.0);
+    declare_and_get_parameter("kp_pos_normal_usual", kp_pos_normal_usual_, 0.0);
+    declare_and_get_parameter("ki_pos_normal_usual", ki_pos_normal_usual_, 0.0);
+    declare_and_get_parameter("kd_pos_normal_usual", kd_pos_normal_usual_, 0.0);
+    declare_and_get_parameter("kp_pos_normal_goal", kp_pos_normal_goal_, 0.0);
+    declare_and_get_parameter("ki_pos_normal_goal", ki_pos_normal_goal_, 0.0);
+    declare_and_get_parameter("kd_pos_normal_goal", kd_pos_normal_goal_, 0.0);
     declare_and_get_parameter("vel_i_limit", vel_i_limit_, 0.0);
     declare_and_get_parameter("vel_output_limit", vel_output_limit_, 0.0);
-    declare_and_get_parameter("kp_angle_normal", kp_angle_normal_, 0.0);
-    declare_and_get_parameter("ki_angle_normal", ki_angle_normal_, 0.0);
-    declare_and_get_parameter("kd_angle_normal", kd_angle_normal_, 0.0);
+    declare_and_get_parameter("kp_angle_usual", kp_angle_usual_, 0.0);
+    declare_and_get_parameter("ki_angle_usual", ki_angle_usual_, 0.0);
+    declare_and_get_parameter("kd_angle_usual", kd_angle_usual_, 0.0);
     declare_and_get_parameter("kp_angle_goal", kp_angle_goal_, 0.0);
     declare_and_get_parameter("ki_angle_goal", ki_angle_goal_, 0.0);
     declare_and_get_parameter("kd_angle_goal", kd_angle_goal_, 0.0);
@@ -167,11 +173,14 @@ public:
       act_traj_follower_[i] =
         std::make_shared<TrajectoryFollower>(act_traj_planner_[i], tf_buffer_, tf_listener_);
       act_traj_follower_[i]->set_param(
-        use_map_, kp_pos_normal_, ki_pos_normal_, kd_pos_normal_, kp_pos_goal_, ki_pos_goal_,
-        kd_pos_goal_, vel_i_limit_, vel_output_limit_, kp_angle_normal_, ki_angle_normal_,
-        kd_angle_normal_, kp_angle_goal_, ki_angle_goal_, kd_angle_goal_, omega_i_limit_,
-        omega_output_limit_, control_dt_, search_radius_, lookahead_time_, goal_pos_range_,
-        goal_angle_range_, finish_time_threshold_);
+        use_map_, kp_pos_tangent_usual_, ki_pos_tangent_usual_, kd_pos_tangent_usual_,
+        kp_pos_tangent_goal_, ki_pos_tangent_goal_, kd_pos_tangent_goal_, kp_pos_normal_usual_,
+        ki_pos_normal_usual_, kd_pos_normal_usual_, kp_pos_normal_goal_, ki_pos_normal_goal_,
+        kd_pos_normal_goal_, vel_i_limit_, vel_output_limit_, kp_angle_usual_,
+        ki_angle_usual_, kd_angle_usual_, kp_angle_goal_,
+        ki_angle_goal_, kd_angle_goal_, omega_i_limit_, omega_output_limit_, control_dt_,
+        search_radius_, lookahead_time_, goal_pos_range_, goal_angle_range_,
+        finish_time_threshold_);
     }
 
     pos_follower_ = std::make_shared<PosFollower>();
@@ -267,10 +276,10 @@ public:
     std_msgs::msg::Float64 error_msg;
 
     error_msg.data = error[0];
-    chassis_error_x_publisher_->publish(error_msg);
+    chassis_error_tangent_publisher_->publish(error_msg);
 
     error_msg.data = error[1];
-    chassis_error_y_publisher_->publish(error_msg);
+    chassis_error_lateral_publisher_->publish(error_msg);
 
     error_msg.data = error[2];
     chassis_error_theta_publisher_->publish(error_msg);
@@ -668,10 +677,10 @@ public:
   rclcpp::Publisher<std_msgs::msg::Int32>::SharedPtr act_publisher_;
   // ACTのSubscription
   rclcpp::Subscription<std_msgs::msg::Int32>::SharedPtr act_subscription_;
-  // chassis_error_xのPublisher
-  rclcpp::Publisher<std_msgs::msg::Float64>::SharedPtr chassis_error_x_publisher_;
-  // chassis_error_yのPublisher
-  rclcpp::Publisher<std_msgs::msg::Float64>::SharedPtr chassis_error_y_publisher_;
+  // chassis_error_tangentのPublisher
+  rclcpp::Publisher<std_msgs::msg::Float64>::SharedPtr chassis_error_tangent_publisher_;
+  // chassis_error_lateralのPublisher
+  rclcpp::Publisher<std_msgs::msg::Float64>::SharedPtr chassis_error_lateral_publisher_;
   // chassis_error_thetaのPublisher
   rclcpp::Publisher<std_msgs::msg::Float64>::SharedPtr chassis_error_theta_publisher_;
   // timer
@@ -697,22 +706,30 @@ public:
   bool use_map_;
   double search_radius_;  // 経路追従のための探索半径
   double lookahead_time_;
-  // 通常時の位置[m]制御のゲイン
-  double kp_pos_normal_;
-  double ki_pos_normal_;
-  double kd_pos_normal_;
-  // ゴール時の位置[m]制御のゲイン
-  double kp_pos_goal_;
-  double ki_pos_goal_;
-  double kd_pos_goal_;
+  // 通常時の接線方向位置[m]制御のゲイン
+  double kp_pos_tangent_usual_;
+  double ki_pos_tangent_usual_;
+  double kd_pos_tangent_usual_;
+  // ゴール時の接線方向位置[m]制御のゲイン
+  double kp_pos_tangent_goal_;
+  double ki_pos_tangent_goal_;
+  double kd_pos_tangent_goal_;
+  // 通常時の法線方向位置[m]制御のゲイン
+  double kp_pos_normal_usual_;
+  double ki_pos_normal_usual_;
+  double kd_pos_normal_usual_;
+  // ゴール時の法線方向位置[m]制御のゲイン
+  double kp_pos_normal_goal_;
+  double ki_pos_normal_goal_;
+  double kd_pos_normal_goal_;
   // 速度の積分項のリミット
   double vel_i_limit_;
   // 速度の出力リミット
   double vel_output_limit_;
   // 通常時の角度[rad]制御のゲイン
-  double kp_angle_normal_;
-  double ki_angle_normal_;
-  double kd_angle_normal_;
+  double kp_angle_usual_;
+  double ki_angle_usual_;
+  double kd_angle_usual_;
   // ゴール時の角度[rad]制御のゲイン
   double kp_angle_goal_;
   double ki_angle_goal_;
