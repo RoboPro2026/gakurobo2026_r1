@@ -101,6 +101,16 @@ public:
       "/chassis_act_ref", 10,
       std::bind(&R1ChassisControlNode::act_callback, this, std::placeholders::_1));
 
+    // chassis_error_xのPublisher
+    chassis_error_x_publisher_ =
+      this->create_publisher<std_msgs::msg::Float64>("/chassis_error_x", 10);
+    // chassis_error_yのPublisher
+    chassis_error_y_publisher_ =
+      this->create_publisher<std_msgs::msg::Float64>("/chassis_error_y", 10);
+    // chassis_error_thetaのPublisher
+    chassis_error_theta_publisher_ =
+      this->create_publisher<std_msgs::msg::Float64>("/chassis_error_theta", 10);
+
     act_traj_planner_.resize(ACT_N);
     act_traj_follower_.resize(ACT_N);
 
@@ -251,6 +261,20 @@ public:
     cmd_vel_publisher_->publish(cmd_vel_);
   }
 
+  void publish_error(std::vector<double> error)
+  {
+    std_msgs::msg::Float64 error_msg;
+
+    error_msg.data = error[0];
+    chassis_error_x_publisher_->publish(error_msg);
+
+    error_msg.data = error[1];
+    chassis_error_y_publisher_->publish(error_msg);
+
+    error_msg.data = error[2];
+    chassis_error_theta_publisher_->publish(error_msg);
+  }
+
   void publish_robot_marker(void)
   {
     visualization_msgs::msg::Marker marker;
@@ -390,6 +414,7 @@ public:
       // 指令値と目標のwaypointをpublishする
       update_target_pose(ret.first);
       publish_cmd_vel(ret.second);
+      publish_error(act_traj_follower_[0]->get_error());
       // goal_range_以内に到達したらFINISHに遷移する
       if (act_traj_follower_[0]->is_finished()) {
         act_step_ = ACT0_FINISH;
@@ -412,6 +437,7 @@ public:
       // 指令値と目標のwaypointをpublishする
       update_target_pose(ret.first);
       publish_cmd_vel(ret.second);
+      publish_error(act_traj_follower_[1]->get_error());
       // goal_range_以内に到達したらROTATEに遷移する
       if (act_traj_follower_[1]->is_finished()) {
         act_step_ = ACT1_FINISH;
@@ -434,6 +460,7 @@ public:
       // 指令値と目標のwaypointをpublishする
       update_target_pose(ret.first);
       publish_cmd_vel(ret.second);
+      publish_error(act_traj_follower_[2]->get_error());
       // goal_range_以内に到達したらROTATEに遷移する
       if (act_traj_follower_[2]->is_finished()) {
         act_step_ = ACT2_FINISH;
@@ -640,6 +667,12 @@ public:
   rclcpp::Publisher<std_msgs::msg::Int32>::SharedPtr act_publisher_;
   // ACTのSubscription
   rclcpp::Subscription<std_msgs::msg::Int32>::SharedPtr act_subscription_;
+  // chassis_error_xのPublisher
+  rclcpp::Publisher<std_msgs::msg::Float64>::SharedPtr chassis_error_x_publisher_;
+  // chassis_error_yのPublisher
+  rclcpp::Publisher<std_msgs::msg::Float64>::SharedPtr chassis_error_y_publisher_;
+  // chassis_error_thetaのPublisher
+  rclcpp::Publisher<std_msgs::msg::Float64>::SharedPtr chassis_error_theta_publisher_;
   // timer
   rclcpp::TimerBase::SharedPtr timer_;
   rclcpp::TimerBase::SharedPtr visualize_timer_;

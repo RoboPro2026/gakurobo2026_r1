@@ -91,8 +91,13 @@ public:
     is_last_point_ = false;
     finish_ = 0;
     last_out_of_range_time_ = rclcpp::Clock().now();
+    // 偏差をリセット
+    error_ = {0.0, 0.0, 0.0};
+    prev_error_ = {0.0, 0.0, 0.0};
     // 積分項をリセット
     integral_error_ = {0.0, 0.0, 0.0};
+    // 微分項をリセット
+    derivative_error_ = {0.0, 0.0, 0.0};
   }
 
   /**
@@ -126,13 +131,15 @@ public:
       kd_angle = kd_angle_normal_;
     }
     std::vector<double> ret(3);
-    std::vector<double> error(3);
-    error[0] = x_ref[0] - x[0];
-    error[1] = x_ref[1] - x[1];
-    error[2] = angle_diff(x_ref[2], x[2]);
-    integral_error_[0] += error[0] * dt_;
-    integral_error_[1] += error[1] * dt_;
-    integral_error_[2] += error[2] * dt_;
+    error_[0] = x_ref[0] - x[0];
+    error_[1] = x_ref[1] - x[1];
+    error_[2] = angle_diff(x_ref[2], x[2]);
+    integral_error_[0] += error_[0] * dt_;
+    integral_error_[1] += error_[1] * dt_;
+    integral_error_[2] += error_[2] * dt_;
+    derivative_error_[0] = (error_[0] - prev_error_[0]) / dt_;
+    derivative_error_[1] = (error_[1] - prev_error_[1]) / dt_;
+    derivative_error_[2] = (error_[2] - prev_error_[2]) / dt_;
     // 積分器のリミッター。kiが0でないことを確認してから実行する。
     if (std::abs(ki_pos) >= 1e-100) {
       double limit = vel_i_limit_ / ki_pos;
@@ -143,16 +150,24 @@ public:
       double limit = omega_i_limit_ / ki_angle;
       integral_error_[2] = std::clamp(integral_error_[2], -limit, limit);
     }
-    // PID制御(DはFFとFB)
-    ret[0] = kp_pos * error[0] + ki_pos * integral_error_[0] + kd_pos * (v_ref[0] - v[0]);
-    ret[1] = kp_pos * error[1] + ki_pos * integral_error_[1] + kd_pos * (v_ref[1] - v[1]);
-    ret[2] = kp_angle * error[2] + ki_angle * integral_error_[2] + kd_angle * (v_ref[2] - v[2]);
+    // PID制御+速度FF
+    ret[0] =
+      kp_pos * error_[0] + ki_pos * integral_error_[0] + kd_pos * derivative_error_[0] + v_ref[0];
+    ret[1] =
+      kp_pos * error_[1] + ki_pos * integral_error_[1] + kd_pos * derivative_error_[1] + v_ref[1];
+    ret[2] = kp_angle * error_[2] + ki_angle * integral_error_[2] +
+             kd_angle * derivative_error_[2] + v_ref[2];
 
     // PID制御の出力制限
     // 本当はやりたくないが、出力制限をしないと危ない挙動をするときがあるため
     ret[0] = std::clamp(ret[0], -vel_output_limit_, vel_output_limit_);
     ret[1] = std::clamp(ret[1], -vel_output_limit_, vel_output_limit_);
     ret[2] = std::clamp(ret[2], -omega_output_limit_, omega_output_limit_);
+
+    // 前回値の更新
+    prev_error_[0] = error_[0];
+    prev_error_[1] = error_[1];
+    prev_error_[2] = error_[2];
     return ret;
   }
 
@@ -269,6 +284,10 @@ public:
 
   int is_finished() { return finish_; }
 
+  std::vector<double> get_error() { return error_; }
+  std::vector<double> get_integral_error() { return integral_error_; }
+  std::vector<double> get_derivative_error() { return derivative_error_; }
+
 private:
   std::shared_ptr<TrajectoryPlanner> traj_planner_;
   rclcpp::Logger logger_;
@@ -306,7 +325,10 @@ private:
   double goal_pos_range_ = 0.01;        // ゴールとみなす距離の閾値
   double goal_angle_range_ = 0.01;      // ゴールとみなす位置の閾値
   double finish_time_threshold_ = 0.3;  // 収束時間の判定用しきい値
+  std::vector<double> error_{0.0, 0.0, 0.0};
+  std::vector<double> prev_error_{0.0, 0.0, 0.0};
   std::vector<double> integral_error_{0.0, 0.0, 0.0};
+  std::vector<double> derivative_error_{0.0, 0.0, 0.0};
   double dt_ = 0.0;
   int idx_ = 0;
   bool is_last_point_ = false;
