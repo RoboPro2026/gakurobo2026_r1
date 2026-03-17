@@ -4,6 +4,9 @@ r1_chassis_control_node:
     zone: "blue"
     timer_rate: 25.0
     visualize_timer_rate: 10.0
+    # trueのときはmap座標系を使用してtf変換を行う。falseのときはodom座標系を使用する
+    # つまりtrueのときはLidarを使用し、falseのときはLidarは使用せずに制御する
+    use_map: false
     search_radius: 0.2
     # 位置制御のゲイン
     kp_pos_normal: 1.0

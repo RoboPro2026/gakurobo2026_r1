@@ -53,13 +53,14 @@ public:
   }
 
   void set_param(
-    double kp_pos_normal, double ki_pos_normal, double kd_pos_normal, double kp_pos_goal,
-    double ki_pos_goal, double kd_pos_goal, double vel_i_limit, double vel_output_limit,
-    double kp_angle_normal, double ki_angle_normal, double kd_angle_normal, double kp_angle_goal,
-    double ki_angle_goal, double kd_angle_goal, double omega_i_limit, double omega_output_limit,
-    double dt, double search_radius, double goal_pos_range, double goal_angle_range,
-    double finish_time_threshold)
+    bool use_map, double kp_pos_normal, double ki_pos_normal, double kd_pos_normal,
+    double kp_pos_goal, double ki_pos_goal, double kd_pos_goal, double vel_i_limit,
+    double vel_output_limit, double kp_angle_normal, double ki_angle_normal, double kd_angle_normal,
+    double kp_angle_goal, double ki_angle_goal, double kd_angle_goal, double omega_i_limit,
+    double omega_output_limit, double dt, double search_radius, double goal_pos_range,
+    double goal_angle_range, double finish_time_threshold)
   {
+    use_map_ = use_map;
     kp_pos_normal_ = kp_pos_normal;
     ki_pos_normal_ = ki_pos_normal;
     kd_pos_normal_ = kd_pos_normal;
@@ -184,11 +185,18 @@ public:
       q.setRPY(0.0, 0.0, theta_map);
       pose_map.pose.orientation = tf2::toMsg(q);
       geometry_msgs::msg::PoseStamped pose_odom;
-      try {
-        tf_buffer_->transform(pose_map, pose_odom, "odom", tf2::durationFromSec(0.01));
-      } catch (tf2::TransformException & ex) {
-        RCLCPP_WARN(logger_, "Could not transform pose from map to odom: %s", ex.what());
-        break;
+      if (use_map_) {
+        // use_map_がtrueのときは、map座標系の目標位置をodom座標系に変換する。
+        try {
+          tf_buffer_->transform(pose_map, pose_odom, "odom", tf2::durationFromSec(0.01));
+        } catch (tf2::TransformException & ex) {
+          RCLCPP_WARN(logger_, "Could not transform pose from map to odom: %s", ex.what());
+          break;
+        }
+      } else {
+        // use_map_がfalseのときは、map座標系の目標位置をそのまま使用する。
+        // つまり、Lidarは使用しないということ。
+        pose_odom = pose_map;
       }
       // 目標位置と現在位置の距離を計算
       dx = traj_planner_->x_[idx_] - x;
@@ -265,6 +273,8 @@ private:
   rclcpp::Logger logger_;
   std::shared_ptr<tf2_ros::Buffer> tf_buffer_;
   std::shared_ptr<tf2_ros::TransformListener> tf_listener_;
+  // mapを使用するか（Lidarを使用するか）
+  bool use_map_;
   // 探索半径[m]
   double search_radius_ = 0.0;
   // 通常時のPID位置ゲイン

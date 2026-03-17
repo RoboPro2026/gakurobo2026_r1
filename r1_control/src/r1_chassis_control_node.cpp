@@ -110,6 +110,7 @@ public:
 
     declare_and_get_parameter("act_filebase", act_filebase_, "");
     declare_and_get_parameter("zone", zone_, "red");
+    declare_and_get_parameter("use_map", use_map_, true);
     declare_and_get_parameter("search_radius", search_radius_, 0.0);
     declare_and_get_parameter("kp_pos_normal", kp_pos_normal_, 0.0);
     declare_and_get_parameter("ki_pos_normal", ki_pos_normal_, 0.0);
@@ -155,10 +156,11 @@ public:
       act_traj_follower_[i] =
         std::make_shared<TrajectoryFollower>(act_traj_planner_[i], tf_buffer_, tf_listener_);
       act_traj_follower_[i]->set_param(
-        kp_pos_normal_, ki_pos_normal_, kd_pos_normal_, kp_pos_goal_, ki_pos_goal_, kd_pos_goal_,
-        vel_i_limit_, vel_output_limit_, kp_angle_normal_, ki_angle_normal_, kd_angle_normal_,
-        kp_angle_goal_, ki_angle_goal_, kd_angle_goal_, omega_i_limit_, omega_output_limit_,
-        control_dt_, search_radius_, goal_pos_range_, goal_angle_range_, finish_time_threshold_);
+        use_map_, kp_pos_normal_, ki_pos_normal_, kd_pos_normal_, kp_pos_goal_, ki_pos_goal_,
+        kd_pos_goal_, vel_i_limit_, vel_output_limit_, kp_angle_normal_, ki_angle_normal_,
+        kd_angle_normal_, kp_angle_goal_, ki_angle_goal_, kd_angle_goal_, omega_i_limit_,
+        omega_output_limit_, control_dt_, search_radius_, goal_pos_range_, goal_angle_range_,
+        finish_time_threshold_);
     }
 
     pos_follower_ = std::make_shared<PosFollower>();
@@ -657,6 +659,8 @@ public:
   // zone
   std::string zone_;
   // trajectory_follwerのparameter
+  // mapを使用するか（Lidarを使用するか）
+  bool use_map_;
   double search_radius_;  // 経路追従のための探索半径
   // 通常時の位置[m]制御のゲイン
   double kp_pos_normal_;
