@@ -205,6 +205,10 @@ public:
         // use_map_がtrueのときは、map座標系の目標位置をodom座標系に変換する。
         try {
           tf_buffer_->transform(pose_map, pose_odom, "odom", tf2::durationFromSec(0.01));
+          // x, y, thetaをodomに更新
+          x = odometry.pose.pose.position.x;
+          y = odometry.pose.pose.position.y;
+          theta = tf2::getYaw(odometry.pose.pose.orientation);
         } catch (tf2::TransformException & ex) {
           RCLCPP_WARN(logger_, "Could not transform pose from map to odom: %s", ex.what());
           break;
