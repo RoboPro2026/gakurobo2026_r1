@@ -16,7 +16,7 @@
 
 #include "rclcpp/rclcpp.hpp"
 
-constexpr int ACT_N = 3;
+constexpr int ACT_N = 4;
 constexpr int ACT_NONE = 0;
 constexpr int ACT0_START = 1;
 constexpr int ACT0 = 2;
@@ -27,6 +27,9 @@ constexpr int ACT1_FINISH = 13;
 constexpr int ACT2_START = 21;
 constexpr int ACT2 = 22;
 constexpr int ACT2_FINISH = 23;
+constexpr int ACT3_START = 31;
+constexpr int ACT3 = 32;
+constexpr int ACT3_FINISH = 33;
 
 /**
  * @brief 1次のローパスフィルタ

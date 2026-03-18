@@ -176,11 +176,10 @@ public:
         use_map_, kp_pos_tangent_usual_, ki_pos_tangent_usual_, kd_pos_tangent_usual_,
         kp_pos_tangent_goal_, ki_pos_tangent_goal_, kd_pos_tangent_goal_, kp_pos_normal_usual_,
         ki_pos_normal_usual_, kd_pos_normal_usual_, kp_pos_normal_goal_, ki_pos_normal_goal_,
-        kd_pos_normal_goal_, vel_i_limit_, vel_output_limit_, kp_angle_usual_,
-        ki_angle_usual_, kd_angle_usual_, kp_angle_goal_,
-        ki_angle_goal_, kd_angle_goal_, omega_i_limit_, omega_output_limit_, control_dt_,
-        search_radius_, lookahead_time_, goal_pos_range_, goal_angle_range_,
-        finish_time_threshold_);
+        kd_pos_normal_goal_, vel_i_limit_, vel_output_limit_, kp_angle_usual_, ki_angle_usual_,
+        kd_angle_usual_, kp_angle_goal_, ki_angle_goal_, kd_angle_goal_, omega_i_limit_,
+        omega_output_limit_, control_dt_, search_radius_, lookahead_time_, goal_pos_range_,
+        goal_angle_range_, finish_time_threshold_);
     }
 
     pos_follower_ = std::make_shared<PosFollower>();
@@ -477,6 +476,26 @@ public:
         RCLCPP_INFO(this->get_logger(), "Finished ACT2");
       }
     } else if (act_step_ == ACT2_FINISH) {
+    } else if (act_step_ == ACT3_START) {
+      act_step_ = ACT3;
+      act_traj_follower_[3]->reset();
+      reset_robot_trajectory();
+      // act3のpathをpublishする
+      publish_path(3);
+      RCLCPP_INFO(this->get_logger(), "Starting ACT3");
+    } else if (act_step_ == ACT3) {
+      // 軌道追従の計算を行う
+      std::pair<WayPoint, geometry_msgs::msg::Twist> ret = act_traj_follower_[3]->update(odometry_);
+      // 指令値と目標のwaypointをpublishする
+      update_target_pose(ret.first);
+      publish_cmd_vel(ret.second);
+      publish_error(act_traj_follower_[3]->get_error());
+      // goal_range_以内に到達したらROTATEに遷移する
+      if (act_traj_follower_[3]->is_finished()) {
+        act_step_ = ACT3_FINISH;
+        RCLCPP_INFO(this->get_logger(), "Finished ACT3");
+      }
+    } else if (act_step_ == ACT3_FINISH) {
     }
     // 現在のact_step_をpublishする
     std_msgs::msg::Int32 act_status_msg;

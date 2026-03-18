@@ -2019,6 +2019,10 @@ void R1MainNode::auto_act0(void)
       // 位置制御のプログラム実行
       publish_chassis_act_ref(ACT2_START);
     }
+    if (ps4_->is_pushed_down()) {
+      // 位置制御のプログラム実行
+      publish_chassis_act_ref(ACT3_START);
+    }
     double vx_ref = CHASSIS_MAX_VELOCITY * (-1) * ps4_->data.left_stick_x;
     double vy_ref = CHASSIS_MAX_VELOCITY * ps4_->data.left_stick_y;
     double vz_ref = CHASSIS_MAX_OMEGA * ps4_->data.right_stick_x;
@@ -2036,6 +2040,10 @@ void R1MainNode::auto_act0(void)
   } else if (step == ACT2) {
     // 何もしない
   } else if (step == ACT2_FINISH) {
+    publish_chassis_act_ref(ACT_NONE);
+  } else if (step == ACT3) {
+    // 何もしない
+  } else if (step == ACT3_FINISH) {
     publish_chassis_act_ref(ACT_NONE);
   }
 }
