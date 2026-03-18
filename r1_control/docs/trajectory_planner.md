@@ -26,8 +26,14 @@
 - 5 次最小躍度軌道（`MinimumJerk`）による姿勢（`theta`）軌道生成
 - サンプリング周期 `dt` ごとの状態列（`t, x, y, theta, distance, v_trans, a_trans, j_trans, omega, curvature`）を計算
 
-`theta` と `v_trans` は「全 waypoint に必須の配列」ではなく、`(waypoint_index, value)` のペア列（拘束条件）として与えます（それぞれ始点/終点は必須、中間は任意）。  
-`theta_wp` と `v_trans_wp` は独立に設定でき、拘束条件を置く waypoint のインデックスが一致している必要はありません。
+`theta` と `v_trans` は `x_wp`, `y_wp` と同じ長さの配列として与えます。  
+拘束条件を置かない waypoint には `inf` などの**非有限値**を入れ、`TrajectoryPlanner` 側では `std::isfinite()` で有限値だけを拘束条件として使用します。
+
+- `theta_wp[i]` が有限値なら、その waypoint の姿勢拘束として使う
+- `v_trans_wp[i]` が有限値なら、その waypoint の並進速度拘束として使う
+- `theta_wp[i]` / `v_trans_wp[i]` が非有限値なら、その waypoint では拘束しない
+
+`theta_wp` と `v_trans_wp` は独立に設定できるため、ある waypoint では姿勢だけ拘束し、別の waypoint では速度だけ拘束する、といった使い方もできます。
 
 ### 主な API（概要）
 
@@ -35,7 +41,7 @@
 - 名前空間なしのクラス `TrajectoryPlanner`
 - 代表的なメソッド:
   - `std::vector<int> calc(...)`  
-    `x_wp, y_wp` と、拘束条件 `theta_wp, v_trans_wp`（どちらも `std::vector<std::pair<int,double>>`）を与えて軌道を計算し、各区間のステータス配列を返す。
+    `x_wp, y_wp, theta_wp, v_trans_wp`（いずれも `std::vector<double>`、ただし `theta_wp` / `v_trans_wp` の未使用要素は非有限値）を与えて軌道を計算し、各区間のステータス配列を返す。
   - `get_trajectory()`  
     Python バインディング内部で使用。計算済みの軌道を複数の `std::vector<double>` のタプルとして返す。
   - `print_csv_trajectory(FILE *fp)`  
@@ -88,11 +94,12 @@ python3 src/gakurobo2026_r1/r1_control/example/test_trajectory_planner_plot.py
 
 - `x_wp: list[float]`（長さ >= 3）
 - `y_wp: list[float]`（`x_wp` と同じ長さ）
-- `theta_wp: list[tuple[int, float]]`（始点/終点は必須、中間は任意）
-- `v_trans_wp: list[tuple[int, float]]`（始点/終点は必須、中間は任意）
+- `theta_wp: list[float]`（`x_wp` と同じ長さ、未使用点は `math.inf` などの非有限値）
+- `v_trans_wp: list[float]`（`x_wp` と同じ長さ、未使用点は `math.inf` などの非有限値）
 
-`theta_wp` の各要素は `(waypoint_index, theta_rad)`、`v_trans_wp` は `(waypoint_index, v_trans_mps)` です。  
-`theta_wp` と `v_trans_wp` は独立で、拘束条件のインデックスが一致している必要はありません。
+`theta_wp[i]` は waypoint `i` の姿勢拘束値、`v_trans_wp[i]` は waypoint `i` の並進速度拘束値です。  
+拘束しない要素には `math.inf`、`float("inf")`、`numpy.inf` などの非有限値を入れてください。  
+`theta_wp` と `v_trans_wp` は独立で、同じ waypoint で両方拘束してもよいですし、片方だけ拘束しても構いません。
 
 戻り値は 11 要素のタプルです。
 
@@ -194,8 +201,10 @@ status, t, x, y, theta, distance, v_trans, a_trans, j_trans, omega, curvature = 
 `TrajectoryPlanner.calc()` 側で入力チェックが入っているため、CSV/GUI で編集するときは次を満たす必要があります。
 
 - waypoint 数（`x,y`）は 3 点以上
-- `theta_wp` は「index=0 と index=最後」を必ず含む（中間は任意）
-- `v_trans_wp` は「index=0 と index=最後」を必ず含む（中間は任意）
+- `theta_wp` と `v_trans_wp` は `x_wp`, `y_wp` と同じ長さであること
+- `theta_wp[0]` と `theta_wp[-1]` は有限値であること
+- `v_trans_wp[0]` と `v_trans_wp[-1]` は有限値であること
+- 始点/終点以外は、必要な waypoint にだけ有限値を入れ、未使用点は `inf` にすること
 
 ---
 

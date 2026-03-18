@@ -11,6 +11,7 @@
 
 #include <algorithm>
 #include <chrono>
+#include <cmath>
 #include <complex>
 #include <limits>
 
@@ -330,10 +331,10 @@ public:
 
     std::vector<double> & x_wp = traj_x_wp_[index];
     std::vector<double> & y_wp = traj_y_wp_[index];
-    std::vector<std::pair<int, double>> & v_trans_wp = traj_v_trans_wp_[index];
+    std::vector<double> & v_trans_wp = traj_v_trans_wp_[index];
 
     // パラメータの書き換え
-    for (size_t i = 0; i < forest_order.size(); i++) {
+    for (int i = 0; i < (int)forest_order.size(); i++) {
       int forest = forest_order[i];
       // forest_orderが適切な値かの確認
       bool out_of_range = forest <= 1 || forest >= 13;
@@ -363,11 +364,18 @@ public:
         y1 = end_pos_y;
         y2 = start_pos_y;
       }
-      for (int j = 0; j < x_wp.size(); j++) {
+      for (int j = 0; j < (int)v_trans_wp.size(); j++) {
         bool is_x_in_range = x1 <= x_wp[j] && x_wp[j] <= x2;
         bool is_y_in_range = y1 <= y_wp[j] && y_wp[j] <= y2;
+        // 範囲内かどうか判定
+        // 範囲内だった場合は減速する
         if (is_x_in_range && is_y_in_range) {
-          wp.second = std::min(wp.second, decel_speed_);
+          if (std::isfinite(v_trans_wp[j])) {
+            v_trans_wp[j] = std::min(v_trans_wp[j], decel_speed_);
+          } else {
+            // 有限の値でなかったときは直接代入
+            v_trans_wp[j] = decel_speed_;
+          }
         }
       }
     }
@@ -768,8 +776,12 @@ public:
     // waypointの読み込み
     std::vector<double> & x_wp = traj_x_wp_[n];
     std::vector<double> & y_wp = traj_y_wp_[n];
-    std::vector<std::pair<int, double>> & theta_wp = traj_theta_wp_[n];
-    std::vector<std::pair<int, double>> & v_trans_wp = traj_v_trans_wp_[n];
+    std::vector<double> & theta_wp = traj_theta_wp_[n];
+    std::vector<double> & v_trans_wp = traj_v_trans_wp_[n];
+    x_wp.clear();
+    y_wp.clear();
+    theta_wp.clear();
+    v_trans_wp.clear();
     // ファイル名が与えられていなかったらエラーにする
     if (act_filebase_ == "") {
       RCLCPP_FATAL(this->get_logger(), "act_filebase is not set");
@@ -783,10 +795,16 @@ public:
       return 1;
     }
     int cnt = 0;
-    int i = 0, j = 0, line_cnt = 0;
+    int i = 0, j = 0;
 
     // カンマ区切りのデータを読む。データを読むときは空データも考慮する。
     while (fgets(line, sizeof(line), fp)) {
+      bool has_x = false;
+      bool has_y = false;
+      double x = 0.0;
+      double y = 0.0;
+      double theta = std::numeric_limits<double>::infinity();
+      double v_trans = std::numeric_limits<double>::infinity();
       cnt = 0;
       i = 0;
       j = 0;
@@ -797,16 +815,18 @@ public:
           if (j > 0) {
             switch (cnt) {
               case 0:
-                x_wp.push_back(atof(buff));
+                x = atof(buff);
+                has_x = true;
                 break;
               case 1:
-                y_wp.push_back(atof(buff));
+                y = atof(buff);
+                has_y = true;
                 break;
               case 2:
-                theta_wp.emplace_back(line_cnt, atof(buff));
+                theta = atof(buff);
                 break;
               case 3:
-                v_trans_wp.emplace_back(line_cnt, atof(buff));
+                v_trans = atof(buff);
                 break;
             }
           }
@@ -824,7 +844,12 @@ public:
         }
         i++;
       }
-      line_cnt++;
+      if (has_x && has_y) {
+        x_wp.push_back(x);
+        y_wp.push_back(y);
+        theta_wp.push_back(theta);
+        v_trans_wp.push_back(v_trans);
+      }
     }
 
     fclose(fp);
@@ -835,9 +860,6 @@ public:
         x_wp[i] = -x_wp[i];
       }
       // TODO: thetaも反転させたほうがいいかも
-      // for (int i = 0; i < theta_wp.size(); i++) {
-      //   theta_wp[i].second = -theta_wp[i].second;
-      // }
     }
 
     return 0;
@@ -847,8 +869,8 @@ public:
   {
     std::vector<double> & x_wp = traj_x_wp_[n];
     std::vector<double> & y_wp = traj_y_wp_[n];
-    std::vector<std::pair<int, double>> & theta_wp = traj_theta_wp_[n];
-    std::vector<std::pair<int, double>> & v_trans_wp = traj_v_trans_wp_[n];
+    std::vector<double> & theta_wp = traj_theta_wp_[n];
+    std::vector<double> & v_trans_wp = traj_v_trans_wp_[n];
     double & dt = traj_dt_[n];
     double & v_max = traj_v_max_[n];
     double & a_max = traj_a_max_[n];
@@ -862,15 +884,11 @@ public:
     // for (int i = 0; i < x_wp.size(); i++) {
     //   RCLCPP_INFO(this->get_logger(), "Waypoint %d: x=%f, y=%f", i, x_wp[i], y_wp[i]);
     // }
-    // for (int i = 0; i < theta_wp.size(); i++) {
-    //   RCLCPP_INFO(
-    //     this->get_logger(), "Theta Waypoint %d: index=%d, theta=%f", i, theta_wp[i].first,
-    //     theta_wp[i].second);
+    // for (int i = 0; i < (int)theta_wp.size(); i++) {
+    //   RCLCPP_INFO(this->get_logger(), "Theta Waypoint %d: theta=%f", i, theta_wp[i]);
     // }
-    // for (int i = 0; i < v_trans_wp.size(); i++) {
-    //   RCLCPP_INFO(
-    //     this->get_logger(), "Velocity Waypoint %d: index=%d, v_trans=%f", i, v_trans_wp[i].first,
-    //     v_trans_wp[i].second);
+    // for (int i = 0; i < (int)v_trans_wp.size(); i++) {
+    //   RCLCPP_INFO(this->get_logger(), "Velocity Waypoint %d: v_trans=%f", i, v_trans_wp[i]);
     // }
 
     // FILE * debug_fp = fopen(("debug_act" + std::to_string(n) + ".csv").c_str(), "w");
@@ -1003,8 +1021,8 @@ public:
   std::vector<double> traj_omega_max_;
   std::vector<std::vector<double>> traj_x_wp_;
   std::vector<std::vector<double>> traj_y_wp_;
-  std::vector<std::vector<std::pair<int, double>>> traj_theta_wp_;
-  std::vector<std::vector<std::pair<int, double>>> traj_v_trans_wp_;
+  std::vector<std::vector<double>> traj_theta_wp_;
+  std::vector<std::vector<double>> traj_v_trans_wp_;
 
   // trajectory planner
   std::vector<std::shared_ptr<TrajectoryPlanner>> traj_planner_;

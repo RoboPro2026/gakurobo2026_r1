@@ -11,6 +11,7 @@
 
 #pragma once
 
+#include <cmath>
 #include <cstdio>
 #include <utility>
 
@@ -36,8 +37,6 @@
  - 計算結果をプロットする
  * 
  */
-
-// TODO: どこかにアルゴリズムの概要を書く
 
 class TrajectoryPlanner
 {
@@ -69,9 +68,9 @@ public:
    * -3: 失敗
    */
   std::vector<int> calc(
-    std::vector<double> x_wp, std::vector<double> y_wp,
-    std::vector<std::pair<int, double>> theta_wp, std::vector<std::pair<int, double>> v_trans_wp,
-    double dt, double v_max, double a_max, double j_max, double omega_max)
+    std::vector<double> x_wp, std::vector<double> y_wp, std::vector<double> theta_wp,
+    std::vector<double> v_trans_wp, double dt, double v_max, double a_max, double j_max,
+    double omega_max)
   {
     // statusを初期化
     status_.clear();
@@ -94,38 +93,22 @@ public:
       status_.push_back(FAILURE);
       return status_;
     }
-    // v_trans_wpのサイズが適切か確認
-    if (v_trans_wp.size() < 2) {
+    // thetaとv_transのwaypoint数がxyと一致していることを確認
+    if (theta_wp.size() != x_wp.size()) {
       RCLCPP_ERROR(
         this->logger_,
-        "Error: The number of velocity waypoints must be 2 or more (start and end points). ");
+        "Error: The number of theta waypoints must match x/y waypoints. theta_wp.size(): %zu, "
+        "x_wp.size(): %zu",
+        theta_wp.size(), x_wp.size());
       status_.push_back(FAILURE);
       return status_;
     }
-    // v_trans_wpの始点と終点が適切であることを確認
-    if (
-      v_trans_wp[0].first != 0 || v_trans_wp[v_trans_wp.size() - 1].first != (int)x_wp.size() - 1) {
+    if (v_trans_wp.size() != x_wp.size()) {
       RCLCPP_ERROR(
         this->logger_,
-        "Error: The first and last velocity waypoints must be set at the start and end points.");
-      status_.push_back(FAILURE);
-      return status_;
-    }
-    // theta_wpのサイズが適切か確認
-    if (theta_wp.size() < 2) {
-      RCLCPP_ERROR(
-        this->logger_,
-        "Error: The number of theta waypoints must be 2 or more (start and end points). "
-        "theta_wp.size(): %zu",
-        theta_wp.size());
-      status_.push_back(FAILURE);
-      return status_;
-    }
-    // theta_wpの始点と終点が存在していることを確認
-    if (theta_wp[0].first != 0 || theta_wp[theta_wp.size() - 1].first != (int)x_wp.size() - 1) {
-      RCLCPP_ERROR(
-        this->logger_,
-        "Error: The first and last theta waypoints must be set at the start and end points.");
+        "Error: The number of velocity waypoints must match x/y waypoints. v_trans_wp.size(): %zu, "
+        "x_wp.size(): %zu",
+        v_trans_wp.size(), x_wp.size());
       status_.push_back(FAILURE);
       return status_;
     }
@@ -135,14 +118,51 @@ public:
     y_wp_ = y_wp;
     theta_wp_ = theta_wp;
     v_trans_wp_ = v_trans_wp;
+    theta_wp_index_ = collect_constraint_indices(theta_wp_);
+    v_trans_wp_index_ = collect_constraint_indices(v_trans_wp_);
+
+    // v_trans_wpのサイズが適切か確認
+    if (v_trans_wp_index_.size() < 2) {
+      RCLCPP_ERROR(
+        this->logger_,
+        "Error: The number of velocity waypoints must be 2 or more (start and end points). ");
+      status_.push_back(FAILURE);
+      return status_;
+    }
+    // v_trans_wpの始点と終点が適切であることを確認
+    if (v_trans_wp_index_.front() != 0 || v_trans_wp_index_.back() != (int)x_wp.size() - 1) {
+      RCLCPP_ERROR(
+        this->logger_,
+        "Error: The first and last velocity waypoints must be set at the start and end points.");
+      status_.push_back(FAILURE);
+      return status_;
+    }
+    // theta_wpのサイズが適切か確認
+    if (theta_wp_index_.size() < 2) {
+      RCLCPP_ERROR(
+        this->logger_,
+        "Error: The number of theta waypoints must be 2 or more (start and end points). "
+        "theta_wp.size(): %zu",
+        theta_wp_index_.size());
+      status_.push_back(FAILURE);
+      return status_;
+    }
+    // theta_wpの始点と終点が存在していることを確認
+    if (theta_wp_index_.front() != 0 || theta_wp_index_.back() != (int)x_wp.size() - 1) {
+      RCLCPP_ERROR(
+        this->logger_,
+        "Error: The first and last theta waypoints must be set at the start and end points.");
+      status_.push_back(FAILURE);
+      return status_;
+    }
     dt_ = dt;
     v_max_ = v_max;
     a_max_ = a_max;
     j_max_ = j_max;
     // waypointの数
     xy_wp_num_ = (int)x_wp.size();
-    v_trans_wp_num_ = (int)v_trans_wp_.size();
-    theta_wp_num_ = (int)theta_wp_.size();
+    v_trans_wp_num_ = (int)v_trans_wp_index_.size();
+    theta_wp_num_ = (int)theta_wp_index_.size();
     // 各クラスのオブジェクトを生成
     // accel_designerは速度の拘束条件の数-1個分生成する
     accel_designer_.resize(v_trans_wp_num_ - 1);
@@ -186,11 +206,11 @@ public:
         dist_all_ += delta_d;
       }
       // v_segment_dist_のインデックスkを更新
-      if (k + 1 < (int)v_segment_dist_.size() && i == v_trans_wp_[k + 1].first) {
+      if (k + 1 < (int)v_segment_dist_.size() && i == v_trans_wp_index_[k + 1]) {
         k++;
       }
       // theta_segment_dist_のインデックスlを更新
-      if (l + 1 < (int)theta_segment_dist_.size() && i == theta_wp_[l + 1].first) {
+      if (l + 1 < (int)theta_segment_dist_.size() && i == theta_wp_index_[l + 1]) {
         l++;
       }
     }
@@ -202,8 +222,8 @@ public:
     for (int i = 0; i < v_trans_wp_num_ - 1; i++) {
       // 各区間ごとの速度を計算
       int status = accel_designer_[i].reset(
-        j_max_, a_max_, v_max_, v_trans_wp_[i].second, v_trans_wp_[i + 1].second,
-        v_segment_dist_[i], xs, ts);
+        j_max_, a_max_, v_max_, v_trans_wp_[v_trans_wp_index_[i]],
+        v_trans_wp_[v_trans_wp_index_[i + 1]], v_segment_dist_[i], xs, ts);
       status_[i] = status;
 
       // 次の始点位置、始点時刻の更新
@@ -268,7 +288,8 @@ public:
       if (is_theta_segment_update) {
         // 区間が更新された場合はパラメータを設定
         // 角度が-piからpiへの移り変わりを考慮するのが面倒なので、始点は0、終点は差分で設定する
-        double theta_diff = angle_diff(theta_wp_[k].second, theta_wp_[k - 1].second);
+        double theta_diff =
+          angle_diff(theta_wp_[theta_wp_index_[k]], theta_wp_[theta_wp_index_[k - 1]]);
         minimum_jerk_[k - 1].setParam(0, theta_diff, ts, t_[i]);
         // 次の区間の始点時刻を更新
         ts = t_[i];
@@ -277,7 +298,8 @@ public:
     // 最後の区間のパラメータはここで設定
     // 別途設定する理由は積分の誤差でdistance_[i] > theta_distが成立しないことがあるため
     k = (int)minimum_jerk_.size() - 1;
-    double theta_diff = angle_diff(theta_wp_[k + 1].second, theta_wp_[k].second);
+    double theta_diff =
+      angle_diff(theta_wp_[theta_wp_index_[k + 1]], theta_wp_[theta_wp_index_[k]]);
     minimum_jerk_[k].setParam(0, theta_diff, ts, t_.back());
 
     // minimum_jerkを計算
@@ -287,7 +309,7 @@ public:
         k++;
       }
       // 角度を計算、minimum_jerkは始点を0としているので、waypointの角度を足す
-      double theta = minimum_jerk_[k].x(t_[i]) + theta_wp_[k].second;
+      double theta = minimum_jerk_[k].x(t_[i]) + theta_wp_[theta_wp_index_[k]];
       // 角度を-piからpiに正規化
       theta_[i] = angle_normalize(theta);
       omega_[i] = minimum_jerk_[k].v(t_[i]);
@@ -329,18 +351,12 @@ public:
   {
     for (int i = 0; i < xy_wp_num_; i++) {
       fprintf(fp, "%lf,%lf,", x_wp_[i], y_wp_[i]);
-      for (int j = 0; j < theta_wp_num_; j++) {
-        if (theta_wp_[j].first == i) {
-          fprintf(fp, "%lf", theta_wp_[j].second);
-          break;
-        }
+      if (std::isfinite(theta_wp_[i])) {
+        fprintf(fp, "%lf", theta_wp_[i]);
       }
       fprintf(fp, ",");
-      for (int j = 0; j < v_trans_wp_num_; j++) {
-        if (v_trans_wp_[j].first == i) {
-          fprintf(fp, "%lf", v_trans_wp_[j].second);
-          break;
-        }
+      if (std::isfinite(v_trans_wp_[i])) {
+        fprintf(fp, "%lf", v_trans_wp_[i]);
       }
       fprintf(fp, "\n");
     }
@@ -377,15 +393,41 @@ public:
   }
 
 private:
+  /**
+   * @brief 拘束条件として有効な waypoint の添字を抽出する
+   *
+   * `theta_wp` や `v_trans_wp` は `x_wp`, `y_wp` と同じ長さの配列で保持し、
+   * 拘束を置かない waypoint には `inf` などの非有限値を入れる。
+   * この関数は配列全体を走査し、`std::isfinite()` が true となる要素の
+   * 添字だけを順番通りに集めて返す。
+   *
+   * 例:
+   * `{0.0, inf, inf, 1.57, inf, 3.14}` -> `{0, 3, 5}`
+   *
+   * @param waypoints 拘束条件付き waypoint 配列
+   * @return std::vector<int> 有限値を持つ waypoint の添字配列
+   */
+  std::vector<int> collect_constraint_indices(std::vector<double> waypoints)
+  {
+    std::vector<int> indices;
+    indices.reserve(waypoints.size());
+    for (int i = 0; i < (int)waypoints.size(); i++) {
+      if (std::isfinite(waypoints[i])) {
+        indices.push_back(i);
+      }
+    }
+    return indices;
+  }
+
   Spline2D spline2d_;
   std::vector<AccelDesigner> accel_designer_;
   std::vector<MinimumJerk> minimum_jerk_;
   std::vector<double> x_wp_;
   std::vector<double> y_wp_;
-  // first: index, second: value
-  std::vector<std::pair<int, double>> theta_wp_;
-  // first: index, second: value
-  std::vector<std::pair<int, double>> v_trans_wp_;
+  std::vector<double> theta_wp_;
+  std::vector<double> v_trans_wp_;
+  std::vector<int> theta_wp_index_;
+  std::vector<int> v_trans_wp_index_;
   int xy_wp_num_;
   int v_trans_wp_num_;
   int theta_wp_num_;

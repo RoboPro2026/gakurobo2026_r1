@@ -54,8 +54,8 @@ class RunTrajectoryPlanner:
         # waypoint / 軌道結果
         self.x_wp: list[float] = []
         self.y_wp: list[float] = []
-        self.theta_wp: list[tuple[int, float]] = []
-        self.v_trans_wp: list[tuple[int, float]] = []
+        self.theta_wp: list[float] = []
+        self.v_trans_wp: list[float] = []
 
         self.status = None
         self.t = None
@@ -114,8 +114,8 @@ class RunTrajectoryPlanner:
     ) -> tuple[
         list[float],
         list[float],
-        list[tuple[int, float]],
-        list[tuple[int, float]],
+        list[float],
+        list[float],
     ]:
         """CSV から waypoint を読み込み、リストも返す"""
         self.x_wp.clear()
@@ -132,10 +132,14 @@ class RunTrajectoryPlanner:
                         continue
                     self.x_wp.append(float(row[0]))
                     self.y_wp.append(float(row[1]))
+                    theta = math.inf
+                    v_trans = math.inf
                     if len(row) >= 3 and row[2] != "":
-                        self.theta_wp.append((i, float(row[2])))
+                        theta = float(row[2])
                     if len(row) >= 4 and row[3] != "":
-                        self.v_trans_wp.append((i, float(row[3])))
+                        v_trans = float(row[3])
+                    self.theta_wp.append(theta)
+                    self.v_trans_wp.append(v_trans)
         except FileNotFoundError:
             self._log(f"waypoint ファイルが見つかりません: {path}")
         except ValueError as e:
@@ -269,17 +273,9 @@ class RunTrajectoryPlanner:
             os.makedirs(base_dir, exist_ok=True)
         with open(path, "w", newline="") as f:
             writer = csv.writer(f)
-            j = 0
-            k = 0
             for i in range(len(self.x_wp)):
-                theta = ""
-                if j < len(self.theta_wp) and self.theta_wp[j][0] == i:
-                    theta = self.theta_wp[j][1]
-                    j += 1
-                v = ""
-                if k < len(self.v_trans_wp) and self.v_trans_wp[k][0] == i:
-                    v = self.v_trans_wp[k][1]
-                    k += 1
+                theta = self.theta_wp[i] if math.isfinite(self.theta_wp[i]) else ""
+                v = self.v_trans_wp[i] if math.isfinite(self.v_trans_wp[i]) else ""
                 writer.writerow([self.x_wp[i], self.y_wp[i], theta, v])
 
     # ========= waypoint getters =========
@@ -288,8 +284,8 @@ class RunTrajectoryPlanner:
     ) -> tuple[
         list[float],
         list[float],
-        list[tuple[int, float]],
-        list[tuple[int, float]],
+        list[float],
+        list[float],
     ]:
         """waypoint 全体をまとめて取得"""
         return self.x_wp, self.y_wp, self.theta_wp, self.v_trans_wp
@@ -300,17 +296,17 @@ class RunTrajectoryPlanner:
     def get_y_wp(self) -> list[float]:
         return self.y_wp
 
-    def get_theta_wp(self) -> list[tuple[int, float]]:
+    def get_theta_wp(self) -> list[float]:
         return self.theta_wp
 
-    def get_v_trans_wp(self) -> list[tuple[int, float]]:
+    def get_v_trans_wp(self) -> list[float]:
         return self.v_trans_wp
 
     # ========= internal helpers =========
     def _get_zone_adjusted_waypoints(
         self,
     ) -> tuple[
-        list[float], list[float], list[tuple[int, float]], list[tuple[int, float]]
+        list[float], list[float], list[float], list[float]
     ]:
         """ゾーンに応じて変換した waypoint を返す（元データは変更しない）"""
         x_adj = list(self.x_wp)
@@ -318,26 +314,24 @@ class RunTrajectoryPlanner:
 
         if self.zone == "blue":
             x_adj = [-x for x in self.x_wp]
-            theta_adj = [(i, np.pi - th) for i, th in self.theta_wp]
+            theta_adj = [
+                np.pi - th if math.isfinite(th) else math.inf for th in self.theta_wp
+            ]
 
         return x_adj, self.y_wp, theta_adj, self.v_trans_wp
 
     def _print_waypoints(self) -> None:
         self._log("Waypoints:")
-        j = 0
-        k = 0
         for i in range(len(self.x_wp)):
             s = ""
             s += f"  {i}: x={self.x_wp[i]:.3f}, y={self.y_wp[i]:.3f}"
-            if j < len(self.theta_wp) and i == self.theta_wp[j][0]:
-                s += f", theta={self.theta_wp[j][1]}"
-                j += 1
+            if math.isfinite(self.theta_wp[i]):
+                s += f", theta={self.theta_wp[i]}"
             else:
                 s += ", theta=N/A"
 
-            if k < len(self.v_trans_wp) and i == self.v_trans_wp[k][0]:
-                s += f", v_trans={self.v_trans_wp[k][1]}"
-                k += 1
+            if math.isfinite(self.v_trans_wp[i]):
+                s += f", v_trans={self.v_trans_wp[i]}"
             else:
                 s += ", v_trans=N/A"
 
