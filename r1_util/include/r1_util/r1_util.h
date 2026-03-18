@@ -16,6 +16,7 @@
 
 #include "rclcpp/rclcpp.hpp"
 
+constexpr int FOREST_N = 12;
 constexpr int ACT_N = 4;
 
 enum class ChassisAct
