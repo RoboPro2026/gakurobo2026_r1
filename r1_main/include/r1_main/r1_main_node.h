@@ -206,7 +206,7 @@ public:
   // オドメトリ
   nav_msgs::msg::Odometry odometry_;
   // chassis_act
-  int chassis_act_status_ = ACT_NONE;
+  ChassisAct chassis_act_status_ = ChassisAct::NONE;
 
   // スイッチの状態
   bool kfs_front_switch_status_ = false;
@@ -422,7 +422,7 @@ public:
   void set_initialpose(double x, double y, double yaw, double delay_sec = 0.2);
   // chassis_act
   void chassis_act_status_callback(const std_msgs::msg::Int32::SharedPtr msg);
-  void publish_chassis_act_ref(int ref);
+  void publish_chassis_act_ref(ChassisAct ref);
   // ========== 各動作の関数 ==========
   // 足回り
   void chassis_move_vel(double vx, double vy, double omega);

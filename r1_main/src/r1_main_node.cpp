@@ -587,7 +587,7 @@ void R1MainNode::odometry_callback(const nav_msgs::msg::Odometry::SharedPtr msg)
 
 void R1MainNode::chassis_act_status_callback(const std_msgs::msg::Int32::SharedPtr msg)
 {
-  chassis_act_status_ = msg->data;
+  chassis_act_status_ = static_cast<ChassisAct>(msg->data);
 }
 
 void R1MainNode::kfs_fx_detect_origin(void)
@@ -861,12 +861,12 @@ void R1MainNode::set_initialpose(double x, double y, double yaw, double delay_se
     });
 }
 
-void R1MainNode::publish_chassis_act_ref(int ref)
+void R1MainNode::publish_chassis_act_ref(ChassisAct ref)
 {
   std_msgs::msg::Int32 msg;
-  msg.data = ref;
+  msg.data = static_cast<int>(ref);
   chassis_act_ref_publisher_->publish(msg);
-  RCLCPP_INFO(this->get_logger(), "chassis act ref: %d", ref);
+  // RCLCPP_INFO(this->get_logger(), "chassis act ref: %d", ref);
 }
 
 void R1MainNode::timer_callback(void)
@@ -1998,12 +1998,12 @@ void R1MainNode::manual_mode7_spear_attack(void)
 
 void R1MainNode::auto_act0(void)
 {
-  int & step = chassis_act_status_;
+  ChassisAct & step = chassis_act_status_;
 
-  if (step == ACT_NONE) {
+  if (step == ChassisAct::NONE) {
     if (ps4_->is_pushed_triangle()) {
       // 位置制御のプログラム実行
-      publish_chassis_act_ref(ACT0_START);
+      publish_chassis_act_ref(ChassisAct::ACT0_START);
     }
     if (ps4_->is_pushed_circle()) {
       // 青のスタートゾーン
@@ -2013,38 +2013,38 @@ void R1MainNode::auto_act0(void)
     }
     if (ps4_->is_pushed_cross()) {
       // 位置制御のプログラム実行
-      publish_chassis_act_ref(ACT1_START);
+      publish_chassis_act_ref(ChassisAct::ACT1_START);
     }
     if (ps4_->is_pushed_square()) {
       // 位置制御のプログラム実行
-      publish_chassis_act_ref(ACT2_START);
+      publish_chassis_act_ref(ChassisAct::ACT2_START);
     }
     if (ps4_->is_pushed_down()) {
       // 位置制御のプログラム実行
-      publish_chassis_act_ref(ACT3_START);
+      publish_chassis_act_ref(ChassisAct::ACT3_START);
     }
     double vx_ref = CHASSIS_MAX_VELOCITY * (-1) * ps4_->data.left_stick_x;
     double vy_ref = CHASSIS_MAX_VELOCITY * ps4_->data.left_stick_y;
     double vz_ref = CHASSIS_MAX_OMEGA * ps4_->data.right_stick_x;
     chassis_move_vel(vx_ref, vy_ref, vz_ref);
-  } else if (step == ACT0_START) {
+  } else if (step == ChassisAct::ACT0_START) {
     // 何もしない
-  } else if (step == ACT0) {
+  } else if (step == ChassisAct::ACT0) {
     // 何もしない
-  } else if (step == ACT0_FINISH) {
-    publish_chassis_act_ref(ACT_NONE);
-  } else if (step == ACT1) {
+  } else if (step == ChassisAct::ACT0_FINISH) {
+    publish_chassis_act_ref(ChassisAct::NONE);
+  } else if (step == ChassisAct::ACT1) {
     // 何もしない
-  } else if (step == ACT1_FINISH) {
-    publish_chassis_act_ref(ACT_NONE);
-  } else if (step == ACT2) {
+  } else if (step == ChassisAct::ACT1_FINISH) {
+    publish_chassis_act_ref(ChassisAct::NONE);
+  } else if (step == ChassisAct::ACT2) {
     // 何もしない
-  } else if (step == ACT2_FINISH) {
-    publish_chassis_act_ref(ACT_NONE);
-  } else if (step == ACT3) {
+  } else if (step == ChassisAct::ACT2_FINISH) {
+    publish_chassis_act_ref(ChassisAct::NONE);
+  } else if (step == ChassisAct::ACT3) {
     // 何もしない
-  } else if (step == ACT3_FINISH) {
-    publish_chassis_act_ref(ACT_NONE);
+  } else if (step == ChassisAct::ACT3_FINISH) {
+    publish_chassis_act_ref(ChassisAct::NONE);
   }
 }
 
@@ -2069,7 +2069,7 @@ void R1MainNode::reset_step(void)
   manual_mode6_r2_lift_step_ = DEFAULT_STEP;
   manual_mode7_spear_attack_task_step_ = DEFAULT_STEP;
   manual_mode7_spear_hand_valve1_step_ = DEFAULT_STEP;
-  publish_chassis_act_ref(ACT_NONE);
+  publish_chassis_act_ref(ChassisAct::NONE);
 }
 
 void R1MainNode::reset_robot(void)

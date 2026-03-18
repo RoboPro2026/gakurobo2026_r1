@@ -16,6 +16,7 @@
 
 #include "geometry_msgs/msg/pose_stamped.hpp"
 #include "geometry_msgs/msg/twist.hpp"
+#include "magic_enum.hpp"
 #include "nav_msgs/msg/odometry.hpp"
 #include "nav_msgs/msg/path.hpp"
 #include "r1_control/pos_follower.h"
@@ -188,7 +189,8 @@ public:
     //   kp_pos_normal_, ki_pos_, kd_pos_, vel_i_limit_, kp_angle_, ki_angle_, kd_angle_, omega_i_limit_,
     //   control_dt_, goal_pos_range_, goal_angle_range_, finish_time_threshold_);
 
-    act_step_ = ACT_NONE;
+    act_step_ = ChassisAct::NONE;
+    prev_act_step_ = ChassisAct::NONE;
 
     // timer
     timer_ = this->create_wall_timer(
@@ -209,8 +211,9 @@ public:
 
   void act_callback(const std_msgs::msg::Int32::SharedPtr msg)
   {
-    act_step_ = msg->data;
-    RCLCPP_INFO(this->get_logger(), "Received act step: %d", act_step_);
+    act_step_ = static_cast<ChassisAct>(msg->data);
+    std::string act_name{magic_enum::enum_name(act_step_)};
+    RCLCPP_INFO(this->get_logger(), "Received act step: %s", act_name.c_str());
   }
 
   void publish_path(int n)
@@ -354,7 +357,7 @@ public:
    */
   void publish_robot_trajectory()
   {
-    if (act_step_ == ACT_NONE) {
+    if (act_step_ == ChassisAct::NONE) {
       return;
     }
     geometry_msgs::msg::PoseStamped pose_map;
@@ -409,15 +412,14 @@ public:
 
   void timer_callback()
   {
-    if (act_step_ == ACT0_START) {
-      act_step_ = ACT0;
+    if (act_step_ == ChassisAct::ACT0_START) {
+      act_step_ = ChassisAct::ACT0;
       act_traj_follower_[0]->reset();
       pos_follower_->reset();
       reset_robot_trajectory();
       // act0のpathをpublishする
       publish_path(0);
-      RCLCPP_INFO(this->get_logger(), "Starting ACT0");
-    } else if (act_step_ == ACT0) {
+    } else if (act_step_ == ChassisAct::ACT0) {
       // 軌道追従の計算を行う
       std::pair<WayPoint, geometry_msgs::msg::Twist> ret = act_traj_follower_[0]->update(odometry_);
       // 指令値と目標のwaypointをpublishする
@@ -426,21 +428,16 @@ public:
       publish_error(act_traj_follower_[0]->get_error());
       // goal_range_以内に到達したらFINISHに遷移する
       if (act_traj_follower_[0]->is_finished()) {
-        act_step_ = ACT0_FINISH;
-        RCLCPP_INFO(this->get_logger(), "Finished ACT0_MOVE");
-        RCLCPP_INFO(
-          this->get_logger(), "x = %.3f, y = %.3f, yaw = %.3f", odometry_.pose.pose.position.x,
-          odometry_.pose.pose.position.y, tf2::getYaw(odometry_.pose.pose.orientation));
+        act_step_ = ChassisAct::ACT0_FINISH;
       }
-    } else if (act_step_ == ACT0_FINISH) {
-    } else if (act_step_ == ACT1_START) {
-      act_step_ = ACT1;
+    } else if (act_step_ == ChassisAct::ACT0_FINISH) {
+    } else if (act_step_ == ChassisAct::ACT1_START) {
+      act_step_ = ChassisAct::ACT1;
       act_traj_follower_[1]->reset();
       reset_robot_trajectory();
       // act1のpathをpublishする
       publish_path(1);
-      RCLCPP_INFO(this->get_logger(), "Starting ACT1");
-    } else if (act_step_ == ACT1) {
+    } else if (act_step_ == ChassisAct::ACT1) {
       // 軌道追従の計算を行う
       std::pair<WayPoint, geometry_msgs::msg::Twist> ret = act_traj_follower_[1]->update(odometry_);
       // 指令値と目標のwaypointをpublishする
@@ -449,21 +446,16 @@ public:
       publish_error(act_traj_follower_[1]->get_error());
       // goal_range_以内に到達したらROTATEに遷移する
       if (act_traj_follower_[1]->is_finished()) {
-        act_step_ = ACT1_FINISH;
-        RCLCPP_INFO(this->get_logger(), "Finished ACT1");
-        RCLCPP_INFO(
-          this->get_logger(), "x = %.3f, y = %.3f, yaw = %.3f", odometry_.pose.pose.position.x,
-          odometry_.pose.pose.position.y, tf2::getYaw(odometry_.pose.pose.orientation));
+        act_step_ = ChassisAct::ACT1_FINISH;
       }
-    } else if (act_step_ == ACT1_FINISH) {
-    } else if (act_step_ == ACT2_START) {
-      act_step_ = ACT2;
+    } else if (act_step_ == ChassisAct::ACT1_FINISH) {
+    } else if (act_step_ == ChassisAct::ACT2_START) {
+      act_step_ = ChassisAct::ACT2;
       act_traj_follower_[2]->reset();
       reset_robot_trajectory();
       // act2のpathをpublishする
       publish_path(2);
-      RCLCPP_INFO(this->get_logger(), "Starting ACT2");
-    } else if (act_step_ == ACT2) {
+    } else if (act_step_ == ChassisAct::ACT2) {
       // 軌道追従の計算を行う
       std::pair<WayPoint, geometry_msgs::msg::Twist> ret = act_traj_follower_[2]->update(odometry_);
       // 指令値と目標のwaypointをpublishする
@@ -472,18 +464,16 @@ public:
       publish_error(act_traj_follower_[2]->get_error());
       // goal_range_以内に到達したらROTATEに遷移する
       if (act_traj_follower_[2]->is_finished()) {
-        act_step_ = ACT2_FINISH;
-        RCLCPP_INFO(this->get_logger(), "Finished ACT2");
+        act_step_ = ChassisAct::ACT2_FINISH;
       }
-    } else if (act_step_ == ACT2_FINISH) {
-    } else if (act_step_ == ACT3_START) {
-      act_step_ = ACT3;
+    } else if (act_step_ == ChassisAct::ACT2_FINISH) {
+    } else if (act_step_ == ChassisAct::ACT3_START) {
+      act_step_ = ChassisAct::ACT3;
       act_traj_follower_[3]->reset();
       reset_robot_trajectory();
       // act3のpathをpublishする
       publish_path(3);
-      RCLCPP_INFO(this->get_logger(), "Starting ACT3");
-    } else if (act_step_ == ACT3) {
+    } else if (act_step_ == ChassisAct::ACT3) {
       // 軌道追従の計算を行う
       std::pair<WayPoint, geometry_msgs::msg::Twist> ret = act_traj_follower_[3]->update(odometry_);
       // 指令値と目標のwaypointをpublishする
@@ -492,15 +482,46 @@ public:
       publish_error(act_traj_follower_[3]->get_error());
       // goal_range_以内に到達したらROTATEに遷移する
       if (act_traj_follower_[3]->is_finished()) {
-        act_step_ = ACT3_FINISH;
-        RCLCPP_INFO(this->get_logger(), "Finished ACT3");
+        act_step_ = ChassisAct::ACT3_FINISH;
       }
-    } else if (act_step_ == ACT3_FINISH) {
+    } else if (act_step_ == ChassisAct::ACT3_FINISH) {
     }
     // 現在のact_step_をpublishする
     std_msgs::msg::Int32 act_status_msg;
-    act_status_msg.data = act_step_;
+    act_status_msg.data = static_cast<int>(act_step_);
     act_publisher_->publish(act_status_msg);
+    // ログを出力する
+    if (act_step_ != prev_act_step_) {
+      std::string act_name{magic_enum::enum_name(act_step_)};
+      RCLCPP_INFO(this->get_logger(), "Current act step: %s", act_name.c_str());
+      // act_stepにFINISHという文字が含まれていた場合は現在の位置も出力する
+      if (act_name.find("FINISH") != std::string::npos) {
+        geometry_msgs::msg::PoseStamped pose_map;
+        geometry_msgs::msg::PoseStamped pose_odom;
+        pose_odom.header = odometry_.header;
+        pose_odom.pose = odometry_.pose.pose;
+        try {
+          // odomからmapへのtf変換を行う。
+          pose_map = tf_buffer_->transform(pose_odom, "map", tf2::durationFromSec(0.01));
+        } catch (const tf2::TransformException & ex) {
+          RCLCPP_WARN_THROTTLE(
+            this->get_logger(), *this->get_clock(), 1000, "Failed to transform odometry pose: %s",
+            ex.what());
+          return;
+        }
+        // 現在の位置をログに出力する
+        RCLCPP_INFO(
+          this->get_logger(), "Current map: x = %.3f, y = %.3f, yaw = %.3f",
+          pose_map.pose.position.x, pose_map.pose.position.y,
+          tf2::getYaw(pose_map.pose.orientation));
+        RCLCPP_INFO(
+          this->get_logger(), "Current odom: x = %.3f, y = %.3f, yaw = %.3f",
+          odometry_.pose.pose.position.x, odometry_.pose.pose.position.y,
+          tf2::getYaw(odometry_.pose.pose.orientation));
+        // 最後に前回の値を更新
+        prev_act_step_ = act_step_;
+      }
+    }
   }
 
   int generate_trajectory(int n)
@@ -713,7 +734,8 @@ public:
   geometry_msgs::msg::PoseStamped latest_target_pose_;
   geometry_msgs::msg::Twist cmd_vel_;
   bool has_target_pose_ = false;
-  int act_step_ = ACT_NONE;
+  ChassisAct act_step_ = ChassisAct::NONE;
+  ChassisAct prev_act_step_ = ChassisAct::NONE;
   // ロボットの軌道保管用
   nav_msgs::msg::Path robot_trajectory_;
   // filepath

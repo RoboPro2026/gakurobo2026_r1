@@ -17,19 +17,23 @@
 #include "rclcpp/rclcpp.hpp"
 
 constexpr int ACT_N = 4;
-constexpr int ACT_NONE = 0;
-constexpr int ACT0_START = 1;
-constexpr int ACT0 = 2;
-constexpr int ACT0_FINISH = 3;
-constexpr int ACT1_START = 11;
-constexpr int ACT1 = 12;
-constexpr int ACT1_FINISH = 13;
-constexpr int ACT2_START = 21;
-constexpr int ACT2 = 22;
-constexpr int ACT2_FINISH = 23;
-constexpr int ACT3_START = 31;
-constexpr int ACT3 = 32;
-constexpr int ACT3_FINISH = 33;
+
+enum class ChassisAct
+{
+  NONE = 0,
+  ACT0_START = 1,
+  ACT0 = 2,
+  ACT0_FINISH = 3,
+  ACT1_START = 11,
+  ACT1 = 12,
+  ACT1_FINISH = 13,
+  ACT2_START = 21,
+  ACT2 = 22,
+  ACT2_FINISH = 23,
+  ACT3_START = 31,
+  ACT3 = 32,
+  ACT3_FINISH = 33
+};
 
 /**
  * @brief 1次のローパスフィルタ

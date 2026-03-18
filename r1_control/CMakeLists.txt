@@ -8,6 +8,7 @@ endif()
 
 # find dependencies
 find_package(ament_cmake REQUIRED)
+find_package(magic_enum CONFIG REQUIRED)
 find_package(sensor_msgs REQUIRED)
 find_package(std_msgs REQUIRED)
 find_package(geometry_msgs REQUIRED)
@@ -84,7 +85,7 @@ target_link_libraries(test_minimum_jerk_node r1_util::r1_util)
 target_link_libraries(test_spline_node r1_util::r1_util)
 target_link_libraries(test_trajectory_planner_node r1_util::r1_util)
 target_link_libraries(test_trapezoid_node r1_util::r1_util)
-target_link_libraries(r1_chassis_control_node r1_util::r1_util)
+target_link_libraries(r1_chassis_control_node r1_util::r1_util magic_enum::magic_enum)
 target_link_libraries(r1_dummy_odometry_node r1_util::r1_util)
 target_link_libraries(r1_laser_filter_node r1_util::r1_util)
 
