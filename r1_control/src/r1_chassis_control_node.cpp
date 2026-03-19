@@ -141,8 +141,8 @@ public:
 
     // 経路生成のパラメータ
     for (int i = 0; i < 12; i++) {
-      std::string start_decel_pos_name = "start_decel_pos." + std::to_string(i);
-      std::string end_decel_pos_name = "end_decel_pos." + std::to_string(i);
+      std::string start_decel_pos_name = "start_decel_pos." + std::to_string(i + 1);
+      std::string end_decel_pos_name = "end_decel_pos." + std::to_string(i + 1);
       this->declare_parameter<std::vector<double>>(start_decel_pos_name, {0.0, 0.0});
       this->declare_parameter<std::vector<double>>(end_decel_pos_name, {0.0, 0.0});
       std::vector<double> start_decel_pos, end_decel_pos;
@@ -344,32 +344,16 @@ public:
         return;
       }
       // x_wpとy_wpがstart_decel_posとend_decel_posの範囲内の場合は減速する
-      // 判定する範囲の取得
-      double x1, x2, y1, y2;
-      double start_pos_x = start_decel_pos_[forest - 1][0];
-      double start_pos_y = start_decel_pos_[forest - 1][1];
-      double end_pos_x = end_decel_pos_[forest - 1][0];
-      double end_pos_y = end_decel_pos_[forest - 1][1];
-      if (start_pos_x < end_pos_x) {
-        x1 = start_pos_x;
-        x2 = end_pos_x;
-      } else {
-        x1 = end_pos_x;
-        x2 = start_pos_x;
-      }
-      if (start_pos_y < end_pos_y) {
-        y1 = start_pos_y;
-        y2 = end_pos_y;
-      } else {
-        y1 = end_pos_y;
-        y2 = start_pos_y;
-      }
+      // zoneを考慮して判定する範囲の取得
+      double sign = (zone_ == "blue") ? -1.0 : 1.0;
+      double start_x = sign * start_decel_pos_[forest - 1][0];
+      double start_y = sign * start_decel_pos_[forest - 1][1];
+      double end_x = sign * end_decel_pos_[forest - 1][0];
+      double end_y = sign * end_decel_pos_[forest - 1][1];
       for (int j = 0; j < (int)v_trans_wp.size(); j++) {
-        bool is_x_in_range = x1 <= x_wp[j] && x_wp[j] <= x2;
-        bool is_y_in_range = y1 <= y_wp[j] && y_wp[j] <= y2;
         // 範囲内かどうか判定
         // 範囲内だった場合は減速する
-        if (is_x_in_range && is_y_in_range) {
+        if (is_within_range(x_wp[j], y_wp[j], start_x, start_y, end_x, end_y)) {
           if (std::isfinite(v_trans_wp[j])) {
             v_trans_wp[j] = std::min(v_trans_wp[j], decel_speed_);
           } else {

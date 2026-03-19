@@ -11,8 +11,6 @@
 
 #include "r1_main/r1_main_node.h"
 
-#include "tf2_geometry_msgs/tf2_geometry_msgs.hpp"
-
 void R1MainNode::declare_and_get_parameter(
   const std::string & name, double & value, double default_value)
 {
@@ -270,7 +268,21 @@ R1MainNode::R1MainNode() : Node("r1_main_node")
   chassis_act_status_subscription_ = this->create_subscription<std_msgs::msg::Int32>(
     "/chassis_act_status", 10,
     std::bind(&R1MainNode::chassis_act_status_callback, this, std::placeholders::_1));
+  // robot_moveのPublisher
+  robot_move_publisher_ = this->create_publisher<r1_msgs::msg::RobotMove>("/robot_move", 10);
+
+  // tf関連
+  tf_buffer_ = std::make_shared<tf2_ros::Buffer>(this->get_clock());
+  tf_listener_ = std::make_shared<tf2_ros::TransformListener>(*tf_buffer_);
+
   // ========== パラメータ ==========
+  // ゾーン
+  this->declare_parameter<std::string>("zone", "blue");
+  this->get_parameter("zone", zone_);
+  if (zone_ != "blue" && zone_ != "red") {
+    RCLCPP_ERROR(this->get_logger(), "Invalid zone parameter: %s", zone_.c_str());
+    rclcpp::shutdown();
+  }
   // 足回り
   declare_and_get_parameter("timer_rate", timer_rate_, 100.0);
   declare_and_get_parameter("chassis_max_velocity", CHASSIS_MAX_VELOCITY);
@@ -368,6 +380,29 @@ R1MainNode::R1MainNode() : Node("r1_main_node")
   // spear_rotate
   declare_and_get_parameter("spear_rotate_normal_pos", SPEAR_ROTATE_NORMAL_POS);
   declare_and_get_parameter("spear_rotate_combine_angle", SPEAR_ROTATE_COMBINE_ANGLE);
+
+  // FOREST関連
+  this->declare_parameter<std::vector<int64_t>>("kfs_forest_number", {-1, -1, -1});
+  std::vector<int64_t> kfs_forest_number;
+  this->get_parameter("kfs_forest_number", kfs_forest_number);
+  KFS_FOREST_NUMBER.clear();
+  KFS_FOREST_NUMBER.reserve(kfs_forest_number.size());
+  for (const auto n : kfs_forest_number) {
+    KFS_FOREST_NUMBER.push_back(static_cast<int>(n));
+  }
+  for (int i = 0; i < 12; i++) {
+    std::string start_pos_name = "start_collect_kfs_pos." + std::to_string(i + 1);
+    std::string end_pos_name = "end_collect_kfs_pos." + std::to_string(i + 1);
+    this->declare_parameter<std::vector<double>>(start_pos_name, {0.0, 0.0});
+    this->declare_parameter<std::vector<double>>(end_pos_name, {0.0, 0.0});
+    std::vector<double> start_pos, end_pos;
+    this->get_parameter(start_pos_name, start_pos);
+    this->get_parameter(end_pos_name, end_pos);
+    START_COLLECT_KFS_POS.push_back(start_pos);
+    END_COLLECT_KFS_POS.push_back(end_pos);
+  }
+  declare_and_get_parameter("front_collect_kfs_offset", FRONT_COLLECT_KFS_OFFSET);
+  declare_and_get_parameter("rear_collect_kfs_offset", REAR_COLLECT_KFS_OFFSET);
 
   if (timer_rate_ <= 0.0) {
     RCLCPP_WARN(this->get_logger(), "timer_rate must be positive. Fallback to 100.0 Hz.");
@@ -867,6 +902,44 @@ void R1MainNode::publish_chassis_act_ref(ChassisAct ref)
   msg.data = static_cast<int>(ref);
   chassis_act_ref_publisher_->publish(msg);
   // RCLCPP_INFO(this->get_logger(), "chassis act ref: %d", ref);
+}
+
+void R1MainNode::publish_robot_move(ChassisAct act, std::vector<int> forest_order)
+{
+  r1_msgs::msg::RobotMove msg;
+  msg.act = static_cast<int>(act);
+  msg.forest_order = forest_order;
+  robot_move_publisher_->publish(msg);
+  std::string forest_order_str = "[";
+  for (size_t i = 0; i < forest_order.size(); i++) {
+    forest_order_str += std::to_string(forest_order[i]);
+    if (i + 1 < forest_order.size()) {
+      forest_order_str += ", ";
+    }
+  }
+  forest_order_str += "]";
+  RCLCPP_INFO(
+    this->get_logger(), "robot move act: %d, forest order: %s", static_cast<int>(act),
+    forest_order_str.c_str());
+  current_robot_move_ = msg;
+}
+
+geometry_msgs::msg::PoseStamped R1MainNode::get_map_pos()
+{
+  try {
+    const auto transform = tf_buffer_->lookupTransform("map", "base_link", tf2::TimePointZero);
+    geometry_msgs::msg::PoseStamped map_pos;
+    map_pos.header = transform.header;
+    map_pos.pose.position.x = transform.transform.translation.x;
+    map_pos.pose.position.y = transform.transform.translation.y;
+    map_pos.pose.position.z = transform.transform.translation.z;
+    map_pos.pose.orientation = transform.transform.rotation;
+    return map_pos;
+  } catch (tf2::TransformException & ex) {
+    RCLCPP_WARN(this->get_logger(), "Could not get map position: %s", ex.what());
+    geometry_msgs::msg::PoseStamped empty_pose;
+    return empty_pose;
+  }
 }
 
 void R1MainNode::timer_callback(void)
@@ -1996,6 +2069,40 @@ void R1MainNode::manual_mode7_spear_attack(void)
   }
 }
 
+void R1MainNode::auto_collect_kfs_task(void)
+{
+  ChassisAct & step = chassis_act_status_;
+
+  if (step == ChassisAct::ACT1 || step == ChassisAct::ACT2) {
+    geometry_msgs::msg::PoseStamped map_pos = get_map_pos();
+    int n = current_robot_move_.forest_order.size();
+    bool within = false;
+    for (int i = 0; i < n; i++) {
+      int target_forest_number = current_robot_move_.forest_order[i];
+      double map_x = map_pos.pose.position.x;
+      double map_y = map_pos.pose.position.y;
+      double sign = (zone_ == "blue") ? -1.0 : 1.0;
+      double start_x = sign * START_COLLECT_KFS_POS[target_forest_number - 1][0];
+      double start_y = sign * START_COLLECT_KFS_POS[target_forest_number - 1][1];
+      double end_x = sign * END_COLLECT_KFS_POS[target_forest_number - 1][0];
+      double end_y = sign * END_COLLECT_KFS_POS[target_forest_number - 1][1];
+      if (is_within_range(map_x, map_y, start_x, start_y, end_x, end_y)) {
+        within = true;
+        // LEDを設定、緑色
+        sabacan_led_ref(0, 50, 0);
+        break;
+      }
+    }
+    // witinがfalseのときはLEDを赤色にする
+    if (within == false) {
+      sabacan_led_ref(50, 0, 0);
+    }
+  } else {
+    // LEDを設定、赤色
+    sabacan_led_ref(50, 0, 0);
+  }
+}
+
 void R1MainNode::auto_act0(void)
 {
   ChassisAct & step = chassis_act_status_;
@@ -2003,7 +2110,8 @@ void R1MainNode::auto_act0(void)
   if (step == ChassisAct::NONE) {
     if (ps4_->is_pushed_triangle()) {
       // 位置制御のプログラム実行
-      publish_chassis_act_ref(ChassisAct::ACT0_START);
+      // publish_chassis_act_ref(ChassisAct::ACT0_START);
+      publish_robot_move(ChassisAct::ACT0_START, std::vector<int>{});
     }
     if (ps4_->is_pushed_circle()) {
       // 青のスタートゾーン
@@ -2013,20 +2121,39 @@ void R1MainNode::auto_act0(void)
     }
     if (ps4_->is_pushed_cross()) {
       // 位置制御のプログラム実行
-      publish_chassis_act_ref(ChassisAct::ACT1_START);
+      // publish_chassis_act_ref(ChassisAct::ACT1_START);
+      std::vector<int> forest_order;
+      for (int i = 0; i < KFS_FOREST_NUMBER.size(); i++) {
+        int n = KFS_FOREST_NUMBER[i];
+        if (n == 1 || n == 4 || n == 7 || n == 10) {
+          forest_order.push_back(n);
+        }
+      }
+      publish_robot_move(ChassisAct::ACT1_START, forest_order);
     }
     if (ps4_->is_pushed_square()) {
       // 位置制御のプログラム実行
-      publish_chassis_act_ref(ChassisAct::ACT2_START);
+      // publish_chassis_act_ref(ChassisAct::ACT2_START);
+      std::vector<int> forest_order;
+      for (int i = 0; i < KFS_FOREST_NUMBER.size(); i++) {
+        int n = KFS_FOREST_NUMBER[i];
+        if (n == 3 || n == 6 || n == 9 || n == 12 || n == 11 || n == 10) {
+          forest_order.push_back(n);
+        }
+      }
+      publish_robot_move(ChassisAct::ACT2_START, forest_order);
     }
     if (ps4_->is_pushed_down()) {
       // 位置制御のプログラム実行
-      publish_chassis_act_ref(ChassisAct::ACT3_START);
+      // publish_chassis_act_ref(ChassisAct::ACT3_START);
+      publish_robot_move(ChassisAct::ACT3_START, std::vector<int>{});
     }
     double vx_ref = CHASSIS_MAX_VELOCITY * (-1) * ps4_->data.left_stick_x;
     double vy_ref = CHASSIS_MAX_VELOCITY * ps4_->data.left_stick_y;
     double vz_ref = CHASSIS_MAX_OMEGA * ps4_->data.right_stick_x;
     chassis_move_vel(vx_ref, vy_ref, vz_ref);
+    // LEDを設定、赤色
+    sabacan_led_ref(50, 0, 0);
   } else if (step == ChassisAct::ACT0_START) {
     // 何もしない
   } else if (step == ChassisAct::ACT0) {
@@ -2034,11 +2161,11 @@ void R1MainNode::auto_act0(void)
   } else if (step == ChassisAct::ACT0_FINISH) {
     publish_chassis_act_ref(ChassisAct::NONE);
   } else if (step == ChassisAct::ACT1) {
-    // 何もしない
+    auto_collect_kfs_task();
   } else if (step == ChassisAct::ACT1_FINISH) {
     publish_chassis_act_ref(ChassisAct::NONE);
   } else if (step == ChassisAct::ACT2) {
-    // 何もしない
+    auto_collect_kfs_task();
   } else if (step == ChassisAct::ACT2_FINISH) {
     publish_chassis_act_ref(ChassisAct::NONE);
   } else if (step == ChassisAct::ACT3) {

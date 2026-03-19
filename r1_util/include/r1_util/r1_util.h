@@ -84,7 +84,7 @@ double sign(double x) { return (x >= 0) ? 1.0 : -1.0; }
    * @param angle 
    * @return double 
    */
-inline double angle_normalize(double angle)
+double angle_normalize(double angle)
 {
   std::complex<double> ret = std::polar(1.0, angle);
   return std::arg(ret);
@@ -97,10 +97,36 @@ inline double angle_normalize(double angle)
    * @param prev_angle 
    * @return double 
    */
-inline double angle_diff(double current_angle, double prev_angle)
+double angle_diff(double current_angle, double prev_angle)
 {
   std::complex<double> current = std::polar(1.0, current_angle);
   std::complex<double> prev = std::polar(1.0, prev_angle);
   std::complex<double> diff = current / prev;  // 位相差
   return std::arg(diff);
+}
+
+/**
+ * @brief 現在の位置が、指定した開始点と終了点の範囲内にあるかどうかを判定する
+ * 
+ * @param current_x 
+ * @param current_y 
+ * @param x1 
+ * @param y1 
+ * @param x2 
+ * @param y2 
+ * @return true 
+ * @return false 
+ */
+bool is_within_range(double current_x, double current_y, double x1, double y1, double x2, double y2)
+{
+  // x2とy2がx1とy1より大きくなるようにする。
+  if (x1 > x2) {
+    std::swap(x1, x2);
+  }
+  if (y1 > y2) {
+    std::swap(y1, y2);
+  }
+  bool is_x_in_range = (x1 <= current_x && current_x <= x2);
+  bool is_y_in_range = (y1 <= current_y && current_y <= y2);
+  return is_x_in_range && is_y_in_range;
 }
