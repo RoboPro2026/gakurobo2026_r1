@@ -45,20 +45,39 @@ rosdep install -i --from-paths urg_node2
 ```
 
 # ROS 2を実行
+`r1_bringup.launch.py` は `use_sim` 引数で、実機モードとシミュレーションモードを切り替えられます。  
+`zone` は `src/gakurobo2026_r1/r1_bringup/launch/r1_bringup.launch.py` 内で設定しています。
+
+## 実機モード
 現在はプログラムの実行に2つのターミナルを使用しています。  
-将来的には1つのターミナルにする予定です。  
-ターミナル1  
-```
+
+ターミナル1
+```bash
 cd ~/ros2_ws
 ./src/gakurobo2026_r1/r1_setup.bash
 ros2 launch ros2_socketcan socket_can_bridge.launch.xml interface:=can0
 ```
 
-ターミナル2  
-```
+ターミナル2
+```bash
 cd ~/ros2_ws
 source install/setup.bash
+ros2 launch r1_bringup r1_bringup.launch.py use_sim:=false
+```
+
+`use_sim:=false` はデフォルトなので、以下でも同じです。
+```bash
 ros2 launch r1_bringup r1_bringup.launch.py
+```
+
+## シミュレーションモード
+シミュレーションモードでは、`r1_dummy_odometry_node` が `/odometry`、`/map`、`map -> odom` TF を publish します。  
+このとき `amcl` や実機用のセンサ・CAN系ノードは起動しません。
+
+```bash
+cd ~/ros2_ws
+source install/setup.bash
+ros2 launch r1_bringup r1_bringup.launch.py use_sim:=true
 ```
 
 # 軌道生成GUIの実行

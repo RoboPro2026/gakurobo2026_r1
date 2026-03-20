@@ -428,26 +428,26 @@ R1MainNode::R1MainNode() : Node("r1_main_node")
     OUTER_COLLECT_KFS_END_POS.push_back(outer_end);
   }
   // ログの出力
-  for (int i = 0; i < 12; i++) {
-    RCLCPP_INFO(
-      this->get_logger(), "inner_collect_kfs_start_pos[%d]: (%.2f, %.2f)", i + 1,
-      INNER_COLLECT_KFS_START_POS[i][0], INNER_COLLECT_KFS_START_POS[i][1]);
-  }
-  for (int i = 0; i < 12; i++) {
-    RCLCPP_INFO(
-      this->get_logger(), "inner_collect_kfs_end_pos[%d]: (%.2f, %.2f)", i + 1,
-      INNER_COLLECT_KFS_END_POS[i][0], INNER_COLLECT_KFS_END_POS[i][1]);
-  }
-  for (int i = 0; i < 12; i++) {
-    RCLCPP_INFO(
-      this->get_logger(), "outer_collect_kfs_start_pos[%d]: (%.2f, %.2f)", i + 1,
-      OUTER_COLLECT_KFS_START_POS[i][0], OUTER_COLLECT_KFS_START_POS[i][1]);
-  }
-  for (int i = 0; i < 12; i++) {
-    RCLCPP_INFO(
-      this->get_logger(), "outer_collect_kfs_end_pos[%d]: (%.2f, %.2f)", i + 1,
-      OUTER_COLLECT_KFS_END_POS[i][0], OUTER_COLLECT_KFS_END_POS[i][1]);
-  }
+  // for (int i = 0; i < 12; i++) {
+  //   RCLCPP_INFO(
+  //     this->get_logger(), "inner_collect_kfs_start_pos[%d]: (%.2f, %.2f)", i + 1,
+  //     INNER_COLLECT_KFS_START_POS[i][0], INNER_COLLECT_KFS_START_POS[i][1]);
+  // }
+  // for (int i = 0; i < 12; i++) {
+  //   RCLCPP_INFO(
+  //     this->get_logger(), "inner_collect_kfs_end_pos[%d]: (%.2f, %.2f)", i + 1,
+  //     INNER_COLLECT_KFS_END_POS[i][0], INNER_COLLECT_KFS_END_POS[i][1]);
+  // }
+  // for (int i = 0; i < 12; i++) {
+  //   RCLCPP_INFO(
+  //     this->get_logger(), "outer_collect_kfs_start_pos[%d]: (%.2f, %.2f)", i + 1,
+  //     OUTER_COLLECT_KFS_START_POS[i][0], OUTER_COLLECT_KFS_START_POS[i][1]);
+  // }
+  // for (int i = 0; i < 12; i++) {
+  //   RCLCPP_INFO(
+  //     this->get_logger(), "outer_collect_kfs_end_pos[%d]: (%.2f, %.2f)", i + 1,
+  //     OUTER_COLLECT_KFS_END_POS[i][0], OUTER_COLLECT_KFS_END_POS[i][1]);
+  // }
 
   declare_and_get_parameter("collect_kfs_offset", COLLECT_KFS_OFFSET);
 
@@ -2233,8 +2233,7 @@ void R1MainNode::auto_act0(void)
     if (ps4_->is_pushed_down()) {
       // 位置制御のプログラム実行
       // publish_chassis_act_ref(ChassisAct::ACT3_START);
-      publish_robot_move(
-        ChassisAct::ACT3_START, std::vector<int>{}, std::vector<std::string>{});
+      publish_robot_move(ChassisAct::ACT3_START, std::vector<int>{}, std::vector<std::string>{});
     }
     double vx_ref = CHASSIS_MAX_VELOCITY * (-1) * ps4_->data.left_stick_x;
     double vy_ref = CHASSIS_MAX_VELOCITY * ps4_->data.left_stick_y;
