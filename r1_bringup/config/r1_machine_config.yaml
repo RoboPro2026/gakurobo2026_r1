@@ -103,10 +103,6 @@ r1_chassis_control_node:
     collect_kfs_offset: 0.0
     # 減速時の速度
     decel_speed: 0.3
-r1_dummy_odometry_node:
-  ros__parameters:
-    tau: 0.25
-
 r1_main_node:
   ros__parameters:
     timer_rate: 25.0

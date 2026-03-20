@@ -1,0 +1,19 @@
+r1_dummy_odometry_node:
+  ros__parameters:
+    tau: 0.10
+    mass: 30.0
+    yaw_inertia: 1.8
+    linear_velocity_response_gain: 8.0
+    angular_velocity_response_gain: 10.0
+    max_force_x: 180.0
+    max_force_y: 180.0
+    max_torque_z: 9.0
+    max_jerk_x: 30.0
+    max_jerk_y: 30.0
+    max_jerk_z: 20.0
+    use_path_tracking: true
+    enable_target_pose_correction: true
+    target_pose_tracking_tau: 0.08
+    target_pose_correction_period: 0.2
+    target_pose_position_snap_threshold: 0.15
+    target_pose_yaw_snap_threshold: 0.174532925

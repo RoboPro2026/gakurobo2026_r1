@@ -894,7 +894,7 @@ void R1MainNode::sabacan_led_ref(uint8_t r, uint8_t g, uint8_t b)
   msg.g = g;
   msg.b = b;
   sabacan_led_ref_publisher_->publish(msg);
-  RCLCPP_INFO(this->get_logger(), "sabacan led ref r: %d, g: %d, b: %d", r, g, b);
+  // RCLCPP_INFO(this->get_logger(), "sabacan led ref r: %d, g: %d, b: %d", r, g, b);
 }
 
 void R1MainNode::sabacan_led_update(void)

@@ -7,7 +7,7 @@ from launch_ros.actions import Node
 
 def generate_launch_description():
     pkg_dir = get_package_share_directory("r1_bringup")
-    param_file = os.path.join(pkg_dir, "config", "r1_machine_config.yaml")
+    sim_param_file = os.path.join(pkg_dir, "config", "r1_sim_config.yaml")
     sim_map_yaml = "src/gakurobo2026_r1/data/map/field_blue.yaml"
 
     sim_map_server_node = Node(
@@ -35,7 +35,7 @@ def generate_launch_description():
         package="r1_control",
         executable="r1_dummy_odometry_node",
         name="r1_dummy_odometry_node",
-        parameters=[param_file],
+        parameters=[sim_param_file],
         arguments=["--ros-args", "--log-level", "warn"],
     )
 

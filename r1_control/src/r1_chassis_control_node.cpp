@@ -619,6 +619,10 @@ public:
     }
     if (has_target_pose_) {
       latest_target_pose_.header.stamp = this->get_clock()->now();
+      // RCLCPP_INFO(
+      //   this->get_logger(), "Publishing target pose: x=%f, y=%f, theta=%f",
+      //   latest_target_pose_.pose.position.x, latest_target_pose_.pose.position.y,
+      //   tf2::getYaw(latest_target_pose_.pose.orientation));
       target_pose_publisher_->publish(latest_target_pose_);
     }
     publish_robot_marker();
@@ -734,9 +738,9 @@ public:
           this->get_logger(), "Current odom: x = %.3f, y = %.3f, yaw = %.3f",
           odometry_.pose.pose.position.x, odometry_.pose.pose.position.y,
           tf2::getYaw(odometry_.pose.pose.orientation));
-        // 最後に前回の値を更新
-        prev_act_step_ = act_step_;
       }
+      // 前回の値を更新
+      prev_act_step_ = act_step_;
     }
   }
 

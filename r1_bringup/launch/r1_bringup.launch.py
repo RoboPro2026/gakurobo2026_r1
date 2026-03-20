@@ -494,13 +494,6 @@ def generate_launch_description():
         r1_chassis_control_node,
         r1_mecanum_node,
         ps4_node,
-    ]
-
-    real_nodes = [
-        r1_slam_launch,
-        #        eth2can_node,
-        bno086_node,
-        r1_odometry_node,
         r1_sabacan_msgs_converter_node,
         # r1_kfs_fx_node,
         # r1_kfs_fz_node,
@@ -553,6 +546,13 @@ def generate_launch_description():
         sabacan_gpio_node_id3,
         sabacan_power_node_id0,
         sabacan_led_node_id1,
+    ]
+
+    real_nodes = [
+        r1_slam_launch,
+        #        eth2can_node,
+        bno086_node,
+        r1_odometry_node,
     ]
 
     sim_nodes = [
