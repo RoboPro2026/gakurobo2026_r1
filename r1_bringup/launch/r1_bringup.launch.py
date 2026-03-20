@@ -26,6 +26,7 @@ def generate_launch_description():
 
     # パラメータファイルのフルパスを作成
     param_file = os.path.join(pkg_dir, "config", "r1_machine_config.yaml")
+    zone_parameter = {"zone": "blue"}
 
     ps4_node = Node(
         package="joy",
@@ -46,7 +47,7 @@ def generate_launch_description():
         package="r1_main",
         executable="r1_main_node",
         name="r1_main_node",
-        parameters=[param_file],
+        parameters=[param_file, zone_parameter],
         arguments=["--ros-args", "--log-level", "info"],
     )
 
@@ -54,7 +55,7 @@ def generate_launch_description():
         package="r1_control",
         executable="r1_chassis_control_node",
         name="r1_chassis_control_node",
-        parameters=[param_file],
+        parameters=[param_file, zone_parameter],
         arguments=["--ros-args", "--log-level", "info"],
     )
 
