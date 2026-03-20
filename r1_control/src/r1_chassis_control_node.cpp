@@ -391,14 +391,14 @@ public:
       double start_x = 0.0, start_y = 0.0, end_x = 0.0, end_y = 0.0;
       if (is_inner) {
         start_x = sign * inner_decel_start_pos_[forest - 1][0];
-        start_y = sign * inner_decel_start_pos_[forest - 1][1];
+        start_y = inner_decel_start_pos_[forest - 1][1];
         end_x = sign * inner_decel_end_pos_[forest - 1][0];
-        end_y = sign * inner_decel_end_pos_[forest - 1][1];
+        end_y = inner_decel_end_pos_[forest - 1][1];
       } else if (is_outer) {
         start_x = sign * outer_decel_start_pos_[forest - 1][0];
-        start_y = sign * outer_decel_start_pos_[forest - 1][1];
+        start_y = outer_decel_start_pos_[forest - 1][1];
         end_x = sign * outer_decel_end_pos_[forest - 1][0];
-        end_y = sign * outer_decel_end_pos_[forest - 1][1];
+        end_y = outer_decel_end_pos_[forest - 1][1];
       }
       for (int j = 0; j < (int)v_trans_wp.size(); j++) {
         // 範囲内かどうか判定
