@@ -388,11 +388,18 @@ public:
   double SPEAR_ROTATE_NORMAL_POS = 0.0;
   double SPEAR_ROTATE_COMBINE_ANGLE = 0.0;
 
+  // KFS回収の森林の順番
   std::vector<int> KFS_FOREST_NUMBER;
-  std::vector<std::vector<double>> START_COLLECT_KFS_POS;
-  std::vector<std::vector<double>> END_COLLECT_KFS_POS;
-  double FRONT_COLLECT_KFS_OFFSET = 0.0;
-  double REAR_COLLECT_KFS_OFFSET = 0.0;
+  // 内回りで回収機構の展開を開始する区間のxy座標
+  std::vector<std::vector<double>> INNER_COLLECT_KFS_START_POS;
+  // 内回りで回収機構の展開を終了する区間のxy座標
+  std::vector<std::vector<double>> INNER_COLLECT_KFS_END_POS;
+  // 外回りで回収機構の展開を開始する区間のxy座標
+  std::vector<std::vector<double>> OUTER_COLLECT_KFS_START_POS;
+  // 外回りで回収機構の展開を終了する区間のxy座標
+  std::vector<std::vector<double>> OUTER_COLLECT_KFS_END_POS;
+  // KFS回収時のオフセット（front_kfsかrear_kfsのうち、遠い方に適応する）
+  double COLLECT_KFS_OFFSET = 0.0;
   // コンストラクタ
   R1MainNode();
 
@@ -443,7 +450,8 @@ public:
   void chassis_act_status_callback(const std_msgs::msg::Int32::SharedPtr msg);
   void publish_chassis_act_ref(ChassisAct ref);
   // robot_move
-  void publish_robot_move(ChassisAct act, std::vector<int> forest_order);
+  void publish_robot_move(
+    ChassisAct act, std::vector<int> forest_order, std::vector<std::string> kfs_mechanism_type);
   geometry_msgs::msg::PoseStamped get_map_pos(void);
   // ========== 各動作の関数 ==========
   // 足回り

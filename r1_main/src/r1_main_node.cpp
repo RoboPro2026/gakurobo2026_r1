@@ -382,27 +382,74 @@ R1MainNode::R1MainNode() : Node("r1_main_node")
   declare_and_get_parameter("spear_rotate_combine_angle", SPEAR_ROTATE_COMBINE_ANGLE);
 
   // FOREST関連
-  this->declare_parameter<std::vector<int64_t>>("kfs_forest_number", {-1, -1, -1});
+  this->declare_parameter<std::vector<int64_t>>("kfs_forest_number", std::vector<int64_t>{});
   std::vector<int64_t> kfs_forest_number;
   this->get_parameter("kfs_forest_number", kfs_forest_number);
-  KFS_FOREST_NUMBER.clear();
-  KFS_FOREST_NUMBER.reserve(kfs_forest_number.size());
-  for (const auto n : kfs_forest_number) {
-    KFS_FOREST_NUMBER.push_back(static_cast<int>(n));
+  for (int i = 0; i < (int)kfs_forest_number.size(); i++) {
+    if (kfs_forest_number[i] < 1 || kfs_forest_number[i] > 12) {
+      RCLCPP_ERROR(
+        this->get_logger(), "Invalid kfs_forest_number[%d]: %ld. Must be between 1 and 12.", i,
+        static_cast<long>(kfs_forest_number[i]));
+      rclcpp::shutdown();
+    } else {
+      KFS_FOREST_NUMBER.push_back(kfs_forest_number[i]);
+    }
+  }
+
+  for (int i = 0; i < 12; i++) {
+    std::string inner_start_name = "inner_collect_kfs_start_pos." + std::to_string(i + 1);
+    std::string inner_end_name = "inner_collect_kfs_end_pos." + std::to_string(i + 1);
+    std::string outer_start_name = "outer_collect_kfs_start_pos." + std::to_string(i + 1);
+    std::string outer_end_name = "outer_collect_kfs_end_pos." + std::to_string(i + 1);
+    // 適当な初期値を代入
+    this->declare_parameter<std::vector<double>>(inner_start_name, {100.0, 100.0});
+    this->declare_parameter<std::vector<double>>(inner_end_name, {100.0, 100.0});
+    this->declare_parameter<std::vector<double>>(outer_start_name, {100.0, 100.0});
+    this->declare_parameter<std::vector<double>>(outer_end_name, {100.0, 100.0});
+    std::vector<double> inner_start, inner_end, outer_start, outer_end;
+    this->get_parameter(inner_start_name, inner_start);
+    this->get_parameter(inner_end_name, inner_end);
+    this->get_parameter(outer_start_name, outer_start);
+    this->get_parameter(outer_end_name, outer_end);
+
+    if (
+      inner_start.size() != 2 || inner_end.size() != 2 || outer_start.size() != 2 ||
+      outer_end.size() != 2) {
+      RCLCPP_FATAL(
+        this->get_logger(),
+        "Invalid parameter size for collect_kfs positions. Each position must have 2 elements (x, "
+        "y).");
+      rclcpp::shutdown();
+    }
+
+    INNER_COLLECT_KFS_START_POS.push_back(inner_start);
+    INNER_COLLECT_KFS_END_POS.push_back(inner_end);
+    OUTER_COLLECT_KFS_START_POS.push_back(outer_start);
+    OUTER_COLLECT_KFS_END_POS.push_back(outer_end);
+  }
+  // ログの出力
+  for (int i = 0; i < 12; i++) {
+    RCLCPP_INFO(
+      this->get_logger(), "inner_collect_kfs_start_pos[%d]: (%.2f, %.2f)", i + 1,
+      INNER_COLLECT_KFS_START_POS[i][0], INNER_COLLECT_KFS_START_POS[i][1]);
   }
   for (int i = 0; i < 12; i++) {
-    std::string start_pos_name = "start_collect_kfs_pos." + std::to_string(i + 1);
-    std::string end_pos_name = "end_collect_kfs_pos." + std::to_string(i + 1);
-    this->declare_parameter<std::vector<double>>(start_pos_name, {0.0, 0.0});
-    this->declare_parameter<std::vector<double>>(end_pos_name, {0.0, 0.0});
-    std::vector<double> start_pos, end_pos;
-    this->get_parameter(start_pos_name, start_pos);
-    this->get_parameter(end_pos_name, end_pos);
-    START_COLLECT_KFS_POS.push_back(start_pos);
-    END_COLLECT_KFS_POS.push_back(end_pos);
+    RCLCPP_INFO(
+      this->get_logger(), "inner_collect_kfs_end_pos[%d]: (%.2f, %.2f)", i + 1,
+      INNER_COLLECT_KFS_END_POS[i][0], INNER_COLLECT_KFS_END_POS[i][1]);
   }
-  declare_and_get_parameter("front_collect_kfs_offset", FRONT_COLLECT_KFS_OFFSET);
-  declare_and_get_parameter("rear_collect_kfs_offset", REAR_COLLECT_KFS_OFFSET);
+  for (int i = 0; i < 12; i++) {
+    RCLCPP_INFO(
+      this->get_logger(), "outer_collect_kfs_start_pos[%d]: (%.2f, %.2f)", i + 1,
+      OUTER_COLLECT_KFS_START_POS[i][0], OUTER_COLLECT_KFS_START_POS[i][1]);
+  }
+  for (int i = 0; i < 12; i++) {
+    RCLCPP_INFO(
+      this->get_logger(), "outer_collect_kfs_end_pos[%d]: (%.2f, %.2f)", i + 1,
+      OUTER_COLLECT_KFS_END_POS[i][0], OUTER_COLLECT_KFS_END_POS[i][1]);
+  }
+
+  declare_and_get_parameter("collect_kfs_offset", COLLECT_KFS_OFFSET);
 
   if (timer_rate_ <= 0.0) {
     RCLCPP_WARN(this->get_logger(), "timer_rate must be positive. Fallback to 100.0 Hz.");
@@ -904,11 +951,13 @@ void R1MainNode::publish_chassis_act_ref(ChassisAct ref)
   // RCLCPP_INFO(this->get_logger(), "chassis act ref: %d", ref);
 }
 
-void R1MainNode::publish_robot_move(ChassisAct act, std::vector<int> forest_order)
+void R1MainNode::publish_robot_move(
+  ChassisAct act, std::vector<int> forest_order, std::vector<std::string> kfs_mechanism_type)
 {
   r1_msgs::msg::RobotMove msg;
   msg.act = static_cast<int>(act);
   msg.forest_order = forest_order;
+  msg.kfs_mechanism_type = kfs_mechanism_type;
   robot_move_publisher_->publish(msg);
   std::string forest_order_str = "[";
   for (size_t i = 0; i < forest_order.size(); i++) {
@@ -918,9 +967,17 @@ void R1MainNode::publish_robot_move(ChassisAct act, std::vector<int> forest_orde
     }
   }
   forest_order_str += "]";
+  std::string mechanism_type_str = "[";
+  for (size_t i = 0; i < kfs_mechanism_type.size(); i++) {
+    mechanism_type_str += kfs_mechanism_type[i];
+    if (i + 1 < kfs_mechanism_type.size()) {
+      mechanism_type_str += ", ";
+    }
+  }
+  mechanism_type_str += "]";
   RCLCPP_INFO(
-    this->get_logger(), "robot move act: %d, forest order: %s", static_cast<int>(act),
-    forest_order_str.c_str());
+    this->get_logger(), "publish robot move act: %d, forest_order: %s, mechanism_type: %s",
+    static_cast<int>(act), forest_order_str.c_str(), mechanism_type_str.c_str());
   current_robot_move_ = msg;
 }
 
@@ -2074,6 +2131,8 @@ void R1MainNode::auto_collect_kfs_task(void)
   ChassisAct & step = chassis_act_status_;
 
   if (step == ChassisAct::ACT1 || step == ChassisAct::ACT2) {
+    // TODO: 回収動作を行うときは経路とロボットの進行方向に応じて、COLLECT_KFS_OFFSETを適用する
+    // TODO: 必要であれば、robot_moveにFRONT_KFSとREAR_KFSのどちらを使うかも記入する
     geometry_msgs::msg::PoseStamped map_pos = get_map_pos();
     int n = current_robot_move_.forest_order.size();
     bool within = false;
@@ -2082,10 +2141,18 @@ void R1MainNode::auto_collect_kfs_task(void)
       double map_x = map_pos.pose.position.x;
       double map_y = map_pos.pose.position.y;
       double sign = (zone_ == "blue") ? -1.0 : 1.0;
-      double start_x = sign * START_COLLECT_KFS_POS[target_forest_number - 1][0];
-      double start_y = sign * START_COLLECT_KFS_POS[target_forest_number - 1][1];
-      double end_x = sign * END_COLLECT_KFS_POS[target_forest_number - 1][0];
-      double end_y = sign * END_COLLECT_KFS_POS[target_forest_number - 1][1];
+      double start_x = 0.0, start_y = 0.0, end_x = 0.0, end_y = 0.0;
+      if (step == ChassisAct::ACT1) {
+        start_x = sign * INNER_COLLECT_KFS_START_POS[target_forest_number - 1][0];
+        start_y = sign * INNER_COLLECT_KFS_START_POS[target_forest_number - 1][1];
+        end_x = sign * INNER_COLLECT_KFS_END_POS[target_forest_number - 1][0];
+        end_y = sign * INNER_COLLECT_KFS_END_POS[target_forest_number - 1][1];
+      } else if (step == ChassisAct::ACT2) {
+        start_x = sign * OUTER_COLLECT_KFS_START_POS[target_forest_number - 1][0];
+        start_y = sign * OUTER_COLLECT_KFS_START_POS[target_forest_number - 1][1];
+        end_x = sign * OUTER_COLLECT_KFS_END_POS[target_forest_number - 1][0];
+        end_y = sign * OUTER_COLLECT_KFS_END_POS[target_forest_number - 1][1];
+      }
       if (is_within_range(map_x, map_y, start_x, start_y, end_x, end_y)) {
         within = true;
         // LEDを設定、緑色
@@ -2111,7 +2178,7 @@ void R1MainNode::auto_act0(void)
     if (ps4_->is_pushed_triangle()) {
       // 位置制御のプログラム実行
       // publish_chassis_act_ref(ChassisAct::ACT0_START);
-      publish_robot_move(ChassisAct::ACT0_START, std::vector<int>{});
+      publish_robot_move(ChassisAct::ACT0_START, std::vector<int>{}, std::vector<std::string>{});
     }
     if (ps4_->is_pushed_circle()) {
       // 青のスタートゾーン
@@ -2123,30 +2190,51 @@ void R1MainNode::auto_act0(void)
       // 位置制御のプログラム実行
       // publish_chassis_act_ref(ChassisAct::ACT1_START);
       std::vector<int> forest_order;
-      for (int i = 0; i < KFS_FOREST_NUMBER.size(); i++) {
+      std::vector<std::string> collect_kfs_type;
+      int j = 0;
+      for (int i = 0; i < (int)KFS_FOREST_NUMBER.size(); i++) {
         int n = KFS_FOREST_NUMBER[i];
-        if (n == 1 || n == 4 || n == 7 || n == 10) {
+        if (n == 1 || n == 2 || n == 4 || n == 7 || n == 10) {
           forest_order.push_back(n);
+          if (j == 0) {
+            collect_kfs_type.push_back("front_kfs");
+            j++;
+          } else if (j == 1) {
+            collect_kfs_type.push_back("rear_kfs");
+          } else {
+            RCLCPP_ERROR(this->get_logger(), "collect_kfs_type size error");
+          }
         }
       }
-      publish_robot_move(ChassisAct::ACT1_START, forest_order);
+      publish_robot_move(ChassisAct::ACT1_START, forest_order, collect_kfs_type);
     }
     if (ps4_->is_pushed_square()) {
       // 位置制御のプログラム実行
       // publish_chassis_act_ref(ChassisAct::ACT2_START);
       std::vector<int> forest_order;
-      for (int i = 0; i < KFS_FOREST_NUMBER.size(); i++) {
+      std::vector<std::string> collect_kfs_type;
+      int j = 0;
+      for (int i = 0; i < (int)KFS_FOREST_NUMBER.size(); i++) {
         int n = KFS_FOREST_NUMBER[i];
         if (n == 3 || n == 6 || n == 9 || n == 12 || n == 11 || n == 10) {
           forest_order.push_back(n);
+          if (j == 0) {
+            collect_kfs_type.push_back("front_kfs");
+            j++;
+          } else if (j == 1) {
+            collect_kfs_type.push_back("rear_kfs");
+          } else {
+            RCLCPP_ERROR(this->get_logger(), "collect_kfs_type size error");
+          }
         }
       }
-      publish_robot_move(ChassisAct::ACT2_START, forest_order);
+      publish_robot_move(ChassisAct::ACT2_START, forest_order, collect_kfs_type);
     }
     if (ps4_->is_pushed_down()) {
       // 位置制御のプログラム実行
       // publish_chassis_act_ref(ChassisAct::ACT3_START);
-      publish_robot_move(ChassisAct::ACT3_START, std::vector<int>{});
+      publish_robot_move(
+        ChassisAct::ACT3_START, std::vector<int>{}, std::vector<std::string>{});
     }
     double vx_ref = CHASSIS_MAX_VELOCITY * (-1) * ps4_->data.left_stick_x;
     double vy_ref = CHASSIS_MAX_VELOCITY * ps4_->data.left_stick_y;

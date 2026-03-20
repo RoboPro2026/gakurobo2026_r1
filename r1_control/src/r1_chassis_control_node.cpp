@@ -141,34 +141,73 @@ public:
 
     // 経路生成のパラメータ
     for (int i = 0; i < 12; i++) {
-      std::string start_decel_pos_name = "start_decel_pos." + std::to_string(i + 1);
-      std::string end_decel_pos_name = "end_decel_pos." + std::to_string(i + 1);
-      this->declare_parameter<std::vector<double>>(start_decel_pos_name, {0.0, 0.0});
-      this->declare_parameter<std::vector<double>>(end_decel_pos_name, {0.0, 0.0});
-      std::vector<double> start_decel_pos, end_decel_pos;
-      this->get_parameter(start_decel_pos_name, start_decel_pos);
-      this->get_parameter(end_decel_pos_name, end_decel_pos);
-      if (start_decel_pos.size() != 2) {
+      std::string inner_decel_start_pos_name = "inner_decel_start_pos." + std::to_string(i + 1);
+      std::string inner_decel_end_pos_name = "inner_decel_end_pos." + std::to_string(i + 1);
+      std::string outer_decel_start_pos_name = "outer_decel_start_pos." + std::to_string(i + 1);
+      std::string outer_decel_end_pos_name = "outer_decel_end_pos." + std::to_string(i + 1);
+      // 適当な初期値を代入
+      this->declare_parameter<std::vector<double>>(inner_decel_start_pos_name, {100.0, 100.0});
+      this->declare_parameter<std::vector<double>>(inner_decel_end_pos_name, {100.0, 100.0});
+      this->declare_parameter<std::vector<double>>(outer_decel_start_pos_name, {100.0, 100.0});
+      this->declare_parameter<std::vector<double>>(outer_decel_end_pos_name, {100.0, 100.0});
+      std::vector<double> inner_decel_start_pos, inner_decel_end_pos, outer_decel_start_pos,
+        outer_decel_end_pos;
+      this->get_parameter(inner_decel_start_pos_name, inner_decel_start_pos);
+      this->get_parameter(inner_decel_end_pos_name, inner_decel_end_pos);
+      this->get_parameter(outer_decel_start_pos_name, outer_decel_start_pos);
+      this->get_parameter(outer_decel_end_pos_name, outer_decel_end_pos);
+      if (inner_decel_start_pos.size() != 2) {
         RCLCPP_FATAL(
-          this->get_logger(), "start_decel_pos.%d must have exactly 2 elements (x, y)", i);
+          this->get_logger(), "inner_decel_start_pos.%d must have exactly 2 elements (x, y)", i);
         rclcpp::shutdown();
         return;
       }
-      if (end_decel_pos.size() != 2) {
-        RCLCPP_FATAL(this->get_logger(), "end_decel_pos.%d must have exactly 2 elements (x, y)", i);
+      if (inner_decel_end_pos.size() != 2) {
+        RCLCPP_FATAL(
+          this->get_logger(), "inner_decel_end_pos.%d must have exactly 2 elements (x, y)", i);
         rclcpp::shutdown();
         return;
       }
-      start_decel_pos_.push_back({start_decel_pos[0], start_decel_pos[1]});
-      end_decel_pos_.push_back({end_decel_pos[0], end_decel_pos[1]});
-
-      // RCLCPP_INFO(
-      //   this->get_logger(), "Loaded start_decel_pos.%d: x=%f, y=%f", i, start_decel_pos[0],
-      //   start_decel_pos[1]);
-      // RCLCPP_INFO(
-      //   this->get_logger(), "Loaded end_decel_pos.%d: x=%f, y=%f", i, end_decel_pos[0], end_decel_pos[1]);
+      if (outer_decel_start_pos.size() != 2) {
+        RCLCPP_FATAL(
+          this->get_logger(), "outer_decel_start_pos.%d must have exactly 2 elements (x, y)", i);
+        rclcpp::shutdown();
+        return;
+      }
+      if (outer_decel_end_pos.size() != 2) {
+        RCLCPP_FATAL(
+          this->get_logger(), "outer_decel_end_pos.%d must have exactly 2 elements (x, y)", i);
+        rclcpp::shutdown();
+        return;
+      }
+      inner_decel_start_pos_.push_back(inner_decel_start_pos);
+      inner_decel_end_pos_.push_back(inner_decel_end_pos);
+      outer_decel_start_pos_.push_back(outer_decel_start_pos);
+      outer_decel_end_pos_.push_back(outer_decel_end_pos);
     }
+    // デバッグ用
+    // for (int i = 0; i < 12; i++) {
+    //   RCLCPP_INFO(
+    //     this->get_logger(), "inner_decel_start_pos.%d: x=%f, y=%f", i, inner_decel_start_pos_[i][0],
+    //     inner_decel_start_pos_[i][1]);
+    // }
+    // for (int i = 0; i < 12; i++) {
+    //   RCLCPP_INFO(
+    //     this->get_logger(), "inner_decel_end_pos.%d: x=%f, y=%f", i, inner_decel_end_pos_[i][0],
+    //     inner_decel_end_pos_[i][1]);
+    // }
+    // for (int i = 0; i < 12; i++) {
+    //   RCLCPP_INFO(
+    //     this->get_logger(), "outer_decel_start_pos.%d: x=%f, y=%f", i, outer_decel_start_pos_[i][0],
+    //     outer_decel_start_pos_[i][1]);
+    // }
+    // for (int i = 0; i < 12; i++) {
+    //   RCLCPP_INFO(
+    //     this->get_logger(), "outer_decel_end_pos.%d: x=%f, y=%f", i, outer_decel_end_pos_[i][0],
+    //     outer_decel_end_pos_[i][1]);
+    // }
     declare_and_get_parameter("decel_speed", decel_speed_, 0.0);
+    declare_and_get_parameter("collect_kfs_offset", collect_kfs_offset_, 0.0);
     // 経路追従のパラメータ
     declare_and_get_parameter("use_map", use_map_, true);
     declare_and_get_parameter("search_radius", search_radius_, 0.0);
@@ -322,6 +361,8 @@ public:
       RCLCPP_ERROR(this->get_logger(), "Invalid act in RobotMove: %d", msg->act);
       return;
     }
+    bool is_inner = index == 1;
+    bool is_outer = index == 2;
     std::vector<int> forest_order(msg->forest_order.begin(), msg->forest_order.end());
     // パラメータを読み込み
     if (load_trajectory_csv(index) != 0) {
@@ -345,11 +386,20 @@ public:
       }
       // x_wpとy_wpがstart_decel_posとend_decel_posの範囲内の場合は減速する
       // zoneを考慮して判定する範囲の取得
+      // TODO: ロボットの進行方向を考慮し、COLLECT_KFSを適応するようにする。
       double sign = (zone_ == "blue") ? -1.0 : 1.0;
-      double start_x = sign * start_decel_pos_[forest - 1][0];
-      double start_y = sign * start_decel_pos_[forest - 1][1];
-      double end_x = sign * end_decel_pos_[forest - 1][0];
-      double end_y = sign * end_decel_pos_[forest - 1][1];
+      double start_x = 0.0, start_y = 0.0, end_x = 0.0, end_y = 0.0;
+      if (is_inner) {
+        start_x = sign * inner_decel_start_pos_[forest - 1][0];
+        start_y = sign * inner_decel_start_pos_[forest - 1][1];
+        end_x = sign * inner_decel_end_pos_[forest - 1][0];
+        end_y = sign * inner_decel_end_pos_[forest - 1][1];
+      } else if (is_outer) {
+        start_x = sign * outer_decel_start_pos_[forest - 1][0];
+        start_y = sign * outer_decel_start_pos_[forest - 1][1];
+        end_x = sign * outer_decel_end_pos_[forest - 1][0];
+        end_y = sign * outer_decel_end_pos_[forest - 1][1];
+      }
       for (int j = 0; j < (int)v_trans_wp.size(); j++) {
         // 範囲内かどうか判定
         // 範囲内だった場合は減速する
@@ -940,10 +990,16 @@ public:
   std::string act_filebase_;
   // zone
   std::string zone_;
-  // 経路内で減速を開始する区間のxy座標
-  std::vector<std::vector<double>> start_decel_pos_;
-  // 経路内で減速を終了する区間のxy座標
-  std::vector<std::vector<double>> end_decel_pos_;
+  // 内回りの経路内で減速を開始する区間のxy座標
+  std::vector<std::vector<double>> inner_decel_start_pos_;
+  // 内回りの経路内で減速を終了する区間のxy座標
+  std::vector<std::vector<double>> inner_decel_end_pos_;
+  // 外回りの経路内で減速を開始する区間のxy座標
+  std::vector<std::vector<double>> outer_decel_start_pos_;
+  // 外回りの経路内で減速を終了する区間のxy座標
+  std::vector<std::vector<double>> outer_decel_end_pos_;
+  // KFS回収時のオフセット（front_kfsかrear_kfsのうち、遠い方に適応する）
+  double collect_kfs_offset_;
   // 減速時の速度
   double decel_speed_;
   // trajectory_follwerのparameter
