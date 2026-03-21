@@ -390,14 +390,14 @@ public:
 
   // KFS回収の森林の順番
   std::vector<int> KFS_FOREST_NUMBER;
-  // 内回りで回収機構の展開を開始する区間のxy座標
-  std::vector<std::vector<double>> INNER_COLLECT_KFS_START_POS;
-  // 内回りで回収機構の展開を終了する区間のxy座標
-  std::vector<std::vector<double>> INNER_COLLECT_KFS_END_POS;
-  // 外回りで回収機構の展開を開始する区間のxy座標
-  std::vector<std::vector<double>> OUTER_COLLECT_KFS_START_POS;
-  // 外回りで回収機構の展開を終了する区間のxy座標
-  std::vector<std::vector<double>> OUTER_COLLECT_KFS_END_POS;
+  // 内回り/外回りでKFS回収の判定に使う長方形中心の座標 [x, y, yaw]
+  // yaw=0 のときは map 座標系に平行で、yaw を与えるとその分だけ長方形が回転する
+  std::vector<std::vector<double>> INNER_COLLECT_KFS_CENTER_POS;
+  std::vector<std::vector<double>> OUTER_COLLECT_KFS_CENTER_POS;
+  // KFS回収判定用長方形のサイズ
+  // width は長方形ローカル x 方向、height は長方形ローカル y 方向の長さ
+  double COLLECT_KFS_HEIGHT = 1.2;
+  double COLLECT_KFS_WIDTH = 1.2;
   // KFS回収時のオフセット（front_kfsかrear_kfsのうち、遠い方に適応する）
   double COLLECT_KFS_OFFSET = 0.0;
   // コンストラクタ

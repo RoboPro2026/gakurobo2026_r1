@@ -141,71 +141,35 @@ public:
 
     // 経路生成のパラメータ
     for (int i = 0; i < 12; i++) {
-      std::string inner_decel_start_pos_name = "inner_decel_start_pos." + std::to_string(i + 1);
-      std::string inner_decel_end_pos_name = "inner_decel_end_pos." + std::to_string(i + 1);
-      std::string outer_decel_start_pos_name = "outer_decel_start_pos." + std::to_string(i + 1);
-      std::string outer_decel_end_pos_name = "outer_decel_end_pos." + std::to_string(i + 1);
+      std::string inner_decel_center_pos_name = "inner_decel_center_pos." + std::to_string(i + 1);
+      std::string outer_decel_center_pos_name = "outer_decel_center_pos." + std::to_string(i + 1);
       // 適当な初期値を代入
-      this->declare_parameter<std::vector<double>>(inner_decel_start_pos_name, {100.0, 100.0});
-      this->declare_parameter<std::vector<double>>(inner_decel_end_pos_name, {100.0, 100.0});
-      this->declare_parameter<std::vector<double>>(outer_decel_start_pos_name, {100.0, 100.0});
-      this->declare_parameter<std::vector<double>>(outer_decel_end_pos_name, {100.0, 100.0});
-      std::vector<double> inner_decel_start_pos, inner_decel_end_pos, outer_decel_start_pos,
-        outer_decel_end_pos;
-      this->get_parameter(inner_decel_start_pos_name, inner_decel_start_pos);
-      this->get_parameter(inner_decel_end_pos_name, inner_decel_end_pos);
-      this->get_parameter(outer_decel_start_pos_name, outer_decel_start_pos);
-      this->get_parameter(outer_decel_end_pos_name, outer_decel_end_pos);
-      if (inner_decel_start_pos.size() != 2) {
+      this->declare_parameter<std::vector<double>>(
+        inner_decel_center_pos_name, {100.0, 100.0, 0.0});
+      this->declare_parameter<std::vector<double>>(
+        outer_decel_center_pos_name, {100.0, 100.0, 0.0});
+      std::vector<double> inner_decel_center_pos, outer_decel_center_pos;
+      this->get_parameter(inner_decel_center_pos_name, inner_decel_center_pos);
+      this->get_parameter(outer_decel_center_pos_name, outer_decel_center_pos);
+      if (inner_decel_center_pos.size() != 3) {
         RCLCPP_FATAL(
-          this->get_logger(), "inner_decel_start_pos.%d must have exactly 2 elements (x, y)", i);
+          this->get_logger(), "inner_decel_center_pos.%d must have exactly 3 elements (x, y, yaw)",
+          i);
         rclcpp::shutdown();
         return;
       }
-      if (inner_decel_end_pos.size() != 2) {
+      if (outer_decel_center_pos.size() != 3) {
         RCLCPP_FATAL(
-          this->get_logger(), "inner_decel_end_pos.%d must have exactly 2 elements (x, y)", i);
+          this->get_logger(), "outer_decel_center_pos.%d must have exactly 3 elements (x, y, yaw)",
+          i);
         rclcpp::shutdown();
         return;
       }
-      if (outer_decel_start_pos.size() != 2) {
-        RCLCPP_FATAL(
-          this->get_logger(), "outer_decel_start_pos.%d must have exactly 2 elements (x, y)", i);
-        rclcpp::shutdown();
-        return;
-      }
-      if (outer_decel_end_pos.size() != 2) {
-        RCLCPP_FATAL(
-          this->get_logger(), "outer_decel_end_pos.%d must have exactly 2 elements (x, y)", i);
-        rclcpp::shutdown();
-        return;
-      }
-      inner_decel_start_pos_.push_back(inner_decel_start_pos);
-      inner_decel_end_pos_.push_back(inner_decel_end_pos);
-      outer_decel_start_pos_.push_back(outer_decel_start_pos);
-      outer_decel_end_pos_.push_back(outer_decel_end_pos);
+      inner_decel_center_pos_.push_back(inner_decel_center_pos);
+      outer_decel_center_pos_.push_back(outer_decel_center_pos);
     }
-    // デバッグ用
-    // for (int i = 0; i < 12; i++) {
-    //   RCLCPP_INFO(
-    //     this->get_logger(), "inner_decel_start_pos.%d: x=%f, y=%f", i, inner_decel_start_pos_[i][0],
-    //     inner_decel_start_pos_[i][1]);
-    // }
-    // for (int i = 0; i < 12; i++) {
-    //   RCLCPP_INFO(
-    //     this->get_logger(), "inner_decel_end_pos.%d: x=%f, y=%f", i, inner_decel_end_pos_[i][0],
-    //     inner_decel_end_pos_[i][1]);
-    // }
-    // for (int i = 0; i < 12; i++) {
-    //   RCLCPP_INFO(
-    //     this->get_logger(), "outer_decel_start_pos.%d: x=%f, y=%f", i, outer_decel_start_pos_[i][0],
-    //     outer_decel_start_pos_[i][1]);
-    // }
-    // for (int i = 0; i < 12; i++) {
-    //   RCLCPP_INFO(
-    //     this->get_logger(), "outer_decel_end_pos.%d: x=%f, y=%f", i, outer_decel_end_pos_[i][0],
-    //     outer_decel_end_pos_[i][1]);
-    // }
+    declare_and_get_parameter("decel_height", decel_height_, 1.2);
+    declare_and_get_parameter("decel_width", decel_width_, 1.2);
     declare_and_get_parameter("decel_speed", decel_speed_, 0.0);
     declare_and_get_parameter("collect_kfs_offset", collect_kfs_offset_, 0.0);
     // 経路追従のパラメータ
@@ -384,26 +348,28 @@ public:
         RCLCPP_ERROR(this->get_logger(), "Invalid forest order: %d", forest_order[i]);
         return;
       }
-      // x_wpとy_wpがstart_decel_posとend_decel_posの範囲内の場合は減速する
       // zoneを考慮して判定する範囲の取得
-      // TODO: ロボットの進行方向を考慮し、COLLECT_KFSを適応するようにする。
+      // TODO: ロボットの進行方向を考慮し、減速区間を適応するようにする。
       double sign = (zone_ == "blue") ? -1.0 : 1.0;
-      double start_x = 0.0, start_y = 0.0, end_x = 0.0, end_y = 0.0;
+      double center_x = 0.0, center_y = 0.0, rect_yaw = 0.0;
       if (is_inner) {
-        start_x = sign * inner_decel_start_pos_[forest - 1][0];
-        start_y = inner_decel_start_pos_[forest - 1][1];
-        end_x = sign * inner_decel_end_pos_[forest - 1][0];
-        end_y = inner_decel_end_pos_[forest - 1][1];
+        center_x = sign * inner_decel_center_pos_[forest - 1][0];
+        center_y = inner_decel_center_pos_[forest - 1][1];
+        rect_yaw = inner_decel_center_pos_[forest - 1][2];
       } else if (is_outer) {
-        start_x = sign * outer_decel_start_pos_[forest - 1][0];
-        start_y = outer_decel_start_pos_[forest - 1][1];
-        end_x = sign * outer_decel_end_pos_[forest - 1][0];
-        end_y = outer_decel_end_pos_[forest - 1][1];
+        center_x = sign * outer_decel_center_pos_[forest - 1][0];
+        center_y = outer_decel_center_pos_[forest - 1][1];
+        rect_yaw = outer_decel_center_pos_[forest - 1][2];
+      }
+      // zoneがblueのときはy軸を反転させる（yawも反転させる）
+      if (zone_ == "blue") {
+        rect_yaw = angle_normalize(M_PI - rect_yaw);
       }
       for (int j = 0; j < (int)v_trans_wp.size(); j++) {
         // 範囲内かどうか判定
         // 範囲内だった場合は減速する
-        if (is_within_range(x_wp[j], y_wp[j], start_x, start_y, end_x, end_y)) {
+        if (is_within_rotated_rectangle(
+              x_wp[j], y_wp[j], center_x, center_y, rect_yaw, decel_width_, decel_height_)) {
           if (std::isfinite(v_trans_wp[j])) {
             v_trans_wp[j] = std::min(v_trans_wp[j], decel_speed_);
           } else {
@@ -998,14 +964,14 @@ public:
   std::string act_filebase_;
   // zone
   std::string zone_;
-  // 内回りの経路内で減速を開始する区間のxy座標
-  std::vector<std::vector<double>> inner_decel_start_pos_;
-  // 内回りの経路内で減速を終了する区間のxy座標
-  std::vector<std::vector<double>> inner_decel_end_pos_;
-  // 外回りの経路内で減速を開始する区間のxy座標
-  std::vector<std::vector<double>> outer_decel_start_pos_;
-  // 外回りの経路内で減速を終了する区間のxy座標
-  std::vector<std::vector<double>> outer_decel_end_pos_;
+  // 内回り/外回りで減速判定に使う長方形中心の座標 [x, y, yaw]
+  // yaw=0 のときは map 座標系に平行で、yaw を与えるとその分だけ長方形が回転する
+  std::vector<std::vector<double>> inner_decel_center_pos_;
+  std::vector<std::vector<double>> outer_decel_center_pos_;
+  // 減速判定用長方形のサイズ
+  // width は長方形ローカル x 方向、height は長方形ローカル y 方向の長さ
+  double decel_height_;
+  double decel_width_;
   // KFS回収時のオフセット（front_kfsかrear_kfsのうち、遠い方に適応する）
   double collect_kfs_offset_;
   // 減速時の速度

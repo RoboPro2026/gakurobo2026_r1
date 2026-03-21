@@ -397,58 +397,28 @@ R1MainNode::R1MainNode() : Node("r1_main_node")
   }
 
   for (int i = 0; i < 12; i++) {
-    std::string inner_start_name = "inner_collect_kfs_start_pos." + std::to_string(i + 1);
-    std::string inner_end_name = "inner_collect_kfs_end_pos." + std::to_string(i + 1);
-    std::string outer_start_name = "outer_collect_kfs_start_pos." + std::to_string(i + 1);
-    std::string outer_end_name = "outer_collect_kfs_end_pos." + std::to_string(i + 1);
+    std::string inner_center_name = "inner_collect_kfs_center_pos." + std::to_string(i + 1);
+    std::string outer_center_name = "outer_collect_kfs_center_pos." + std::to_string(i + 1);
     // 適当な初期値を代入
-    this->declare_parameter<std::vector<double>>(inner_start_name, {100.0, 100.0});
-    this->declare_parameter<std::vector<double>>(inner_end_name, {100.0, 100.0});
-    this->declare_parameter<std::vector<double>>(outer_start_name, {100.0, 100.0});
-    this->declare_parameter<std::vector<double>>(outer_end_name, {100.0, 100.0});
-    std::vector<double> inner_start, inner_end, outer_start, outer_end;
-    this->get_parameter(inner_start_name, inner_start);
-    this->get_parameter(inner_end_name, inner_end);
-    this->get_parameter(outer_start_name, outer_start);
-    this->get_parameter(outer_end_name, outer_end);
+    this->declare_parameter<std::vector<double>>(inner_center_name, {100.0, 100.0, 0.0});
+    this->declare_parameter<std::vector<double>>(outer_center_name, {100.0, 100.0, 0.0});
+    std::vector<double> inner_center, outer_center;
+    this->get_parameter(inner_center_name, inner_center);
+    this->get_parameter(outer_center_name, outer_center);
 
-    if (
-      inner_start.size() != 2 || inner_end.size() != 2 || outer_start.size() != 2 ||
-      outer_end.size() != 2) {
+    if (inner_center.size() != 3 || outer_center.size() != 3) {
       RCLCPP_FATAL(
         this->get_logger(),
-        "Invalid parameter size for collect_kfs positions. Each position must have 2 elements (x, "
-        "y).");
+        "Invalid parameter size for collect_kfs center positions. Each position must have 3 "
+        "elements (x, y, yaw).");
       rclcpp::shutdown();
     }
 
-    INNER_COLLECT_KFS_START_POS.push_back(inner_start);
-    INNER_COLLECT_KFS_END_POS.push_back(inner_end);
-    OUTER_COLLECT_KFS_START_POS.push_back(outer_start);
-    OUTER_COLLECT_KFS_END_POS.push_back(outer_end);
+    INNER_COLLECT_KFS_CENTER_POS.push_back(inner_center);
+    OUTER_COLLECT_KFS_CENTER_POS.push_back(outer_center);
   }
-  // ログの出力
-  // for (int i = 0; i < 12; i++) {
-  //   RCLCPP_INFO(
-  //     this->get_logger(), "inner_collect_kfs_start_pos[%d]: (%.2f, %.2f)", i + 1,
-  //     INNER_COLLECT_KFS_START_POS[i][0], INNER_COLLECT_KFS_START_POS[i][1]);
-  // }
-  // for (int i = 0; i < 12; i++) {
-  //   RCLCPP_INFO(
-  //     this->get_logger(), "inner_collect_kfs_end_pos[%d]: (%.2f, %.2f)", i + 1,
-  //     INNER_COLLECT_KFS_END_POS[i][0], INNER_COLLECT_KFS_END_POS[i][1]);
-  // }
-  // for (int i = 0; i < 12; i++) {
-  //   RCLCPP_INFO(
-  //     this->get_logger(), "outer_collect_kfs_start_pos[%d]: (%.2f, %.2f)", i + 1,
-  //     OUTER_COLLECT_KFS_START_POS[i][0], OUTER_COLLECT_KFS_START_POS[i][1]);
-  // }
-  // for (int i = 0; i < 12; i++) {
-  //   RCLCPP_INFO(
-  //     this->get_logger(), "outer_collect_kfs_end_pos[%d]: (%.2f, %.2f)", i + 1,
-  //     OUTER_COLLECT_KFS_END_POS[i][0], OUTER_COLLECT_KFS_END_POS[i][1]);
-  // }
-
+  declare_and_get_parameter("collect_kfs_height", COLLECT_KFS_HEIGHT);
+  declare_and_get_parameter("collect_kfs_width", COLLECT_KFS_WIDTH);
   declare_and_get_parameter("collect_kfs_offset", COLLECT_KFS_OFFSET);
 
   if (timer_rate_ <= 0.0) {
@@ -2131,8 +2101,7 @@ void R1MainNode::auto_collect_kfs_task(void)
   ChassisAct & step = chassis_act_status_;
 
   if (step == ChassisAct::ACT1 || step == ChassisAct::ACT2) {
-    // TODO: 回収動作を行うときは経路とロボットの進行方向に応じて、COLLECT_KFS_OFFSETを適用する
-    // TODO: 必要であれば、robot_moveにFRONT_KFSとREAR_KFSのどちらを使うかも記入する
+    // TODO: 進行方向と使用する回収機構の順番に応じて、OFFSETをいい感じに適応する
     geometry_msgs::msg::PoseStamped map_pos = get_map_pos();
     int n = current_robot_move_.forest_order.size();
     bool within = false;
@@ -2141,19 +2110,22 @@ void R1MainNode::auto_collect_kfs_task(void)
       double map_x = map_pos.pose.position.x;
       double map_y = map_pos.pose.position.y;
       double sign = (zone_ == "blue") ? -1.0 : 1.0;
-      double start_x = 0.0, start_y = 0.0, end_x = 0.0, end_y = 0.0;
+      double center_x = 0.0, center_y = 0.0, rect_yaw = 0.0;
       if (step == ChassisAct::ACT1) {
-        start_x = sign * INNER_COLLECT_KFS_START_POS[target_forest_number - 1][0];
-        start_y = sign * INNER_COLLECT_KFS_START_POS[target_forest_number - 1][1];
-        end_x = sign * INNER_COLLECT_KFS_END_POS[target_forest_number - 1][0];
-        end_y = sign * INNER_COLLECT_KFS_END_POS[target_forest_number - 1][1];
+        center_x = sign * INNER_COLLECT_KFS_CENTER_POS[target_forest_number - 1][0];
+        center_y = INNER_COLLECT_KFS_CENTER_POS[target_forest_number - 1][1];
+        rect_yaw = INNER_COLLECT_KFS_CENTER_POS[target_forest_number - 1][2];
       } else if (step == ChassisAct::ACT2) {
-        start_x = sign * OUTER_COLLECT_KFS_START_POS[target_forest_number - 1][0];
-        start_y = sign * OUTER_COLLECT_KFS_START_POS[target_forest_number - 1][1];
-        end_x = sign * OUTER_COLLECT_KFS_END_POS[target_forest_number - 1][0];
-        end_y = sign * OUTER_COLLECT_KFS_END_POS[target_forest_number - 1][1];
+        center_x = sign * OUTER_COLLECT_KFS_CENTER_POS[target_forest_number - 1][0];
+        center_y = OUTER_COLLECT_KFS_CENTER_POS[target_forest_number - 1][1];
+        rect_yaw = OUTER_COLLECT_KFS_CENTER_POS[target_forest_number - 1][2];
       }
-      if (is_within_range(map_x, map_y, start_x, start_y, end_x, end_y)) {
+      // 青ゾーンのときは角度を反転させる
+      if (zone_ == "blue") {
+        rect_yaw = angle_normalize(M_PI - rect_yaw);
+      }
+      if (is_within_rotated_rectangle(
+            map_x, map_y, center_x, center_y, rect_yaw, COLLECT_KFS_WIDTH, COLLECT_KFS_HEIGHT)) {
         within = true;
         // LEDを設定、緑色
         sabacan_led_ref(0, 50, 0);
