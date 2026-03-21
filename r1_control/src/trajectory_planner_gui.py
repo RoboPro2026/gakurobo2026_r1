@@ -677,26 +677,9 @@ class MainWindow(QMainWindow):
         del self.runner.x_wp[row]
         del self.runner.y_wp[row]
 
-        # theta, v_trans の削除・インデックス補正
-        new_theta: list[tuple[int, float]] = []
-        for idx, val in self.runner.theta_wp:
-            if idx == row:
-                continue
-            if idx > row:
-                new_theta.append((idx - 1, val))
-            else:
-                new_theta.append((idx, val))
-        self.runner.theta_wp = new_theta
-
-        new_v: list[tuple[int, float]] = []
-        for idx, val in self.runner.v_trans_wp:
-            if idx == row:
-                continue
-            if idx > row:
-                new_v.append((idx - 1, val))
-            else:
-                new_v.append((idx, val))
-        self.runner.v_trans_wp = new_v
+        # theta, v_trans も同じ index で削除
+        del self.runner.theta_wp[row]
+        del self.runner.v_trans_wp[row]
 
         self.update_waypoint_table()
         self.draw_waypoints_only()
@@ -721,21 +704,8 @@ class MainWindow(QMainWindow):
         self.runner.x_wp.insert(insert_index, x_val)
         self.runner.y_wp.insert(insert_index, y_val)
 
-        shifted_theta: list[tuple[int, float]] = []
-        for idx, val in self.runner.theta_wp:
-            if idx >= insert_index:
-                shifted_theta.append((idx + 1, val))
-            else:
-                shifted_theta.append((idx, val))
-        self.runner.theta_wp = shifted_theta
-
-        shifted_v: list[tuple[int, float]] = []
-        for idx, val in self.runner.v_trans_wp:
-            if idx >= insert_index:
-                shifted_v.append((idx + 1, val))
-            else:
-                shifted_v.append((idx, val))
-        self.runner.v_trans_wp = shifted_v
+        self.runner.theta_wp.insert(insert_index, math.inf)
+        self.runner.v_trans_wp.insert(insert_index, math.inf)
 
         self.update_waypoint_table()
         self.table.selectRow(insert_index)
@@ -802,19 +772,16 @@ class MainWindow(QMainWindow):
         try:
             self.table.setRowCount(n)
 
-            theta_dict = {i: v for i, v in theta_wp}
-            v_dict = {i: v for i, v in v_trans_wp}
-
             for i in range(n):
                 idx_item = QTableWidgetItem(str(i))
                 x_item = QTableWidgetItem(f"{x_wp[i]:.3f}")
                 y_item = QTableWidgetItem(f"{y_wp[i]:.3f}")
-                theta_val = theta_dict.get(i)
-                v_val = v_dict.get(i)
+                theta_val = theta_wp[i]
+                v_val = v_trans_wp[i]
                 theta_item = QTableWidgetItem(
-                    "" if theta_val is None else f"{theta_val:.3f}"
+                    "" if not math.isfinite(theta_val) else f"{theta_val:.3f}"
                 )
-                v_item = QTableWidgetItem("" if v_val is None else f"{v_val:.3f}")
+                v_item = QTableWidgetItem("" if not math.isfinite(v_val) else f"{v_val:.3f}")
 
                 self.table.setItem(i, 0, idx_item)
                 self.table.setItem(i, 1, x_item)
@@ -969,8 +936,8 @@ class MainWindow(QMainWindow):
 
         new_x: list[float] = []
         new_y: list[float] = []
-        new_theta: list[tuple[int, float]] = []
-        new_v: list[tuple[int, float]] = []
+        new_theta: list[float] = []
+        new_v: list[float] = []
 
         for row in range(row_count):
             x_item = self.table.item(row, 1)
@@ -987,23 +954,24 @@ class MainWindow(QMainWindow):
             except ValueError:
                 continue
 
-            idx = len(new_x)
             new_x.append(x_val)
             new_y.append(y_val)
 
             if theta_item is not None and theta_item.text().strip() != "":
                 try:
-                    theta_val = float(theta_item.text())
-                    new_theta.append((idx, theta_val))
+                    new_theta.append(float(theta_item.text()))
                 except ValueError:
-                    pass
+                    new_theta.append(math.inf)
+            else:
+                new_theta.append(math.inf)
 
             if v_item is not None and v_item.text().strip() != "":
                 try:
-                    v_val = float(v_item.text())
-                    new_v.append((idx, v_val))
+                    new_v.append(float(v_item.text()))
                 except ValueError:
-                    pass
+                    new_v.append(math.inf)
+            else:
+                new_v.append(math.inf)
 
         self.runner.x_wp = new_x
         self.runner.y_wp = new_y
@@ -1109,25 +1077,14 @@ class MainWindow(QMainWindow):
 
     def _swap_theta_v_indices(self, a: int, b: int) -> None:
         """theta_wp / v_trans_wp 内の index a と b を入れ替える"""
-        swapped_theta: list[tuple[int, float]] = []
-        for idx, val in self.runner.theta_wp:
-            if idx == a:
-                swapped_theta.append((b, val))
-            elif idx == b:
-                swapped_theta.append((a, val))
-            else:
-                swapped_theta.append((idx, val))
-        self.runner.theta_wp = swapped_theta
-
-        swapped_v: list[tuple[int, float]] = []
-        for idx, val in self.runner.v_trans_wp:
-            if idx == a:
-                swapped_v.append((b, val))
-            elif idx == b:
-                swapped_v.append((a, val))
-            else:
-                swapped_v.append((idx, val))
-        self.runner.v_trans_wp = swapped_v
+        self.runner.theta_wp[a], self.runner.theta_wp[b] = (
+            self.runner.theta_wp[b],
+            self.runner.theta_wp[a],
+        )
+        self.runner.v_trans_wp[a], self.runner.v_trans_wp[b] = (
+            self.runner.v_trans_wp[b],
+            self.runner.v_trans_wp[a],
+        )
 
     def on_waypoint_selection_changed(self) -> None:
         """waypoint テーブルの選択変更時にハイライトを更新"""

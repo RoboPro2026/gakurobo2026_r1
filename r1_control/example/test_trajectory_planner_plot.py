@@ -38,8 +38,8 @@ with open("test_trajectory_planner_waypoint_output.csv", "r") as f:
     for row in reader:
         x_wp.append(float(row[0]))
         y_wp.append(float(row[1]))
-        theta_wp.append(float(row[2]))
-        v_trans_wp.append(float(row[3]))
+        theta_wp.append(float(row[2]) if row[2] != "" else np.inf)
+        v_trans_wp.append(float(row[3]) if row[3] != "" else np.inf)
 
 plt.figure(figsize=(8, 6))
 scatter = plt.scatter(x, y, c=v_trans, cmap="viridis", s=15, label="Trajectory")

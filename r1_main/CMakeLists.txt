@@ -36,6 +36,7 @@ ament_target_dependencies(r1_main_node
   r1_util
   tf2
   tf2_geometry_msgs
+  tf2_ros
 )
 
 ament_target_dependencies(test_node

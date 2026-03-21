@@ -10,6 +10,7 @@ from launch.actions import (
     SetEnvironmentVariable,
     TimerAction,
 )
+from launch.conditions import IfCondition, UnlessCondition
 from launch.launch_description_sources import (
     AnyLaunchDescriptionSource,
     PythonLaunchDescriptionSource,
@@ -23,9 +24,11 @@ from launch_xml.launch_description_sources import XMLLaunchDescriptionSource
 def generate_launch_description():
     # パッケージの共有ディレクトリのパスを取得
     pkg_dir = get_package_share_directory("r1_bringup")
+    use_sim = LaunchConfiguration("use_sim")
 
     # パラメータファイルのフルパスを作成
     param_file = os.path.join(pkg_dir, "config", "r1_machine_config.yaml")
+    zone_parameter = {"zone": "blue"}
 
     ps4_node = Node(
         package="joy",
@@ -46,7 +49,7 @@ def generate_launch_description():
         package="r1_main",
         executable="r1_main_node",
         name="r1_main_node",
-        parameters=[param_file],
+        parameters=[param_file, zone_parameter],
         arguments=["--ros-args", "--log-level", "info"],
     )
 
@@ -54,7 +57,7 @@ def generate_launch_description():
         package="r1_control",
         executable="r1_chassis_control_node",
         name="r1_chassis_control_node",
-        parameters=[param_file],
+        parameters=[param_file, zone_parameter],
         arguments=["--ros-args", "--log-level", "info"],
     )
 
@@ -64,14 +67,6 @@ def generate_launch_description():
         package="r1_machine",
         executable="r1_mecanum_node",
         name="r1_mecanum_node",  # YAMLファイル内のノード名と一致させる
-        parameters=[param_file],
-        arguments=["--ros-args", "--log-level", "warn"],
-    )
-
-    r1_dummy_odometry_node = Node(
-        package="r1_control",
-        executable="r1_dummy_odometry_node",
-        name="r1_dummy_odometry_node",
         parameters=[param_file],
         arguments=["--ros-args", "--log-level", "warn"],
     )
@@ -471,6 +466,16 @@ def generate_launch_description():
         ),
     )
 
+    r1_sim_launch = IncludeLaunchDescription(
+        PythonLaunchDescriptionSource(
+            os.path.join(
+                get_package_share_directory("r1_bringup"),
+                "launch",
+                "r1_sim.launch.py",
+            )
+        ),
+    )
+
     foxglove_node = Node(
         package="foxglove_bridge",
         executable="foxglove_bridge",
@@ -485,56 +490,51 @@ def generate_launch_description():
     )
 
     # r1_mainのノードの起動を遅延させる
-    normal_nodes = [
-        r1_slam_launch,
-        #        eth2can_node,
-        ps4_node,
-        bno086_node,
+    common_nodes = [
         r1_chassis_control_node,
         r1_mecanum_node,
-        # r1_dummy_odometry_node,
-        r1_odometry_node,
+        ps4_node,
         r1_sabacan_msgs_converter_node,
-        #r1_kfs_fx_node,
-        #r1_kfs_fz_node,
-        #r1_kfs_fyaw_node,
-        #r1_kfs_rx_node,
-        #r1_kfs_rz_node,
-        #r1_kfs_ryaw_node,
-        #r1_front_expand_node,
-        #r1_rear_expand_node,
-        #r1_pole_x1_node,
-        #r1_pole_x2_node,
-        #r1_pole_y_node,
-        #r1_pole_roger_node,
-        #r1_spear_roger1_node,
-        #r1_spear_roger2_node,
-        #r1_spear_move_node,
-        #r1_spear_rotate_node,
+        # r1_kfs_fx_node,
+        # r1_kfs_fz_node,
+        # r1_kfs_fyaw_node,
+        # r1_kfs_rx_node,
+        # r1_kfs_rz_node,
+        # r1_kfs_ryaw_node,
+        # r1_front_expand_node,
+        # r1_rear_expand_node,
+        # r1_pole_x1_node,
+        # r1_pole_x2_node,
+        # r1_pole_y_node,
+        # r1_pole_roger_node,
+        # r1_spear_roger1_node,
+        # r1_spear_roger2_node,
+        # r1_spear_move_node,
+        # r1_spear_rotate_node,
         sabacan_single_control_id1_motor0,
         sabacan_single_control_id1_motor1,
         sabacan_single_control_id1_motor2,
         sabacan_single_control_id1_motor3,
-        #sabacan_single_control_id2_motor0,
-        #sabacan_single_control_id2_motor1,
-        #sabacan_single_control_id2_motor2,
-        #sabacan_single_control_id2_motor3,
-        #sabacan_single_control_id3_motor0,
-        #sabacan_single_control_id3_motor1,
-        #sabacan_single_control_id3_motor2,
-        #sabacan_single_control_id3_motor3,
-        #sabacan_single_control_id4_motor0,
-        #sabacan_single_control_id4_motor1,
-        #sabacan_single_control_id4_motor2,
-        #sabacan_single_control_id4_motor3,
-        #sabacan_single_control_id5_motor0,
-        #sabacan_single_control_id5_motor1,
-        #sabacan_single_control_id5_motor2,
-        #sabacan_single_control_id5_motor3,
-        #sabacan_single_control_id6_motor0,
-        #sabacan_single_control_id6_motor1,
-        #sabacan_single_control_id6_motor2,
-        #sabacan_single_control_id6_motor3,
+        # sabacan_single_control_id2_motor0,
+        # sabacan_single_control_id2_motor1,
+        # sabacan_single_control_id2_motor2,
+        # sabacan_single_control_id2_motor3,
+        # sabacan_single_control_id3_motor0,
+        # sabacan_single_control_id3_motor1,
+        # sabacan_single_control_id3_motor2,
+        # sabacan_single_control_id3_motor3,
+        # sabacan_single_control_id4_motor0,
+        # sabacan_single_control_id4_motor1,
+        # sabacan_single_control_id4_motor2,
+        # sabacan_single_control_id4_motor3,
+        # sabacan_single_control_id5_motor0,
+        # sabacan_single_control_id5_motor1,
+        # sabacan_single_control_id5_motor2,
+        # sabacan_single_control_id5_motor3,
+        # sabacan_single_control_id6_motor0,
+        # sabacan_single_control_id6_motor1,
+        # sabacan_single_control_id6_motor2,
+        # sabacan_single_control_id6_motor3,
         sabacan_robomasv2_node_id1,
         sabacan_robomasv2_node_id2,
         sabacan_robomasv2_node_id3,
@@ -548,11 +548,27 @@ def generate_launch_description():
         sabacan_led_node_id1,
     ]
 
+    real_nodes = [
+        r1_slam_launch,
+        #        eth2can_node,
+        bno086_node,
+        r1_odometry_node,
+    ]
+
+    sim_nodes = [
+        r1_sim_launch,
+    ]
+
     # sabacanは遅延させて起動
     return LaunchDescription(
         [
+            DeclareLaunchArgument("use_sim", default_value="false"),
             # TimerAction(period=0.0, actions=[foxglove_node]),
-            TimerAction(period=2.0, actions=normal_nodes),
+            TimerAction(period=2.0, actions=common_nodes),
+            TimerAction(
+                period=2.0, actions=real_nodes, condition=UnlessCondition(use_sim)
+            ),
+            TimerAction(period=2.0, actions=sim_nodes, condition=IfCondition(use_sim)),
             TimerAction(period=4.0, actions=[r1_main_node]),
         ]
     )

@@ -19,6 +19,7 @@
 #include <string>
 #include <variant>
 
+#include "geometry_msgs/msg/pose_stamped.hpp"
 #include "geometry_msgs/msg/pose_with_covariance_stamped.hpp"
 #include "geometry_msgs/msg/twist.hpp"
 #include "magic_enum.hpp"
@@ -33,6 +34,7 @@
 #include "r1_msgs/msg/gpio_servo_ref.hpp"
 #include "r1_msgs/msg/linear_motion.hpp"
 #include "r1_msgs/msg/motor_ref.hpp"
+#include "r1_msgs/msg/robot_move.hpp"
 #include "r1_util/r1_util.h"
 #include "rclcpp/rclcpp.hpp"
 #include "sabacan_msgs/msg/sabacan_led_ref.hpp"
@@ -47,6 +49,9 @@
 #include "tf2/LinearMath/Matrix3x3.h"
 #include "tf2/LinearMath/Quaternion.h"
 #include "tf2/utils.h"
+#include "tf2_geometry_msgs/tf2_geometry_msgs.hpp"
+#include "tf2_ros/buffer.h"
+#include "tf2_ros/transform_listener.h"
 
 class R1MainNode : public rclcpp::Node
 {
@@ -197,10 +202,14 @@ public:
   rclcpp::Publisher<std_msgs::msg::Int32>::SharedPtr chassis_act_ref_publisher_;
   // chassis_actのSubscription
   rclcpp::Subscription<std_msgs::msg::Int32>::SharedPtr chassis_act_status_subscription_;
+  // robot_moveのPublisher
+  rclcpp::Publisher<r1_msgs::msg::RobotMove>::SharedPtr robot_move_publisher_;
   // タイマー
   rclcpp::TimerBase::SharedPtr timer_publisher_;
   double timer_rate_ = 100.0;
-
+  // tf関連
+  std::shared_ptr<tf2_ros::Buffer> tf_buffer_;
+  std::shared_ptr<tf2_ros::TransformListener> tf_listener_;
   // 速度指令値
   geometry_msgs::msg::Twist target_vel_;
   // オドメトリ
@@ -208,6 +217,8 @@ public:
   // chassis_act
   ChassisAct chassis_act_status_ = ChassisAct::NONE;
 
+  // zone
+  std::string zone_;
   // スイッチの状態
   bool kfs_front_switch_status_ = false;
   bool kfs_rear_switch_status_ = false;
@@ -274,6 +285,9 @@ public:
   static constexpr int ACTUATOR_AVAILABLE = 0;
   static constexpr int ACTUATOR_INITIALIZING = 1;
   int actuator_status_ = ACTUATOR_AVAILABLE;
+
+  // robot_move
+  r1_msgs::msg::RobotMove current_robot_move_;
 
   bool is_initialized_ = false;
 
@@ -374,6 +388,18 @@ public:
   double SPEAR_ROTATE_NORMAL_POS = 0.0;
   double SPEAR_ROTATE_COMBINE_ANGLE = 0.0;
 
+  // KFS回収の森林の順番
+  std::vector<int> KFS_FOREST_NUMBER;
+  // 内回り/外回りでKFS回収の判定に使う長方形中心の座標 [x, y, yaw]
+  // yaw=0 のときは map 座標系に平行で、yaw を与えるとその分だけ長方形が回転する
+  std::vector<std::vector<double>> INNER_COLLECT_KFS_CENTER_POS;
+  std::vector<std::vector<double>> OUTER_COLLECT_KFS_CENTER_POS;
+  // KFS回収判定用長方形のサイズ
+  // width は長方形ローカル x 方向、height は長方形ローカル y 方向の長さ
+  double COLLECT_KFS_HEIGHT = 1.2;
+  double COLLECT_KFS_WIDTH = 1.2;
+  // KFS回収時のオフセット（front_kfsかrear_kfsのうち、遠い方に適応する）
+  double COLLECT_KFS_OFFSET = 0.0;
   // コンストラクタ
   R1MainNode();
 
@@ -423,6 +449,10 @@ public:
   // chassis_act
   void chassis_act_status_callback(const std_msgs::msg::Int32::SharedPtr msg);
   void publish_chassis_act_ref(ChassisAct ref);
+  // robot_move
+  void publish_robot_move(
+    ChassisAct act, std::vector<int> forest_order, std::vector<std::string> kfs_mechanism_type);
+  geometry_msgs::msg::PoseStamped get_map_pos(void);
   // ========== 各動作の関数 ==========
   // 足回り
   void chassis_move_vel(double vx, double vy, double omega);
@@ -541,5 +571,6 @@ public:
   rclcpp::TimerBase::SharedPtr manual_mode4_front_valve_timer_;
   rclcpp::TimerBase::SharedPtr manual_mode5_rear_valve_timer_;
   // ========== オートモード ==========
+  void auto_collect_kfs_task(void);
   void auto_act0(void);
 };

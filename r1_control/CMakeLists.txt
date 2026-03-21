@@ -16,6 +16,7 @@ find_package(tf2 REQUIRED)
 find_package(tf2_geometry_msgs REQUIRED)
 find_package(tf2_ros REQUIRED)
 find_package(nav_msgs REQUIRED)
+find_package(r1_msgs REQUIRED)
 find_package(r1_util REQUIRED)
 find_package(rclcpp REQUIRED)
 find_package(visualization_msgs REQUIRED)
@@ -52,6 +53,7 @@ ament_target_dependencies(test_trapezoid_node
 ament_target_dependencies(r1_chassis_control_node
   geometry_msgs
   nav_msgs
+  r1_msgs
   rclcpp
   std_msgs
   tf2
