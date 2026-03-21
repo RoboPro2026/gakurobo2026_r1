@@ -378,7 +378,7 @@ public:
     for (int i = 0; i < (int)forest_order.size(); i++) {
       int forest = forest_order[i];
       // forest_orderが適切な値かの確認
-      bool out_of_range = forest <= 1 || forest >= 13;
+      bool out_of_range = forest <= 0 || forest >= 13;
       bool invalid_value = forest == 5 || forest == 8;
       if (out_of_range || invalid_value) {
         RCLCPP_ERROR(this->get_logger(), "Invalid forest order: %d", forest_order[i]);
@@ -410,6 +410,10 @@ public:
             // 有限の値でなかったときは直接代入
             v_trans_wp[j] = decel_speed_;
           }
+          RCLCPP_INFO(
+            this->get_logger(),
+            "Decelerating at waypoint %d for forest %d in %s: x=%f, y=%f, v_trans_wp = %f", j,
+            forest, act_name.c_str(), x_wp[j], y_wp[j], v_trans_wp[j]);
         }
       }
     }
@@ -919,7 +923,7 @@ public:
       traj_planner_[n]->calc(x_wp, y_wp, theta_wp, v_trans_wp, dt, v_max, a_max, j_max, omega_max);
 
     // 読み込んだwaypointをログに出力する
-    // for (int i = 0; i < x_wp.size(); i++) {
+    // for (int i = 0; i < (int)x_wp.size(); i++) {
     //   RCLCPP_INFO(this->get_logger(), "Waypoint %d: x=%f, y=%f", i, x_wp[i], y_wp[i]);
     // }
     // for (int i = 0; i < (int)theta_wp.size(); i++) {

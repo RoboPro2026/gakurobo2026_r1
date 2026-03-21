@@ -11,6 +11,7 @@
 
 #pragma once
 
+#include <algorithm>
 #include <cmath>
 #include <cstdio>
 #include <utility>
@@ -178,12 +179,24 @@ public:
     auto st = spline2d_.get_t();
     // 速度の拘束条件の数-1個分にresizeする
     v_segment_dist_.resize((v_trans_wp_num_ - 1));
+    // 定速区間として扱う場合に使う補助配列
+    v_segment_is_constant_.resize((v_trans_wp_num_ - 1));
+    v_segment_const_speed_.resize((v_trans_wp_num_ - 1));
+    v_segment_s_start_.resize((v_trans_wp_num_ - 1));
+    v_segment_t_start_.resize((v_trans_wp_num_ - 1));
+    v_segment_t_end_.resize((v_trans_wp_num_ - 1));
     // 角度の拘束条件の数-1個分にresizeする
     theta_segment_dist_.resize((theta_wp_num_ - 1));
     // 初期化
     dist_all_ = 0.0;
     for (int i = 0; i < (int)v_segment_dist_.size(); i++) {
       v_segment_dist_[i] = 0.0;
+      // 定速区間情報もここでリセットしておく。
+      v_segment_is_constant_[i] = false;
+      v_segment_const_speed_[i] = 0.0;
+      v_segment_s_start_[i] = 0.0;
+      v_segment_t_start_[i] = 0.0;
+      v_segment_t_end_[i] = 0.0;
     }
     for (int i = 0; i < (int)theta_segment_dist_.size(); i++) {
       theta_segment_dist_[i] = 0.0;
@@ -220,15 +233,43 @@ public:
     double ts = 0.0;
 
     for (int i = 0; i < v_trans_wp_num_ - 1; i++) {
-      // 各区間ごとの速度を計算
-      int status = accel_designer_[i].reset(
-        j_max_, a_max_, v_max_, v_trans_wp_[v_trans_wp_index_[i]],
-        v_trans_wp_[v_trans_wp_index_[i + 1]], v_segment_dist_[i], xs, ts);
-      status_[i] = status;
+      const double v_start = v_trans_wp_[v_trans_wp_index_[i]];
+      const double v_end = v_trans_wp_[v_trans_wp_index_[i + 1]];
+      // 後段のサンプリングで参照できるよう、各速度区間の開始位置と開始時刻を保存する。
+      v_segment_s_start_[i] = xs;
+      v_segment_t_start_[i] = ts;
+
+      // 元の waypoint 行で隣り合う速度拘束が同じ値なら、その区間は定速区間として扱う。
+      if (is_constant_velocity_segment(i)) {
+        const double segment_speed = 0.5 * (v_start + v_end);
+        if (v_segment_dist_[i] > distance_epsilon_ && segment_speed <= min_constant_speed_) {
+          RCLCPP_ERROR(
+            this->logger_,
+            "Error: Repeated non-positive v_trans cannot form a constant-speed section. "
+            "segment=%d, v_start=%f, v_end=%f, dist=%f",
+            i, v_start, v_end, v_segment_dist_[i]);
+          status_[i] = FAILURE;
+          return status_;
+        }
+
+        v_segment_is_constant_[i] = true;
+        v_segment_const_speed_[i] = segment_speed;
+        status_[i] = OK;
+        // 定速区間は距離と速度から終了時刻を直接決める。
+        if (v_segment_dist_[i] > distance_epsilon_) {
+          ts += v_segment_dist_[i] / segment_speed;
+        }
+      } else {
+        // 各区間ごとの速度を計算
+        int status = accel_designer_[i].reset(
+          j_max_, a_max_, v_max_, v_start, v_end, v_segment_dist_[i], xs, ts);
+        status_[i] = status;
+        ts = accel_designer_[i].t_end();
+      }
+      v_segment_t_end_[i] = ts;
 
       // 次の始点位置、始点時刻の更新
       xs += v_segment_dist_[i];
-      ts = accel_designer_[i].t_end();
     }
 
     // 軌道の終了時刻/分割数の配列を作成
@@ -256,18 +297,37 @@ public:
       // 時刻を計算
       t_[i] = dt_ * (double)i;
       // 区間ごとのインデックス更新
-      if (j < (int)accel_designer_.size() - 1 && t_[i] > accel_designer_[j].t_end()) {
+      if (j < (int)v_segment_t_end_.size() - 1 && t_[i] > v_segment_t_end_[j]) {
         j++;
       }
-      distance_[i] = accel_designer_[j].x(t_[i]);
-      v_trans_[i] = accel_designer_[j].v(t_[i]);
-      a_trans_[i] = accel_designer_[j].a(t_[i]);
-      j_trans_[i] = accel_designer_[j].j(t_[i]);
+      if (v_segment_is_constant_[j]) {
+        // 定速区間では、区間の経過時間の割合から累積距離を線形に求める。
+        // つまり位置は時間に比例して進み、速度は指定値で一定、加速度と躍度は 0 として扱う。
+        const double segment_duration = v_segment_t_end_[j] - v_segment_t_start_[j];
+        double segment_ratio = 0.0;
+        if (segment_duration > distance_epsilon_) {
+          segment_ratio = (t_[i] - v_segment_t_start_[j]) / segment_duration;
+          segment_ratio = std::clamp(segment_ratio, 0.0, 1.0);
+        }
+        distance_[i] = v_segment_s_start_[j] + v_segment_dist_[j] * segment_ratio;
+        v_trans_[i] = v_segment_const_speed_[j];
+        a_trans_[i] = 0.0;
+        j_trans_[i] = 0.0;
+      } else {
+        distance_[i] = accel_designer_[j].x(t_[i]);
+        v_trans_[i] = accel_designer_[j].v(t_[i]);
+        a_trans_[i] = accel_designer_[j].a(t_[i]);
+        j_trans_[i] = accel_designer_[j].j(t_[i]);
+      }
 
       // 走行距離distanceからx,yを逆算
 
       // 正規化して、媒介変数tを計算
-      double t = distance_[i] / dist_all_;
+      double t = 0.0;
+      if (dist_all_ > distance_epsilon_) {
+        t = distance_[i] / dist_all_;
+      }
+      t = std::clamp(t, 0.0, 1.0);
       // 位置を取得
       auto [x, y] = spline2d_.get_pos(t);
       x_[i] = x;
@@ -304,9 +364,15 @@ public:
 
     // minimum_jerkを計算
     k = 0;
+    int v_status_index = 0;
     for (int i = 0; i < array_size_; i++) {
       if (k < (int)minimum_jerk_.size() - 1 && t_[i] > minimum_jerk_[k].get_tf()) {
         k++;
+      }
+      if (
+        v_status_index < (int)v_segment_t_end_.size() - 1 &&
+        t_[i] > v_segment_t_end_[v_status_index]) {
+        v_status_index++;
       }
       // 角度を計算、minimum_jerkは始点を0としているので、waypointの角度を足す
       double theta = minimum_jerk_[k].x(t_[i]) + theta_wp_[theta_wp_index_[k]];
@@ -321,7 +387,7 @@ public:
           "Warning: The angular velocity exceeds the maximum angular velocity at time "
           "%lf s: %lf rad/s",
           t_[i], omega_[i]);
-        status_[j] = WARNING_OMEGA_EXCEEDED;
+        status_[v_status_index] = WARNING_OMEGA_EXCEEDED;
       }
     }
 
@@ -419,6 +485,27 @@ private:
     return indices;
   }
 
+  /**
+   * @brief 隣接する速度拘束がほぼ同じ値なら、その区間は定速区間として扱う。
+   * 
+   * @param v_start 
+   * @param v_end 
+   * @return true 
+   * @return false 
+   */
+  bool is_constant_velocity_segment(int segment_index) const
+  {
+    const int start_index = v_trans_wp_index_[segment_index];
+    const int end_index = v_trans_wp_index_[segment_index + 1];
+    if (end_index != start_index + 1) {
+      return false;
+    }
+    const double v_start = v_trans_wp_[start_index];
+    const double v_end = v_trans_wp_[end_index];
+    return std::isfinite(v_start) && std::isfinite(v_end) &&
+           std::abs(v_start - v_end) <= repeated_velocity_tolerance_;
+  }
+
   Spline2D spline2d_;
   std::vector<AccelDesigner> accel_designer_;
   std::vector<MinimumJerk> minimum_jerk_;
@@ -439,12 +526,27 @@ private:
   int segment_num_ = 500;
   // 速度の拘束条件の各区間の距離
   std::vector<double> v_segment_dist_;
+  // 連続する同一 v_trans は定速区間として扱う
+  std::vector<bool> v_segment_is_constant_;
+  // 定速区間として扱うときの区間内速度
+  std::vector<double> v_segment_const_speed_;
+  // 各速度区間の累積距離開始位置
+  std::vector<double> v_segment_s_start_;
+  // 各速度区間の開始時刻と終了時刻
+  std::vector<double> v_segment_t_start_;
+  std::vector<double> v_segment_t_end_;
   // 角度の拘束条件の各区間の距離
   std::vector<double> theta_segment_dist_;
   // 全区間の距離
   double dist_all_;
   // 軌道全体の時間
   double t_all_;
+  // 連続する速度拘束を同一値とみなす許容誤差
+  double repeated_velocity_tolerance_ = 1e-3;
+  // 定速区間として扱える最小速度
+  double min_constant_speed_ = 1e-6;
+  // 距離・時間のゼロ判定に使う微小値
+  double distance_epsilon_ = 1e-9;
   rclcpp::Logger logger_;
 
 public:
