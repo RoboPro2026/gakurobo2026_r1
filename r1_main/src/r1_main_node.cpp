@@ -2157,8 +2157,8 @@ void R1MainNode::auto_collect_kfs_task(void)
       sabacan_led_ref(50, 0, 0);
     }
   } else {
-    // LEDを設定、赤色
-    sabacan_led_ref(50, 0, 0);
+    // LEDを設定、白色
+    sabacan_led_ref(50, 50, 50);
   }
 }
 
@@ -2167,6 +2167,7 @@ void R1MainNode::auto_act0(void)
   ChassisAct & step = chassis_act_status_;
 
   if (step == ChassisAct::NONE) {
+    sabacan_led_ref(50, 50, 0);
     if (ps4_->is_pushed_triangle()) {
       // 位置制御のプログラム実行
       // publish_chassis_act_ref(ChassisAct::ACT0_START);
@@ -2247,8 +2248,6 @@ void R1MainNode::auto_act0(void)
     double vy_ref = CHASSIS_MAX_VELOCITY * ps4_->data.left_stick_y;
     double vz_ref = CHASSIS_MAX_OMEGA * ps4_->data.right_stick_x;
     chassis_move_vel(vx_ref, vy_ref, vz_ref);
-    // LEDを設定、赤色
-    sabacan_led_ref(50, 0, 0);
   } else if (step == ChassisAct::ACT0_START) {
     // 何もしない
   } else if (step == ChassisAct::ACT0) {
