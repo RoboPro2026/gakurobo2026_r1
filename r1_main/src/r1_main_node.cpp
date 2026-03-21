@@ -2109,20 +2109,40 @@ void R1MainNode::auto_collect_kfs_task(void)
       int target_forest_number = current_robot_move_.forest_order[i];
       double map_x = map_pos.pose.position.x;
       double map_y = map_pos.pose.position.y;
-      double sign = (zone_ == "blue") ? -1.0 : 1.0;
-      double center_x = 0.0, center_y = 0.0, rect_yaw = 0.0;
+      double center_x = 0.0, center_y = 0.0, rect_yaw = 0.0, offset_x = 0.0, offset_y = 0.0;
       if (step == ChassisAct::ACT1) {
-        center_x = sign * INNER_COLLECT_KFS_CENTER_POS[target_forest_number - 1][0];
+        center_x = INNER_COLLECT_KFS_CENTER_POS[target_forest_number - 1][0];
         center_y = INNER_COLLECT_KFS_CENTER_POS[target_forest_number - 1][1];
         rect_yaw = INNER_COLLECT_KFS_CENTER_POS[target_forest_number - 1][2];
       } else if (step == ChassisAct::ACT2) {
-        center_x = sign * OUTER_COLLECT_KFS_CENTER_POS[target_forest_number - 1][0];
+        center_x = OUTER_COLLECT_KFS_CENTER_POS[target_forest_number - 1][0];
         center_y = OUTER_COLLECT_KFS_CENTER_POS[target_forest_number - 1][1];
         rect_yaw = OUTER_COLLECT_KFS_CENTER_POS[target_forest_number - 1][2];
       }
       // 青ゾーンのときは角度を反転させる
       if (zone_ == "blue") {
+        center_x *= -1.0;
         rect_yaw = angle_normalize(M_PI - rect_yaw);
+      }
+      // TODO: ココらへんの処理はかなり怪しいので、赤ゾーンに対応するときに見直す。おそらく角度の扱いが怪しい
+      // yは進行方向と同じ向きに対してオフセットを適用する
+      if (step == ChassisAct::ACT1 && current_robot_move_.kfs_mechanism_type[i] == "front_kfs") {
+        offset_x = COLLECT_KFS_OFFSET * std::cos(rect_yaw);
+        offset_y = COLLECT_KFS_OFFSET * std::sin(rect_yaw);
+      } else if (
+        step == ChassisAct::ACT2 && current_robot_move_.kfs_mechanism_type[i] == "rear_kfs") {
+        offset_x = COLLECT_KFS_OFFSET * std::cos(rect_yaw);
+        offset_y = COLLECT_KFS_OFFSET * std::sin(rect_yaw);
+      }
+
+      // center_xとcenter_yにオフセットを適用する
+      if (zone_ == "red") {
+        center_x += offset_x;
+        center_y += offset_y;
+      } else {
+        // 本当はcenter_xはプラスではなくマイナスのはずだが、何故か動かないので一旦プラス
+        center_x += offset_x;
+        center_y += offset_y;
       }
       if (is_within_rotated_rectangle(
             map_x, map_y, center_x, center_y, rect_yaw, COLLECT_KFS_WIDTH, COLLECT_KFS_HEIGHT)) {
@@ -2169,10 +2189,18 @@ void R1MainNode::auto_act0(void)
         if (n == 1 || n == 2 || n == 4 || n == 7 || n == 10) {
           forest_order.push_back(n);
           if (j == 0) {
-            collect_kfs_type.push_back("front_kfs");
+            if (zone_ == "blue") {
+              collect_kfs_type.push_back("rear_kfs");
+            } else {
+              // 今は何もしない
+            }
             j++;
           } else if (j == 1) {
-            collect_kfs_type.push_back("rear_kfs");
+            if (zone_ == "blue") {
+              collect_kfs_type.push_back("front_kfs");
+            } else {
+              // 今は何もしない
+            }
           } else {
             RCLCPP_ERROR(this->get_logger(), "collect_kfs_type size error");
           }
@@ -2191,10 +2219,18 @@ void R1MainNode::auto_act0(void)
         if (n == 3 || n == 6 || n == 9 || n == 12 || n == 11 || n == 10) {
           forest_order.push_back(n);
           if (j == 0) {
-            collect_kfs_type.push_back("front_kfs");
+            if (zone_ == "blue") {
+              collect_kfs_type.push_back("front_kfs");
+            } else {
+              // 今は何もしない
+            }
             j++;
           } else if (j == 1) {
-            collect_kfs_type.push_back("rear_kfs");
+            if (zone_ == "blue") {
+              collect_kfs_type.push_back("rear_kfs");
+            } else {
+              // 今は何もしない
+            }
           } else {
             RCLCPP_ERROR(this->get_logger(), "collect_kfs_type size error");
           }

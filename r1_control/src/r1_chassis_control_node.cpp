@@ -350,21 +350,44 @@ public:
       }
       // zoneを考慮して判定する範囲の取得
       // TODO: ロボットの進行方向を考慮し、減速区間を適応するようにする。
-      double sign = (zone_ == "blue") ? -1.0 : 1.0;
-      double center_x = 0.0, center_y = 0.0, rect_yaw = 0.0;
+      double center_x = 0.0, center_y = 0.0, rect_yaw = 0.0, offset_x = 0.0, offset_y = 0.0;
       if (is_inner) {
-        center_x = sign * inner_decel_center_pos_[forest - 1][0];
+        center_x = inner_decel_center_pos_[forest - 1][0];
         center_y = inner_decel_center_pos_[forest - 1][1];
         rect_yaw = inner_decel_center_pos_[forest - 1][2];
       } else if (is_outer) {
-        center_x = sign * outer_decel_center_pos_[forest - 1][0];
+        center_x = outer_decel_center_pos_[forest - 1][0];
         center_y = outer_decel_center_pos_[forest - 1][1];
         rect_yaw = outer_decel_center_pos_[forest - 1][2];
       }
-      // zoneがblueのときはy軸を反転させる（yawも反転させる）
       if (zone_ == "blue") {
+        // zoneがblueのときはy軸を反転させる（yawも反転させる）
+        center_x *= -1.0;
         rect_yaw = angle_normalize(M_PI - rect_yaw);
       }
+      // TODO: ココらへんの処理はかなり怪しいので、赤ゾーンに対応するときに見直す。おそらく角度の扱いが怪しい
+      // yは進行方向と同じ向きに対してオフセットを適用する
+      if (is_inner && msg->kfs_mechanism_type[i] == "front_kfs") {
+        offset_x = collect_kfs_offset_ * std::cos(rect_yaw);
+        offset_y = collect_kfs_offset_ * std::sin(rect_yaw);
+      } else if (is_outer && msg->kfs_mechanism_type[i] == "rear_kfs") {
+        offset_x = collect_kfs_offset_ * std::cos(rect_yaw);
+        offset_y = collect_kfs_offset_ * std::sin(rect_yaw);
+      }
+      // center_xとcenter_yにオフセットを適用する
+      if (zone_ == "red") {
+        center_x += offset_x;
+        center_y += offset_y;
+      } else {
+        // 本当はcenter_xはプラスではなくマイナスのはずだが、何故か動かないので一旦プラス
+        center_x += offset_x;
+        center_y += offset_y;
+      }
+
+      RCLCPP_INFO(
+        this->get_logger(), "Decel zone for forest %d in %s: center_x=%f, center_y=%f, rect_yaw=%f",
+        forest, act_name.c_str(), center_x, center_y, rect_yaw);
+
       for (int j = 0; j < (int)v_trans_wp.size(); j++) {
         // 範囲内かどうか判定
         // 範囲内だった場合は減速する
@@ -376,10 +399,10 @@ public:
             // 有限の値でなかったときは直接代入
             v_trans_wp[j] = decel_speed_;
           }
-          RCLCPP_INFO(
-            this->get_logger(),
-            "Decelerating at waypoint %d for forest %d in %s: x=%f, y=%f, v_trans_wp = %f", j,
-            forest, act_name.c_str(), x_wp[j], y_wp[j], v_trans_wp[j]);
+          // RCLCPP_INFO(
+          //   this->get_logger(),
+          //   "Decelerating at waypoint %d for forest %d in %s: x=%f, y=%f, v_trans_wp = %f", j,
+          //   forest, act_name.c_str(), x_wp[j], y_wp[j], v_trans_wp[j]);
         }
       }
     }

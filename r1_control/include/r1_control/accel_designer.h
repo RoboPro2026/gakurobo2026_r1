@@ -104,7 +104,8 @@ public:
     /* 飽和速度まで加速すると走行距離の拘束を満たさない場合の処理 */
     const auto d_sum = ac.x_end() + dc.x_end();
     if (std::abs(dist) < std::abs(d_sum)) {
-      RCLCPP_INFO(logger(), "vs -> vm -> ve");
+      // ログがうるさいのでコメントアウト
+      // RCLCPP_INFO(logger(), "vs -> vm -> ve");
       /* 走行距離から最大速度$v_m$を算出; 下記v_maxは上記v_max以下になる */
       v_max = AccelCurve::calcVelocityMax(j_max, a_max, v_start, v_end, dist);
       /* 無駄な減速を回避 */

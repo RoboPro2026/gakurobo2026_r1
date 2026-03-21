@@ -55,8 +55,9 @@ public:
     a_ = a;
     dt_ = dt;
     v_step_ = a_ * dt_;
-    RCLCPP_INFO(
-      rclcpp::get_logger("SimpleTrapezoid"), "a: %.2f, dt: %.4f, v_step: %.4f", a_, dt_, v_step_);
+    // いらないログなのでコメントアウト
+    // RCLCPP_INFO(
+    //   rclcpp::get_logger("SimpleTrapezoid"), "a: %.2f, dt: %.4f, v_step: %.4f", a_, dt_, v_step_);
   }
 
   /**

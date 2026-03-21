@@ -78,7 +78,7 @@ r1_chassis_control_node:
       11: [3.0, 8.6, 0.0]
       12: [0.0, 7.4, 1.57]
     # KFS回収時のオフセット（front_kfsかrear_kfsのうち、遠い方に適応する）
-    collect_kfs_offset: 0.0
+    collect_kfs_offset: 0.6
     # 減速時の速度
     decel_speed: 0.15
 r1_main_node:
