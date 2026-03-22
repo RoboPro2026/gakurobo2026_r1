@@ -349,7 +349,6 @@ public:
         return;
       }
       // zoneを考慮して判定する範囲の取得
-      // TODO: ロボットの進行方向を考慮し、減速区間を適応するようにする。
       double center_x = 0.0, center_y = 0.0, rect_yaw = 0.0, offset_x = 0.0, offset_y = 0.0;
       if (is_inner) {
         center_x = inner_decel_center_pos_[forest - 1][0];
