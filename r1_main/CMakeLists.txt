@@ -16,6 +16,7 @@ find_package(r1_msgs REQUIRED)
 find_package(r1_util REQUIRED)
 find_package(rclcpp REQUIRED)
 find_package(sabacan_msgs REQUIRED)
+find_package(sabacan_single_control_msgs REQUIRED)
 find_package(sensor_msgs REQUIRED)
 find_package(std_msgs REQUIRED)
 find_package(tf2 REQUIRED)
@@ -40,12 +41,12 @@ ament_target_dependencies(r1_main_node
 )
 
 ament_target_dependencies(test_node
-  rclcpp
+  geometry_msgs
   r1_msgs
-  r1_util
+  rclcpp
   sabacan_msgs
+  sabacan_single_control_msgs
   sensor_msgs
-  std_msgs
 )
 
 target_link_libraries(r1_main_node magic_enum::magic_enum)

@@ -163,7 +163,7 @@ public:
 
   void set_deadzone(double deadzone)
   {
-    if (0 <= deadzone && 1 <= deadzone) {
+    if (0.0 <= deadzone && deadzone <= 1.0) {
       deadzone_ = deadzone;
     }
   }

@@ -1,10 +1,185 @@
-r1_chassis_control_node:
+test_node:
   ros__parameters:
-    act_filebase: "src/gakurobo2026_r1/data/"
-    zone: "red"
-    search_radius: 0.5
-    kp: 0.1
-    ki: 0.0
-    kd: 0.0
-    kff: 0.8
-    goal_range: 0.1
+    # Joy メッセージを受け取る topic 名
+    joy_topic: "/joy"
+    # PS4 入力から生成した機体速度指令を publish する topic 名
+    cmd_vel_topic: "/cmd_vel"
+    # r1_swerve_drive_node が出す 4 輪分の swerve 指令 topic 名
+    swerve_drive_ref_topic: "/swerve_drive_ref"
+    # Options ボタンで publish する Sabacan 電源指令 topic 名
+    power_ref_topic: "/sabacan_power_ref0"
+    # PS ボタンで呼ぶ前側 Robomas 基板の reset service 名
+    robomas_reset_service_id1: "/sabacan_robomas_reset_id1"
+    # PS ボタンで呼ぶ後側 Robomas 基板の reset service 名
+    robomas_reset_service_id2: "/sabacan_robomas_reset_id2"
+    # test_node のメイン更新周期 [Hz]
+    timer_rate: 100.0
+    # 並進速度の最大値 [m/s]
+    max_velocity: 1.0
+    # 角速度の最大値 [rad/s]
+    max_angular_velocity: 1.0
+    # PS4 スティック入力のデッドゾーン [0.0, 1.0]
+    deadzone: 0.1
+    # 起動時に publish する SabacanPowerRef の初期 EMS 状態
+    initial_is_ems: false
+    # wheel 系 single_ref に設定する制御モード
+    wheel_control_type: "VELOCITY"
+    # steer 系 single_ref に設定する制御モード
+    steer_control_type: "POSITION"
+    # 4 輪 wheel 用 MotorRef を直接受ける topic 群
+    # 順序は [fl, fr, rl, rr]
+    wheel_motor_ref_topics:
+      - "/swerve_fl_wheel_motor_ref"
+      - "/swerve_fr_wheel_motor_ref"
+      - "/swerve_rl_wheel_motor_ref"
+      - "/swerve_rr_wheel_motor_ref"
+    # 4 輪 steer 用 MotorRef を直接受ける topic 群
+    # 順序は [fl, fr, rl, rr]
+    steer_motor_ref_topics:
+      - "/swerve_fl_steer_motor_ref"
+      - "/swerve_fr_steer_motor_ref"
+      - "/swerve_rl_steer_motor_ref"
+      - "/swerve_rr_steer_motor_ref"
+    # wheel 系の Sabacan status を見やすい論理名で再 publish する topic 群
+    # 順序は [fl, fr, rl, rr]
+    wheel_debug_status_topics:
+      - "/debug_swerve_fl_wheel_motor_status"
+      - "/debug_swerve_fr_wheel_motor_status"
+      - "/debug_swerve_rl_wheel_motor_status"
+      - "/debug_swerve_rr_wheel_motor_status"
+    # steer 系の Sabacan status を見やすい論理名で再 publish する topic 群
+    # 順序は [fl, fr, rl, rr]
+    steer_debug_status_topics:
+      - "/debug_swerve_fl_steer_motor_status"
+      - "/debug_swerve_fr_steer_motor_status"
+      - "/debug_swerve_rl_steer_motor_status"
+      - "/debug_swerve_rr_steer_motor_status"
+    # wheel 系がぶら下がる Sabacan board_id
+    # 順序は [fl, fr, rl, rr]
+    # board1: 0=右前wheel, 1=左前wheel, 2=右前steer, 3=左前steer
+    # board2: 0=右後wheel, 1=左後wheel, 2=右後steer, 3=左後steer
+    wheel_board_ids: [1, 1, 2, 2]
+    # wheel 系がぶら下がる各 board 内 motor_number
+    # 順序は [fl, fr, rl, rr]
+    wheel_motor_numbers: [1, 0, 1, 0]
+    # steer 系がぶら下がる Sabacan board_id
+    # 順序は [fl, fr, rl, rr]
+    steer_board_ids: [1, 1, 2, 2]
+    # steer 系がぶら下がる各 board 内 motor_number
+    # 順序は [fl, fr, rl, rr]
+    steer_motor_numbers: [3, 2, 3, 2]
+
+r1_swerve_drive_node:
+  ros__parameters:
+    robot_length: 0.7
+    robot_width: 0.7
+    # 駆動輪半径 [m]
+    wheel_radius: 0.05
+    # wheel 側の減速比
+    wheel_gear_ratio: 1.0
+    # steer 側の減速比
+    steer_gear_ratio: 1.0
+    # wheel 角速度指令の上限
+    wheel_speed_limit: 100.0
+    # steer 角度指令の上限 [rad]
+    steer_angle_limit: 6.28
+    # 操舵反転判定に使う角度差しきい値 [rad]
+    angle_diff_range: 0.5
+    # 各 steer 軸のゼロ点補正 [rad]
+    # 順序は [fl, fr, rl, rr]
+    steer_theta_offset: [0.0, 0.0, 0.0, 0.0]
+    # 各 wheel モータの回転方向反転設定
+    # 順序は [fl, fr, rl, rr]
+    wheel_motor_inverse: [false, false, false, false]
+    # 各 steer モータの回転方向反転設定
+    # 順序は [fl, fr, rl, rr]
+    steer_motor_inverse: [false, false, false, false]
+    # true の場合は IMU を使って姿勢補正を行う
+    use_imu: false
+
+sabacan_robomasv2_node_id1:
+  ros__parameters:
+    # 前足回り Robomas 基板の board_id
+    board_id: 1
+    # 起動時に基板初期化シーケンスを流すかどうか
+    enable_initialize: false
+    # status publish 周期 [Hz]
+    publish_timer_rate: 100.0
+    # 接続されているモータ種別
+    # board1: 0=右前wheel, 1=左前wheel, 2=右前steer, 3=左前steer
+    motor_type: ["VESC", "VESC", "C610", "C610"]
+    # 制御モード
+    control_type: ["VELOCITY", "VELOCITY", "POS", "POS"]
+    # アブソリュートエンコーダの有効/無効。2と3のみ有効
+    abs_enc_en: [false, false, true, true]
+    # アブソリュートエンコーダのギア比。2と3のみ有効
+    abs_gear_ratio: [1.0, 1.0, 3.0, 3.0]
+    # 速度 P ゲイン。C610のみ有効
+    speed_gain_p: [0.5, 0.5, 0.5, 0.5]
+    # 速度 I ゲイン。C610のみ有効
+    speed_gain_i: [0.2, 0.2, 0.2, 0.2]
+    # 速度 D ゲイン。C610のみ有効
+    speed_gain_d: [0.0, 0.0, 0.0, 0.0]
+    # トルク制限。C610のみ有効
+    torque_lim: [100.0, 100.0, 1.0, 1.0]
+    # 位置 P ゲイン。C610のみ有効
+    pos_gain_p: [6.0, 6.0, 6.0, 6.0]
+    # 位置 I ゲイン。C610のみ有効
+    pos_gain_i: [3.0, 3.0, 3.0, 3.0]
+    # 位置 D ゲイン。C610のみ有効
+    pos_gain_d: [0.0, 0.0, 0.0, 0.0]
+    # 速度上限。C610のみ有効
+    speed_lim: [20.0, 20.0, 20.0, 20.0]
+    # 0と1はVESCなので monitor_reg1はVESC_ERPMを有効。2と3はABS_SPDとABS_POSを有効
+    monitor_reg1: [0x0, 0x0, 0x0C00000000000000,0x0C00000000000000]
+    monitor_reg2: [0x10, 0x10, 0x0, 0x0]
+    monitor_period: 100
+
+sabacan_robomasv2_node_id2:
+  ros__parameters:
+    # 後足回り Robomas 基板の board_id
+    board_id: 2
+    # 起動時に基板初期化シーケンスを流すかどうか
+    enable_initialize: false
+    # status publish 周期 [Hz]
+    publish_timer_rate: 100.0
+    # motor_number 0..3 に接続されているモータ種別
+    # board2: 0=右後wheel, 1=左後wheel, 2=右後steer, 3=左後steer
+    motor_type: ["VESC", "VESC", "C610", "C610"]
+    # 制御モード
+    control_type: ["VELOCITY", "VELOCITY", "POS", "POS"]
+    # アブソリュートエンコーダの有効/無効。2と3のみ有効
+    abs_enc_en: [false, false, true, true]
+    # アブソリュートエンコーダのギア比。2と3のみ有効
+    abs_gear_ratio: [1.0, 1.0, 3.0, 3.0]
+    # 速度 P ゲイン。C610のみ有効
+    speed_gain_p: [0.5, 0.5, 0.5, 0.5]
+    # 速度 I ゲイン。C610のみ有効
+    speed_gain_i: [0.2, 0.2, 0.2, 0.2]
+    # 速度 D ゲイン。C610のみ有効
+    speed_gain_d: [0.0, 0.0, 0.0, 0.0]
+    # トルク制限。C610のみ有効
+    torque_lim: [100.0, 100.0, 1.0, 1.0]
+    # 位置 P ゲイン。C610のみ有効
+    pos_gain_p: [6.0, 6.0, 6.0, 6.0]
+    # 位置 I ゲイン。C610のみ有効
+    pos_gain_i: [3.0, 3.0, 3.0, 3.0]
+    # 位置 D ゲイン。C610のみ有効
+    pos_gain_d: [0.0, 0.0, 0.0, 0.0]
+    # 速度上限。C610のみ有効
+    speed_lim: [20.0, 20.0, 20.0, 20.0]
+    # 0と1はVESCなので monitor_reg1はVESC_ERPMを有効。2と3はABS_SPDとABS_POSを有効
+    monitor_reg1: [0x0, 0x0, 0x0C00000000000000,0x0C00000000000000]
+    monitor_reg2: [0x10, 0x10, 0x0, 0x0]
+    monitor_period: 100
+
+sabacan_power_node_id0:
+  ros__parameters:
+    # 電源基板の board_id
+    board_id: 0
+    # 起動時に基板初期化シーケンスを流すかどうか
+    enable_initialize: false
+    # 電源状態 publish 周期 [Hz]
+    publish_timer_rate: 10.0
+    # 監視情報の取得周期 [ms]
+    monitor_period: 100
