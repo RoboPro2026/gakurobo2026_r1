@@ -444,17 +444,17 @@ def generate_launch_description():
     #         ),
     #     ]
     # )
-    #    eth2can_node = Node(
-    #        package="eth2can",
-    #        executable="eth2can_node",
-    #        name="eth2can_node",
-    #        parameters=[param_file],
-    #        arguments=["--ros-args", "--log-level", "warn"],
-    #        remappings=[
-    #            ("from_can_bus0", "from_can_bus"),
-    #            ("to_can_bus0", "to_can_bus"),
-    #        ],
-    #    )
+    eth2can_node = Node(
+        package="eth2can",
+        executable="eth2can_node",
+        name="eth2can_node",
+        parameters=[param_file],
+        arguments=["--ros-args", "--log-level", "warn"],
+            remappings=[
+                ("from_can_bus0", "from_can_bus"),
+                ("to_can_bus0", "to_can_bus"),
+            ],
+    )
 
     r1_slam_launch = IncludeLaunchDescription(
         PythonLaunchDescriptionSource(
@@ -550,7 +550,7 @@ def generate_launch_description():
 
     real_nodes = [
         r1_slam_launch,
-        #        eth2can_node,
+        eth2can_node,
         bno086_node,
         r1_odometry_node,
     ]
