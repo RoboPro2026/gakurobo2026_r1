@@ -28,10 +28,12 @@
 | `wheel_speed_limit` | double | `100.0` | 角速度上限 [rad/s]。超過時は全輪同率でスケーリングします。 |
 | `steer_angle_limit` | double | `6.28` | ステア角上限 [rad]（超過時にERRORログ）。 |
 | `angle_diff_range` | double | `0.5` | ステア角連続化を行う角度差の範囲 [rad]（前回値との差がこの値未満のときに unwrap します）。 |
+| `zero_velocity_threshold` | double | `0.001` | `linear.x`, `linear.y` をゼロ近傍とみなすしきい値です。両方がこの値未満のとき、停止判定に使われます。 |
+| `zero_omega_threshold` | double | `0.001` | `angular.z` をゼロ近傍とみなすしきい値です。`zero_velocity_threshold` と合わせて停止判定に使われます。 |
 | `steer_theta_offset` | double[4] | `[0, 0, 0, 0]` | 各輪のステア角オフセット [rad]（`theta*` 出力に加算）。 |
 | `wheel_motor_inverse` | bool[4] | `[false, false, false, false]` | 各輪の回転方向反転フラグ（`true` で `v*` に -1 倍を反映）。 |
 | `steer_motor_inverse` | bool[4] | `[false, false, false, false]` | 各輪のステア回転方向反転フラグ（`true` で `theta*` に -1 倍を反映）。 |
-| `use_imu` | bool | `true` | IMUのYawを計算に用いるか。`false` の場合はYawが更新されません（Yawを 0 として扱いたい場合は実装側で初期化が必要です）。 |
+| `use_imu` | bool | `true` | IMUのYawを計算に用いるか。`false` の場合は Yaw を `0` として計算します。 |
 
 補足: `omega0..omega3` は `/cmd_vel` の並進・回転から各輪の線速度を計算し、`omega = v / wheel_radius` として角速度 [rad/s] に換算した値です。
 
@@ -49,6 +51,8 @@ steer_theta[i] = atan2(wheel_vy[i], wheel_vx[i])
 ```
 
 ステア角 `steer_theta[i]` は前回指令 `prev_steer_theta_[i]` と比較し、角度差が `angle_diff_range` 未満のときに `-pi..pi` をまたがないように unwrap して連続性を保つようにしています。
+
+また、`|linear.x| < zero_velocity_threshold` かつ `|linear.y| < zero_velocity_threshold` かつ `|angular.z| < zero_omega_threshold` のときは、停止指令とみなして wheel 角速度だけを 0 にし、ステア角は前回値を維持します。
 
 最後に、回転方向・ギア比・ステアオフセットを反映して `/swerve_drive_ref` を出力します。
 

@@ -63,6 +63,8 @@ public:
     this->declare_parameter("wheel_speed_limit", 100.0);
     this->declare_parameter("steer_angle_limit", 6.28);
     this->declare_parameter("angle_diff_range", 0.5);
+    this->declare_parameter("zero_velocity_threshold", 1e-3);
+    this->declare_parameter("zero_omega_threshold", 1e-3);
     this->declare_parameter("steer_theta_offset", std::vector<double>{0.0, 0.0, 0.0, 0.0});
     this->declare_parameter("wheel_motor_inverse", std::vector<bool>{false, false, false, false});
     this->declare_parameter("steer_motor_inverse", std::vector<bool>{false, false, false, false});
@@ -77,6 +79,8 @@ public:
     this->get_parameter("wheel_speed_limit", wheel_speed_limit_);
     this->get_parameter("steer_angle_limit", steer_angle_limit_);
     this->get_parameter("angle_diff_range", angle_diff_range_);
+    this->get_parameter("zero_velocity_threshold", zero_velocity_threshold_);
+    this->get_parameter("zero_omega_threshold", zero_omega_threshold_);
     this->get_parameter("steer_theta_offset", steer_theta_offset_);
     std::vector<bool> wheel_motor_inverse(4);
     this->get_parameter("wheel_motor_inverse", wheel_motor_inverse);
@@ -133,6 +137,16 @@ public:
         angle_diff_range_ = parameter.as_double();
         RCLCPP_INFO(
           this->get_logger(), "Updated parameter: angle_diff_range = %.3f", angle_diff_range_);
+      } else if (name == "zero_velocity_threshold") {
+        zero_velocity_threshold_ = parameter.as_double();
+        RCLCPP_INFO(
+          this->get_logger(), "Updated parameter: zero_velocity_threshold = %.6f",
+          zero_velocity_threshold_);
+      } else if (name == "zero_omega_threshold") {
+        zero_omega_threshold_ = parameter.as_double();
+        RCLCPP_INFO(
+          this->get_logger(), "Updated parameter: zero_omega_threshold = %.6f",
+          zero_omega_threshold_);
       } else if (name == "steer_theta_offset") {
         steer_theta_offset_ = parameter.as_double_array();
         RCLCPP_INFO(
@@ -255,12 +269,11 @@ public:
     double steer_theta[4];
     double R = robot_radius_;
 
-    double zero_vector_threshold = 1e-3;
-
     // 速度指令がほぼゼロのときは、前回のステアリング角度を維持するようにする
     if (
-      std::abs(vx_ref) < zero_vector_threshold && std::abs(vy_ref) < zero_vector_threshold &&
-      std::abs(omega_ref) < zero_vector_threshold) {
+      std::abs(vx_ref) < zero_velocity_threshold_ &&
+      std::abs(vy_ref) < zero_velocity_threshold_ &&
+      std::abs(omega_ref) < zero_omega_threshold_) {
       // 旋回角は前回と同じ値、速度はゼロにする
       RCLCPP_INFO(
         this->get_logger(), "Velocity command is near zero, maintaining previous steering angles.");
@@ -361,6 +374,8 @@ public:
   double steer_angle_limit_;  // ステアリング角度の制限 (rad)
   double
     angle_diff_range_;  // 角度差の範囲。この値を小さくすると、ステアリングの角度が連続になるようにする範囲が狭くなる。単位はrad。
+  double zero_velocity_threshold_;  // vx, vy をゼロ近傍とみなすしきい値
+  double zero_omega_threshold_;     // omega をゼロ近傍とみなすしきい値
   std::vector<double> steer_theta_offset_ = {
     0.0, 0.0, 0.0, 0.0};  // ステアリングの角度オフセット (rad)
   // motor_inverse = trueのとき、motor_dir_が-1.0になる。
