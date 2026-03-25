@@ -176,7 +176,8 @@ public:
     double vy_ref = msg->linear.y;
     double omega_ref = msg->angular.z;
 
-    calculate_swerve_drive(vx_ref, vy_ref, omega_ref, yaw_);
+    const double heading = use_imu_ ? yaw_ : 0.0;
+    calculate_swerve_drive(vx_ref, vy_ref, omega_ref, heading);
     swerve_drive_ref_publisher_->publish(swerve_drive_ref_);
     RCLCPP_INFO(
       this->get_logger(), "Received cmd_vel: vx=%.3f, vy=%.3f, omega=%.3f", vx_ref, vy_ref,
@@ -346,10 +347,10 @@ public:
   // motor_inverse = trueのとき、motor_dir_が-1.0になる。
   std::vector<double> wheel_motor_dir_ = {1.0, 1.0, 1.0, 1.0};
   std::vector<double> steer_motor_dir_ = {1.0, 1.0, 1.0, 1.0};
-  bool use_imu_;       // IMUを使用するかどうか
-  double yaw_offset_;  // IMUのyaw角のオフセット (rad)
-  double yaw_;         // IMUのyaw角
-  double yaw_raw_;     // IMUのyaw角（オフセットなし）
+  bool use_imu_ = true;       // IMUを使用するかどうか
+  double yaw_offset_ = 0.0;   // IMUのyaw角のオフセット (rad)
+  double yaw_ = 0.0;          // IMUのyaw角
+  double yaw_raw_ = 0.0;      // IMUのyaw角（オフセットなし）
 };
 
 int main(int argc, char * argv[])

@@ -5,9 +5,9 @@
 
 #include <algorithm>
 #include <array>
+#include <cctype>
 #include <chrono>
 #include <cmath>
-#include <cctype>
 #include <functional>
 #include <memory>
 #include <set>
@@ -35,8 +35,7 @@ constexpr size_t MOTOR_COUNT = 4;
 using StringArray = std::array<std::string, MOTOR_COUNT>;
 using IntArray = std::array<int, MOTOR_COUNT>;
 
-StringArray toStringArray(
-  const std::vector<std::string> & values, const std::string & param_name)
+StringArray toStringArray(const std::vector<std::string> & values, const std::string & param_name)
 {
   // wheel / steer を 4 輪固定で扱うので、配列長もここで揃えておく。
   if (values.size() != MOTOR_COUNT) {
@@ -56,9 +55,9 @@ IntArray toIntArray(const std::vector<int64_t> & values, const std::string & par
   }
 
   IntArray result{};
-  std::transform(
-    values.begin(), values.end(), result.begin(),
-    [](int64_t value) { return static_cast<int>(value); });
+  std::transform(values.begin(), values.end(), result.begin(), [](int64_t value) {
+    return static_cast<int>(value);
+  });
   return result;
 }
 
@@ -103,37 +102,29 @@ r1_msgs::msg::Motor toMotorStatus(const sabacan_msgs::msg::SabacanRobomasStatus 
 std::vector<std::string> defaultWheelMotorRefTopics()
 {
   return {
-    "/swerve_fl_wheel_motor_ref",
-    "/swerve_fr_wheel_motor_ref",
-    "/swerve_rl_wheel_motor_ref",
+    "/swerve_fr_wheel_motor_ref", "/swerve_fl_wheel_motor_ref", "/swerve_rl_wheel_motor_ref",
     "/swerve_rr_wheel_motor_ref"};
 }
 
 std::vector<std::string> defaultSteerMotorRefTopics()
 {
   return {
-    "/swerve_fl_steer_motor_ref",
-    "/swerve_fr_steer_motor_ref",
-    "/swerve_rl_steer_motor_ref",
+    "/swerve_fr_steer_motor_ref", "/swerve_fl_steer_motor_ref", "/swerve_rl_steer_motor_ref",
     "/swerve_rr_steer_motor_ref"};
 }
 
 std::vector<std::string> defaultWheelStatusTopics()
 {
   return {
-    "/debug_swerve_fl_wheel_motor_status",
-    "/debug_swerve_fr_wheel_motor_status",
-    "/debug_swerve_rl_wheel_motor_status",
-    "/debug_swerve_rr_wheel_motor_status"};
+    "/debug_swerve_fr_wheel_motor_status", "/debug_swerve_fl_wheel_motor_status",
+    "/debug_swerve_rl_wheel_motor_status", "/debug_swerve_rr_wheel_motor_status"};
 }
 
 std::vector<std::string> defaultSteerStatusTopics()
 {
   return {
-    "/debug_swerve_fl_steer_motor_status",
-    "/debug_swerve_fr_steer_motor_status",
-    "/debug_swerve_rl_steer_motor_status",
-    "/debug_swerve_rr_steer_motor_status"};
+    "/debug_swerve_fr_steer_motor_status", "/debug_swerve_fl_steer_motor_status",
+    "/debug_swerve_rl_steer_motor_status", "/debug_swerve_rr_steer_motor_status"};
 }
 
 }  // namespace
@@ -184,15 +175,14 @@ private:
 
     timer_rate_ = this->declare_parameter<double>("timer_rate", 100.0);
     max_velocity_ = std::abs(this->declare_parameter<double>("max_velocity", 1.0));
-    max_angular_velocity_ =
-      std::abs(this->declare_parameter<double>("max_angular_velocity", 1.0));
+    max_angular_velocity_ = std::abs(this->declare_parameter<double>("max_angular_velocity", 1.0));
     deadzone_ = this->declare_parameter<double>("deadzone", 0.1);
     sabacan_is_ems_ = this->declare_parameter<bool>("initial_is_ems", false);
 
-    wheel_control_type_ = normalizeControlType(
-      this->declare_parameter<std::string>("wheel_control_type", "VELOCITY"));
-    steer_control_type_ = normalizeControlType(
-      this->declare_parameter<std::string>("steer_control_type", "POSITION"));
+    wheel_control_type_ =
+      normalizeControlType(this->declare_parameter<std::string>("wheel_control_type", "VELOCITY"));
+    steer_control_type_ =
+      normalizeControlType(this->declare_parameter<std::string>("steer_control_type", "POSITION"));
 
     const auto wheel_motor_ref_topics = toStringArray(
       this->declare_parameter<std::vector<std::string>>(
@@ -215,36 +205,28 @@ private:
       this->declare_parameter<std::vector<int64_t>>("wheel_board_ids", {1, 1, 2, 2}),
       "wheel_board_ids");
     const auto wheel_motor_numbers = toIntArray(
-      this->declare_parameter<std::vector<int64_t>>("wheel_motor_numbers", {1, 0, 1, 0}),
+      this->declare_parameter<std::vector<int64_t>>("wheel_motor_numbers", {0, 1, 1, 0}),
       "wheel_motor_numbers");
     const auto steer_board_ids = toIntArray(
       this->declare_parameter<std::vector<int64_t>>("steer_board_ids", {1, 1, 2, 2}),
       "steer_board_ids");
     const auto steer_motor_numbers = toIntArray(
-      this->declare_parameter<std::vector<int64_t>>("steer_motor_numbers", {3, 2, 3, 2}),
+      this->declare_parameter<std::vector<int64_t>>("steer_motor_numbers", {2, 3, 3, 2}),
       "steer_motor_numbers");
 
-    // 配列の並び順は fl, fr, rl, rr で統一する。
+    // 配列の並び順は fr, fl, rl, rr で統一する。
     constexpr std::array<const char *, MOTOR_COUNT> wheel_labels = {
-      "fl_wheel", "fr_wheel", "rl_wheel", "rr_wheel"};
+      "fr_wheel", "fl_wheel", "rl_wheel", "rr_wheel"};
     constexpr std::array<const char *, MOTOR_COUNT> steer_labels = {
-      "fl_steer", "fr_steer", "rl_steer", "rr_steer"};
+      "fr_steer", "fl_steer", "rl_steer", "rr_steer"};
 
     for (size_t i = 0; i < MOTOR_COUNT; ++i) {
-      wheel_channels_[i] = MotorChannel{
-        wheel_labels[i],
-        wheel_motor_ref_topics[i],
-        wheel_debug_status_topics[i],
-        wheel_control_type_,
-        wheel_board_ids[i],
-        wheel_motor_numbers[i]};
-      steer_channels_[i] = MotorChannel{
-        steer_labels[i],
-        steer_motor_ref_topics[i],
-        steer_debug_status_topics[i],
-        steer_control_type_,
-        steer_board_ids[i],
-        steer_motor_numbers[i]};
+      wheel_channels_[i] =
+        MotorChannel{wheel_labels[i],     wheel_motor_ref_topics[i], wheel_debug_status_topics[i],
+                     wheel_control_type_, wheel_board_ids[i],        wheel_motor_numbers[i]};
+      steer_channels_[i] =
+        MotorChannel{steer_labels[i],     steer_motor_ref_topics[i], steer_debug_status_topics[i],
+                     steer_control_type_, steer_board_ids[i],        steer_motor_numbers[i]};
     }
   }
 
@@ -252,16 +234,15 @@ private:
   {
     if (timer_rate_ <= 0.0) {
       RCLCPP_WARN(
-        this->get_logger(), "timer_rate must be positive. fallback to 100.0 Hz: %.3f",
-        timer_rate_);
+        this->get_logger(), "timer_rate must be positive. fallback to 100.0 Hz: %.3f", timer_rate_);
       timer_rate_ = 100.0;
     }
 
     if (deadzone_ < 0.0 || deadzone_ > 1.0) {
       const double clamped_deadzone = std::clamp(deadzone_, 0.0, 1.0);
       RCLCPP_WARN(
-        this->get_logger(), "deadzone must be in [0.0, 1.0]. clamped from %.3f to %.3f",
-        deadzone_, clamped_deadzone);
+        this->get_logger(), "deadzone must be in [0.0, 1.0]. clamped from %.3f to %.3f", deadzone_,
+        clamped_deadzone);
       deadzone_ = clamped_deadzone;
     }
     ps4_->set_deadzone(deadzone_);
@@ -278,9 +259,8 @@ private:
       const auto [_, inserted] = used_motors.emplace(channel.board_id, channel.motor_number);
       if (!inserted) {
         throw std::runtime_error(
-                channel.label + " duplicates board/motor mapping: board=" +
-                std::to_string(channel.board_id) + " motor=" +
-                std::to_string(channel.motor_number));
+          channel.label + " duplicates board/motor mapping: board=" +
+          std::to_string(channel.board_id) + " motor=" + std::to_string(channel.motor_number));
       }
     };
 
@@ -391,28 +371,26 @@ private:
   {
     RCLCPP_INFO(
       this->get_logger(),
-      "subscribing %s and %s, publishing %s (max_velocity: %.2f, max_angular_velocity: %.2f, deadzone: %.2f, timer_rate: %.1f Hz, power_ref: %s)",
-      joy_topic_.c_str(), swerve_drive_ref_topic_.c_str(), cmd_vel_topic_.c_str(),
-      max_velocity_, max_angular_velocity_, deadzone_, timer_rate_, power_ref_topic_.c_str());
+      "subscribing %s and %s, publishing %s (max_velocity: %.2f, max_angular_velocity: %.2f, "
+      "deadzone: %.2f, timer_rate: %.1f Hz, power_ref: %s)",
+      joy_topic_.c_str(), swerve_drive_ref_topic_.c_str(), cmd_vel_topic_.c_str(), max_velocity_,
+      max_angular_velocity_, deadzone_, timer_rate_, power_ref_topic_.c_str());
 
     for (const auto & channel : wheel_channels_) {
       RCLCPP_INFO(
-        this->get_logger(), "%s: %s -> board %d motor %d, debug %s",
-        channel.label.c_str(), channel.motor_ref_topic.c_str(), channel.board_id,
-        channel.motor_number, channel.debug_status_topic.c_str());
+        this->get_logger(), "%s: %s -> board %d motor %d, debug %s", channel.label.c_str(),
+        channel.motor_ref_topic.c_str(), channel.board_id, channel.motor_number,
+        channel.debug_status_topic.c_str());
     }
     for (const auto & channel : steer_channels_) {
       RCLCPP_INFO(
-        this->get_logger(), "%s: %s -> board %d motor %d, debug %s",
-        channel.label.c_str(), channel.motor_ref_topic.c_str(), channel.board_id,
-        channel.motor_number, channel.debug_status_topic.c_str());
+        this->get_logger(), "%s: %s -> board %d motor %d, debug %s", channel.label.c_str(),
+        channel.motor_ref_topic.c_str(), channel.board_id, channel.motor_number,
+        channel.debug_status_topic.c_str());
     }
   }
 
-  void joyCallback(const sensor_msgs::msg::Joy::SharedPtr msg)
-  {
-    ps4_->joy_callback(msg);
-  }
+  void joyCallback(const sensor_msgs::msg::Joy::SharedPtr msg) { ps4_->joy_callback(msg); }
 
   void swerveDriveRefCallback(const r1_msgs::msg::SwerveDrive::SharedPtr msg)
   {
@@ -443,8 +421,8 @@ private:
     geometry_msgs::msg::Twist cmd_vel;
     if (ps4_->is_connected()) {
       // PS4 クラス側で deadzone 適用済みのスティック値を速度指令へ変換する。
-      cmd_vel.linear.x = max_velocity_ * ps4_->data.left_stick_y;
-      cmd_vel.linear.y = max_velocity_ * ps4_->data.left_stick_x;
+      cmd_vel.linear.x = -max_velocity_ * ps4_->data.left_stick_x;
+      cmd_vel.linear.y = max_velocity_ * ps4_->data.left_stick_y;
       cmd_vel.angular.z = max_angular_velocity_ * ps4_->data.right_stick_x;
     }
 
@@ -474,8 +452,8 @@ private:
     if (!actual_control_type.empty() && actual_control_type != channel.expected_control_type) {
       RCLCPP_WARN_THROTTLE(
         this->get_logger(), *this->get_clock(), 2000,
-        "%s control_type mismatch: expected %s, got %s",
-        channel.label.c_str(), channel.expected_control_type.c_str(), motor_ref.control_type.c_str());
+        "%s control_type mismatch: expected %s, got %s", channel.label.c_str(),
+        channel.expected_control_type.c_str(), motor_ref.control_type.c_str());
     }
 
     if (!publisher) {
@@ -507,7 +485,7 @@ private:
       motor_status);
   }
 
-  template<typename ChannelArray, typename PublisherArray>
+  template <typename ChannelArray, typename PublisherArray>
   void publishDebugStatus(
     const ChannelArray & channels, const PublisherArray & publishers, int board_id,
     int motor_number, const r1_msgs::msg::Motor & motor_status)
