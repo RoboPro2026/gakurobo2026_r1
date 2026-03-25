@@ -176,7 +176,7 @@ private:
     timer_rate_ = this->declare_parameter<double>("timer_rate", 100.0);
     max_velocity_ = std::abs(this->declare_parameter<double>("max_velocity", 1.0));
     max_angular_velocity_ = std::abs(this->declare_parameter<double>("max_angular_velocity", 1.0));
-    deadzone_ = this->declare_parameter<double>("deadzone", 0.1);
+    deadzone_ = this->declare_parameter<double>("deadzone", 0.2);
     sabacan_is_ems_ = this->declare_parameter<bool>("initial_is_ems", false);
 
     wheel_control_type_ =

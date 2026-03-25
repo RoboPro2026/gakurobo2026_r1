@@ -255,6 +255,23 @@ public:
     double steer_theta[4];
     double R = robot_radius_;
 
+    double zero_vector_threshold = 1e-3;
+
+    // 速度指令がほぼゼロのときは、前回のステアリング角度を維持するようにする
+    if (
+      std::abs(vx_ref) < zero_vector_threshold && std::abs(vy_ref) < zero_vector_threshold &&
+      std::abs(omega_ref) < zero_vector_threshold) {
+      // 旋回角は前回と同じ値、速度はゼロにする
+      RCLCPP_INFO(
+        this->get_logger(), "Velocity command is near zero, maintaining previous steering angles.");
+      swerve_drive_ref_ = prev_swerve_drive_ref_;
+      swerve_drive_ref_.omega0 = 0.0;
+      swerve_drive_ref_.omega1 = 0.0;
+      swerve_drive_ref_.omega2 = 0.0;
+      swerve_drive_ref_.omega3 = 0.0;
+      return;
+    }
+
     // 4輪独立ステアリングの逆運動学の計算
     for (int i = 0; i < 4; i++) {
       // 逆運動学を計算
@@ -318,6 +335,7 @@ public:
     for (int i = 0; i < 4; i++) {
       prev_steer_theta_[i] = steer_theta[i];
     }
+    prev_swerve_drive_ref_ = swerve_drive_ref_;
   }
 
   rclcpp::Subscription<geometry_msgs::msg::Twist>::SharedPtr cmd_vel_subscription_;
@@ -327,6 +345,7 @@ public:
   rclcpp::Subscription<sensor_msgs::msg::Imu>::SharedPtr imu_subscription_;
   rclcpp::Subscription<std_msgs::msg::Float64>::SharedPtr set_swerve_drive_yaw_subscription_;
   r1_msgs::msg::SwerveDrive swerve_drive_ref_;
+  r1_msgs::msg::SwerveDrive prev_swerve_drive_ref_;
   double prev_steer_theta_[4] = {0};
 
   // ========== 機械パラメータ ==========
@@ -347,10 +366,10 @@ public:
   // motor_inverse = trueのとき、motor_dir_が-1.0になる。
   std::vector<double> wheel_motor_dir_ = {1.0, 1.0, 1.0, 1.0};
   std::vector<double> steer_motor_dir_ = {1.0, 1.0, 1.0, 1.0};
-  bool use_imu_ = true;       // IMUを使用するかどうか
-  double yaw_offset_ = 0.0;   // IMUのyaw角のオフセット (rad)
-  double yaw_ = 0.0;          // IMUのyaw角
-  double yaw_raw_ = 0.0;      // IMUのyaw角（オフセットなし）
+  bool use_imu_ = true;      // IMUを使用するかどうか
+  double yaw_offset_ = 0.0;  // IMUのyaw角のオフセット (rad)
+  double yaw_ = 0.0;         // IMUのyaw角
+  double yaw_raw_ = 0.0;     // IMUのyaw角（オフセットなし）
 };
 
 int main(int argc, char * argv[])
