@@ -53,6 +53,13 @@
 
 ## 起動例
 
+ターミナル1
+```bash
+source ~/ros2_ws/install/setup.bash
+ros2 run r1_machine r1_swerve_drive_node
+```
+
+ターミナル2
 ```bash
 source ~/ros2_ws/install/setup.bash
 python3 src/gakurobo2026_r1/r1_machine/example/swerve_drive_viewer.py

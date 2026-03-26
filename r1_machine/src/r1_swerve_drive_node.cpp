@@ -271,8 +271,7 @@ public:
 
     // 速度指令がほぼゼロのときは、前回のステアリング角度を維持するようにする
     if (
-      std::abs(vx_ref) < zero_velocity_threshold_ &&
-      std::abs(vy_ref) < zero_velocity_threshold_ &&
+      std::abs(vx_ref) < zero_velocity_threshold_ && std::abs(vy_ref) < zero_velocity_threshold_ &&
       std::abs(omega_ref) < zero_omega_threshold_) {
       // 旋回角は前回と同じ値、速度はゼロにする
       RCLCPP_INFO(
@@ -288,8 +287,8 @@ public:
     // 4輪独立ステアリングの逆運動学の計算
     for (int i = 0; i < 4; i++) {
       // 逆運動学を計算
-      wheel_vx[i] = vx_ref - R * omega_ref * std::sin(theta + i * M_PI / 2.0);
-      wheel_vy[i] = vy_ref + R * omega_ref * std::cos(theta + i * M_PI / 2.0);
+      wheel_vx[i] = vx_ref - R * omega_ref * std::sin(theta + i * M_PI / 2.0 + M_PI / 4.0);
+      wheel_vy[i] = vy_ref + R * omega_ref * std::cos(theta + i * M_PI / 2.0 + M_PI / 4.0);
       wheel_v[i] = std::sqrt(std::pow(wheel_vx[i], 2) + std::pow(wheel_vy[i], 2));
       // thetaが連続となるようにする。
       // 前回の指令値との角度差を計算する
