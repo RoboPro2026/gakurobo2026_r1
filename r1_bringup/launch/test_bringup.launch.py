@@ -7,7 +7,9 @@ from launch.substitutions import LaunchConfiguration
 from launch_ros.actions import Node
 
 
-def create_sabacan_robomasv2_node(param_file, board_id: int, log_level: str = "warn") -> Node:
+def create_sabacan_robomasv2_node(
+    param_file, board_id: int, log_level: str = "warn"
+) -> Node:
     # 基板ごとに node 名と reset service 名だけを切り替えて使い回す。
     return Node(
         package="sabacan",
@@ -78,6 +80,18 @@ def generate_launch_description():
         arguments=["--ros-args", "--log-level", "warn"],
     )
 
+    eth2can_node = Node(
+        package="eth2can",
+        executable="eth2can_node",
+        name="eth2can_node",
+        parameters=[param_file],
+        arguments=["--ros-args", "--log-level", "warn"],
+        remappings=[
+            ("from_can_bus0", "from_can_bus"),
+            ("to_can_bus0", "to_can_bus"),
+        ],
+    )
+
     # Sabacan 基板ノード群は test_bringup で常時起動する。
     hardware_core_nodes = [
         sabacan_power_node_id0,
@@ -103,6 +117,7 @@ def generate_launch_description():
             joy_node,
             r1_swerve_drive_node,
             test_node,
+            eth2can_node,
             # 先に CAN 基板ノードを起動して、status / service を先に立ち上げる。
             TimerAction(
                 period=1.0,
