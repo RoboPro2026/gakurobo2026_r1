@@ -15,7 +15,7 @@ test_node:
     # test_node のメイン更新周期 [Hz]
     timer_rate: 100.0
     # 並進速度の最大値 [m/s]
-    max_velocity: 1.0
+    max_velocity: 0.4
     # 角速度の最大値 [rad/s]
     max_angular_velocity: 1.0
     # PS4 スティック入力のデッドゾーン [0.0, 1.0]
@@ -71,10 +71,10 @@ test_node:
 
 r1_swerve_drive_node:
   ros__parameters:
-    robot_length: 0.7
-    robot_width: 0.7
+    robot_length: 0.8
+    robot_width: 0.8
     # 駆動輪半径 [m]
-    wheel_radius: 0.05
+    wheel_radius: 0.04
     # wheel 側の減速比
     wheel_gear_ratio: 1.0
     # steer 側の減速比
@@ -105,7 +105,7 @@ sabacan_robomasv2_node_id1:
   ros__parameters:
     # 前足回り Robomas 基板の board_id
     board_id: 1
-    # 起動時に基板初期化シーケンスを流すかどうか
+    # 起動時に基板初期化シーケンスを流すかどうか。独ステは初期化を行わないとおかしくなるのでtrueにする。
     enable_initialize: true
     # status publish 周期 [Hz]
     publish_timer_rate: 100.0
