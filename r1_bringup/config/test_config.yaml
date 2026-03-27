@@ -195,3 +195,8 @@ sabacan_power_node_id0:
     publish_timer_rate: 10.0
     # 監視情報の取得周期 [ms]
     monitor_period: 100
+
+# IMU
+bno086_node:
+  ros__parameters:
+    port: "/dev/ttyUSB0"
