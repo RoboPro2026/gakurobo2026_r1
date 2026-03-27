@@ -91,7 +91,7 @@ r1_swerve_drive_node:
     zero_omega_threshold: 0.00001
     # 各 steer 軸のゼロ点補正 [rad]
     # 順序は [fr, fl, rl, rr]
-    steer_theta_offset: [-2.3607964515686035, -1.2133787870407104, -2.317845106124878, 1.217]
+    steer_theta_offset: [1.4680196046829224, -2.4144859313964844, 1.5171070098876953, -1.9665634632110596]
     # 各 wheel モータの回転方向反転設定
     # 順序は [fr, fl, rl, rr]
     wheel_motor_inverse: [false, false, false, false]
