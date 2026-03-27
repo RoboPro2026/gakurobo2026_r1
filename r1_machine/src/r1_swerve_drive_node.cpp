@@ -252,6 +252,8 @@ public:
     prev_steer_theta_[2] = msg->theta2;
     prev_steer_theta_[3] = msg->theta3;
 
+    prev_swerve_drive_ref_ = swerve_drive_ref_;
+
     RCLCPP_INFO(
       this->get_logger(),
       "Manual swerve drive ref: omega0=%.3f, theta0=%.3f, omega1=%.3f, "

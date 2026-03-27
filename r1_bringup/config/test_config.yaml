@@ -99,7 +99,7 @@ r1_swerve_drive_node:
     # 順序は [fr, fl, rl, rr]
     steer_motor_inverse: [false, false, false, false]
     # true の場合は IMU を使って姿勢補正を行う
-    use_imu: false
+    use_imu: true
 
 sabacan_robomasv2_node_id1:
   ros__parameters:
@@ -133,7 +133,7 @@ sabacan_robomasv2_node_id1:
     # 位置 D ゲイン。C610のみ有効
     pos_gain_d: [0.0, 0.0, 0.0, 0.0]
     # 速度上限。C610のみ有効
-    speed_lim: [20.0, 20.0, 10.0, 10.0]
+    speed_lim: [20.0, 20.0, 6.28, 6.28]
     # アブソの回転回数、ステアがバグるのを防止するため、0に設定
     abs_turn_cnt: [0, 0, 0, 0]
     # VESCの極数
@@ -175,7 +175,7 @@ sabacan_robomasv2_node_id2:
     # 位置 D ゲイン。C610のみ有効
     pos_gain_d: [0.0, 0.0, 0.0, 0.0]
     # 速度上限。C610のみ有効
-    speed_lim: [20.0, 20.0, 10.0, 10.0]
+    speed_lim: [20.0, 20.0, 6.28, 6.28]
     # アブソの回転回数、ステアがバグるのを防止するため、0に設定
     abs_turn_cnt: [0, 0, 0, 0]
     # VESCの極数

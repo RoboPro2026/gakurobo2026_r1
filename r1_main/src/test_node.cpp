@@ -27,6 +27,7 @@
 #include "sabacan_msgs/srv/sabacan_reset.hpp"
 #include "sabacan_single_control_msgs/msg/sabacan_robomas_single_ref.hpp"
 #include "sensor_msgs/msg/joy.hpp"
+#include "std_msgs/msg/float64.hpp"
 
 namespace
 {
@@ -172,6 +173,9 @@ private:
       "robomas_reset_service_id1", "/sabacan_robomas_reset_id1");
     robomas_reset_service_id2_ = this->declare_parameter<std::string>(
       "robomas_reset_service_id2", "/sabacan_robomas_reset_id2");
+
+    set_swerve_drive_yaw_pub_ =
+      this->create_publisher<std_msgs::msg::Float64>("/set_swerve_drive_yaw", 10);
 
     timer_rate_ = this->declare_parameter<double>("timer_rate", 100.0);
     max_velocity_ = std::abs(this->declare_parameter<double>("max_velocity", 1.0));
@@ -429,12 +433,21 @@ private:
     cmd_vel_pub_->publish(cmd_vel);
   }
 
+  void publishSetSwerveDriveYaw(double yaw)
+  {
+    std_msgs::msg::Float64 msg;
+    msg.data = yaw;
+    set_swerve_drive_yaw_pub_->publish(msg);
+    RCLCPP_INFO(this->get_logger(), "set swerve drive yaw: %.3f", yaw);
+  }
+
   void handleButtonEvents()
   {
     // PS はロボマス基板の再初期化、Options は power_ref の EMS トグルに割り当てる。
     if (ps4_->is_pushed_ps()) {
       sendSabacanReset(robomas_reset_client_id1_, robomas_reset_service_id1_);
       sendSabacanReset(robomas_reset_client_id2_, robomas_reset_service_id2_);
+      publishSetSwerveDriveYaw(0.0);
     }
 
     if (ps4_->is_pushed_options()) {
@@ -573,6 +586,8 @@ private:
     steer_motor_ref_subs_;
   std::vector<rclcpp::Subscription<sabacan_msgs::msg::SabacanRobomasStatus>::SharedPtr>
     sabacan_status_subs_;
+
+  rclcpp::Publisher<std_msgs::msg::Float64>::SharedPtr set_swerve_drive_yaw_pub_;
 
   rclcpp::Client<sabacan_msgs::srv::SabacanReset>::SharedPtr robomas_reset_client_id1_;
   rclcpp::Client<sabacan_msgs::srv::SabacanReset>::SharedPtr robomas_reset_client_id2_;

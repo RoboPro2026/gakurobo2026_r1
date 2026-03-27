@@ -47,6 +47,7 @@ ament_target_dependencies(test_node
   sabacan_msgs
   sabacan_single_control_msgs
   sensor_msgs
+  std_msgs
 )
 
 target_link_libraries(r1_main_node magic_enum::magic_enum)

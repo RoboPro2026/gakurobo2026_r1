@@ -55,6 +55,14 @@ def generate_launch_description():
         arguments=["--ros-args", "--log-level", "warn"],
     )
 
+    bno086_node = Node(
+        package="bno086",
+        executable="bno086_node",
+        name="bno086_node",
+        parameters=[param_file],
+        arguments=["--ros-args", "--log-level", "warn"],
+    )
+
     r1_swerve_drive_node = Node(
         package="r1_machine",
         executable="r1_swerve_drive_node",
@@ -115,6 +123,7 @@ def generate_launch_description():
         [
             DeclareLaunchArgument("param_file", default_value=default_param_file),
             joy_node,
+            bno086_node,
             r1_swerve_drive_node,
             test_node,
             eth2can_node,
