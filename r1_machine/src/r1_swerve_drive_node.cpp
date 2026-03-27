@@ -262,13 +262,18 @@ public:
       swerve_drive_ref_.omega3, swerve_drive_ref_.theta3);
   }
 
-  void calculate_swerve_drive(double vx_ref, double vy_ref, double omega_ref, double theta)
+  void calculate_swerve_drive(double _vx_ref, double _vy_ref, double omega_ref, double theta)
   {
+    double vx_ref, vy_ref;
     double wheel_vx[4];
     double wheel_vy[4];
     double wheel_v[4];
     double steer_theta[4];
     double R = robot_radius_;
+
+    // 回転行列
+    vx_ref = std::cos(theta) * _vx_ref + std::sin(theta) * _vy_ref;
+    vy_ref = -std::sin(theta) * _vx_ref + std::cos(theta) * _vy_ref;
 
     // 速度指令がほぼゼロのときは、前回のステアリング角度を維持するようにする
     if (
@@ -288,8 +293,8 @@ public:
     // 4輪独立ステアリングの逆運動学の計算
     for (int i = 0; i < 4; i++) {
       // 逆運動学を計算
-      wheel_vx[i] = vx_ref - R * omega_ref * std::sin(theta + i * M_PI / 2.0 + M_PI / 4.0);
-      wheel_vy[i] = vy_ref + R * omega_ref * std::cos(theta + i * M_PI / 2.0 + M_PI / 4.0);
+      wheel_vx[i] = vx_ref - R * omega_ref * std::sin(i * M_PI / 2.0 + M_PI / 4.0);
+      wheel_vy[i] = vy_ref + R * omega_ref * std::cos(i * M_PI / 2.0 + M_PI / 4.0);
       wheel_v[i] = std::sqrt(std::pow(wheel_vx[i], 2) + std::pow(wheel_vy[i], 2));
       // thetaが連続となるようにする。
       // 前回の指令値との角度差を計算する

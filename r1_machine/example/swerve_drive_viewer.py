@@ -720,6 +720,9 @@ class SwerveDriveViewer(Node):
         self._fig.canvas.flush_events()
 
     def _update_heading_estimate(self, now_monotonic: float) -> None:
+        if not self._rotate_robot:
+            self._heading_last_monotonic = now_monotonic
+            return
         if self._cmd_vel is None:
             self._heading_last_monotonic = now_monotonic
             return
@@ -823,7 +826,7 @@ class SwerveDriveViewer(Node):
         v = []
         for i in range(4):
             speed = self._swerve_speed_linear(self._latest.omega[i])
-            theta = self._latest.theta[i]
+            theta = self._latest.theta[i] + yaw
             u.append(self._vector_scale * speed * math.cos(theta))
             v.append(self._vector_scale * speed * math.sin(theta))
 

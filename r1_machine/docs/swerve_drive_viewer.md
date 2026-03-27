@@ -4,7 +4,7 @@
 
 - スクリプト: `src/gakurobo2026_r1/r1_machine/example/swerve_drive_viewer.py`
 - 可視化:
-  - 各輪の `omega, theta` を矢印で表示（`wheel_radius` で線速度へ換算）
+  - 各輪の `omega, theta + current_yaw` を矢印で表示（`wheel_radius` で線速度へ換算）
   - ロボット外形（矩形）とホイール位置をYawで回転表示（`rotate_robot`）
   - `cmd_vel` の並進（x,y）を1本の矢印、回転（omega）を円弧矢印で表示
 - GUI送信:
@@ -30,7 +30,7 @@
 | `cmd_vel_pub_topic` | string | `/cmd_vel` | GUIから `cmd_vel` をPublishする先。 |
 | `imu_sub_topic` | string | `/bno086/imu/data_raw` | ロボット回転表示に使うIMU購読先。 |
 | `imu_pub_topic` | string | `/bno086/imu/data_raw` | GUIからIMUをPublishする先。 |
-| `rotate_robot` | bool | `true` | IMU（優先）または `cmd_vel` 積分Yawでロボット外形/ホイール位置を回転表示。 |
+| `rotate_robot` | bool | `true` | IMU（優先）または `cmd_vel` 積分Yawでロボット外形/ホイール位置を回転表示。`false` にすると回転表示を固定し、`turn_angle(est)` の積分も止まります。 |
 | `wheel_radius` | double | `0.1` | `swerve_v_is_angular=true` のとき、`/swerve_drive_ref` の `omega*` [rad/s] を `v_linear = wheel_radius * omega*` [m/s] に変換して表示します。 |
 | `swerve_v_is_angular` | bool | `true` | `/swerve_drive_ref` の `omega*` を角速度 [rad/s] として扱い、`wheel_radius` で線速度 [m/s] に変換してプロットします（旧データ互換で `false` にすると入力を線速度扱い）。 |
 | `robot_length` | double | `0.5` | 可視化用ロボット長さ [m]。 |
@@ -69,7 +69,7 @@ python3 src/gakurobo2026_r1/r1_machine/example/swerve_drive_viewer.py
 
 - **黒い矩形**: ロボット外形（`robot_length` × `robot_width`）。`rotate_robot=true` のときYawで回転します。
 - **オレンジの点 + 数字(0〜3)**: ホイール位置とホイール番号。
-- **青い矢印（4本）**: `/swerve_drive_ref` の各輪ベクトル（長さ= `omega*` を `wheel_radius` で線速度へ変換した値、向き= `theta*` をXYに投影して表示。表示倍率は `vector_scale`）。
+- **青い矢印（4本）**: `/swerve_drive_ref` の各輪ベクトル（長さ= `omega*` を `wheel_radius` で線速度へ変換した値、向き= `theta* + current_yaw` をXYに投影して表示。`current_yaw` は IMU があればそれを優先し、なければ `turn_angle(est)` を使います。表示倍率は `vector_scale`）。
 - **赤い矢印（1本）**: `/cmd_vel` の並進（`linear.x`, `linear.y`）を原点から1本のベクトルで表示（表示倍率は `cmd_vel_vector_scale`）。
 - **赤い円弧 + 矢印**: `/cmd_vel` の回転（`angular.z`）。符号で回転方向、|omega|で弧の長さ/濃さが変わります（`omega_arc_radius_scale`）。
 
