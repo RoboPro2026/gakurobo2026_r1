@@ -190,8 +190,7 @@ public:
     double vy_ref = msg->linear.y;
     double omega_ref = msg->angular.z;
 
-    const double heading = use_imu_ ? yaw_ : 0.0;
-    calculate_swerve_drive(vx_ref, vy_ref, omega_ref, heading);
+    calculate_swerve_drive(vx_ref, vy_ref, omega_ref, yaw_);
     swerve_drive_ref_publisher_->publish(swerve_drive_ref_);
     RCLCPP_INFO(
       this->get_logger(), "Received cmd_vel: vx=%.3f, vy=%.3f, omega=%.3f", vx_ref, vy_ref,
@@ -217,7 +216,7 @@ public:
     tf2::Matrix3x3(q).getRPY(roll, pitch, yaw);
     yaw_raw_ = yaw;
     yaw_ = angle_normalize(yaw + yaw_offset_);
-    // RCLCPP_INFO(this->get_logger(), "yaw = %f", yaw_);
+    RCLCPP_INFO(this->get_logger(), "yaw = %f", yaw_);
   }
 
   void set_swerve_drive_yaw_callback(const std_msgs::msg::Float64::SharedPtr msg)
