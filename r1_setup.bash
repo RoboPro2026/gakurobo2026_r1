@@ -5,7 +5,7 @@ source install/setup.bash
 
 sudo cpupower frequency-set -g performance
 
-IMU_DEV="/dev/serial/by-id/usb-FTDI_FT230X_Basic_UART_D20K2C1C-if00-port0"
+IMU_DEV="/dev/serial/by-id/usb-FTDI_FT231X_USB_UART_D30FJEIM-if00-port0"
 LIDAR_DEV="/dev/ttyACM0"
 
 # by-id -> 実体の ttyUSBx を取得
