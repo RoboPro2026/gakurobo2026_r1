@@ -56,18 +56,18 @@ test_node:
       - "/debug_swerve_rr_steer_motor_status"
     # wheel 系がぶら下がる Sabacan board_id
     # 順序は [fr, fl, rl, rr]
-    # board1: 0=右前wheel, 1=左前wheel, 2=右前steer, 3=左前steer
-    # board2: 0=右後wheel, 1=左後wheel, 2=右後steer, 3=左後steer
-    wheel_board_ids: [1, 1, 2, 2]
+    # board1: 0=右前タイヤ, 1=左前タイヤ, 2=左後タイヤ, 3=右後タイヤ
+    # board2: 0=右前ステア, 1=左前ステア, 2=左後ステア, 3=右後ステア
+    wheel_board_ids: [1, 1, 1, 1]
     # wheel 系がぶら下がる各 board 内 motor_number
     # 順序は [fr, fl, rl, rr]
-    wheel_motor_numbers: [0, 1, 1, 0]
+    wheel_motor_numbers: [0, 1, 2, 3]
     # steer 系がぶら下がる Sabacan board_id
     # 順序は [fr, fl, rl, rr]
-    steer_board_ids: [1, 1, 2, 2]
+    steer_board_ids: [2, 2, 2, 2]
     # steer 系がぶら下がる各 board 内 motor_number
     # 順序は [fr, fl, rl, rr]
-    steer_motor_numbers: [2, 3, 3, 2]
+    steer_motor_numbers: [0, 1, 2, 3]
 
 r1_swerve_drive_node:
   ros__parameters:
@@ -101,23 +101,23 @@ r1_swerve_drive_node:
     # true の場合は IMU を使って姿勢補正を行う
     use_imu: true
 
+# 独ステホイール
 sabacan_robomasv2_node_id1:
   ros__parameters:
-    # 前足回り Robomas 基板の board_id
     board_id: 1
     # 起動時に基板初期化シーケンスを流すかどうか。独ステは初期化を行わないとおかしくなるのでtrueにする。
     enable_initialize: true
     # status publish 周期 [Hz]
     publish_timer_rate: 100.0
     # 接続されているモータ種別
-    # board1: 0=右前wheel, 1=左前wheel, 2=右前steer, 3=左前steer
-    motor_type: ["VESC", "VESC", "C610", "C610"]
+    # board1: 0=右前タイヤ, 1=左前タイヤ, 2=左後タイヤ, 3=右後タイヤ
+    motor_type: ["VESC", "VESC", "VESC", "VESC"]
     # 制御モード
-    control_type: ["VELOCITY", "VELOCITY", "POS", "POS"]
-    # アブソリュートエンコーダの有効/無効。2と3のみ有効
-    abs_enc_en: [false, false, true, true]
-    # アブソリュートエンコーダのギア比。2と3のみ有効
-    abs_gear_ratio: [1.0, 1.0, -1.0, -1.0]
+    control_type: ["VELOCITY", "VELOCITY", "VELOCITY", "VELOCITY"]
+    # アブソリュートエンコーダの有効/無効。
+    abs_enc_en: [false, false, false, false]
+    # アブソリュートエンコーダのギア比。
+    abs_gear_ratio: [1.0, 1.0, 1.0, 1.0]
     # 速度 P ゲイン。C610のみ有効
     speed_gain_p: [0.5, 0.5, 0.5, 0.5]
     # 速度 I ゲイン。C610のみ有効
@@ -125,7 +125,7 @@ sabacan_robomasv2_node_id1:
     # 速度 D ゲイン。C610のみ有効
     speed_gain_d: [0.0, 0.0, 0.0, 0.0]
     # トルク制限。C610のみ有効
-    torque_lim: [100.0, 100.0, 1.0, 1.0]
+    torque_lim: [100.0, 100.0, 100.0, 100.0]
     # 位置 P ゲイン。C610のみ有効
     pos_gain_p: [6.0, 6.0, 6.0, 6.0]
     # 位置 I ゲイン。C610のみ有効
@@ -133,33 +133,32 @@ sabacan_robomasv2_node_id1:
     # 位置 D ゲイン。C610のみ有効
     pos_gain_d: [0.0, 0.0, 0.0, 0.0]
     # 速度上限。C610のみ有効
-    speed_lim: [20.0, 20.0, 6.28, 6.28]
+    speed_lim: [20.0, 20.0, 20.0, 20.0]
     # アブソの回転回数、ステアがバグるのを防止するため、0に設定
     abs_turn_cnt: [0, 0, 0, 0]
     # VESCの極数
-    vesc_pole: [28, 28, 0, 0]
-    # 0と1はVESCなので monitor_reg1はVESC_ERPMを有効。2と3はABS_SPDとABS_POSを有効
-    monitor_reg1: [0x0, 0x0, 0x0C00000000000000,0x0C00000000000000]
-    monitor_reg2: [0x10, 0x10, 0x0, 0x0]
+    vesc_pole: [28, 28, 28, 28]
+    # VESCなので monitor_reg1はVESC_ERPMを有効。
+    monitor_reg1: [0x0, 0x0, 0x0,0x0]
+    monitor_reg2: [0x10, 0x10, 0x10, 0x10]
     monitor_period: 100
-
+# 独ステ旋回
 sabacan_robomasv2_node_id2:
   ros__parameters:
-    # 後足回り Robomas 基板の board_id
     board_id: 2
     # 起動時に基板初期化シーケンスを流すかどうか
     enable_initialize: true
     # status publish 周期 [Hz]
     publish_timer_rate: 100.0
     # motor_number 0..3 に接続されているモータ種別
-    # board2: 0=右後wheel, 1=左後wheel, 2=右後steer, 3=左後steer
-    motor_type: ["VESC", "VESC", "C610", "C610"]
+    # board2: 0=右前ステア, 1=左前ステア, 2=左後ステア, 3=右後ステア
+    motor_type: ["C610", "C610", "C610", "C610"]
     # 制御モード
-    control_type: ["VELOCITY", "VELOCITY", "POS", "POS"]
-    # アブソリュートエンコーダの有効/無効。2と3のみ有効
-    abs_enc_en: [false, false, true, true]
-    # アブソリュートエンコーダのギア比。2と3のみ有効
-    abs_gear_ratio: [1.0, 1.0, -1.0, -1.0]
+    control_type: ["POS", "POS", "POS", "POS"]
+    # アブソリュートエンコーダの有効/無効。すべて有効にする
+    abs_enc_en: [true, true, true, true]
+    # アブソリュートエンコーダのギア比。反転する。
+    abs_gear_ratio: [-1.0, -1.0, -1.0, -1.0]
     # 速度 P ゲイン。C610のみ有効
     speed_gain_p: [0.5, 0.5, 0.5, 0.5]
     # 速度 I ゲイン。C610のみ有効
@@ -167,7 +166,7 @@ sabacan_robomasv2_node_id2:
     # 速度 D ゲイン。C610のみ有効
     speed_gain_d: [0.0, 0.0, 0.0, 0.0]
     # トルク制限。C610のみ有効
-    torque_lim: [100.0, 100.0, -1.0, -1.0]
+    torque_lim: [1.0, 1.0, 1.0, 1.0]
     # 位置 P ゲイン。C610のみ有効
     pos_gain_p: [6.0, 6.0, 6.0, 6.0]
     # 位置 I ゲイン。C610のみ有効
@@ -175,14 +174,14 @@ sabacan_robomasv2_node_id2:
     # 位置 D ゲイン。C610のみ有効
     pos_gain_d: [0.0, 0.0, 0.0, 0.0]
     # 速度上限。C610のみ有効
-    speed_lim: [20.0, 20.0, 6.28, 6.28]
+    speed_lim: [6.28, 6.28, 6.28, 6.28]
     # アブソの回転回数、ステアがバグるのを防止するため、0に設定
     abs_turn_cnt: [0, 0, 0, 0]
     # VESCの極数
-    vesc_pole: [28, 28, 0, 0]
-    # 0と1はVESCなので monitor_reg1はVESC_ERPMを有効。2と3はABS_SPDとABS_POSを有効
-    monitor_reg1: [0x0, 0x0, 0x0C00000000000000,0x0C00000000000000]
-    monitor_reg2: [0x10, 0x10, 0x0, 0x0]
+    vesc_pole: [0, 0, 0, 0]
+    # ABS_SPDとABS_POSを有効
+    monitor_reg1: [0x0C00000000000000, 0x0C00000000000000, 0x0C00000000000000,0x0C00000000000000]
+    monitor_reg2: [0x0, 0x0, 0x0, 0x0]
     monitor_period: 100
 
 sabacan_power_node_id0:
