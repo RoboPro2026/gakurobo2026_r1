@@ -186,4 +186,4 @@ sabacan_power_node_id0:
 # IMU
 bno086_node:
   ros__parameters:
-    port: "/dev/ttyUSB0"
+    port: "/dev/serial/by-id/usb-FTDI_FT231X_USB_UART_D30FJEIM-if00-port0"
