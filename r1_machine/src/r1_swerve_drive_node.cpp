@@ -268,7 +268,7 @@ public:
     double wheel_vx[4];
     double wheel_vy[4];
     double wheel_v[4];
-    double steer_theta[4];
+    double steer_theta[4] = {0.0};
     double R = robot_radius_;
 
     // 回転行列
@@ -296,30 +296,30 @@ public:
       wheel_vx[i] = vx_ref - R * omega_ref * std::sin(i * M_PI / 2.0 + M_PI / 4.0);
       wheel_vy[i] = vy_ref + R * omega_ref * std::cos(i * M_PI / 2.0 + M_PI / 4.0);
       wheel_v[i] = std::sqrt(std::pow(wheel_vx[i], 2) + std::pow(wheel_vy[i], 2));
-      steer_theta[i] = std::atan2(wheel_vy[i], wheel_vx[i]);
-      double diff = angle_diff(steer_theta[i], prev_steer_theta_[i]);
-      if (std::abs(diff) < M_PI / 2.0) {
-        // 角度差がM_PI / 2.0以下のときは、ステアの旋回角度が連続となるようにする。
-        // 例えば、前回が170度で今回が-170度の場合、単純にatan2の値を使うと角度差は-340度となってしまうが、
-        // 実際には20度の差しかないので、-340度に360度を足して20度にする。
-        while (steer_theta[i] - prev_steer_theta_[i] > M_PI) {
-          steer_theta[i] -= 2 * M_PI;
-        }
-        while (steer_theta[i] - prev_steer_theta_[i] < -M_PI) {
-          steer_theta[i] += 2 * M_PI;
-        }
-      } else {
-        // 角度差が一定値以上のときは、反転させる。
-        // そうすることで、旋回の無駄な動作がなくなる
-        if (diff >= M_PI / 2.0) {
-          // 前回値との差が正のときは3.14を引く
-          steer_theta[i] -= M_PI;
-        } else {
-          // 前回値との差が負のときは3.14を足す
-          steer_theta[i] += M_PI;
-        }
-        wheel_v[i] = -wheel_v[i];
+      // ステアの旋回角の計算
+      double single_steer_theta = std::atan2(wheel_vy[i], wheel_vx[i]);
+      // 前回値にステアの反転を考慮した値を計算
+      double effective_prev_steer_theta = prev_steer_theta_[i];
+      if (wheel_reverse_[i]) {
+        effective_prev_steer_theta += M_PI;
       }
+      double diff = angle_diff(single_steer_theta, effective_prev_steer_theta);
+      // 前回値+diffをステアの旋回角とする。
+      steer_theta[i] = prev_steer_theta_[i] + diff;
+      // 前回値との差がM_PI / 2.0より大きいときはステアを反転させる
+      RCLCPP_INFO(
+        this->get_logger(),
+        "Wheel %d: single_steer_theta=%.3f, prev_steer_theta=%.3f, "
+        "effective_prev_steer_theta=%.3f, diff=%.3f",
+        i, single_steer_theta, prev_steer_theta_[i], effective_prev_steer_theta, diff);
+      if (diff > M_PI / 2.0) {
+        steer_theta[i] -= M_PI;
+        wheel_reverse_[i] = !wheel_reverse_[i];
+      } else if (diff < -M_PI / 2.0) {
+        steer_theta[i] += M_PI;
+        wheel_reverse_[i] = !wheel_reverse_[i];
+      }
+      wheel_v[i] *= (wheel_reverse_[i] ? -1.0 : 1.0);
     }
 
     // 計算した角速度がlimitより高いかを確認
@@ -397,10 +397,11 @@ public:
   // motor_inverse = trueのとき、motor_dir_が-1.0になる。
   std::vector<double> wheel_motor_dir_ = {1.0, 1.0, 1.0, 1.0};
   std::vector<double> steer_motor_dir_ = {1.0, 1.0, 1.0, 1.0};
-  bool use_imu_ = true;      // IMUを使用するかどうか
-  double yaw_offset_ = 0.0;  // IMUのyaw角のオフセット (rad)
-  double yaw_ = 0.0;         // IMUのyaw角
-  double yaw_raw_ = 0.0;     // IMUのyaw角（オフセットなし）
+  bool use_imu_ = true;                                             // IMUを使用するかどうか
+  double yaw_offset_ = 0.0;                                         // IMUのyaw角のオフセット (rad)
+  double yaw_ = 0.0;                                                // IMUのyaw角
+  double yaw_raw_ = 0.0;                                            // IMUのyaw角（オフセットなし）
+  std::vector<bool> wheel_reverse_ = {false, false, false, false};  // ホイールの回転方向反転設定
 };
 
 int main(int argc, char * argv[])
