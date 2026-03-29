@@ -311,7 +311,13 @@ public:
       } else {
         // 角度差が一定値以上のときは、反転させる。
         // そうすることで、旋回の無駄な動作がなくなる
-        steer_theta[i] = angle_normalize(steer_theta[i] + M_PI);
+        if (diff >= M_PI / 2.0) {
+          // 前回値との差が正のときは3.14を引く
+          steer_theta[i] -= M_PI;
+        } else {
+          // 前回値との差が負のときは3.14を足す
+          steer_theta[i] += M_PI;
+        }
         wheel_v[i] = -wheel_v[i];
       }
     }
