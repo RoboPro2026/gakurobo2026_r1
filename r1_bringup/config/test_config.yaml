@@ -6,6 +6,10 @@ test_node:
     cmd_vel_topic: "/cmd_vel"
     # r1_swerve_drive_node が出す 4 輪分の swerve 指令 topic 名
     swerve_drive_ref_topic: "/swerve_drive_ref"
+    # 初期化完了後に 0 度合わせを流す manual swerve 指令 topic 名
+    manual_swerve_drive_ref_topic: "/manual_swerve_drive_ref"
+    # Sabacan 電源基板の状態を受け取る topic 名
+    power_status_topic: "/sabacan_power_status0"
     # Options ボタンで publish する Sabacan 電源指令 topic 名
     power_ref_topic: "/sabacan_power_ref0"
     # PS ボタンで呼ぶ前側 Robomas 基板の reset service 名
@@ -26,6 +30,12 @@ test_node:
     wheel_control_type: "VELOCITY"
     # steer 系 single_ref に設定する制御モード
     steer_control_type: "POSITION"
+    # 非常停止中の steer 系 single_ref に設定する制御モード
+    steer_emergency_control_type: "TORQUE"
+    # 非常停止中に steer が VESC の場合に使う制御モード
+    steer_vesc_emergency_control_type: "CURRENT"
+    # 非常停止中に steer 系へ送る停止指令値
+    steer_emergency_ref: 0.0
     # 4 輪 wheel 用 MotorRef を直接受ける topic 群
     # 順序は [fr, fl, rl, rr]
     wheel_motor_ref_topics:
@@ -114,28 +124,6 @@ sabacan_robomasv2_node_id1:
     motor_type: ["VESC", "VESC", "VESC", "VESC"]
     # 制御モード
     control_type: ["VELOCITY", "VELOCITY", "VELOCITY", "VELOCITY"]
-    # アブソリュートエンコーダの有効/無効。
-    abs_enc_en: [false, false, false, false]
-    # アブソリュートエンコーダのギア比。
-    abs_gear_ratio: [1.0, 1.0, 1.0, 1.0]
-    # 速度 P ゲイン。C610のみ有効
-    speed_gain_p: [0.5, 0.5, 0.5, 0.5]
-    # 速度 I ゲイン。C610のみ有効
-    speed_gain_i: [0.2, 0.2, 0.2, 0.2]
-    # 速度 D ゲイン。C610のみ有効
-    speed_gain_d: [0.0, 0.0, 0.0, 0.0]
-    # トルク制限。C610のみ有効
-    torque_lim: [100.0, 100.0, 100.0, 100.0]
-    # 位置 P ゲイン。C610のみ有効
-    pos_gain_p: [6.0, 6.0, 6.0, 6.0]
-    # 位置 I ゲイン。C610のみ有効
-    pos_gain_i: [3.0, 3.0, 3.0, 3.0]
-    # 位置 D ゲイン。C610のみ有効
-    pos_gain_d: [0.0, 0.0, 0.0, 0.0]
-    # 速度上限。C610のみ有効
-    speed_lim: [20.0, 20.0, 20.0, 20.0]
-    # アブソの回転回数、ステアがバグるのを防止するため、0に設定
-    abs_turn_cnt: [0, 0, 0, 0]
     # VESCの極数
     vesc_pole: [28, 28, 28, 28]
     # VESCなので monitor_reg1は0。monitor_reg2はVESC_ERPMを有効。
