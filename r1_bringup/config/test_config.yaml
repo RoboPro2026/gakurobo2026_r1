@@ -96,9 +96,9 @@ r1_swerve_drive_node:
     # 操舵反転判定に使う角度差しきい値 [rad]
     # angle_diff_range: 0.5
     # linear.x, linear.y をゼロ近傍とみなすしきい値
-    zero_velocity_threshold: 0.00001
+    zero_velocity_threshold: 0.01
     # angular.z をゼロ近傍とみなすしきい値
-    zero_omega_threshold: 0.00001
+    zero_omega_threshold: 0.01
     # 各 steer 軸のゼロ点補正 [rad]
     # 順序は [fr, fl, rl, rr]
     steer_theta_offset: [1.58920410473878, -2.3163109739595136, 1.61834970315034, 0.6519416888528546]
