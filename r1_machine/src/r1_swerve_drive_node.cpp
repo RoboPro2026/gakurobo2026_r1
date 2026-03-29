@@ -296,18 +296,23 @@ public:
       wheel_vx[i] = vx_ref - R * omega_ref * std::sin(i * M_PI / 2.0 + M_PI / 4.0);
       wheel_vy[i] = vy_ref + R * omega_ref * std::cos(i * M_PI / 2.0 + M_PI / 4.0);
       wheel_v[i] = std::sqrt(std::pow(wheel_vx[i], 2) + std::pow(wheel_vy[i], 2));
-      // thetaが連続となるようにする。
-      // 前回の指令値との角度差を計算する
       steer_theta[i] = std::atan2(wheel_vy[i], wheel_vx[i]);
       double diff = angle_diff(steer_theta[i], prev_steer_theta_[i]);
-      if (std::abs(diff) < angle_diff_range_) {
-        // 角度差が一定値以下のときは、連続となるようにする。
+      if (std::abs(diff) < M_PI / 2.0) {
+        // 角度差がM_PI / 2.0以下のときは、ステアの旋回角度が連続となるようにする。
+        // 例えば、前回が170度で今回が-170度の場合、単純にatan2の値を使うと角度差は-340度となってしまうが、
+        // 実際には20度の差しかないので、-340度に360度を足して20度にする。
         while (steer_theta[i] - prev_steer_theta_[i] > M_PI) {
           steer_theta[i] -= 2 * M_PI;
         }
         while (steer_theta[i] - prev_steer_theta_[i] < -M_PI) {
           steer_theta[i] += 2 * M_PI;
         }
+      } else {
+        // 角度差が一定値以上のときは、反転させる。
+        // そうすることで、旋回の無駄な動作がなくなる
+        steer_theta[i] = angle_normalize(steer_theta[i] + M_PI);
+        wheel_v[i] = -wheel_v[i];
       }
     }
 

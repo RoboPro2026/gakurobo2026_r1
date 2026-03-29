@@ -94,7 +94,7 @@ r1_swerve_drive_node:
     # steer 角度指令の上限 [rad]
     steer_angle_limit: 6.28
     # 操舵反転判定に使う角度差しきい値 [rad]
-    angle_diff_range: 0.5
+    # angle_diff_range: 0.5
     # linear.x, linear.y をゼロ近傍とみなすしきい値
     zero_velocity_threshold: 0.00001
     # angular.z をゼロ近傍とみなすしきい値
