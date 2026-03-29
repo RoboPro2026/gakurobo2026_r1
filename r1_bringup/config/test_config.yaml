@@ -138,7 +138,7 @@ sabacan_robomasv2_node_id1:
     abs_turn_cnt: [0, 0, 0, 0]
     # VESCの極数
     vesc_pole: [28, 28, 28, 28]
-    # VESCなので monitor_reg1はVESC_ERPMを有効。
+    # VESCなので monitor_reg1は0。monitor_reg2はVESC_ERPMを有効。
     monitor_reg1: [0x0, 0x0, 0x0,0x0]
     monitor_reg2: [0x10, 0x10, 0x10, 0x10]
     monitor_period: 100
@@ -179,7 +179,7 @@ sabacan_robomasv2_node_id2:
     abs_turn_cnt: [0, 0, 0, 0]
     # VESCの極数
     vesc_pole: [0, 0, 0, 0]
-    # ABS_SPDとABS_POSを有効
+    # monitor_reg1のABS_SPDとABS_POSを有効。monitor_reg2は無効
     monitor_reg1: [0x0C00000000000000, 0x0C00000000000000, 0x0C00000000000000,0x0C00000000000000]
     monitor_reg2: [0x0, 0x0, 0x0, 0x0]
     monitor_period: 100
