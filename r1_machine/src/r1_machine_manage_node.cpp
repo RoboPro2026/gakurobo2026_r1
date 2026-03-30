@@ -37,6 +37,8 @@
 #include "sabacan_msgs/msg/sabacan_gpio_status.hpp"
 #include "sabacan_msgs/msg/sabacan_power_status.hpp"
 #include "sabacan_msgs/msg/sabacan_robomas_status.hpp"
+#include "sabacan_msgs/msg/sabacan_robstride_ref.hpp"
+#include "sabacan_msgs/msg/sabacan_robstride_status.hpp"
 #include "sabacan_single_control_msgs/msg/sabacan_robomas_single_ref.hpp"
 #include "std_msgs/msg/empty.hpp"
 
@@ -44,6 +46,8 @@ constexpr uint32_t kEmsBitMask = 1u << 0;
 constexpr uint32_t kSoftEmsBitMask = 1u << 1;
 constexpr const char * kSwerveWheelControlType = "VELOCITY";
 constexpr const char * kSwerveSteerControlType = "POSITION";
+constexpr const char * kRobstrideMotorType = "ROBSTRIDE";
+constexpr const char * kRobstridePositionControlType = "PP";
 
 /**
  * @brief 足回りの制御方式を表す列挙型。
@@ -62,6 +66,16 @@ enum class ChannelAvailability
   Both,
   MecanumOnly,
   SwerveOnly,
+};
+
+/**
+ * @brief モータチャネルが利用する Sabacan 側の制御 backend を表す。
+ */
+enum class MotorControllerType
+{
+  Robomas,
+  Vesc,
+  Robstride,
 };
 
 /**
@@ -168,6 +182,44 @@ static bool is_vesc_motor_type(const std::string & motor_type)
 }
 
 /**
+ * @brief モータ種別文字列が Robstride かどうかを返す。
+ * @param motor_type モータ種別文字列
+ * @return true Robstride
+ * @return false Robstride 以外
+ */
+static bool is_robstride_motor_type(const std::string & motor_type)
+{
+  return to_upper_ascii(motor_type) == kRobstrideMotorType;
+}
+
+/**
+ * @brief 非常停止時に CURRENT 0.0 停止を使うモータ種別かを返す。
+ * @param motor_type モータ種別文字列
+ * @return true CURRENT 停止
+ * @return false CURRENT 以外の停止方式
+ */
+static bool is_current_control_motor_type(const std::string & motor_type)
+{
+  return is_vesc_motor_type(motor_type) || is_robstride_motor_type(motor_type);
+}
+
+/**
+ * @brief controller_type に応じて単軸 Sabacan 指令の control_type を正規化する。
+ * @param controller_type チャネルが利用する backend 種別
+ * @param control_type 入力 control_type
+ * @return std::string 正規化後の control_type
+ */
+static std::string normalize_single_ref_control_type(
+  MotorControllerType controller_type, const std::string & control_type)
+{
+  const std::string normalized = normalize_control_type(control_type);
+  if (controller_type == MotorControllerType::Vesc && normalized == "TORQUE") {
+    return "CURRENT";
+  }
+  return normalized;
+}
+
+/**
  * @brief Sabacan 上の board_id と motor / pin 番号の組を表す。
  */
 struct BoardInfo
@@ -194,6 +246,7 @@ template <typename MsgT>
 using SubscriptionPtr = typename rclcpp::Subscription<MsgT>::SharedPtr;
 
 using SingleRefPublisher = PublisherPtr<sabacan_single_control_msgs::msg::SabacanRobomasSingleRef>;
+using RobstrideRefPublisher = PublisherPtr<sabacan_msgs::msg::SabacanRobstrideRef>;
 
 /**
  * @brief メカナム足回り 1 輪分の配線情報を保持する。
@@ -209,17 +262,23 @@ struct MecanumWheelChannel
    * @brief メカナムチャネル定義を生成する。
    * @param info ボード情報
    * @param topic デバッグ出力 topic
+   * @param controller_type 利用する motor controller 種別
    * @param availability 有効となる drive mode
    */
   MecanumWheelChannel(
     BoardInfo info, const char * topic,
+    MotorControllerType controller_type = MotorControllerType::Robomas,
     ChannelAvailability availability = ChannelAvailability::MecanumOnly)
-  : board_info(info), debug_topic(topic), availability(availability)
+  : board_info(info),
+    debug_topic(topic),
+    controller_type(controller_type),
+    availability(availability)
   {
   }
 
   BoardInfo board_info;
   const char * debug_topic{};
+  MotorControllerType controller_type{MotorControllerType::Robomas};
   ChannelAvailability availability{ChannelAvailability::MecanumOnly};
   SingleRefPublisher ref_publisher;
   PublisherPtr<r1_msgs::msg::Motor> debug_publisher;
@@ -246,11 +305,13 @@ struct MotorCommandChannel
    */
   MotorCommandChannel(
     BoardInfo info, const char * ref_topic_name, const char * status_topic_name,
-    const char * debug_topic_name)
+    const char * debug_topic_name,
+    MotorControllerType controller_type = MotorControllerType::Robomas)
   : board_info(info),
     ref_topic(ref_topic_name),
     status_topic(status_topic_name),
-    debug_topic(debug_topic_name)
+    debug_topic(debug_topic_name),
+    controller_type(controller_type)
   {
   }
 
@@ -258,7 +319,9 @@ struct MotorCommandChannel
   const char * ref_topic{};
   const char * status_topic{};
   const char * debug_topic{};
+  MotorControllerType controller_type{MotorControllerType::Robomas};
   SingleRefPublisher ref_publisher;
+  RobstrideRefPublisher robstride_ref_publisher;
   SubscriptionPtr<r1_msgs::msg::MotorRef> ref_subscription;
   PublisherPtr<StatusMsgT> status_publisher;
   PublisherPtr<r1_msgs::msg::Motor> debug_publisher;
@@ -284,14 +347,17 @@ struct DriveMotorChannel
    * @param info ボード情報
    * @param ref_topic_name 軸ごとの MotorRef topic
    * @param debug_topic_name デバッグ出力 topic
+   * @param controller_type 利用する motor controller 種別
    * @param channel_availability 有効となる drive mode
    */
   DriveMotorChannel(
     BoardInfo info, const char * ref_topic_name, const char * debug_topic_name,
+    MotorControllerType controller_type = MotorControllerType::Robomas,
     ChannelAvailability channel_availability = ChannelAvailability::SwerveOnly)
   : board_info(info),
     ref_topic(ref_topic_name),
     debug_topic(debug_topic_name),
+    controller_type(controller_type),
     availability(channel_availability)
   {
   }
@@ -299,6 +365,7 @@ struct DriveMotorChannel
   BoardInfo board_info;
   const char * ref_topic{};
   const char * debug_topic{};
+  MotorControllerType controller_type{MotorControllerType::Robomas};
   ChannelAvailability availability{ChannelAvailability::SwerveOnly};
   SingleRefPublisher ref_publisher;
   SubscriptionPtr<r1_msgs::msg::MotorRef> ref_subscription;
@@ -502,6 +569,7 @@ private:
   void initialize_sabacan_status_subscriptions()
   {
     sabacan_robomas_status_subscriptions_.resize(10);
+    sabacan_robstride_status_subscriptions_.resize(10);
     sabacan_gpio_status_subscriptions_.resize(10);
 
     for (std::size_t i = 0; i < sabacan_robomas_status_subscriptions_.size(); ++i) {
@@ -510,6 +578,13 @@ private:
           "/sabacan_robomas_status" + std::to_string(i), 10,
           [this, i](sabacan_msgs::msg::SabacanRobomasStatus::SharedPtr msg) {
             this->sabacan_robomas_status_callback(static_cast<int>(i), msg);
+          });
+
+      sabacan_robstride_status_subscriptions_[i] =
+        this->create_subscription<sabacan_msgs::msg::SabacanRobstrideStatus>(
+          "/sabacan_robstride_status" + std::to_string(i), 10,
+          [this, i](sabacan_msgs::msg::SabacanRobstrideStatus::SharedPtr msg) {
+            this->sabacan_robstride_status_callback(static_cast<int>(i), msg);
           });
 
       sabacan_gpio_status_subscriptions_[i] =
@@ -609,7 +684,9 @@ private:
           if (!is_channel_enabled(channel_ptr->availability)) {
             return;
           }
-          publish_motor_ref(channel_ptr->board_info, channel_ptr->ref_publisher, *msg);
+          publish_motor_ref(
+            channel_ptr->board_info, channel_ptr->ref_publisher, channel_ptr->controller_type,
+            *msg);
         });
     }
   }
@@ -619,8 +696,7 @@ private:
    */
   void initialize_linear_motion_channels()
   {
-    initialize_motor_channels(
-      linear_motion_channels_, [this]() { return drive_mode_ == DriveMode::Mecanum; });
+    initialize_motor_channels(linear_motion_channels_, []() { return true; });
   }
 
   /**
@@ -628,8 +704,7 @@ private:
    */
   void initialize_angle_motion_channels()
   {
-    initialize_motor_channels(
-      angle_motion_channels_, [this]() { return drive_mode_ == DriveMode::Mecanum; });
+    initialize_motor_channels(angle_motion_channels_, []() { return true; });
   }
 
   /**
@@ -666,7 +741,11 @@ private:
   template <typename StatusMsgT, typename EnabledFn>
   void initialize_motor_channel(MotorCommandChannel<StatusMsgT> & channel, EnabledFn is_enabled)
   {
-    channel.ref_publisher = create_single_ref_publisher(channel.board_info);
+    if (channel.controller_type == MotorControllerType::Robstride) {
+      channel.robstride_ref_publisher = create_robstride_ref_publisher(channel.board_info);
+    } else {
+      channel.ref_publisher = create_single_ref_publisher(channel.board_info);
+    }
     channel.status_publisher = this->create_publisher<StatusMsgT>(channel.status_topic, 10);
     channel.debug_publisher = this->create_publisher<r1_msgs::msg::Motor>(channel.debug_topic, 10);
 
@@ -677,7 +756,7 @@ private:
         if (!is_enabled()) {
           return;
         }
-        publish_motor_ref(channel_ptr->board_info, channel_ptr->ref_publisher, *msg);
+        publish_motor_ref(*channel_ptr, *msg);
       });
   }
 
@@ -798,6 +877,17 @@ private:
   }
 
   /**
+   * @brief ボード情報に対応する Robstride 指令 publisher を生成する。
+   * @param board_info ボード ID
+   * @return 生成した publisher
+   */
+  RobstrideRefPublisher create_robstride_ref_publisher(const BoardInfo & board_info)
+  {
+    return this->create_publisher<sabacan_msgs::msg::SabacanRobstrideRef>(
+      "/sabacan_robstride_ref" + std::to_string(board_info.board_id), 10);
+  }
+
+  /**
    * @brief 現在の drive mode でチャネルが有効かを返す。
    * @param availability チャネルの有効範囲
    * @return true 現在の mode で有効
@@ -832,6 +922,23 @@ private:
   }
 
   /**
+   * @brief Robstride のモータステータスを r1_msgs::msg::Motor に変換する。
+   * @param msg 変換元メッセージ
+   * @return r1_msgs::msg::Motor 変換後のモータステータス
+   */
+  static r1_msgs::msg::Motor to_motor_status(const sabacan_msgs::msg::SabacanRobstrideStatus & msg)
+  {
+    r1_msgs::msg::Motor motor_status;
+    motor_status.motor_type = kRobstrideMotorType;
+    motor_status.control_type = msg.control_type;
+    motor_status.motor_state = msg.motor_mode_status == "RUN";
+    motor_status.torque = msg.torque;
+    motor_status.speed = msg.speed;
+    motor_status.pos = msg.pos;
+    return motor_status;
+  }
+
+  /**
    * @brief LinearMotion 用の状態値を Sabacan ステータスから更新する。
    * @param value 更新先
    * @param msg 受信した Sabacan ステータス
@@ -839,6 +946,21 @@ private:
    */
   static void update_status_value(
     r1_msgs::msg::LinearMotion & value, const sabacan_msgs::msg::SabacanRobomasStatus & msg,
+    const r1_msgs::msg::Motor &)
+  {
+    value.torque = msg.torque;
+    value.speed = msg.speed;
+    value.pos = msg.pos;
+  }
+
+  /**
+   * @brief LinearMotion 用の状態値を Robstride ステータスから更新する。
+   * @param value 更新先
+   * @param msg 受信した Robstride ステータス
+   * @param unused Motor 型とのインターフェース統一用引数
+   */
+  static void update_status_value(
+    r1_msgs::msg::LinearMotion & value, const sabacan_msgs::msg::SabacanRobstrideStatus & msg,
     const r1_msgs::msg::Motor &)
   {
     value.torque = msg.torque;
@@ -862,6 +984,21 @@ private:
   }
 
   /**
+   * @brief AngleMotion 用の状態値を Robstride ステータスから更新する。
+   * @param value 更新先
+   * @param msg 受信した Robstride ステータス
+   * @param unused Motor 型とのインターフェース統一用引数
+   */
+  static void update_status_value(
+    r1_msgs::msg::AngleMotion & value, const sabacan_msgs::msg::SabacanRobstrideStatus & msg,
+    const r1_msgs::msg::Motor &)
+  {
+    value.torque = msg.torque;
+    value.speed = msg.speed;
+    value.pos = msg.pos;
+  }
+
+  /**
    * @brief Motor 用の状態値を更新する。
    * @param value 更新先
    * @param unused Sabacan ステータス。インターフェース統一用
@@ -869,6 +1006,19 @@ private:
    */
   static void update_status_value(
     r1_msgs::msg::Motor & value, const sabacan_msgs::msg::SabacanRobomasStatus &,
+    const r1_msgs::msg::Motor & motor_status)
+  {
+    value = motor_status;
+  }
+
+  /**
+   * @brief Motor 用の状態値を Robstride ステータスから更新する。
+   * @param value 更新先
+   * @param unused Robstride ステータス。インターフェース統一用
+   * @param motor_status 変換済みモータステータス
+   */
+  static void update_status_value(
+    r1_msgs::msg::Motor & value, const sabacan_msgs::msg::SabacanRobstrideStatus &,
     const r1_msgs::msg::Motor & motor_status)
   {
     value = motor_status;
@@ -895,18 +1045,66 @@ private:
    * @return sabacan_single_control_msgs::msg::SabacanRobomasSingleRef 実際に publish する単軸指令
    */
   sabacan_single_control_msgs::msg::SabacanRobomasSingleRef make_single_ref_message(
-    const BoardInfo & board_info, const std::string & control_type, double ref) const
+    const BoardInfo & board_info, MotorControllerType controller_type,
+    const std::string & control_type, double ref) const
   {
     sabacan_single_control_msgs::msg::SabacanRobomasSingleRef ref_msg;
     if (should_force_open_loop()) {
-      ref_msg.control_type = open_loop_control_type_for_motor(board_info);
+      ref_msg.control_type =
+        open_loop_control_type_for_motor(board_info, controller_type);
       ref_msg.ref = 0.0f;
       return ref_msg;
     }
 
-    ref_msg.control_type = normalize_control_type(control_type);
+    ref_msg.control_type = normalize_single_ref_control_type(controller_type, control_type);
     ref_msg.ref = static_cast<float>(ref);
     return ref_msg;
+  }
+
+  /**
+   * @brief 現在の安全状態を考慮した Robstride 指令メッセージを生成する。
+   * @param board_info 出力先モータのボード情報
+   * @param control_type 通常時に使いたい制御モード
+   * @param ref 通常時に使いたい指令値
+   * @param out 生成した指令メッセージ
+   * @return true 変換に成功
+   * @return false control_type が Robstride 非対応
+   */
+  bool make_robstride_ref_message(
+    const BoardInfo & board_info, const std::string & control_type, double ref,
+    sabacan_msgs::msg::SabacanRobstrideRef & out) const
+  {
+    const std::string normalized =
+      should_force_open_loop()
+        ? open_loop_control_type_for_motor(board_info, MotorControllerType::Robstride)
+        : normalize_control_type(control_type);
+
+    out.control_type = normalized == "POSITION" ? kRobstridePositionControlType : normalized;
+    if (should_force_open_loop()) {
+      ref = 0.0;
+    }
+
+    if (out.control_type == "CURRENT") {
+      out.current_ref = static_cast<float>(ref);
+      return true;
+    }
+    if (out.control_type == "VELOCITY") {
+      out.velocity_ref = static_cast<float>(ref);
+      return true;
+    }
+    if (out.control_type == "PP") {
+      out.pp_angle_ref = static_cast<float>(ref);
+      return true;
+    }
+    if (out.control_type == "CSP") {
+      out.csp_angle_ref = static_cast<float>(ref);
+      return true;
+    }
+
+    RCLCPP_WARN(
+      this->get_logger(), "unsupported robstride control_type '%s' on board_id=%d",
+      control_type.c_str(), board_info.board_id);
+    return false;
   }
 
   /**
@@ -917,12 +1115,52 @@ private:
    */
   void publish_motor_ref(
     const BoardInfo & board_info, const SingleRefPublisher & publisher,
+    MotorControllerType controller_type,
     const r1_msgs::msg::MotorRef & msg) const
   {
     if (!publisher) {
       return;
     }
-    publisher->publish(make_single_ref_message(board_info, msg.control_type, msg.ref));
+    publisher->publish(make_single_ref_message(board_info, controller_type, msg.control_type, msg.ref));
+  }
+
+  /**
+   * @brief MotorRef を Robstride 指令メッセージへ変換して publish する。
+   * @param board_info 出力先モータのボード情報
+   * @param publisher 出力先 publisher
+   * @param msg 入力された MotorRef
+   */
+  void publish_motor_ref(
+    const BoardInfo & board_info, const RobstrideRefPublisher & publisher,
+    const r1_msgs::msg::MotorRef & msg) const
+  {
+    if (!publisher) {
+      return;
+    }
+
+    sabacan_msgs::msg::SabacanRobstrideRef ref_msg;
+    if (!make_robstride_ref_message(board_info, msg.control_type, msg.ref, ref_msg)) {
+      return;
+    }
+    publisher->publish(ref_msg);
+  }
+
+  /**
+   * @brief channel の backend に応じて MotorRef を Sabacan 指令へ変換して publish する。
+   * @tparam StatusMsgT フィードバックに使うメッセージ型
+   * @param channel 出力先 channel
+   * @param msg 入力された MotorRef
+   */
+  template <typename StatusMsgT>
+  void publish_motor_ref(
+    const MotorCommandChannel<StatusMsgT> & channel, const r1_msgs::msg::MotorRef & msg) const
+  {
+    if (channel.controller_type == MotorControllerType::Robomas ||
+        channel.controller_type == MotorControllerType::Vesc) {
+      publish_motor_ref(channel.board_info, channel.ref_publisher, channel.controller_type, msg);
+      return;
+    }
+    publish_motor_ref(channel.board_info, channel.robstride_ref_publisher, msg);
   }
 
   /**
@@ -934,12 +1172,35 @@ private:
    */
   void publish_motor_ref(
     const BoardInfo & board_info, const SingleRefPublisher & publisher,
+    MotorControllerType controller_type,
     const std::string & control_type, double ref) const
   {
     if (!publisher) {
       return;
     }
-    publisher->publish(make_single_ref_message(board_info, control_type, ref));
+    publisher->publish(make_single_ref_message(board_info, controller_type, control_type, ref));
+  }
+
+  /**
+   * @brief 制御モードと指令値を指定して Robstride 指令メッセージを publish する。
+   * @param board_info 出力先モータのボード情報
+   * @param publisher 出力先 publisher
+   * @param control_type 制御モード
+   * @param ref 指令値
+   */
+  void publish_motor_ref(
+    const BoardInfo & board_info, const RobstrideRefPublisher & publisher,
+    const std::string & control_type, double ref) const
+  {
+    if (!publisher) {
+      return;
+    }
+
+    sabacan_msgs::msg::SabacanRobstrideRef ref_msg;
+    if (!make_robstride_ref_message(board_info, control_type, ref, ref_msg)) {
+      return;
+    }
+    publisher->publish(ref_msg);
   }
 
   /**
@@ -975,11 +1236,19 @@ private:
    * @param board_info 出力先モータのボード情報
    * @return const char * VESC なら CURRENT、それ以外は TORQUE
    */
-  const char * open_loop_control_type_for_motor(const BoardInfo & board_info) const
+  const char * open_loop_control_type_for_motor(
+    const BoardInfo & board_info, MotorControllerType controller_type) const
   {
+    if (
+      controller_type == MotorControllerType::Vesc ||
+      controller_type == MotorControllerType::Robstride)
+    {
+      return "CURRENT";
+    }
+
     for (const auto & entry : motor_type_cache_) {
       if (entry.board_info == board_info) {
-        return is_vesc_motor_type(entry.motor_type) ? "CURRENT" : "TORQUE";
+        return is_current_control_motor_type(entry.motor_type) ? "CURRENT" : "TORQUE";
       }
     }
     return "TORQUE";
@@ -991,15 +1260,37 @@ private:
    * @param publisher 出力先 publisher
    */
   void publish_open_loop_stop(
-    const BoardInfo & board_info, const SingleRefPublisher & publisher) const
+    const BoardInfo & board_info, const SingleRefPublisher & publisher,
+    MotorControllerType controller_type) const
   {
     if (!publisher) {
       return;
     }
 
     sabacan_single_control_msgs::msg::SabacanRobomasSingleRef ref_msg;
-    ref_msg.control_type = open_loop_control_type_for_motor(board_info);
+    ref_msg.control_type = open_loop_control_type_for_motor(board_info, controller_type);
     ref_msg.ref = 0.0f;
+    publisher->publish(ref_msg);
+  }
+
+  /**
+   * @brief 指定 Robstride モータへ非常停止用の open-loop 停止指令を publish する。
+   * @param board_info 出力先モータのボード情報
+   * @param publisher 出力先 publisher
+   */
+  void publish_open_loop_stop(
+    const BoardInfo & board_info, const RobstrideRefPublisher & publisher) const
+  {
+    if (!publisher) {
+      return;
+    }
+
+    sabacan_msgs::msg::SabacanRobstrideRef ref_msg;
+    if (!make_robstride_ref_message(
+          board_info, open_loop_control_type_for_motor(board_info, MotorControllerType::Robstride),
+          0.0, ref_msg)) {
+      return;
+    }
     publisher->publish(ref_msg);
   }
 
@@ -1012,7 +1303,28 @@ private:
   void publish_open_loop_stop_channels(const std::vector<ChannelT> & channels) const
   {
     for (const auto & channel : channels) {
-      publish_open_loop_stop(channel.board_info, channel.ref_publisher);
+      publish_open_loop_stop(channel.board_info, channel.ref_publisher, channel.controller_type);
+    }
+  }
+
+  /**
+   * @brief 役割別モータチャネル群へ open-loop 停止指令を publish する。
+   * @tparam StatusMsgT フィードバックに使うメッセージ型
+   * @param channels 停止指令を送りたいチャネル配列
+   */
+  template <typename StatusMsgT>
+  void publish_open_loop_stop_channels(
+    const std::vector<MotorCommandChannel<StatusMsgT>> & channels) const
+  {
+    for (const auto & channel : channels) {
+      if (
+        channel.controller_type == MotorControllerType::Robomas ||
+        channel.controller_type == MotorControllerType::Vesc)
+      {
+        publish_open_loop_stop(channel.board_info, channel.ref_publisher, channel.controller_type);
+        continue;
+      }
+      publish_open_loop_stop(channel.board_info, channel.robstride_ref_publisher);
     }
   }
 
@@ -1023,12 +1335,12 @@ private:
   {
     if (drive_mode_ == DriveMode::Mecanum) {
       publish_open_loop_stop_channels(mecanum_channels_);
-      publish_open_loop_stop_channels(linear_motion_channels_);
-      publish_open_loop_stop_channels(angle_motion_channels_);
     } else {
       publish_open_loop_stop_channels(swerve_wheel_channels_);
       publish_open_loop_stop_channels(swerve_steer_channels_);
     }
+    publish_open_loop_stop_channels(linear_motion_channels_);
+    publish_open_loop_stop_channels(angle_motion_channels_);
     publish_open_loop_stop_channels(velocity_control_channels_);
   }
 
@@ -1071,11 +1383,32 @@ private:
     const auto motor_status = to_motor_status(*msg);
 
     update_drive_status(receive, *msg, motor_status);
-    if (drive_mode_ == DriveMode::Mecanum) {
-      update_motor_channels(linear_motion_channels_, receive, *msg, motor_status);
-      update_motor_channels(angle_motion_channels_, receive, *msg, motor_status);
-    }
-    update_motor_channels(velocity_control_channels_, receive, *msg, motor_status);
+    update_motor_channels(
+      linear_motion_channels_, MotorControllerType::Robomas, receive, *msg, motor_status);
+    update_motor_channels(
+      angle_motion_channels_, MotorControllerType::Robomas, receive, *msg, motor_status);
+    update_motor_channels(
+      velocity_control_channels_, MotorControllerType::Robomas, receive, *msg, motor_status);
+  }
+
+  /**
+   * @brief Robstride のモータステータスを受け取り、各機構の状態キャッシュへ反映する。
+   * @param board_id 受信元ボード ID
+   * @param msg 受信した Robstride モータステータス
+   */
+  void sabacan_robstride_status_callback(
+    int board_id, const sabacan_msgs::msg::SabacanRobstrideStatus::SharedPtr msg)
+  {
+    const BoardInfo receive{board_id, -1};
+    cache_motor_type(receive, kRobstrideMotorType);
+    const auto motor_status = to_motor_status(*msg);
+
+    update_motor_channels(
+      linear_motion_channels_, MotorControllerType::Robstride, receive, *msg, motor_status);
+    update_motor_channels(
+      angle_motion_channels_, MotorControllerType::Robstride, receive, *msg, motor_status);
+    update_motor_channels(
+      velocity_control_channels_, MotorControllerType::Robstride, receive, *msg, motor_status);
   }
 
   /**
@@ -1225,11 +1558,34 @@ private:
    */
   template <typename StatusMsgT>
   void update_motor_channels(
-    std::vector<MotorCommandChannel<StatusMsgT>> & channels, const BoardInfo & receive,
-    const sabacan_msgs::msg::SabacanRobomasStatus & msg, const r1_msgs::msg::Motor & motor_status)
+    std::vector<MotorCommandChannel<StatusMsgT>> & channels, MotorControllerType controller_type,
+    const BoardInfo & receive, const sabacan_msgs::msg::SabacanRobomasStatus & msg,
+    const r1_msgs::msg::Motor & motor_status)
   {
     for (auto & channel : channels) {
-      if (update_motor_channel(channel, receive, msg, motor_status)) {
+      if (update_motor_channel(channel, controller_type, receive, msg, motor_status)) {
+        break;
+      }
+    }
+  }
+
+  /**
+   * @brief モータチャネル群のうち該当する 1 件を Robstride ステータスで更新する。
+   * @tparam StatusMsgT フィードバックに使うメッセージ型
+   * @param channels 更新対象のチャネル配列
+   * @param controller_type 更新対象 backend
+   * @param receive 受信元のボード情報
+   * @param msg 受信した Robstride モータステータス
+   * @param motor_status 変換済みのモータステータス
+   */
+  template <typename StatusMsgT>
+  void update_motor_channels(
+    std::vector<MotorCommandChannel<StatusMsgT>> & channels, MotorControllerType controller_type,
+    const BoardInfo & receive, const sabacan_msgs::msg::SabacanRobstrideStatus & msg,
+    const r1_msgs::msg::Motor & motor_status)
+  {
+    for (auto & channel : channels) {
+      if (update_motor_channel(channel, controller_type, receive, msg, motor_status)) {
         break;
       }
     }
@@ -1247,10 +1603,37 @@ private:
    */
   template <typename StatusMsgT>
   bool update_motor_channel(
-    MotorCommandChannel<StatusMsgT> & channel, const BoardInfo & receive,
-    const sabacan_msgs::msg::SabacanRobomasStatus & msg, const r1_msgs::msg::Motor & motor_status)
+    MotorCommandChannel<StatusMsgT> & channel, MotorControllerType controller_type,
+    const BoardInfo & receive, const sabacan_msgs::msg::SabacanRobomasStatus & msg,
+    const r1_msgs::msg::Motor & motor_status)
   {
-    if (!(receive == channel.board_info)) {
+    if (channel.controller_type != controller_type || !(receive == channel.board_info)) {
+      return false;
+    }
+
+    update_status_value(channel.value, msg, motor_status);
+    publish_debug_motor(channel.debug_publisher, motor_status);
+    return true;
+  }
+
+  /**
+   * @brief 単一のモータチャネルを Robstride ステータスで更新する。
+   * @tparam StatusMsgT フィードバックに使うメッセージ型
+   * @param channel 更新対象のチャネル
+   * @param controller_type 更新対象 backend
+   * @param receive 受信元のボード情報
+   * @param msg 受信した Robstride モータステータス
+   * @param motor_status 変換済みのモータステータス
+   * @return true このチャネルが受信データに一致した場合
+   * @return false 一致しなかった場合
+   */
+  template <typename StatusMsgT>
+  bool update_motor_channel(
+    MotorCommandChannel<StatusMsgT> & channel, MotorControllerType controller_type,
+    const BoardInfo & receive, const sabacan_msgs::msg::SabacanRobstrideStatus & msg,
+    const r1_msgs::msg::Motor & motor_status)
+  {
+    if (channel.controller_type != controller_type || !(receive == channel.board_info)) {
       return false;
     }
 
@@ -1306,8 +1689,8 @@ private:
                                         : wheel_speeds.size();
     for (std::size_t i = 0; i < channel_count; ++i) {
       publish_motor_ref(
-        mecanum_channels_[i].board_info, mecanum_channels_[i].ref_publisher, "VELOCITY",
-        wheel_speeds[i]);
+        mecanum_channels_[i].board_info, mecanum_channels_[i].ref_publisher,
+        mecanum_channels_[i].controller_type, "VELOCITY", wheel_speeds[i]);
     }
   }
 
@@ -1345,10 +1728,10 @@ private:
     for (std::size_t i = 0; i < channel_count; ++i) {
       publish_motor_ref(
         swerve_wheel_channels_[i].board_info, swerve_wheel_channels_[i].ref_publisher,
-        kSwerveWheelControlType, wheel_refs[i]);
+        swerve_wheel_channels_[i].controller_type, kSwerveWheelControlType, wheel_refs[i]);
       publish_motor_ref(
         swerve_steer_channels_[i].board_info, swerve_steer_channels_[i].ref_publisher,
-        kSwerveSteerControlType, steer_refs[i]);
+        swerve_steer_channels_[i].controller_type, kSwerveSteerControlType, steer_refs[i]);
     }
   }
 
@@ -1402,24 +1785,12 @@ private:
   /**
    * @brief LinearMotionChannel 系の状態を publish する。
    */
-  void publish_linear_motion_status()
-  {
-    if (drive_mode_ != DriveMode::Mecanum) {
-      return;
-    }
-    publish_status_channels(linear_motion_channels_);
-  }
+  void publish_linear_motion_status() { publish_status_channels(linear_motion_channels_); }
 
   /**
    * @brief AngleMotionChannel 系の状態を publish する。
    */
-  void publish_angle_motion_status()
-  {
-    if (drive_mode_ != DriveMode::Mecanum) {
-      return;
-    }
-    publish_status_channels(angle_motion_channels_);
-  }
+  void publish_angle_motion_status() { publish_status_channels(angle_motion_channels_); }
 
   /**
    * @brief 速度制御系チャネルの状態を publish する。
@@ -1445,6 +1816,8 @@ private:
     sabacan_gpio_ref_float_publishers_;
   std::vector<SubscriptionPtr<sabacan_msgs::msg::SabacanRobomasStatus>>
     sabacan_robomas_status_subscriptions_;
+  std::vector<SubscriptionPtr<sabacan_msgs::msg::SabacanRobstrideStatus>>
+    sabacan_robstride_status_subscriptions_;
   std::vector<SubscriptionPtr<sabacan_msgs::msg::SabacanGPIOStatus>>
     sabacan_gpio_status_subscriptions_;
   SubscriptionPtr<sabacan_msgs::msg::SabacanPowerStatus> sabacan_power_status_subscription_;
@@ -1459,10 +1832,10 @@ private:
 
   // 足回りのチャネル定義。
   std::vector<MecanumWheelChannel> mecanum_channels_{
-    MecanumWheelChannel{{1, 0}, "/debug_mecanum_fl_motor_status"},
-    MecanumWheelChannel{{1, 1}, "/debug_mecanum_fr_motor_status"},
-    MecanumWheelChannel{{1, 2}, "/debug_mecanum_rl_motor_status"},
-    MecanumWheelChannel{{1, 3}, "/debug_mecanum_rr_motor_status"},
+    MecanumWheelChannel{{1, 0}, "/debug_mecanum_fl_motor_status", MotorControllerType::Vesc},
+    MecanumWheelChannel{{1, 1}, "/debug_mecanum_fr_motor_status", MotorControllerType::Vesc},
+    MecanumWheelChannel{{1, 2}, "/debug_mecanum_rl_motor_status", MotorControllerType::Vesc},
+    MecanumWheelChannel{{1, 3}, "/debug_mecanum_rr_motor_status", MotorControllerType::Vesc},
   };
   std::vector<BoardInfo> odometry_encoder_channels_{
     BoardInfo{7, 2},
@@ -1470,10 +1843,26 @@ private:
   };
   // 独ステの board_id / motor_number は頻繁に変えない前提でソース内に固定する。
   std::vector<DriveMotorChannel> swerve_wheel_channels_{
-    DriveMotorChannel{{1, 0}, "/swerve_fr_wheel_motor_ref", "/debug_swerve_fr_wheel_motor_status"},
-    DriveMotorChannel{{1, 1}, "/swerve_fl_wheel_motor_ref", "/debug_swerve_fl_wheel_motor_status"},
-    DriveMotorChannel{{1, 2}, "/swerve_rl_wheel_motor_ref", "/debug_swerve_rl_wheel_motor_status"},
-    DriveMotorChannel{{1, 3}, "/swerve_rr_wheel_motor_ref", "/debug_swerve_rr_wheel_motor_status"},
+    DriveMotorChannel{
+      {1, 0},
+      "/swerve_fr_wheel_motor_ref",
+      "/debug_swerve_fr_wheel_motor_status",
+      MotorControllerType::Vesc},
+    DriveMotorChannel{
+      {1, 1},
+      "/swerve_fl_wheel_motor_ref",
+      "/debug_swerve_fl_wheel_motor_status",
+      MotorControllerType::Vesc},
+    DriveMotorChannel{
+      {1, 2},
+      "/swerve_rl_wheel_motor_ref",
+      "/debug_swerve_rl_wheel_motor_status",
+      MotorControllerType::Vesc},
+    DriveMotorChannel{
+      {1, 3},
+      "/swerve_rr_wheel_motor_ref",
+      "/debug_swerve_rr_wheel_motor_status",
+      MotorControllerType::Vesc},
   };
   std::vector<DriveMotorChannel> swerve_steer_channels_{
     DriveMotorChannel{{2, 0}, "/swerve_fr_steer_motor_ref", "/debug_swerve_fr_steer_motor_status"},
@@ -1533,7 +1922,14 @@ private:
       {6, 3},
       "/spear_pitch2_motor_ref",
       "/spear_pitch2_angle_motion_status",
-      "/debug_spear_pitch2_motor_status"}};
+      "/debug_spear_pitch2_motor_status"},
+    // spear_rollはrobstride
+    AngleMotionChannel{
+      {2, -1},
+      "/spear_roll_motor_ref",
+      "/spear_roll_angle_motion_status",
+      "/debug_spear_roll_motor_status",
+      MotorControllerType::Robstride}};
 
   std::vector<GpioFloatOutputChannel> gpio_float_output_channels_{
     GpioFloatOutputChannel{{1, 0}, "/kfs_front_pump_gpio_pwm_ref"},
@@ -1553,10 +1949,8 @@ private:
     // GpioIntOutputChannel{{3, 3}, "/pole_servo4_gpio_servo_ref"},
   };
   std::vector<GpioInputChannel> gpio_input_channels_{
-    GpioInputChannel{
-      {1, 7}, "/kfs_fz_low_switch_status", "/debug_kfs_fz_low_switch_status"},
-    GpioInputChannel{
-      {1, 8}, "/kfs_rz_low_switch_status", "/debug_kfs_rz_low_switch_status"},
+    GpioInputChannel{{1, 7}, "/kfs_fz_low_switch_status", "/debug_kfs_fz_low_switch_status"},
+    GpioInputChannel{{1, 8}, "/kfs_rz_low_switch_status", "/debug_kfs_rz_low_switch_status"},
   };
 
   // r1_msgs 側の足回り publisher / subscription。

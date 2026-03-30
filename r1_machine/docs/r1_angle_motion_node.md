@@ -1,6 +1,6 @@
 # r1_angle_motion_node
 
-`r1_angle_motion_node` は回転軸用 Robomas モータの位置制御と原点検出を行う ROS 2 ノードです。`/angle_motion_status` で取得したトルク・速度・角度・リミットスイッチを監視し、通常は角度指令を `/angle_motion_motor_ref` に出力します。原点検出要求が入ると速度モードへ切り替え、スイッチまたはトルク上昇を検出してオフセットを更新し、その場で位置モードに戻します。角度指令はラジアン単位で受け付け、減速比 `gear_ratio` でモータ角度へ換算します。周期処理の実行レートは `timer_rate` で変更できます。
+`r1_angle_motion_node` は回転軸用モータの位置制御と原点検出を行う ROS 2 ノードです。`/angle_motion_status` で取得したトルク・速度・角度・リミットスイッチを監視し、通常は角度指令を `/angle_motion_motor_ref` に出力します。原点検出要求が入ると速度モードへ切り替え、スイッチまたはトルク上昇を検出してオフセットを更新し、その場で位置モードに戻します。角度指令はラジアン単位で受け付け、減速比 `gear_ratio` でモータ角度へ換算します。周期処理の実行レートは `timer_rate` で変更できます。
 
 ## トピック
 
@@ -11,7 +11,7 @@
   - `/angle_motion_position_ref` (`std_msgs/msg/Float64`): 目標角度 [rad]。原点検出中（速度モード）は無視されます。
   - `/angle_motion_detect_origin` (`std_msgs/msg/Bool`): `true` で原点検出モードへ移行し、`false` で位置モードに戻します。
 - **Publish**
-  - `/angle_motion_motor_ref` (`r1_msgs/msg/MotorRef`): Robomas へ渡す制御指令。`control_type` は `"POSITION"` または `"VELOCITY"`、`ref` は角度 [rad] もしくは角速度 [rad/s]。
+  - `/angle_motion_motor_ref` (`r1_msgs/msg/MotorRef`): `r1_machine_manage_node` へ渡す制御指令。`control_type` は `"POSITION"` または `"VELOCITY"`、`ref` は角度 [rad] もしくは角速度 [rad/s]。
   - `/angle_motion_mode_status` (`std_msgs/msg/Int32`): モードを送信。mode=0のとき、通常動作（位置制御モード）。mode=1のとき、原点復帰中（速度制御モード）。
 
 ## 主なパラメータ

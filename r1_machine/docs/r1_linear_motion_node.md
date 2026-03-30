@@ -1,6 +1,6 @@
 # r1_linear_motion_node
 
-`r1_linear_motion_node` はリニア機構用の Robomas モータを制御する ROS 2 ノードです。`/linear_motion_status` で得たトルク・速度・位置とリミットスイッチ入力を監視しながら、通常は位置指令を `/linear_motion_motor_ref` に出力します。原点検出要求が入った場合は一定速度で巻き取り/押し出しを行い、リミットスイッチまたはトルク上昇で停止して位置オフセットを更新します。目標位置はメートル単位で受け取り、ドラム半径 `radius` を用いてモータ角度へ換算します。周期処理の実行レートは `timer_rate` で変更できます。
+`r1_linear_motion_node` はリニア機構用モータを制御する ROS 2 ノードです。`/linear_motion_status` で得たトルク・速度・位置とリミットスイッチ入力を監視しながら、通常は位置指令を `/linear_motion_motor_ref` に出力します。原点検出要求が入った場合は一定速度で巻き取り/押し出しを行い、リミットスイッチまたはトルク上昇で停止して位置オフセットを更新します。目標位置はメートル単位で受け取り、ドラム半径 `radius` を用いてモータ角度へ換算します。周期処理の実行レートは `timer_rate` で変更できます。
 
 ## トピック
 
@@ -11,7 +11,7 @@
   - `/linear_motion_positon_ref` (`std_msgs/msg/Float64`): 目標位置 [m]。原点検出中（速度モード）は無視されます。
   - `/linear_motion_detect_origin` (`std_msgs/msg/Bool`): `true` で原点検出モードに移行し、`false` で通常の位置モードに戻ります。
 - **Publish**
-  - `/linear_motion_motor_ref` (`r1_msgs/msg/MotorRef`): Robomas へ渡す制御指令。`control_type` は `"POSITION"` または `"VELOCITY"`、`ref` は角度 [rad] もしくは角速度 [rad/s]。
+  - `/linear_motion_motor_ref` (`r1_msgs/msg/MotorRef`): `r1_machine_manage_node` へ渡す制御指令。`control_type` は `"POSITION"` または `"VELOCITY"`、`ref` は角度 [rad] もしくは角速度 [rad/s]。
   - `/angle_motion_mode_status` (`std_msgs/msg/Int32`): モードを送信。mode=0のとき、通常動作（位置制御モード）。mode=1のとき、原点復帰中（速度制御モード）。
 
 ## 主なパラメータ

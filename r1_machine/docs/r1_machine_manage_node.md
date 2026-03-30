@@ -4,14 +4,15 @@
 
 現行実装では、足回りの制御方式を `drive_mode` パラメータで `mecanum` / `swerve` に切り替えられます。`mecanum` では従来の `/mecanum_wheel_speeds_ref` と `/mecanum_wheel_speeds_feedback` を使い、`swerve` では `/swerve_drive_ref` から 4 輪の wheel / steer 指令へ分解して Sabacan 単軸指令へ流します。
 
-また、`/sabacan_power_status0` の EMS / SOFT EMS を監視し、非常停止中は `r1_machine_manage_node` 内で全モータ指令を open-loop 停止へ強制します。Robomas は `TORQUE 0.0`、VESC は `CURRENT 0.0` を出し、非常停止解除後も `/r1_machine_initialize` を受け取るまでは open-loop 停止を維持します。
+また、`/sabacan_power_status0` の EMS / SOFT EMS を監視し、非常停止中は `r1_machine_manage_node` 内で全モータ指令を open-loop 停止へ強制します。Robomas は `TORQUE 0.0`、VESC / Robstride は `CURRENT 0.0` を出し、非常停止解除後も `/r1_machine_initialize` を受け取るまでは open-loop 停止を維持します。
 
 ## 役割
 
-- Sabacan の `robomas_status` / `gpio_status` を購読し、機構ごとの状態 topic や debug topic に再配信する。
+- Sabacan の `robomas_status` / `robstride_status` / `gpio_status` を購読し、機構ごとの状態 topic や debug topic に再配信する。
 - `MotorRef` / `GpioPwmRef` / `GpioServoRef` を Sabacan 単軸制御 topic へ変換する。
 - `mecanum` モードでは足回りの速度指令とオドメトリエンコーダを扱う。
 - `swerve` モードでは `/swerve_drive_ref` を 4 輪の wheel / steer 指令へ分解する。
+- 足回り以外の機構チャネルは drive mode に関係なく有効で、Robomas と Robstride の両方を扱える。
 - `SabacanPowerStatus` による非常停止中は、全モータ指令を open-loop 停止へ上書きする。
 - 非常停止解除後は `/r1_machine_initialize` 受信まで open-loop 停止を継続する。
 
@@ -29,18 +30,20 @@
 - `/swerve_drive_ref` (`r1_msgs/msg/SwerveDrive`) を 4 輪の wheel / steer 指令へ分解して Sabacan へ流します。
 - `/swerve_fr_wheel_motor_ref` などの単軸 `MotorRef` を直接受けて Sabacan へ流すこともできます。
 - `/debug_swerve_*` 系の debug status を publish します。
-- `r2_lift` の速度制御系チャネルはこのモードでも有効です。
+- `r2_lift`、KFS、やりなどの機構チャネルもこのモードで有効です。
 
 補足:
 
-- 現行実装では、KFS などの既存機構チャネルは主に `mecanum` 側構成として扱っています。`r2_lift` は両 mode で有効です。
 - `swerve` モード時は mecanum のフィードバック publish とオドメトリエンコーダ publish は停止します。
+- `spear_roll` は Robstride (`/sabacan_robstride_ref2`, `/sabacan_robstride_status2`) 経由で扱います。
+- `MotorRef.control_type = "POSITION"` を Robstride へ流すときは、Robstride の `PP` 位置指令へ変換します。
 
 ## 主なトピック
 
 ### Common Subscribe
 
 - `/sabacan_robomas_status0` ... `/sabacan_robomas_status9` (`sabacan_msgs/msg/SabacanRobomasStatus`)
+- `/sabacan_robstride_status0` ... `/sabacan_robstride_status9` (`sabacan_msgs/msg/SabacanRobstrideStatus`)
 - `/sabacan_gpio_status0` ... `/sabacan_gpio_status9` (`sabacan_msgs/msg/SabacanGPIOStatus`)
 - `/sabacan_power_status0` (`sabacan_msgs/msg/SabacanPowerStatus`)
 - `/r1_machine_initialize` (`std_msgs/msg/Empty`)
@@ -110,8 +113,9 @@
 - やり:
   - `/spear_*_motor_ref`
   - `/spear_*_linear_motion_status`
-  - `/spear_rotate_angle_motion_status`
-  - `/spear_hand_valve*_gpio_pwm_ref`
+  - `/spear_roll_angle_motion_status`
+  - `/spear_pitch1_angle_motion_status`
+  - `/spear_pitch2_angle_motion_status`
 - GPIO:
   - `/kfs_front_pump_gpio_pwm_ref`
   - `/kfs_rear_pump_gpio_pwm_ref`
@@ -141,12 +145,16 @@
 - 独ステの board_id / motor_number はソースコード内で固定しています。
   - wheel 側: `[1, 0]`, `[1, 1]`, `[1, 2]`, `[1, 3]`
   - steer 側: `[2, 0]`, `[2, 1]`, `[2, 2]`, `[2, 3]`
+- 足回りの controller_type もソースコード内で固定しています。
+  - mecanum wheel: `VESC`
+  - swerve wheel: `VESC`
+  - swerve steer: `Robomas`
 - 独ステの control_type もソースコード内で固定しています。
   - wheel 側: `VELOCITY`
   - steer 側: `POSITION`
 - 非常停止中の open-loop 停止はパラメータではなく固定動作です。
   - Robomas: `TORQUE 0.0`
-  - VESC: `CURRENT 0.0`
+  - VESC / Robstride: `CURRENT 0.0`
 
 ## 設定ファイルと Launch
 
