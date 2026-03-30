@@ -10,6 +10,7 @@
  */
 
 #include <chrono>
+#include <cmath>
 
 #include "r1_msgs/msg/gpio_input.hpp"
 #include "r1_msgs/msg/linear_motion.hpp"
@@ -62,6 +63,11 @@ public:
 
     mode_status_publisher_ =
       this->create_publisher<std_msgs::msg::Int32>("/linear_motion_mode_status", 10);
+    rclcpp::QoS torque_limit_qos(1);
+    torque_limit_qos.reliable();
+    torque_limit_qos.transient_local();
+    torque_limit_ref_publisher_ = this->create_publisher<std_msgs::msg::Float64>(
+      "/linear_motion_torque_limit_ref", torque_limit_qos);
 
     parameter_callback_handler_ = this->add_on_set_parameters_callback(
       std::bind(&MyNode::parameter_callback, this, std::placeholders::_1));
@@ -70,6 +76,8 @@ public:
     this->declare_parameter("use_low_switch", true);
     this->declare_parameter("use_high_switch", true);
     this->declare_parameter("torque_threshold", 1.0);              // Nm
+    this->declare_parameter("normal_torque_limit", 1.0);           // Nm
+    this->declare_parameter("contact_torque_limit", 1.0);          // Nm
     this->declare_parameter("origin_detect_threshold_time", 0.1);  // s
     // 原点検出時の速度は負の符号でも可、原点としたい方向に回転させる
     this->declare_parameter("origin_detect_speed", -3.14);  // rad/s
@@ -86,6 +94,8 @@ public:
     this->get_parameter("use_low_switch", use_low_switch_);
     this->get_parameter("use_high_switch", use_high_switch_);
     this->get_parameter("torque_threshold", torque_threshold_);
+    this->get_parameter("normal_torque_limit", normal_torque_limit_);
+    this->get_parameter("contact_torque_limit", contact_torque_limit_);
     this->get_parameter("origin_detect_threshold_time", origin_detect_threshold_time_);
     this->get_parameter("origin_detect_speed", origin_detect_speed_);
     this->get_parameter("move_mech_lock_speed", move_mech_lock_speed_);
@@ -101,6 +111,7 @@ public:
 
     timer_ = this->create_wall_timer(
       std::chrono::duration<double>(1.0 / timer_rate_), std::bind(&MyNode::timer_callback, this));
+    publish_active_torque_limit();
   }
 
   rcl_interfaces::msg::SetParametersResult parameter_callback(
@@ -137,6 +148,30 @@ public:
         torque_threshold_ = parameter.as_double();
         RCLCPP_INFO(
           this->get_logger(), "Updated parameter: torque_threshold = %.3f", torque_threshold_);
+      } else if (name == "normal_torque_limit") {
+        if (parameter.as_double() < 0.0) {
+          result.successful = false;
+          result.reason = "normal_torque_limit must be greater than or equal to 0.0";
+          RCLCPP_ERROR(this->get_logger(), "%s", result.reason.c_str());
+          continue;
+        }
+        normal_torque_limit_ = parameter.as_double();
+        publish_active_torque_limit();
+        RCLCPP_INFO(
+          this->get_logger(), "Updated parameter: normal_torque_limit = %.3f",
+          normal_torque_limit_);
+      } else if (name == "contact_torque_limit") {
+        if (parameter.as_double() < 0.0) {
+          result.successful = false;
+          result.reason = "contact_torque_limit must be greater than or equal to 0.0";
+          RCLCPP_ERROR(this->get_logger(), "%s", result.reason.c_str());
+          continue;
+        }
+        contact_torque_limit_ = parameter.as_double();
+        publish_active_torque_limit();
+        RCLCPP_INFO(
+          this->get_logger(), "Updated parameter: contact_torque_limit = %.3f",
+          contact_torque_limit_);
       } else if (name == "origin_detect_threshold_time") {
         origin_detect_threshold_time_ = parameter.as_double();
         RCLCPP_INFO(
@@ -248,10 +283,12 @@ public:
       mode_ = MODE_SPEED;
       speed_mode_reason_ = SPEED_MODE_ORIGIN_DETECTION;
       reset_speed_mode_detection_timestamps();
+      publish_active_torque_limit();
       RCLCPP_INFO(this->get_logger(), "Switched to speed control mode.");
     } else {
       mode_ = MODE_POSITON;
       speed_mode_reason_ = SPEED_MODE_NONE;
+      publish_active_torque_limit();
       RCLCPP_INFO(this->get_logger(), "Switched to position control mode.");
     }
   }
@@ -261,6 +298,7 @@ public:
     if (msg->data == 0) {
       mode_ = MODE_POSITON;
       speed_mode_reason_ = SPEED_MODE_NONE;
+      publish_active_torque_limit();
       RCLCPP_INFO(this->get_logger(), "Stopped mech lock move and switched to position mode.");
       return;
     }
@@ -269,6 +307,7 @@ public:
     speed_mode_reason_ = SPEED_MODE_MECH_LOCK;
     mech_lock_direction_ = (msg->data > 0) ? 1.0 : -1.0;
     reset_speed_mode_detection_timestamps();
+    publish_active_torque_limit();
     RCLCPP_INFO(
       this->get_logger(), "Switched to speed control mode for mech lock move. direction = %.0f",
       mech_lock_direction_);
@@ -278,8 +317,21 @@ public:
   {
     mode_ = MODE_POSITON;
     speed_mode_reason_ = SPEED_MODE_NONE;
+    publish_active_torque_limit();
     publish_hold_current_position();
     RCLCPP_INFO(this->get_logger(), "Received initialize signal. Switched to position hold mode.");
+  }
+
+  double active_torque_limit() const
+  {
+    return mode_ == MODE_SPEED ? contact_torque_limit_ : normal_torque_limit_;
+  }
+
+  void publish_active_torque_limit()
+  {
+    auto msg = std_msgs::msg::Float64();
+    msg.data = active_torque_limit();
+    torque_limit_ref_publisher_->publish(msg);
   }
 
   void reset_speed_mode_detection_timestamps()
@@ -344,6 +396,7 @@ public:
             motor_ref_msg.ref);
         }
         speed_mode_reason_ = SPEED_MODE_NONE;
+        publish_active_torque_limit();
       } else {
         motor_ref_msg.control_type = "VELOCITY";
         if (speed_mode_reason_ == SPEED_MODE_ORIGIN_DETECTION) {
@@ -373,6 +426,7 @@ private:
   rclcpp::Subscription<std_msgs::msg::Int32>::SharedPtr move_mech_lock_subscription_;
   rclcpp::Subscription<std_msgs::msg::Empty>::SharedPtr initialize_subscription_;
   rclcpp::Publisher<std_msgs::msg::Int32>::SharedPtr mode_status_publisher_;
+  rclcpp::Publisher<std_msgs::msg::Float64>::SharedPtr torque_limit_ref_publisher_;
   rclcpp::node_interfaces::OnSetParametersCallbackHandle::SharedPtr parameter_callback_handler_;
 
   rclcpp::TimerBase::SharedPtr timer_;
@@ -384,6 +438,8 @@ private:
   double origin_detect_speed_ = 0.0;
   double move_mech_lock_speed_ = 0.0;
   double torque_threshold_ = 0.0;
+  double normal_torque_limit_ = 1.0;
+  double contact_torque_limit_ = 1.0;
   double origin_detect_threshold_time_ = 0.0;
   double motor_dir_ = 1.0;
   double mech_lock_direction_ = 1.0;

@@ -18,6 +18,7 @@
 #include <functional>
 #include <stdexcept>
 #include <string>
+#include <utility>
 #include <vector>
 
 #include "r1_msgs/msg/angle_motion.hpp"
@@ -39,8 +40,10 @@
 #include "sabacan_msgs/msg/sabacan_robomas_status.hpp"
 #include "sabacan_msgs/msg/sabacan_robstride_ref.hpp"
 #include "sabacan_msgs/msg/sabacan_robstride_status.hpp"
+#include "sabacan_msgs/srv/set_robomas_gains.hpp"
 #include "sabacan_single_control_msgs/msg/sabacan_robomas_single_ref.hpp"
 #include "std_msgs/msg/empty.hpp"
+#include "std_msgs/msg/float64.hpp"
 
 constexpr uint32_t kEmsBitMask = 1u << 0;
 constexpr uint32_t kSoftEmsBitMask = 1u << 1;
@@ -247,6 +250,7 @@ using SubscriptionPtr = typename rclcpp::Subscription<MsgT>::SharedPtr;
 
 using SingleRefPublisher = PublisherPtr<sabacan_single_control_msgs::msg::SabacanRobomasSingleRef>;
 using RobstrideRefPublisher = PublisherPtr<sabacan_msgs::msg::SabacanRobstrideRef>;
+using SetRobomasGainsClient = rclcpp::Client<sabacan_msgs::srv::SetRobomasGains>;
 
 /**
  * @brief メカナム足回り 1 輪分の配線情報を保持する。
@@ -266,18 +270,18 @@ struct MecanumWheelChannel
    * @param availability 有効となる drive mode
    */
   MecanumWheelChannel(
-    BoardInfo info, const char * topic,
+    BoardInfo info, std::string topic,
     MotorControllerType controller_type = MotorControllerType::Robomas,
     ChannelAvailability availability = ChannelAvailability::MecanumOnly)
   : board_info(info),
-    debug_topic(topic),
+    debug_topic(std::move(topic)),
     controller_type(controller_type),
     availability(availability)
   {
   }
 
   BoardInfo board_info;
-  const char * debug_topic{};
+  std::string debug_topic;
   MotorControllerType controller_type{MotorControllerType::Robomas};
   ChannelAvailability availability{ChannelAvailability::MecanumOnly};
   SingleRefPublisher ref_publisher;
@@ -304,27 +308,31 @@ struct MotorCommandChannel
    * @param debug_topic_name デバッグ出力 topic
    */
   MotorCommandChannel(
-    BoardInfo info, const char * ref_topic_name, const char * status_topic_name,
-    const char * debug_topic_name, const char * initialize_topic_name = nullptr,
-    MotorControllerType controller_type = MotorControllerType::Robomas)
+    BoardInfo info, std::string ref_topic_name, std::string status_topic_name,
+    std::string debug_topic_name, std::string initialize_topic_name = "",
+    MotorControllerType controller_type = MotorControllerType::Robomas,
+    std::string torque_limit_topic_name = "")
   : board_info(info),
-    ref_topic(ref_topic_name),
-    status_topic(status_topic_name),
-    debug_topic(debug_topic_name),
-    initialize_topic(initialize_topic_name),
+    ref_topic(std::move(ref_topic_name)),
+    status_topic(std::move(status_topic_name)),
+    debug_topic(std::move(debug_topic_name)),
+    initialize_topic(std::move(initialize_topic_name)),
+    torque_limit_topic(std::move(torque_limit_topic_name)),
     controller_type(controller_type)
   {
   }
 
   BoardInfo board_info;
-  const char * ref_topic{};
-  const char * status_topic{};
-  const char * debug_topic{};
-  const char * initialize_topic{};
+  std::string ref_topic;
+  std::string status_topic;
+  std::string debug_topic;
+  std::string initialize_topic;
+  std::string torque_limit_topic;
   MotorControllerType controller_type{MotorControllerType::Robomas};
   SingleRefPublisher ref_publisher;
   RobstrideRefPublisher robstride_ref_publisher;
   SubscriptionPtr<r1_msgs::msg::MotorRef> ref_subscription;
+  SubscriptionPtr<std_msgs::msg::Float64> torque_limit_subscription;
   PublisherPtr<StatusMsgT> status_publisher;
   PublisherPtr<r1_msgs::msg::Motor> debug_publisher;
   PublisherPtr<std_msgs::msg::Empty> initialize_publisher;
@@ -334,6 +342,101 @@ struct MotorCommandChannel
 using LinearMotionChannel = MotorCommandChannel<r1_msgs::msg::LinearMotion>;
 using AngleMotionChannel = MotorCommandChannel<r1_msgs::msg::AngleMotion>;
 using MotorStatusChannel = MotorCommandChannel<r1_msgs::msg::Motor>;
+
+/**
+ * @brief `/name_suffix` 形式の topic 名を生成する。
+ * @param name ベース名
+ * @param suffix 末尾 suffix
+ * @return std::string 生成した topic 名
+ */
+static std::string make_topic(const std::string & name, const std::string & suffix)
+{
+  return "/" + name + suffix;
+}
+
+/**
+ * @brief `/debug_name_motor_status` 形式の debug topic 名を生成する。
+ * @param name ベース名
+ * @return std::string 生成した debug topic 名
+ */
+static std::string make_debug_motor_status_topic(const std::string & name)
+{
+  return "/debug_" + name + "_motor_status";
+}
+
+/**
+ * @brief メカナム wheel 用 channel を生成する。
+ * @param info ボード情報
+ * @param name ベース名
+ * @param controller_type 利用する backend
+ * @return MecanumWheelChannel 生成した channel
+ */
+static MecanumWheelChannel make_mecanum_wheel_channel(
+  BoardInfo info, const std::string & name,
+  MotorControllerType controller_type = MotorControllerType::Robomas)
+{
+  return MecanumWheelChannel{info, make_debug_motor_status_topic(name), controller_type};
+}
+
+/**
+ * @brief 速度制御系 channel を生成する。
+ * @param info ボード情報
+ * @param name ベース名
+ * @param controller_type 利用する backend
+ * @return MotorStatusChannel 生成した channel
+ */
+static MotorStatusChannel make_velocity_control_channel(
+  BoardInfo info, const std::string & name,
+  MotorControllerType controller_type = MotorControllerType::Robomas)
+{
+  return MotorStatusChannel{
+    info, make_topic(name, "_motor_ref"), make_topic(name, "_motor_status"),
+    make_debug_motor_status_topic(name), "", controller_type};
+}
+
+/**
+ * @brief LinearMotion channel を生成する。
+ * @param info ボード情報
+ * @param name ベース名
+ * @param controller_type 利用する backend
+ * @return LinearMotionChannel 生成した channel
+ */
+static LinearMotionChannel make_linear_motion_channel(
+  BoardInfo info, const std::string & name,
+  MotorControllerType controller_type = MotorControllerType::Robomas)
+{
+  const bool enable_torque_limit = controller_type == MotorControllerType::Robomas;
+  return LinearMotionChannel{
+    info,
+    make_topic(name, "_motor_ref"),
+    make_topic(name, "_linear_motion_status"),
+    make_debug_motor_status_topic(name),
+    make_topic(name, "_initialize"),
+    controller_type,
+    enable_torque_limit ? make_topic(name, "_torque_limit_ref") : ""};
+}
+
+/**
+ * @brief AngleMotion channel を生成する。
+ * @param info ボード情報
+ * @param name ベース名
+ * @param controller_type 利用する backend
+ * @return AngleMotionChannel 生成した channel
+ */
+static AngleMotionChannel make_angle_motion_channel(
+  BoardInfo info, const std::string & name,
+  MotorControllerType controller_type = MotorControllerType::Robomas)
+{
+  const bool enable_torque_limit = controller_type == MotorControllerType::Robomas;
+  return AngleMotionChannel{
+    info,
+    make_topic(name, "_motor_ref"),
+    make_topic(name, "_angle_motion_status"),
+    make_debug_motor_status_topic(name),
+    make_topic(name, "_initialize"),
+    controller_type,
+    enable_torque_limit ? make_topic(name, "_torque_limit_ref") : ""};
+}
 
 /**
  * @brief 独ステの wheel / steer 軸 1 本分の配線情報を保持する。
@@ -354,26 +457,41 @@ struct DriveMotorChannel
    * @param channel_availability 有効となる drive mode
    */
   DriveMotorChannel(
-    BoardInfo info, const char * ref_topic_name, const char * debug_topic_name,
+    BoardInfo info, std::string ref_topic_name, std::string debug_topic_name,
     MotorControllerType controller_type = MotorControllerType::Robomas,
     ChannelAvailability channel_availability = ChannelAvailability::SwerveOnly)
   : board_info(info),
-    ref_topic(ref_topic_name),
-    debug_topic(debug_topic_name),
+    ref_topic(std::move(ref_topic_name)),
+    debug_topic(std::move(debug_topic_name)),
     controller_type(controller_type),
     availability(channel_availability)
   {
   }
 
   BoardInfo board_info;
-  const char * ref_topic{};
-  const char * debug_topic{};
+  std::string ref_topic;
+  std::string debug_topic;
   MotorControllerType controller_type{MotorControllerType::Robomas};
   ChannelAvailability availability{ChannelAvailability::SwerveOnly};
   SingleRefPublisher ref_publisher;
   SubscriptionPtr<r1_msgs::msg::MotorRef> ref_subscription;
   PublisherPtr<r1_msgs::msg::Motor> debug_publisher;
 };
+
+/**
+ * @brief 独ステの単軸モータ channel を生成する。
+ * @param info ボード情報
+ * @param name ベース名
+ * @param controller_type 利用する backend
+ * @return DriveMotorChannel 生成した channel
+ */
+static DriveMotorChannel make_drive_motor_channel(
+  BoardInfo info, const std::string & name,
+  MotorControllerType controller_type = MotorControllerType::Robomas)
+{
+  return DriveMotorChannel{
+    info, make_topic(name, "_motor_ref"), make_debug_motor_status_topic(name), controller_type};
+}
 
 /**
  * @brief PWM 出力 GPIO の配線情報を保持する。
@@ -392,14 +510,14 @@ struct GpioFloatOutputChannel
    * @param channel_availability 有効となる drive mode
    */
   GpioFloatOutputChannel(
-    BoardInfo info, const char * topic,
+    BoardInfo info, std::string topic,
     ChannelAvailability channel_availability = ChannelAvailability::MecanumOnly)
-  : board_info(info), ref_topic(topic), availability(channel_availability)
+  : board_info(info), ref_topic(std::move(topic)), availability(channel_availability)
   {
   }
 
   BoardInfo board_info;
-  const char * ref_topic{};
+  std::string ref_topic;
   ChannelAvailability availability{ChannelAvailability::MecanumOnly};
   SubscriptionPtr<r1_msgs::msg::GpioPwmRef> ref_subscription;
 };
@@ -421,14 +539,14 @@ struct GpioIntOutputChannel
    * @param channel_availability 有効となる drive mode
    */
   GpioIntOutputChannel(
-    BoardInfo info, const char * topic,
+    BoardInfo info, std::string topic,
     ChannelAvailability channel_availability = ChannelAvailability::MecanumOnly)
-  : board_info(info), ref_topic(topic), availability(channel_availability)
+  : board_info(info), ref_topic(std::move(topic)), availability(channel_availability)
   {
   }
 
   BoardInfo board_info;
-  const char * ref_topic{};
+  std::string ref_topic;
   ChannelAvailability availability{ChannelAvailability::MecanumOnly};
   SubscriptionPtr<r1_msgs::msg::GpioServoRef> ref_subscription;
 };
@@ -451,23 +569,76 @@ struct GpioInputChannel
    * @param channel_availability 有効となる drive mode
    */
   GpioInputChannel(
-    BoardInfo info, const char * status_topic_name, const char * debug_topic_name,
+    BoardInfo info, std::string status_topic_name, std::string debug_topic_name,
     ChannelAvailability channel_availability = ChannelAvailability::MecanumOnly)
   : board_info(info),
-    status_topic(status_topic_name),
-    debug_topic(debug_topic_name),
+    status_topic(std::move(status_topic_name)),
+    debug_topic(std::move(debug_topic_name)),
     availability(channel_availability)
   {
   }
 
   BoardInfo board_info;
-  const char * status_topic{};
-  const char * debug_topic{};
+  std::string status_topic;
+  std::string debug_topic;
   ChannelAvailability availability{ChannelAvailability::MecanumOnly};
   PublisherPtr<r1_msgs::msg::GpioInput> status_publisher;
   PublisherPtr<r1_msgs::msg::GpioInput> debug_publisher;
   r1_msgs::msg::GpioInput value{};
 };
+
+/**
+ * @brief `/debug_name_status` 形式の GPIO debug topic 名を生成する。
+ * @param name ベース名
+ * @return std::string 生成した debug topic 名
+ */
+static std::string make_debug_gpio_status_topic(const std::string & name)
+{
+  return "/debug_" + name + "_status";
+}
+
+/**
+ * @brief PWM 出力 GPIO channel を生成する。
+ * @param info ボード情報
+ * @param name ベース名
+ * @param availability 有効となる drive mode
+ * @return GpioFloatOutputChannel 生成した channel
+ */
+static GpioFloatOutputChannel make_gpio_float_output_channel(
+  BoardInfo info, const std::string & name,
+  ChannelAvailability availability = ChannelAvailability::MecanumOnly)
+{
+  return GpioFloatOutputChannel{info, make_topic(name, "_gpio_pwm_ref"), availability};
+}
+
+/**
+ * @brief サーボ出力 GPIO channel を生成する。
+ * @param info ボード情報
+ * @param name ベース名
+ * @param availability 有効となる drive mode
+ * @return GpioIntOutputChannel 生成した channel
+ */
+[[maybe_unused]] static GpioIntOutputChannel make_gpio_int_output_channel(
+  BoardInfo info, const std::string & name,
+  ChannelAvailability availability = ChannelAvailability::MecanumOnly)
+{
+  return GpioIntOutputChannel{info, make_topic(name, "_gpio_servo_ref"), availability};
+}
+
+/**
+ * @brief GPIO 入力 channel を生成する。
+ * @param info ボード情報
+ * @param name ベース名
+ * @param availability 有効となる drive mode
+ * @return GpioInputChannel 生成した channel
+ */
+static GpioInputChannel make_gpio_input_channel(
+  BoardInfo info, const std::string & name,
+  ChannelAvailability availability = ChannelAvailability::MecanumOnly)
+{
+  return GpioInputChannel{
+    info, make_topic(name, "_status"), make_debug_gpio_status_topic(name), availability};
+}
 
 class MachineManageNode : public rclcpp::Node
 {
@@ -480,6 +651,7 @@ public:
     load_drive_configuration();
     initialize_sabacan_gpio_publishers();
     initialize_sabacan_status_subscriptions();
+    initialize_sabacan_service_clients();
     initialize_safety_interfaces();
     initialize_drive_interfaces();
     initialize_machine_interfaces();
@@ -596,6 +768,18 @@ private:
           [this, i](sabacan_msgs::msg::SabacanGPIOStatus::SharedPtr msg) {
             this->sabacan_gpio_status_callback(static_cast<int>(i), msg);
           });
+    }
+  }
+
+  /**
+   * @brief Robomas のゲイン更新 service client をボードごとに生成する。
+   */
+  void initialize_sabacan_service_clients()
+  {
+    set_robomas_gains_clients_.resize(10);
+    for (std::size_t i = 0; i < set_robomas_gains_clients_.size(); ++i) {
+      set_robomas_gains_clients_[i] = this->create_client<sabacan_msgs::srv::SetRobomasGains>(
+        "/sabacan_robomasv2_node_id" + std::to_string(i) + "/set_robomas_gains");
     }
   }
 
@@ -751,7 +935,7 @@ private:
     }
     channel.status_publisher = this->create_publisher<StatusMsgT>(channel.status_topic, 10);
     channel.debug_publisher = this->create_publisher<r1_msgs::msg::Motor>(channel.debug_topic, 10);
-    if (channel.initialize_topic != nullptr) {
+    if (!channel.initialize_topic.empty()) {
       channel.initialize_publisher =
         this->create_publisher<std_msgs::msg::Empty>(channel.initialize_topic, 10);
     }
@@ -765,6 +949,51 @@ private:
         }
         publish_motor_ref(*channel_ptr, *msg);
       });
+    if (
+      channel.controller_type == MotorControllerType::Robomas &&
+      !channel.torque_limit_topic.empty()) {
+      rclcpp::QoS torque_limit_qos(1);
+      torque_limit_qos.reliable();
+      torque_limit_qos.transient_local();
+      channel.torque_limit_subscription = this->create_subscription<std_msgs::msg::Float64>(
+        channel.torque_limit_topic, torque_limit_qos,
+        [this, channel_ptr](const std_msgs::msg::Float64::SharedPtr msg) {
+          apply_robomas_torque_limit(channel_ptr->board_info, msg->data);
+        });
+    }
+  }
+
+  /**
+   * @brief Robomas モータの torque limit を service 経由で更新する。
+   * @param board_info 対象モータの board_id / motor_number
+   * @param torque_limit 反映したい torque limit [Nm]
+   */
+  void apply_robomas_torque_limit(const BoardInfo & board_info, double torque_limit)
+  {
+    if (board_info.board_id < 0 || board_info.number < 0) {
+      return;
+    }
+    if (board_info.board_id >= static_cast<int>(set_robomas_gains_clients_.size())) {
+      RCLCPP_WARN(
+        this->get_logger(), "invalid board_id=%d for torque limit update", board_info.board_id);
+      return;
+    }
+
+    const auto & client = set_robomas_gains_clients_[board_info.board_id];
+    if (!client) {
+      return;
+    }
+    if (!client->wait_for_service(std::chrono::milliseconds(100))) {
+      RCLCPP_WARN(
+        this->get_logger(), "set_robomas_gains is not ready for board_id=%d", board_info.board_id);
+      return;
+    }
+
+    auto request = std::make_shared<sabacan_msgs::srv::SetRobomasGains::Request>();
+    request->motor_number = static_cast<uint8_t>(board_info.number);
+    request->torque_lim = static_cast<float>(torque_limit);
+    request->set_torque_limit = true;
+    client->async_send_request(request);
   }
 
   /**
@@ -1074,8 +1303,7 @@ private:
   {
     sabacan_single_control_msgs::msg::SabacanRobomasSingleRef ref_msg;
     if (should_force_open_loop()) {
-      ref_msg.control_type =
-        open_loop_control_type_for_motor(board_info, controller_type);
+      ref_msg.control_type = open_loop_control_type_for_motor(board_info, controller_type);
       ref_msg.ref = 0.0f;
       return ref_msg;
     }
@@ -1139,13 +1367,13 @@ private:
    */
   void publish_motor_ref(
     const BoardInfo & board_info, const SingleRefPublisher & publisher,
-    MotorControllerType controller_type,
-    const r1_msgs::msg::MotorRef & msg) const
+    MotorControllerType controller_type, const r1_msgs::msg::MotorRef & msg) const
   {
     if (!publisher) {
       return;
     }
-    publisher->publish(make_single_ref_message(board_info, controller_type, msg.control_type, msg.ref));
+    publisher->publish(
+      make_single_ref_message(board_info, controller_type, msg.control_type, msg.ref));
   }
 
   /**
@@ -1179,8 +1407,9 @@ private:
   void publish_motor_ref(
     const MotorCommandChannel<StatusMsgT> & channel, const r1_msgs::msg::MotorRef & msg) const
   {
-    if (channel.controller_type == MotorControllerType::Robomas ||
-        channel.controller_type == MotorControllerType::Vesc) {
+    if (
+      channel.controller_type == MotorControllerType::Robomas ||
+      channel.controller_type == MotorControllerType::Vesc) {
       publish_motor_ref(channel.board_info, channel.ref_publisher, channel.controller_type, msg);
       return;
     }
@@ -1196,8 +1425,7 @@ private:
    */
   void publish_motor_ref(
     const BoardInfo & board_info, const SingleRefPublisher & publisher,
-    MotorControllerType controller_type,
-    const std::string & control_type, double ref) const
+    MotorControllerType controller_type, const std::string & control_type, double ref) const
   {
     if (!publisher) {
       return;
@@ -1265,8 +1493,7 @@ private:
   {
     if (
       controller_type == MotorControllerType::Vesc ||
-      controller_type == MotorControllerType::Robstride)
-    {
+      controller_type == MotorControllerType::Robstride) {
       return "CURRENT";
     }
 
@@ -1343,8 +1570,7 @@ private:
     for (const auto & channel : channels) {
       if (
         channel.controller_type == MotorControllerType::Robomas ||
-        channel.controller_type == MotorControllerType::Vesc)
-      {
+        channel.controller_type == MotorControllerType::Vesc) {
         publish_open_loop_stop(channel.board_info, channel.ref_publisher, channel.controller_type);
         continue;
       }
@@ -1482,13 +1708,13 @@ private:
     if (was_reinit_required) {
       RCLCPP_INFO(
         this->get_logger(),
-        "received /r1_machine_initialize. restoring normal motor control routing and forwarding initialize to motion nodes");
+        "received /r1_machine_initialize. restoring normal motor control routing and forwarding "
+        "initialize to motion nodes");
       return;
     }
 
     RCLCPP_INFO(
-      this->get_logger(),
-      "received /r1_machine_initialize. forwarding initialize to motion nodes");
+      this->get_logger(), "received /r1_machine_initialize. forwarding initialize to motion nodes");
   }
 
   /**
@@ -1848,6 +2074,7 @@ private:
     sabacan_robstride_status_subscriptions_;
   std::vector<SubscriptionPtr<sabacan_msgs::msg::SabacanGPIOStatus>>
     sabacan_gpio_status_subscriptions_;
+  std::vector<SetRobomasGainsClient::SharedPtr> set_robomas_gains_clients_;
   SubscriptionPtr<sabacan_msgs::msg::SabacanPowerStatus> sabacan_power_status_subscription_;
   SubscriptionPtr<std_msgs::msg::Empty> initialize_signal_subscription_;
 
@@ -1860,10 +2087,10 @@ private:
 
   // 足回りのチャネル定義。
   std::vector<MecanumWheelChannel> mecanum_channels_{
-    MecanumWheelChannel{{1, 0}, "/debug_mecanum_fl_motor_status", MotorControllerType::Vesc},
-    MecanumWheelChannel{{1, 1}, "/debug_mecanum_fr_motor_status", MotorControllerType::Vesc},
-    MecanumWheelChannel{{1, 2}, "/debug_mecanum_rl_motor_status", MotorControllerType::Vesc},
-    MecanumWheelChannel{{1, 3}, "/debug_mecanum_rr_motor_status", MotorControllerType::Vesc},
+    make_mecanum_wheel_channel({1, 0}, "mecanum_fl", MotorControllerType::Vesc),
+    make_mecanum_wheel_channel({1, 1}, "mecanum_fr", MotorControllerType::Vesc),
+    make_mecanum_wheel_channel({1, 2}, "mecanum_rl", MotorControllerType::Vesc),
+    make_mecanum_wheel_channel({1, 3}, "mecanum_rr", MotorControllerType::Vesc),
   };
   std::vector<BoardInfo> odometry_encoder_channels_{
     BoardInfo{7, 2},
@@ -1871,156 +2098,62 @@ private:
   };
   // 独ステの board_id / motor_number は頻繁に変えない前提でソース内に固定する。
   std::vector<DriveMotorChannel> swerve_wheel_channels_{
-    DriveMotorChannel{
-      {1, 0},
-      "/swerve_fr_wheel_motor_ref",
-      "/debug_swerve_fr_wheel_motor_status",
-      MotorControllerType::Vesc},
-    DriveMotorChannel{
-      {1, 1},
-      "/swerve_fl_wheel_motor_ref",
-      "/debug_swerve_fl_wheel_motor_status",
-      MotorControllerType::Vesc},
-    DriveMotorChannel{
-      {1, 2},
-      "/swerve_rl_wheel_motor_ref",
-      "/debug_swerve_rl_wheel_motor_status",
-      MotorControllerType::Vesc},
-    DriveMotorChannel{
-      {1, 3},
-      "/swerve_rr_wheel_motor_ref",
-      "/debug_swerve_rr_wheel_motor_status",
-      MotorControllerType::Vesc},
+    make_drive_motor_channel({1, 0}, "swerve_fr_wheel", MotorControllerType::Vesc),
+    make_drive_motor_channel({1, 1}, "swerve_fl_wheel", MotorControllerType::Vesc),
+    make_drive_motor_channel({1, 2}, "swerve_rl_wheel", MotorControllerType::Vesc),
+    make_drive_motor_channel({1, 3}, "swerve_rr_wheel", MotorControllerType::Vesc),
   };
   std::vector<DriveMotorChannel> swerve_steer_channels_{
-    DriveMotorChannel{{2, 0}, "/swerve_fr_steer_motor_ref", "/debug_swerve_fr_steer_motor_status"},
-    DriveMotorChannel{{2, 1}, "/swerve_fl_steer_motor_ref", "/debug_swerve_fl_steer_motor_status"},
-    DriveMotorChannel{{2, 2}, "/swerve_rl_steer_motor_ref", "/debug_swerve_rl_steer_motor_status"},
-    DriveMotorChannel{{2, 3}, "/swerve_rr_steer_motor_ref", "/debug_swerve_rr_steer_motor_status"},
+    make_drive_motor_channel({2, 0}, "swerve_fr_steer"),
+    make_drive_motor_channel({2, 1}, "swerve_fl_steer"),
+    make_drive_motor_channel({2, 2}, "swerve_rl_steer"),
+    make_drive_motor_channel({2, 3}, "swerve_rr_steer"),
   };
 
   // 足回り以外のモータチャネルは、機構別ではなく役割別の vector でまとめて保持する。
   std::vector<MotorStatusChannel> velocity_control_channels_{
-    MotorStatusChannel{
-      {3, 3}, "/r2_flift_motor_ref", "/r2_flift_motor_status", "/debug_r2_flift_motor_status"},
-    MotorStatusChannel{
-      {4, 3}, "/r2_rlift_motor_ref", "/r2_rlift_motor_status", "/debug_r2_rlift_motor_status"},
+    make_velocity_control_channel({3, 3}, "r2_flift"),
+    make_velocity_control_channel({4, 3}, "r2_rlift"),
   };
   std::vector<LinearMotionChannel> linear_motion_channels_{
-    LinearMotionChannel{
-      {3, 0},
-      "/kfs_fx_motor_ref",
-      "/kfs_fx_linear_motion_status",
-      "/debug_kfs_fx_motor_status",
-      "/kfs_fx_initialize"},
-    LinearMotionChannel{
-      {3, 1},
-      "/kfs_fz_motor_ref",
-      "/kfs_fz_linear_motion_status",
-      "/debug_kfs_fz_motor_status",
-      "/kfs_fz_initialize"},
-    LinearMotionChannel{
-      {4, 0},
-      "/kfs_rx_motor_ref",
-      "/kfs_rx_linear_motion_status",
-      "/debug_kfs_rx_motor_status",
-      "/kfs_rx_initialize"},
-    LinearMotionChannel{
-      {4, 1},
-      "/kfs_rz_motor_ref",
-      "/kfs_rz_linear_motion_status",
-      "/debug_kfs_rz_motor_status",
-      "/kfs_rz_initialize"},
-    LinearMotionChannel{
-      {5, 0},
-      "/spear1_motor_ref",
-      "/spear1_linear_motion_status",
-      "/debug_spear1_motor_status",
-      "/spear1_initialize"},
-    LinearMotionChannel{
-      {5, 1},
-      "/spear2_motor_ref",
-      "/spear2_linear_motion_status",
-      "/debug_spear2_motor_status",
-      "/spear2_initialize"},
-    LinearMotionChannel{
-      {5, 2},
-      "/spear3_motor_ref",
-      "/spear3_linear_motion_status",
-      "/debug_spear3_motor_status",
-      "/spear3_initialize"},
-    LinearMotionChannel{
-      {5, 3},
-      "/spear4_motor_ref",
-      "/spear4_linear_motion_status",
-      "/debug_spear4_motor_status",
-      "/spear4_initialize"},
-    LinearMotionChannel{
-      {6, 0},
-      "/spear_x_motor_ref",
-      "/spear_x_linear_motion_status",
-      "/debug_spear_x_motor_status",
-      "/spear_x_initialize"},
-    LinearMotionChannel{
-      {6, 1},
-      "/spear_y_motor_ref",
-      "/spear_y_linear_motion_status",
-      "/debug_spear_y_motor_status",
-      "/spear_y_initialize"}};
+    make_linear_motion_channel({3, 0}, "kfs_fx"),
+    make_linear_motion_channel({3, 1}, "kfs_fz"),
+    make_linear_motion_channel({4, 0}, "kfs_rx"),
+    make_linear_motion_channel({4, 1}, "kfs_rz"),
+    make_linear_motion_channel({5, 0}, "spear1"),
+    make_linear_motion_channel({5, 1}, "spear2"),
+    make_linear_motion_channel({5, 2}, "spear3"),
+    make_linear_motion_channel({5, 3}, "spear4"),
+    make_linear_motion_channel({6, 0}, "spear_x"),
+    make_linear_motion_channel({6, 1}, "spear_y")};
   std::vector<AngleMotionChannel> angle_motion_channels_{
-    AngleMotionChannel{
-      {2, 2},
-      "/kfs_fyaw_motor_ref",
-      "/kfs_fyaw_angle_motion_status",
-      "/debug_kfs_fyaw_motor_status",
-      "/kfs_fyaw_initialize"},
-    AngleMotionChannel{
-      {3, 2},
-      "/kfs_ryaw_motor_ref",
-      "/kfs_ryaw_angle_motion_status",
-      "/debug_kfs_ryaw_motor_status",
-      "/kfs_ryaw_initialize"},
-    AngleMotionChannel{
-      {6, 2},
-      "/spear_pitch1_motor_ref",
-      "/spear_pitch1_angle_motion_status",
-      "/debug_spear_pitch1_motor_status",
-      "/spear_pitch1_initialize"},
-    AngleMotionChannel{
-      {6, 3},
-      "/spear_pitch2_motor_ref",
-      "/spear_pitch2_angle_motion_status",
-      "/debug_spear_pitch2_motor_status",
-      "/spear_pitch2_initialize"},
+    make_angle_motion_channel({2, 2}, "kfs_fyaw"),
+    make_angle_motion_channel({3, 2}, "kfs_ryaw"),
+    make_angle_motion_channel({6, 2}, "spear_pitch1"),
+    make_angle_motion_channel({6, 3}, "spear_pitch2"),
     // spear_rollはrobstride
-    AngleMotionChannel{
-      {2, -1},
-      "/spear_roll_motor_ref",
-      "/spear_roll_angle_motion_status",
-      "/debug_spear_roll_motor_status",
-      "/spear_roll_initialize",
-      MotorControllerType::Robstride}};
+    make_angle_motion_channel({2, -1}, "spear_roll", MotorControllerType::Robstride)};
 
   std::vector<GpioFloatOutputChannel> gpio_float_output_channels_{
-    GpioFloatOutputChannel{{1, 0}, "/kfs_front_pump_gpio_pwm_ref"},
-    GpioFloatOutputChannel{{1, 1}, "/kfs_rear_pump_gpio_pwm_ref"},
-    GpioFloatOutputChannel{{1, 2}, "/kfs_front_valve_gpio_pwm_ref"},
-    GpioFloatOutputChannel{{1, 3}, "/kfs_rear_valve_gpio_pwm_ref"},
-    GpioFloatOutputChannel{{2, 0}, "/spear_u1_value_gpio_pwm_ref"},
-    GpioFloatOutputChannel{{2, 1}, "/spear_d2_value_gpio_pwm_ref"},
-    GpioFloatOutputChannel{{2, 2}, "/spear_u2_value_gpio_pwm_ref"},
-    GpioFloatOutputChannel{{2, 3}, "/spear_d2_value_gpio_pwm_ref"},
+    make_gpio_float_output_channel({1, 0}, "kfs_front_pump"),
+    make_gpio_float_output_channel({1, 1}, "kfs_rear_pump"),
+    make_gpio_float_output_channel({1, 2}, "kfs_front_valve"),
+    make_gpio_float_output_channel({1, 3}, "kfs_rear_valve"),
+    make_gpio_float_output_channel({2, 0}, "spear_u1_value"),
+    make_gpio_float_output_channel({2, 1}, "spear_d2_value"),
+    make_gpio_float_output_channel({2, 2}, "spear_u2_value"),
+    make_gpio_float_output_channel({2, 3}, "spear_d2_value"),
     // 電磁弁は何個つながるかわからないので一旦ここで止めとく
   };
   std::vector<GpioIntOutputChannel> gpio_int_output_channels_{
-    // GpioIntOutputChannel{{3, 0}, "/pole_servo1_gpio_servo_ref"},
-    // GpioIntOutputChannel{{3, 1}, "/pole_servo2_gpio_servo_ref"},
-    // GpioIntOutputChannel{{3, 2}, "/pole_servo3_gpio_servo_ref"},
-    // GpioIntOutputChannel{{3, 3}, "/pole_servo4_gpio_servo_ref"},
+    // make_gpio_int_output_channel({3, 0}, "pole_servo1"),
+    // make_gpio_int_output_channel({3, 1}, "pole_servo2"),
+    // make_gpio_int_output_channel({3, 2}, "pole_servo3"),
+    // make_gpio_int_output_channel({3, 3}, "pole_servo4"),
   };
   std::vector<GpioInputChannel> gpio_input_channels_{
-    GpioInputChannel{{1, 7}, "/kfs_fz_low_switch_status", "/debug_kfs_fz_low_switch_status"},
-    GpioInputChannel{{1, 8}, "/kfs_rz_low_switch_status", "/debug_kfs_rz_low_switch_status"},
+    make_gpio_input_channel({1, 7}, "kfs_fz_low_switch"),
+    make_gpio_input_channel({1, 8}, "kfs_rz_low_switch"),
   };
 
   // r1_msgs 側の足回り publisher / subscription。

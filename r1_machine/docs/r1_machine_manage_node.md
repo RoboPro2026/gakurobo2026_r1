@@ -10,6 +10,7 @@
 
 - Sabacan の `robomas_status` / `robstride_status` / `gpio_status` を購読し、機構ごとの状態 topic や debug topic に再配信する。
 - `MotorRef` / `GpioPwmRef` / `GpioServoRef` を Sabacan 単軸制御 topic へ変換する。
+- 各 motion node から受けた torque limit 指令を、対応する Robomas 基板の `SetRobomasGains` service へ転送する。
 - `mecanum` モードでは足回りの速度指令とオドメトリエンコーダを扱う。
 - `swerve` モードでは `/swerve_drive_ref` を 4 輪の wheel / steer 指令へ分解する。
 - 足回り以外の機構チャネルは drive mode に関係なく有効で、Robomas と Robstride の両方を扱える。
@@ -48,11 +49,13 @@
 - `/sabacan_gpio_status0` ... `/sabacan_gpio_status9` (`sabacan_msgs/msg/SabacanGPIOStatus`)
 - `/sabacan_power_status0` (`sabacan_msgs/msg/SabacanPowerStatus`)
 - `/r1_machine_initialize` (`std_msgs/msg/Empty`)
+- `*_torque_limit_ref` (`std_msgs/msg/Float64`): Robomas の linear / angle motion 軸だけを対象に購読し、対応 board / motor の `torque_lim` へ反映します。
 
 ### Common Publish
 
 - `/sabacan_gpio_ref_int0` ... `/sabacan_gpio_ref_int9` (`sabacan_msgs/msg/SabacanGPIORefInt`)
 - `/sabacan_gpio_ref_float0` ... `/sabacan_gpio_ref_float9` (`sabacan_msgs/msg/SabacanGPIORefFloat`)
+- `/sabacan_robomasv2_node_id*/set_robomas_gains` (`sabacan_msgs/srv/SetRobomasGains`)
 
 ### Mecanum Mode
 

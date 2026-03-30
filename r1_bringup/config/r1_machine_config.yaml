@@ -243,7 +243,12 @@ r1_odometry_node:
 r1_kfs_fx_node:
   ros__parameters:
     timer_rate: 10.0
+    # トルク検出時のしきい値
     torque_threshold: 0.5 # Nm
+    # 通常位置モード時に Robomas の torque_lim として使う値
+    normal_torque_limit: 1.0 # Nm
+    # 原点検出・メカロック移動中に Robomas の torque_lim として使う値
+    contact_torque_limit: 1.0 # Nm
     origin_detect_threshold_time: 0.5 # 秒
     # 原点検出のときは、0の方向に戻るので、負の速度にする
     output_detect_speed: -6.28 # rad/s
@@ -261,7 +266,12 @@ r1_kfs_fx_node:
 r1_kfs_fz_node:
   ros__parameters:
     timer_rate: 10.0
+    # トルク検出時のしきい値
     torque_threshold: 0.5 # Nm
+    # 通常位置モード時に Robomas の torque_lim として使う値
+    normal_torque_limit: 1.0 # Nm
+    # 原点検出・メカロック移動中に Robomas の torque_lim として使う値
+    contact_torque_limit: 1.0 # Nm
     origin_detect_threshold_time: 0.5 # 秒
     # 原点検出のときは、0の方向に戻るので、負の速度にする
     output_detect_speed: -3.14 # rad/s
@@ -279,8 +289,12 @@ r1_kfs_fz_node:
 r1_kfs_fyaw_node:
   ros__parameters:
     timer_rate: 10.0
-    # torque_threshold: 0.5 # Nm
-    torque_threshold: 0.2 # Nm
+    # トルク検出時のしきい値
+    torque_threshold: 0.5 # Nm
+    # 通常位置モード時に Robomas の torque_lim として使う値
+    normal_torque_limit: 1.0 # Nm
+    # 原点検出・メカロック移動中に Robomas の torque_lim として使う値
+    contact_torque_limit: 1.0 # Nm
     origin_detect_threshold_time: 0.5 # 秒
     origin_detect_speed: -3.14 # rad/s
     angle_min: -5.0
@@ -298,7 +312,12 @@ r1_kfs_fyaw_node:
 r1_kfs_rx_node:
   ros__parameters:
     timer_rate: 10.0
+    # トルク検出時のしきい値
     torque_threshold: 0.5 # Nm
+    # 通常位置モード時に Robomas の torque_lim として使う値
+    normal_torque_limit: 1.0 # Nm
+    # 原点検出・メカロック移動中に Robomas の torque_lim として使う値
+    contact_torque_limit: 1.0 # Nm
     origin_detect_threshold_time: 0.5 # 秒
     # 原点検出のときは、0の方向に戻るので、負の速度にする
     output_detect_speed: -3.14 # rad/s
@@ -316,7 +335,12 @@ r1_kfs_rx_node:
 r1_kfs_rz_node:
   ros__parameters:
     timer_rate: 10.0
+    # トルク検出時のしきい値
     torque_threshold: 0.5 # Nm
+    # 通常位置モード時に Robomas の torque_lim として使う値
+    normal_torque_limit: 1.0 # Nm
+    # 原点検出・メカロック移動中に Robomas の torque_lim として使う値
+    contact_torque_limit: 1.0 # Nm
     origin_detect_threshold_time: 0.5 # 秒
     # 原点検出のときは、0の方向に戻るので、負の速度にする
     output_detect_speed: -3.14 # rad/s
@@ -334,8 +358,12 @@ r1_kfs_rz_node:
 r1_kfs_ryaw_node:
   ros__parameters:
     timer_rate: 10.0
-    # torque_threshold: 0.5 # Nm
-    torque_threshold: 0.2 # Nm
+    # トルク検出時のしきい値
+    torque_threshold: 0.5 # Nm
+    # 通常位置モード時に Robomas の torque_lim として使う値
+    normal_torque_limit: 1.0 # Nm
+    # 原点検出・メカロック移動中に Robomas の torque_lim として使う値
+    contact_torque_limit: 1.0 # Nm
     origin_detect_threshold_time: 0.5 # 秒
     origin_detect_speed: -3.14 # rad/s
     angle_min: -5.0
@@ -354,7 +382,12 @@ r1_kfs_ryaw_node:
 r1_spear1_node:
   ros__parameters:
     timer_rate: 10.0
+    # トルク検出時のしきい値
     torque_threshold: 0.5 # Nm
+    # 通常位置モード時に Robomas の torque_lim として使う値
+    normal_torque_limit: 1.0 # Nm
+    # 原点検出・メカロック移動中に Robomas の torque_lim として使う値
+    contact_torque_limit: 1.0 # Nm
     origin_detect_threshold_time: 0.5 # 秒
     # 原点検出のときは、0の方向に戻るので、負の速度にする
     output_detect_speed: -6.28 # rad/s
@@ -372,7 +405,12 @@ r1_spear1_node:
 r1_spear2_node:
   ros__parameters:
     timer_rate: 10.0
+    # トルク検出時のしきい値
     torque_threshold: 0.5 # Nm
+    # 通常位置モード時に Robomas の torque_lim として使う値
+    normal_torque_limit: 1.0 # Nm
+    # 原点検出・メカロック移動中に Robomas の torque_lim として使う値
+    contact_torque_limit: 1.0 # Nm
     origin_detect_threshold_time: 0.5 # 秒
     # 原点検出のときは、0の方向に戻るので、負の速度にする
     output_detect_speed: -6.28 # rad/s
@@ -390,7 +428,12 @@ r1_spear2_node:
 r1_spear3_node:
   ros__parameters:
     timer_rate: 10.0
+    # トルク検出時のしきい値
     torque_threshold: 0.5 # Nm
+    # 通常位置モード時に Robomas の torque_lim として使う値
+    normal_torque_limit: 1.0 # Nm
+    # 原点検出・メカロック移動中に Robomas の torque_lim として使う値
+    contact_torque_limit: 1.0 # Nm
     origin_detect_threshold_time: 0.5 # 秒
     # 原点検出のときは、0の方向に戻るので、負の速度にする
     output_detect_speed: -6.28 # rad/s
@@ -408,7 +451,12 @@ r1_spear3_node:
 r1_spear4_node:
   ros__parameters:
     timer_rate: 10.0
+    # トルク検出時のしきい値
     torque_threshold: 0.5 # Nm
+    # 通常位置モード時に Robomas の torque_lim として使う値
+    normal_torque_limit: 1.0 # Nm
+    # 原点検出・メカロック移動中に Robomas の torque_lim として使う値
+    contact_torque_limit: 1.0 # Nm
     origin_detect_threshold_time: 0.5 # 秒
     # 原点検出のときは、0の方向に戻るので、負の速度にする
     output_detect_speed: -6.28 # rad/s
@@ -426,7 +474,12 @@ r1_spear4_node:
 r1_spear_x_node:
   ros__parameters:
     timer_rate: 10.0
+    # トルク検出時のしきい値
     torque_threshold: 0.5 # Nm
+    # 通常位置モード時に Robomas の torque_lim として使う値
+    normal_torque_limit: 1.0 # Nm
+    # 原点検出・メカロック移動中に Robomas の torque_lim として使う値
+    contact_torque_limit: 1.0 # Nm
     origin_detect_threshold_time: 0.5 # 秒
     # 原点検出のときは、0の方向に戻るので、負の速度にする
     output_detect_speed: -6.28 # rad/s
@@ -444,7 +497,12 @@ r1_spear_x_node:
 r1_spear_y_node:
   ros__parameters:
     timer_rate: 10.0
+    # トルク検出時のしきい値
     torque_threshold: 0.5 # Nm
+    # 通常位置モード時に Robomas の torque_lim として使う値
+    normal_torque_limit: 1.0 # Nm
+    # 原点検出・メカロック移動中に Robomas の torque_lim として使う値
+    contact_torque_limit: 1.0 # Nm
     origin_detect_threshold_time: 0.5 # 秒
     # 原点検出のときは、0の方向に戻るので、負の速度にする
     output_detect_speed: -6.28 # rad/s
@@ -462,7 +520,13 @@ r1_spear_y_node:
 r1_spear_roll_node:
   ros__parameters:
     timer_rate: 10.0
+    # トルク検出時のしきい値
     torque_threshold: 0.5 # Nm
+    # NOTE: robstrideなので、トルクしきい値は無効化
+    # 通常位置モード時に Robomas の torque_lim として使う値
+    normal_torque_limit: 1.0 # Nm
+    # 原点検出・メカロック移動中に Robomas の torque_lim として使う値
+    contact_torque_limit: 1.0 # Nm
     origin_detect_threshold_time: 0.5 # 秒
     origin_detect_speed: -3.14 # rad/s
     angle_min: -5.0
@@ -480,7 +544,12 @@ r1_spear_roll_node:
 r1_spear_pitch1_node:
   ros__parameters:
     timer_rate: 10.0
+    # トルク検出時のしきい値
     torque_threshold: 0.5 # Nm
+    # 通常位置モード時に Robomas の torque_lim として使う値
+    normal_torque_limit: 4.5 # Nm
+    # 原点検出・メカロック移動中に Robomas の torque_lim として使う値
+    contact_torque_limit: 4.5 # Nm
     origin_detect_threshold_time: 0.5 # 秒
     origin_detect_speed: -3.14 # rad/s
     angle_min: -5.0
@@ -498,7 +567,12 @@ r1_spear_pitch1_node:
 r1_spear_pitch2_node:
   ros__parameters:
     timer_rate: 10.0
+    # トルク検出時のしきい値
     torque_threshold: 0.5 # Nm
+    # 通常位置モード時に Robomas の torque_lim として使う値
+    normal_torque_limit: 4.5 # Nm
+    # 原点検出・メカロック移動中に Robomas の torque_lim として使う値
+    contact_torque_limit: 4.5 # Nm
     origin_detect_threshold_time: 0.5 # 秒
     origin_detect_speed: -3.14 # rad/s
     angle_min: -5.0

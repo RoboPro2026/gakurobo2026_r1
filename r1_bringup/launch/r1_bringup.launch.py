@@ -106,6 +106,7 @@ def generate_launch_description():
             ("linear_motion_detect_origin", f"{topic_prefix}_detect_origin"),
             ("linear_motion_initialize", f"{topic_prefix}_initialize"),
             ("linear_motion_mode_status", f"{topic_prefix}_mode_status"),
+            ("linear_motion_torque_limit_ref", f"{topic_prefix}_torque_limit_ref"),
         ]
         if extra_remappings is not None:
             remappings.extend(extra_remappings)
@@ -129,6 +130,7 @@ def generate_launch_description():
             ("angle_motion_detect_origin", f"{topic_prefix}_detect_origin"),
             ("angle_motion_initialize", f"{topic_prefix}_initialize"),
             ("angle_motion_mode_status", f"{topic_prefix}_mode_status"),
+            ("angle_motion_torque_limit_ref", f"{topic_prefix}_torque_limit_ref"),
         ]
         if extra_remappings is not None:
             remappings.extend(extra_remappings)
