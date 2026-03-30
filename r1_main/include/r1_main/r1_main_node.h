@@ -56,11 +56,53 @@
 class R1MainNode : public rclcpp::Node
 {
 public:
+  struct PositionAxisInterface
+  {
+    rclcpp::Publisher<std_msgs::msg::Float64>::SharedPtr position_ref_publisher;
+    rclcpp::Publisher<std_msgs::msg::Bool>::SharedPtr detect_origin_publisher;
+    rclcpp::Subscription<std_msgs::msg::Int32>::SharedPtr mode_status_subscription;
+    bool is_pos_mode = false;
+    double position_ref = 0.0;
+    double * position_ref_alias = nullptr;
+  };
+
+  struct VelocityAxisInterface
+  {
+    rclcpp::Publisher<r1_msgs::msg::MotorRef>::SharedPtr motor_ref_publisher;
+    double velocity_ref = 0.0;
+    double * velocity_ref_alias = nullptr;
+  };
+
+  struct GpioPwmOutputInterface
+  {
+    rclcpp::Publisher<r1_msgs::msg::GpioPwmRef>::SharedPtr publisher;
+    double ref = 0.0;
+    double * double_ref_alias = nullptr;
+    bool * bool_ref_alias = nullptr;
+  };
+
+  struct GpioServoOutputInterface
+  {
+    rclcpp::Publisher<r1_msgs::msg::GpioServoRef>::SharedPtr publisher;
+    int ref = 0;
+    int * ref_alias = nullptr;
+  };
+
+  struct GpioInputInterface
+  {
+    rclcpp::Subscription<r1_msgs::msg::GpioInput>::SharedPtr subscription;
+  };
+
   std::shared_ptr<StateMachine> state_machine_;
   std::shared_ptr<PS4> ps4_;
   SimpleTrapezoid simple_trapezoid_vx_;
   SimpleTrapezoid simple_trapezoid_vy_;
   SimpleTrapezoid simple_trapezoid_omega_;
+  std::map<std::string, PositionAxisInterface> position_axes_;
+  std::map<std::string, VelocityAxisInterface> velocity_axes_;
+  std::map<std::string, GpioPwmOutputInterface> gpio_pwm_outputs_;
+  std::map<std::string, GpioServoOutputInterface> gpio_servo_outputs_;
+  std::map<std::string, GpioInputInterface> gpio_inputs_;
 
   // publisherとsubscriber
   // 足回りの速度指令
@@ -68,100 +110,6 @@ public:
   // joyの受信
   rclcpp::Subscription<sensor_msgs::msg::Joy>::SharedPtr joy_subscription_;
 
-  // ========== KFS回収 ==========
-  // 指令値Publisher
-  rclcpp::Publisher<std_msgs::msg::Float64>::SharedPtr kfs_fx_position_ref_publisher_;
-  rclcpp::Publisher<std_msgs::msg::Float64>::SharedPtr kfs_fz_position_ref_publisher_;
-  rclcpp::Publisher<std_msgs::msg::Float64>::SharedPtr kfs_fyaw_position_ref_publisher_;
-  rclcpp::Publisher<std_msgs::msg::Float64>::SharedPtr kfs_rx_position_ref_publisher_;
-  rclcpp::Publisher<std_msgs::msg::Float64>::SharedPtr kfs_rz_position_ref_publisher_;
-  rclcpp::Publisher<std_msgs::msg::Float64>::SharedPtr kfs_ryaw_position_ref_publisher_;
-  // 原点検出Publisher
-  rclcpp::Publisher<std_msgs::msg::Bool>::SharedPtr kfs_fx_detect_origin_publisher_;
-  rclcpp::Publisher<std_msgs::msg::Bool>::SharedPtr kfs_fz_detect_origin_publisher_;
-  rclcpp::Publisher<std_msgs::msg::Bool>::SharedPtr kfs_fyaw_detect_origin_publisher_;
-  rclcpp::Publisher<std_msgs::msg::Bool>::SharedPtr kfs_rx_detect_origin_publisher_;
-  rclcpp::Publisher<std_msgs::msg::Bool>::SharedPtr kfs_rz_detect_origin_publisher_;
-  rclcpp::Publisher<std_msgs::msg::Bool>::SharedPtr kfs_ryaw_detect_origin_publisher_;
-  // mode Subscription
-  rclcpp::Subscription<std_msgs::msg::Int32>::SharedPtr kfs_fx_mode_status_subscription_;
-  rclcpp::Subscription<std_msgs::msg::Int32>::SharedPtr kfs_fz_mode_status_subscription_;
-  rclcpp::Subscription<std_msgs::msg::Int32>::SharedPtr kfs_fyaw_mode_status_subscription_;
-  rclcpp::Subscription<std_msgs::msg::Int32>::SharedPtr kfs_rx_mode_status_subscription_;
-  rclcpp::Subscription<std_msgs::msg::Int32>::SharedPtr kfs_rz_mode_status_subscription_;
-  rclcpp::Subscription<std_msgs::msg::Int32>::SharedPtr kfs_ryaw_mode_status_subscription_;
-  // ========== 展開 ==========
-  // 指令値Publisher
-  rclcpp::Publisher<std_msgs::msg::Float64>::SharedPtr front_expand_position_ref_publisher_;
-  rclcpp::Publisher<std_msgs::msg::Float64>::SharedPtr rear_expand_position_ref_publisher_;
-  // 原点検出Publisher
-  rclcpp::Publisher<std_msgs::msg::Bool>::SharedPtr front_expand_detect_origin_publisher_;
-  rclcpp::Publisher<std_msgs::msg::Bool>::SharedPtr rear_expand_detect_origin_publisher_;
-  // mode Subscription
-  rclcpp::Subscription<std_msgs::msg::Int32>::SharedPtr front_expand_mode_status_subscription_;
-  rclcpp::Subscription<std_msgs::msg::Int32>::SharedPtr rear_expand_mode_status_subscription_;
-  // ========== R2昇降 ==========
-  rclcpp::Publisher<r1_msgs::msg::MotorRef>::SharedPtr r2_lift_motor_ref_publisher_;
-  // ========== ポール回収 ==========
-  // 指令値Publisher
-  rclcpp::Publisher<std_msgs::msg::Float64>::SharedPtr pole_x1_position_ref_publisher_;
-  rclcpp::Publisher<std_msgs::msg::Float64>::SharedPtr pole_x2_position_ref_publisher_;
-  rclcpp::Publisher<std_msgs::msg::Float64>::SharedPtr pole_y_position_ref_publisher_;
-  rclcpp::Publisher<std_msgs::msg::Float64>::SharedPtr pole_roger_position_ref_publisher_;
-  // 原点検出Publisher
-  rclcpp::Publisher<std_msgs::msg::Bool>::SharedPtr pole_x1_detect_origin_publisher_;
-  rclcpp::Publisher<std_msgs::msg::Bool>::SharedPtr pole_x2_detect_origin_publisher_;
-  rclcpp::Publisher<std_msgs::msg::Bool>::SharedPtr pole_y_detect_origin_publisher_;
-  rclcpp::Publisher<std_msgs::msg::Bool>::SharedPtr pole_roger_detect_origin_publisher_;
-  // mode Subscription
-  rclcpp::Subscription<std_msgs::msg::Int32>::SharedPtr pole_x1_mode_status_subscription_;
-  rclcpp::Subscription<std_msgs::msg::Int32>::SharedPtr pole_x2_mode_status_subscription_;
-  rclcpp::Subscription<std_msgs::msg::Int32>::SharedPtr pole_y_mode_status_subscription_;
-  rclcpp::Subscription<std_msgs::msg::Int32>::SharedPtr pole_roger_mode_status_subscription_;
-  // ========== やり ==========
-  // 指令値Publisher
-  rclcpp::Publisher<std_msgs::msg::Float64>::SharedPtr spear_roger1_position_ref_publisher_;
-  rclcpp::Publisher<std_msgs::msg::Float64>::SharedPtr spear_roger2_position_ref_publisher_;
-  rclcpp::Publisher<std_msgs::msg::Float64>::SharedPtr spear_move_position_ref_publisher_;
-  rclcpp::Publisher<std_msgs::msg::Float64>::SharedPtr spear_rotate_position_ref_publisher_;
-  // 原点検出Publisher
-  rclcpp::Publisher<std_msgs::msg::Bool>::SharedPtr spear_roger1_detect_origin_publisher_;
-  rclcpp::Publisher<std_msgs::msg::Bool>::SharedPtr spear_roger2_detect_origin_publisher_;
-  rclcpp::Publisher<std_msgs::msg::Bool>::SharedPtr spear_move_detect_origin_publisher_;
-  rclcpp::Publisher<std_msgs::msg::Bool>::SharedPtr spear_rotate_detect_origin_publisher_;
-  // mode Subscription
-  rclcpp::Subscription<std_msgs::msg::Int32>::SharedPtr spear_roger1_mode_status_subscription_;
-  rclcpp::Subscription<std_msgs::msg::Int32>::SharedPtr spear_roger2_mode_status_subscription_;
-  rclcpp::Subscription<std_msgs::msg::Int32>::SharedPtr spear_move_mode_status_subscription_;
-  rclcpp::Subscription<std_msgs::msg::Int32>::SharedPtr spear_rotate_mode_status_subscription_;
-
-  // KFS真空ポンプ
-  rclcpp::Publisher<r1_msgs::msg::GpioPwmRef>::SharedPtr kfs_front_pump_gpio_pwm_ref_publisher_;
-  rclcpp::Publisher<r1_msgs::msg::GpioPwmRef>::SharedPtr kfs_rear_pump_gpio_pwm_ref_publisher_;
-  // 真空電磁弁
-  rclcpp::Publisher<r1_msgs::msg::GpioPwmRef>::SharedPtr kfs_front_valve_gpio_pwm_ref_publisher_;
-  rclcpp::Publisher<r1_msgs::msg::GpioPwmRef>::SharedPtr kfs_rear_valve_gpio_pwm_ref_publisher_;
-  // KFSリミットスイッチ
-  rclcpp::Subscription<r1_msgs::msg::GpioInput>::SharedPtr kfs_front_switch_status_subscription_;
-  rclcpp::Subscription<r1_msgs::msg::GpioInput>::SharedPtr kfs_rear_switch_status_subscription_;
-  // ポール回収サーボ
-  rclcpp::Publisher<r1_msgs::msg::GpioServoRef>::SharedPtr pole_servo1_gpio_servo_ref_publisher_;
-  rclcpp::Publisher<r1_msgs::msg::GpioServoRef>::SharedPtr pole_servo2_gpio_servo_ref_publisher_;
-  rclcpp::Publisher<r1_msgs::msg::GpioServoRef>::SharedPtr pole_servo3_gpio_servo_ref_publisher_;
-  rclcpp::Publisher<r1_msgs::msg::GpioServoRef>::SharedPtr pole_servo4_gpio_servo_ref_publisher_;
-  //  ポール回収電磁弁
-  rclcpp::Publisher<r1_msgs::msg::GpioPwmRef>::SharedPtr pole_valve1_gpio_pwm_ref_publisher_;
-  rclcpp::Publisher<r1_msgs::msg::GpioPwmRef>::SharedPtr pole_valve2_gpio_pwm_ref_publisher_;
-  rclcpp::Publisher<r1_msgs::msg::GpioPwmRef>::SharedPtr pole_valve3_gpio_pwm_ref_publisher_;
-  rclcpp::Publisher<r1_msgs::msg::GpioPwmRef>::SharedPtr pole_valve4_gpio_pwm_ref_publisher_;
-  // やりハンド電磁弁
-  rclcpp::Publisher<r1_msgs::msg::GpioPwmRef>::SharedPtr spear_hand_valve1_gpio_pwm_ref_publisher_;
-  rclcpp::Publisher<r1_msgs::msg::GpioPwmRef>::SharedPtr spear_hand_valve2_gpio_pwm_ref_publisher_;
-  // やりリミットスイッチ
-  rclcpp::Subscription<r1_msgs::msg::GpioInput>::SharedPtr spear_move_switch_status_subscription_;
-  rclcpp::Subscription<r1_msgs::msg::GpioInput>::SharedPtr spear_rotate_switch_status_subscription_;
-  // ブレーキ用電磁弁
-  rclcpp::Publisher<r1_msgs::msg::GpioPwmRef>::SharedPtr brake_valve_gpio_pwm_ref_publisher_;
   // ========== Sabacan ==========
   // 電源基板の指令値Publisher
   rclcpp::Publisher<sabacan_msgs::msg::SabacanPowerRef>::SharedPtr sabacan_power_ref_publisher_;
@@ -220,27 +168,8 @@ public:
   // zone
   std::string zone_;
   // スイッチの状態
-  bool kfs_front_switch_status_ = false;
-  bool kfs_rear_switch_status_ = false;
-  bool spear_move_switch_status_ = false;
-  bool spear_rotate_switch_status_ = false;
-  // 各モードの状態
-  bool is_kfs_fx_pos_mode_ = false;
-  bool is_kfs_fz_pos_mode_ = false;
-  bool is_kfs_fyaw_pos_mode_ = false;
-  bool is_kfs_rx_pos_mode_ = false;
-  bool is_kfs_rz_pos_mode_ = false;
-  bool is_kfs_ryaw_pos_mode_ = false;
-  bool is_front_expand_pos_mode_ = false;
-  bool is_rear_expand_pos_mode_ = false;
-  bool is_pole_x1_pos_mode_ = false;
-  bool is_pole_x2_pos_mode_ = false;
-  bool is_pole_y_pos_mode_ = false;
-  bool is_pole_roger_pos_mode_ = false;
-  bool is_spear_roger1_pos_mode_ = false;
-  bool is_spear_roger2_pos_mode_ = false;
-  bool is_spear_move_pos_mode_ = false;
-  bool is_spear_rotate_pos_mode_ = false;
+  bool kfs_fz_switch_status_ = false;
+  bool kfs_rz_switch_status_ = false;
   // 指令値
   double kfs_fx_position_ref_ = 0.0;
   double kfs_fz_position_ref_ = 0.0;
@@ -248,32 +177,21 @@ public:
   double kfs_rx_position_ref_ = 0.0;
   double kfs_rz_position_ref_ = 0.0;
   double kfs_ryaw_position_ref_ = 0.0;
-  double front_expand_position_ref_ = 0.0;
-  double rear_expand_position_ref_ = 0.0;
-  double r2_lift_velocity_ref_ = 0.0;
-  double pole_x1_position_ref_ = 0.0;
-  double pole_x2_position_ref_ = 0.0;
-  double pole_y_position_ref_ = 0.0;
-  double pole_roger_position_ref_ = 0.0;
-  double spear_roger1_position_ref_ = 0.0;
-  double spear_roger2_position_ref_ = 0.0;
-  double spear_move_position_ref_ = 0.0;
-  double spear_rotate_position_ref_ = 0.0;
+  double spear1_position_ref_ = 0.0;
+  double spear2_position_ref_ = 0.0;
+  double spear3_position_ref_ = 0.0;
+  double spear4_position_ref_ = 0.0;
+  double spear_x_position_ref_ = 0.0;
+  double spear_y_position_ref_ = 0.0;
+  double spear_roll_position_ref_ = 0.0;
+  double spear_pitch1_position_ref_ = 0.0;
+  double spear_pitch2_position_ref_ = 0.0;
+  double r2_flift_velocity_ref_ = 0.0;
+  double r2_rlift_velocity_ref_ = 0.0;
   double kfs_front_pump_ref_ = 0.0;
   double kfs_rear_pump_ref_ = 0.0;
-  bool kfs_front_valve_ref_ = 0.0;
-  bool kfs_rear_valve_ref_ = 0.0;
-  int pole_servo1_angle_ref_ = 0;
-  int pole_servo2_angle_ref_ = 0;
-  int pole_servo3_angle_ref_ = 0;
-  int pole_servo4_angle_ref_ = 0;
-  bool pole_valve1_ref_ = false;
-  bool pole_valve2_ref_ = false;
-  bool pole_valve3_ref_ = false;
-  bool pole_valve4_ref_ = false;
-  bool spear_hand_valve1_ref_ = false;
-  bool spear_hand_valve2_ref_ = false;
-  double brake_valve_ref_ = 0.0;
+  bool kfs_front_valve_ref_ = false;
+  bool kfs_rear_valve_ref_ = false;
 
   // sabacan
   bool sabacan_is_ems_ = false;
@@ -327,66 +245,25 @@ public:
   // ========== 展開 ==========
   // R2昇降
   double R2_LIFT_MAX_VELOCITY = 0.0;
-  // front_expand
-  double FRONT_EXPAND_NORMAL_POS = 0.0;
-  double FRONT_EXPAND_EXPAND_POS = 0.0;
-  // rear_expand
-  double REAR_EXPAND_NORMAL_POS = 0.0;
-  double REAR_EXPAND_EXPAND_POS = 0.5;
-  // ========== ポール回収 ==========
-  // pole_x1
-  double POLE_X1_NORMAL_POS = 0.0;
-  double POLE_X1_EXPAND_POS = 0.0;
-  // pole_x2
-  double POLE_X2_NORMAL_POS = 0.0;
-  double POLE_X2_EXPAND_POS = 0.0;
-  // pole_y
-  double POLE_Y_NORMAL_POS = 0.0;
-  double POLE_Y_COLLECT_POS = 0.0;
-  double POLE_Y_TRANSFER1_POS = 0.0;
-  double POLE_Y_TRANSFER2_POS = 0.0;
-  double POLE_Y_TRANSFER3_POS = 0.0;
-  double POLE_Y_TRANSFER4_POS = 0.0;
-  // pole_roger
-  double POLE_ROGER_NORMAL_POS = 0.0;
-  double POLE_ROGER_EXPAND_POS = 0.0;
-  // servo1
-  int POLE_SERVO1_NORMAL_ANGLE = 0;
-  int POLE_SERVO1_HORIZONTAL_ANGLE = 0;
-  // servo2
-  int POLE_SERVO2_NORMAL_ANGLE = 0;
-  int POLE_SERVO2_HORIZONTAL_ANGLE = 0;
-  // servo3
-  int POLE_SERVO3_NORMAL_ANGLE = 0;
-  int POLE_SERVO3_HORIZONTAL_ANGLE = 0;
-  // servo4
-  int POLE_SERVO4_NORMAL_ANGLE = 0;
-  int POLE_SERVO4_HORIZONTAL_ANGLE = 0;
+
   // ========== やり ==========
-  // spear_roger1
-  double SPEAR_ROGER1_NORMAL_POS = 0.0;
-  double SPEAR_ROGER1_COMBINE_POS = 0.0;
-  double SPEAR_ROGER1_TRANSFER_POS = 0.0;
-  double SPEAR_ROGER1_LOW_ATTACK_POS = 0.0;
-  double SPEAR_ROGER1_MIDDLE_ATTACK_POS = 0.0;
-  double SPEAR_ROGER1_HIGH_ATTACK_POS = 0.0;
-  // spear_roger2
-  double SPEAR_ROGER2_NORMAL_POS = 0.0;
-  double SPEAR_ROGER2_COMBINE_POS = 0.0;
-  double SPEAR_ROGER2_TRANSFER_POS = 0.0;
-  double SPEAR_ROGER2_LOW_ATTACK_POS = 0.0;
-  double SPEAR_ROGER2_MIDDLE_ATTACK_POS = 0.0;
-  double SPEAR_ROGER2_HIGH_ATTACK_POS = 0.0;
-  // spear_move
-  double SPEAR_MOVE_NORMAL_POS = 0.0;
-  double SPEAR_MOVE_COMBINE_POS = 0.0;
-  double SPEAR_MOVE_TRANSFER_POS = 0.0;
-  double SPEAR_MOVE_VALVE1_POS = 0.0;
-  double SPEAR_MOVE_VALVE2_POS = 0.0;
-  double SPEAR_MOVE_ATTACK_POS = 0.0;
-  // spear_rotate
-  double SPEAR_ROTATE_NORMAL_POS = 0.0;
-  double SPEAR_ROTATE_COMBINE_ANGLE = 0.0;
+  // spear1
+
+  // spear2
+
+  // spear3
+
+  // spear4
+
+  // spear_x
+
+  // spear_y
+
+  // spear_roll
+
+  // spear_pitch1
+
+  // spear_pitch2
 
   // KFS回収の森林の順番
   std::vector<int> KFS_FOREST_NUMBER;
@@ -403,29 +280,24 @@ public:
   // コンストラクタ
   R1MainNode();
 
-  // ========== コールバック関数 =========
-  // modeのcalalback
-  void kfs_fx_mode_status_callback(const std_msgs::msg::Int32::SharedPtr msg);
-  void kfs_fz_mode_status_callback(const std_msgs::msg::Int32::SharedPtr msg);
-  void kfs_fyaw_mode_status_callback(const std_msgs::msg::Int32::SharedPtr msg);
-  void kfs_rx_mode_status_callback(const std_msgs::msg::Int32::SharedPtr msg);
-  void kfs_rz_mode_status_callback(const std_msgs::msg::Int32::SharedPtr msg);
-  void kfs_ryaw_mode_status_callback(const std_msgs::msg::Int32::SharedPtr msg);
-  void front_expand_mode_status_callback(const std_msgs::msg::Int32::SharedPtr msg);
-  void rear_expand_mode_status_callback(const std_msgs::msg::Int32::SharedPtr msg);
-  void pole_x1_mode_status_callback(const std_msgs::msg::Int32::SharedPtr msg);
-  void pole_x2_mode_status_callback(const std_msgs::msg::Int32::SharedPtr msg);
-  void pole_y_mode_status_callback(const std_msgs::msg::Int32::SharedPtr msg);
-  void pole_roger_mode_status_callback(const std_msgs::msg::Int32::SharedPtr msg);
-  void spear_roger1_mode_status_callback(const std_msgs::msg::Int32::SharedPtr msg);
-  void spear_roger2_mode_status_callback(const std_msgs::msg::Int32::SharedPtr msg);
-  void spear_move_mode_status_callback(const std_msgs::msg::Int32::SharedPtr msg);
-  void spear_rotate_mode_status_callback(const std_msgs::msg::Int32::SharedPtr msg);
-  // スイッチのcallback
-  void kfs_front_switch_status_callback(const r1_msgs::msg::GpioInput::SharedPtr msg);
-  void kfs_rear_switch_status_callback(const r1_msgs::msg::GpioInput::SharedPtr msg);
-  void spear_move_switch_status_callback(const r1_msgs::msg::GpioInput::SharedPtr msg);
-  void spear_rotate_switch_status_callback(const r1_msgs::msg::GpioInput::SharedPtr msg);
+  // ========== コールバック関数・ヘルパー関数 =========
+  std::function<void(const std_msgs::msg::Int32::SharedPtr)> create_mode_status_callback(
+    PositionAxisInterface * axis, const std::string & actuator_name);
+  std::function<void(const r1_msgs::msg::GpioInput::SharedPtr)> create_switch_status_callback(
+    bool * switch_status);
+  void register_position_axis(const std::string & name, double * position_ref_alias = nullptr);
+  void register_velocity_axis(
+    const std::string & name, const std::string & topic_name,
+    double * velocity_ref_alias = nullptr);
+  void register_gpio_pwm_output(
+    const std::string & name, double * double_ref_alias = nullptr, bool * bool_ref_alias = nullptr);
+  void register_gpio_servo_output(const std::string & name, int * ref_alias = nullptr);
+  void register_gpio_input(const std::string & name, bool * switch_status);
+  void publish_position_axis(const std::string & name, double pos);
+  void detect_origin_position_axis(const std::string & name);
+  void publish_velocity_axis(const std::string & name, double vel);
+  void publish_gpio_pwm_output(const std::string & name, double ref);
+  void publish_gpio_servo_output(const std::string & name, int ref);
   // joyのcallback
   void joy_callback(const sensor_msgs::msg::Joy::SharedPtr msg);
   void timer_callback(void);
@@ -463,34 +335,24 @@ public:
   void kfs_rx(double pos);
   void kfs_rz(double pos);
   void kfs_ryaw(double pos);
-  // 展開
-  void front_expand(double pos);
-  void rear_expand(double pos);
   // R2昇降
-  void r2_lift(double vel);
-  // ポール回収
-  void pole_x1(double pos);
-  void pole_x2(double pos);
-  void pole_y(double pos);
-  void pole_roger(double pos);
+  void r2_flift(double vel);
+  void r2_rlift(double vel);
   // やり
-  void spear_roger1(double pos);
-  void spear_roger2(double pos);
-  void spear_move(double pos);
-  void spear_rotate(double pos);
+  void spear1(double pos);
+  void spear2(double pos);
+  void spear3(double pos);
+  void spear4(double pos);
+  void spear_x(double pos);
+  void spear_y(double pos);
+  void spear_roll(double angle);
+  void spear_pitch1(double angle);
+  void spear_pitch2(double angle);
   // KFS真空ポンプ・電磁弁
   void kfs_front_pump(double pwm);
   void kfs_rear_pump(double pwm);
   void kfs_front_valve(bool on);
   void kfs_rear_valve(bool on);
-  // ポールサーボ・電磁弁
-  void pole_servo(int n, int angle);
-  void pole_valve(int n, bool on);
-  // やり電磁弁
-  void spear_hand_valve1(bool on);
-  void spear_hand_valve2(bool on);
-  // ブレーキ電磁弁
-  void brake_valve(bool on);
   // 動いていたら危険なアクチュエータは停止する
   // 位置制御は止められないので、そのまま
   // TODO: 位置制御系も止められるようにする
@@ -506,24 +368,19 @@ public:
   void kfs_rx_detect_origin(void);
   void kfs_rz_detect_origin(void);
   void kfs_ryaw_detect_origin(void);
-  // 展開
-  void front_expand_detect_origin(void);
-  void rear_expand_detect_origin(void);
-  // ポール回収
-  void pole_x1_detect_origin(void);
-  void pole_x2_detect_origin(void);
-  void pole_y_detect_origin(void);
-  void pole_roger_detect_origin(void);
   // やり
-  void spear_roger1_detect_origin(void);
-  void spear_roger2_detect_origin(void);
-  void spear_move_detect_origin(void);
-  void spear_rotate_detect_origin(void);
+  void spear1_detect_origin(void);
+  void spear2_detect_origin(void);
+  void spear3_detect_origin(void);
+  void spear4_detect_origin(void);
+  void spear_x_detect_origin(void);
+  void spear_y_detect_origin(void);
+  void spear_roll_detect_origin(void);
+  void spear_pitch1_detect_origin(void);
+  void spear_pitch2_detect_origin(void);
   // ========== センサーの取得 ==========
-  bool get_kfs_front_switch_status(void) { return kfs_front_switch_status_; }
-  bool get_kfs_rear_switch_status(void) { return kfs_rear_switch_status_; }
-  bool get_spear_move_switch_status(void) { return spear_move_switch_status_; }
-  bool get_spear_rotate_switch_status(void) { return spear_rotate_switch_status_; }
+  bool get_kfs_fz_switch_status(void) { return kfs_fz_switch_status_; }
+  bool get_kfs_rz_switch_status(void) { return kfs_rz_switch_status_; }
   // ========== 各状態のタスク ==========
   void idle_task(void);
   void emergency_task(void);
@@ -533,7 +390,6 @@ public:
   // ========== テスト関数 ==========
   void test_front_kfs(void);
   void test_rear_kfs(void);
-  void test_pole(void);
   void test_spear(void);
   void test_r2_lift(void);
   // ========== マニュアルモード ==========
