@@ -229,20 +229,51 @@ r1_main_node:
 
 
 # -------- 足回り ----------
-r1_mecanum_node:
+# r1_mecanum_node:
+#   ros__parameters:
+#   #   # 50mm
+#     wheel_radius: 0.05
+#   #   # 470mm
+#     robot_length: 0.470
+#   #   # 484mm
+#     robot_width: 0.484
+#     speed_limit: 100.0
+#   # モーターの出力は歯数が32（モーター側）と歯数が64（ホイール側）で組みあわせているので
+#   #   # 減速比は32 / 64 = 0.5
+#   #   # ギア比で割った値がモーターの出力となる
+#     gear_ratio: 0.5
+#     motor_inverse: [true, false, false, true]
+#     use_imu: true
+ode:
   ros__parameters:
-  #   # 50mm
-    wheel_radius: 0.05
-  #   # 470mm
-    robot_length: 0.470
-  #   # 484mm
-    robot_width: 0.484
-    speed_limit: 100.0
-  # モーターの出力は歯数が32（モーター側）と歯数が64（ホイール側）で組みあわせているので
-  #   # 減速比は32 / 64 = 0.5
-  #   # ギア比で割った値がモーターの出力となる
-    gear_ratio: 0.5
-    motor_inverse: [true, false, false, true]
+    robot_length: 0.8
+    robot_width: 0.8
+    # 駆動輪半径 [m]
+    wheel_radius: 0.04
+    # wheel 側の減速比
+    wheel_gear_ratio: 1.0
+    # steer 側の減速比
+    steer_gear_ratio: 1.0
+    # wheel 角速度指令の上限
+    wheel_speed_limit: 100.0
+    # steer 角度指令の上限 [rad]
+    steer_angle_limit: 6.28
+    # 操舵反転判定に使う角度差しきい値 [rad]
+    # angle_diff_range: 0.5
+    # linear.x, linear.y をゼロ近傍とみなすしきい値
+    zero_velocity_threshold: 0.01
+    # angular.z をゼロ近傍とみなすしきい値
+    zero_omega_threshold: 0.01
+    # 各 steer 軸のゼロ点補正 [rad]
+    # 順序は [fr, fl, rl, rr]
+    steer_theta_offset: [1.58920410473878, -2.3163109739595136, 1.61834970315034, 0.6519416888528546]
+    # 各 wheel モータの回転方向反転設定
+    # 順序は [fr, fl, rl, rr]
+    wheel_motor_inverse: [false, false, false, false]
+    # 各 steer モータの回転方向反転設定
+    # 順序は [fr, fl, rl, rr]
+    steer_motor_inverse: [false, false, false, false]
+    # true の場合は IMU を使って姿勢補正を行う
     use_imu: true
 r1_odometry_node:
   ros__parameters:
@@ -366,192 +397,173 @@ r1_kfs_ryaw_node:
     use_high_switch: false
     inverse_low_switch_logic: false
     inverse_high_switch_logic: false
-# ---------- 展開 ----------
-# linear motion node
-r1_front_expand_node:
-  ros__parameters:
-    timer_rate: 10.0
-    torque_threshold: 0.5 # Nm
-    origin_detect_threshold_time: 0.5 # 秒
-    # 原点検出のときは、0の方向に戻るので、負の速度にする
-    output_detect_speed: -3.14 # rad/s
-    pos_min: 0.0
-    pos_max: 1.0
-    normal_pos: 0.05
-    # ギアが一周すると2*pi*26mm進むので、半径は26mm
-    radius: 0.026
-    inverse_motor: false
-    use_low_switch: false
-    use_high_switch: false
-    inverse_low_switch_logic: false
-    inverse_high_switch_logic: false
-# linear motion node
-r1_rear_expand_node:
-  ros__parameters:
-    timer_rate: 10.0
-    torque_threshold: 0.5 # Nm
-    origin_detect_threshold_time: 0.5 # 秒
-    # 原点検出のときは、0の方向に戻るので、負の速度にする
-    output_detect_speed: -3.14 # rad/s
-    pos_min: 0.0
-    pos_max: 1.0
-    normal_pos: 0.05
-    # ギアが一周すると2*pi*26mm進むので、半径は26mm
-    radius: 0.026
-    inverse_motor: false
-    use_low_switch: false
-    use_high_switch: false
-    inverse_low_switch_logic: false
-    inverse_high_switch_logic: false
-
-# ---------- ポール回収 ----------
-# linear motion node
-r1_pole_x1_node:
-  ros__parameters:
-    timer_rate: 10.0
-    torque_threshold: 0.5 # Nm
-    origin_detect_threshold_time: 0.5 # 秒
-    # 原点検出のときは、0の方向に戻るので、負の速度にする
-    output_detect_speed: -3.14 # rad/s
-    pos_min: 0.0
-    pos_max: 1.0
-    normal_pos: 0.05
-    # ギアが一周すると2*pi*20mm進むので、半径は20mm
-    radius: 0.02
-    inverse_motor: false
-    use_low_switch: false
-    use_high_switch: false
-    inverse_low_switch_logic: false
-    inverse_high_switch_logic: false
-r1_pole_x2_node:
-  ros__parameters:
-    timer_rate: 10.0
-    torque_threshold: 0.5 # Nm
-    origin_detect_threshold_time: 0.5 # 秒
-    # 原点検出のときは、0の方向に戻るので、負の速度にする
-    output_detect_speed: -3.14 # rad/s
-    pos_min: 0.0
-    pos_max: 1.0
-    normal_pos: 0.05
-    # ギアが一周すると2*pi*20mm進むので、半径は20mm
-    radius: 0.02
-    inverse_motor: true
-    use_low_switch: false
-    use_high_switch: false
-    inverse_low_switch_logic: false
-    inverse_high_switch_logic: false
-# linear motion node
-r1_pole_y_node:
-  ros__parameters:
-    timer_rate: 10.0
-    torque_threshold: 0.5 # Nm
-    origin_detect_threshold_time: 0.5 # 秒
-    # 原点検出のときは、0の方向に戻るので、負の速度にする
-    output_detect_speed: -3.14 # rad/s
-    pos_min: 0.0
-    pos_max: 1.0
-    normal_pos: 0.05
-    # ギアが一周すると2*pi*20mm進むので、半径は20mm
-    radius: 0.02
-    inverse_motor: true
-    use_low_switch: false
-    use_high_switch: false
-    inverse_low_switch_logic: false
-    inverse_high_switch_logic: false
-# linear motion node
-r1_pole_roger_node:
-  ros__parameters:
-    timer_rate: 10.0
-    torque_threshold: 0.5 # Nm
-    origin_detect_threshold_time: 0.5 # 秒
-    # 原点検出のときは、0の方向に戻るので、負の速度にする
-    output_detect_speed: -3.14 # rad/s
-    pos_min: 0.0
-    pos_max: 1.0
-    normal_pos: 0.05
-    # 1回転すると70mm進む。ロジャーなので、倍進むので、半径0.05570423mm
-    radius: 0.05570423
-    inverse_motor: true
-    use_low_switch: false
-    use_high_switch: false
-    inverse_low_switch_logic: false
-    inverse_high_switch_logic: false
 # ---------- やり ----------
 # linear motion node
-r1_spear_roger1_node:
+r1_spear1_node:
   ros__parameters:
     timer_rate: 10.0
     torque_threshold: 0.5 # Nm
     origin_detect_threshold_time: 0.5 # 秒
     # 原点検出のときは、0の方向に戻るので、負の速度にする
-    output_detect_speed: -3.14 # rad/s
-    pos_min: -0.1
-    pos_max: 1.5
-    normal_pos: 0.05
-    # 1回転すると70mm進む。ロジャーなので、倍進むので、半径0.05570423mm
-    radius: 0.05570423
-    inverse_motor: true
-    use_low_switch: false
-    use_high_switch: false
-    inverse_low_switch_logic: false
-    inverse_high_switch_logic: false
-# linear motion node
-r1_spear_roger2_node:
-  ros__parameters:
-    timer_rate: 10.0
-    torque_threshold: 0.5 # Nm
-    origin_detect_threshold_time: 0.5 # 秒
-    # 原点検出のときは、0の方向に戻るので、負の速度にする
-    output_detect_speed: -3.14 # rad/s
-    pos_min: -0.1
-    pos_max: 1.5
-    normal_pos: 0.05
-    # 1回転すると70mm進む。ロジャーなので、倍進むので、半径0.05570423mm
-    radius: 0.05570423
-    inverse_motor: true
-    use_low_switch: false
-    use_high_switch: false
-    inverse_low_switch_logic: false
-    inverse_high_switch_logic: false
-# linear motion node
-r1_spear_move_node:
-  ros__parameters:
-    timer_rate: 10.0
-    # torque_threshold: 0.5 # Nm
-    origin_detect_threshold_time: 0.2 # 秒
-    # 原点検出のときは、0の方向に戻るので、負の速度にする
-    output_detect_speed: -3.14 # rad/s
-    pos_min: -0.1
+    output_detect_speed: -6.28 # rad/s
+    pos_min: 0.0
     pos_max: 1.0
     normal_pos: 0.05
-    # 1回転すると95mm進むので、半径は15.119719mm
-    radius: 0.015119719
+    # ギアが一周すると2*pi*15mm進むので、半径は15mm
+    radius: 0.015
     inverse_motor: false
-    use_low_switch: true
+    use_low_switch: false
+    use_high_switch: false
+    inverse_low_switch_logic: false
+    inverse_high_switch_logic: false
+# linear motion node
+r1_spear2_node:
+  ros__parameters:
+    timer_rate: 10.0
+    torque_threshold: 0.5 # Nm
+    origin_detect_threshold_time: 0.5 # 秒
+    # 原点検出のときは、0の方向に戻るので、負の速度にする
+    output_detect_speed: -6.28 # rad/s
+    pos_min: 0.0
+    pos_max: 1.0
+    normal_pos: 0.05
+    # ギアが一周すると2*pi*15mm進むので、半径は15mm
+    radius: 0.015
+    inverse_motor: false
+    use_low_switch: false
+    use_high_switch: false
+    inverse_low_switch_logic: false
+    inverse_high_switch_logic: false
+# linear motion node
+r1_spear3_node:
+  ros__parameters:
+    timer_rate: 10.0
+    torque_threshold: 0.5 # Nm
+    origin_detect_threshold_time: 0.5 # 秒
+    # 原点検出のときは、0の方向に戻るので、負の速度にする
+    output_detect_speed: -6.28 # rad/s
+    pos_min: 0.0
+    pos_max: 1.0
+    normal_pos: 0.05
+    # ギアが一周すると2*pi*15mm進むので、半径は15mm
+    radius: 0.015
+    inverse_motor: false
+    use_low_switch: false
+    use_high_switch: false
+    inverse_low_switch_logic: false
+    inverse_high_switch_logic: false
+# linear motion node
+r1_spear4_node:
+  ros__parameters:
+    timer_rate: 10.0
+    torque_threshold: 0.5 # Nm
+    origin_detect_threshold_time: 0.5 # 秒
+    # 原点検出のときは、0の方向に戻るので、負の速度にする
+    output_detect_speed: -6.28 # rad/s
+    pos_min: 0.0
+    pos_max: 1.0
+    normal_pos: 0.05
+    # ギアが一周すると2*pi*15mm進むので、半径は15mm
+    radius: 0.015
+    inverse_motor: false
+    use_low_switch: false
+    use_high_switch: false
+    inverse_low_switch_logic: false
+    inverse_high_switch_logic: false
+# linear motion node
+r1_spear_x_node:
+  ros__parameters:
+    timer_rate: 10.0
+    torque_threshold: 0.5 # Nm
+    origin_detect_threshold_time: 0.5 # 秒
+    # 原点検出のときは、0の方向に戻るので、負の速度にする
+    output_detect_speed: -6.28 # rad/s
+    pos_min: 0.0
+    pos_max: 1.0
+    normal_pos: 0.05
+    # ギアが一周すると2*pi*15mm進むので、半径は15mm
+    radius: 0.015
+    inverse_motor: false
+    use_low_switch: false
+    use_high_switch: false
+    inverse_low_switch_logic: false
+    inverse_high_switch_logic: false
+# linear motion node
+r1_spear_y_node:
+  ros__parameters:
+    timer_rate: 10.0
+    torque_threshold: 0.5 # Nm
+    origin_detect_threshold_time: 0.5 # 秒
+    # 原点検出のときは、0の方向に戻るので、負の速度にする
+    output_detect_speed: -6.28 # rad/s
+    pos_min: 0.0
+    pos_max: 1.0
+    normal_pos: 0.05
+    # ギアが一周すると2*pi*15mm進むので、半径は15mm
+    radius: 0.015
+    inverse_motor: false
+    use_low_switch: false
     use_high_switch: false
     inverse_low_switch_logic: false
     inverse_high_switch_logic: false
 # angle motion node
-r1_spear_rotate_node:
+r1_spear_roll_node:
   ros__parameters:
     timer_rate: 10.0
-    # torque_threshold: 0.5 # Nm
-    origin_detect_threshold_time: 0.4 # 秒
+    torque_threshold: 0.5 # Nm
+    origin_detect_threshold_time: 0.5 # 秒
     origin_detect_speed: -3.14 # rad/s
-    angle_min: -1.0
+    angle_min: -5.0
     angle_max: 5.0
     normal_angle: 0.0
-    # ギア比は1.0
-    gear_ratio: 1.0
+    # ギア比で割った値がモーターの角度指令値となる
+    # 減速比は26 / 80 = 0.325
+    gear_ratio: 0.325
     inverse_motor: false
-    use_low_switch: true
+    use_low_switch: false
+    use_high_switch: false
+    inverse_low_switch_logic: false
+    inverse_high_switch_logic: false
+# angle motion node
+r1_spear_pitch1_node:
+  ros__parameters:
+    timer_rate: 10.0
+    torque_threshold: 0.5 # Nm
+    origin_detect_threshold_time: 0.5 # 秒
+    origin_detect_speed: -3.14 # rad/s
+    angle_min: -5.0
+    angle_max: 5.0
+    normal_angle: 0.0
+    # ギア比で割った値がモーターの角度指令値となる
+    # 減速比は26 / 80 = 0.325
+    gear_ratio: 0.325
+    inverse_motor: false
+    use_low_switch: false
+    use_high_switch: false
+    inverse_low_switch_logic: false
+    inverse_high_switch_logic: false
+# angle motion node
+r1_spear_pitch2_node:
+  ros__parameters:
+    timer_rate: 10.0
+    torque_threshold: 0.5 # Nm
+    origin_detect_threshold_time: 0.5 # 秒
+    origin_detect_speed: -3.14 # rad/s
+    angle_min: -5.0
+    angle_max: 5.0
+    normal_angle: 0.0
+    # ギア比で割った値がモーターの角度指令値となる
+    # 減速比は26 / 80 = 0.325
+    gear_ratio: 0.325
+    inverse_motor: false
+    use_low_switch: false
     use_high_switch: false
     inverse_low_switch_logic: false
     inverse_high_switch_logic: false
 r1_machine_manage_node:
   ros__parameters:
     # 足回りの制御方式。"mecanum" または "swerve"
-    drive_mode: "mecanum"
+    drive_mode: "swerve"
     # シャーシ系フィードバックの publish_rate
     chassis_timer_rate: 10.0
     odometry_encoder_timer_rate: 100.0
@@ -559,75 +571,106 @@ r1_machine_manage_node:
     angle_motion_timer_rate: 10.0
     velocity_control_timer_rate: 10.0
     gpio_timer_rate: 10.0
-    # 独ステ使用時に wheel 系へ流す control_type
-    swerve_wheel_control_type: "VELOCITY"
-    # 独ステ使用時に steer 系へ流す control_type
-    swerve_steer_control_type: "POSITION"
 # IMU
 bno086_node:
   ros__parameters:
-    port: "/dev/ttyUSB0"
+    port: "/dev/serial/by-id/usb-FTDI_FT231X_USB_UART_D30FJEIM-if00-port0"
 
-# 足回り
+# 足回り メカナム
+# sabacan_robomasv2_node_id1:
+#   ros__parameters:
+#     board_id: 1
+#     enable_initialize: false
+#     publish_timer_rate: 100.0
+#     motor_type: ["VESC", "VESC", "VESC", "VESC"]
+#     control_type: ["VELOCITY", "VELOCITY", "VELOCITY", "VELOCITY"]
+#     # モータ番号0と1はABS_SPD,ABS_POSをフィードバック
+#     # モータ番号2と3はフィードバックなし
+#     monitor_reg1: [0x0C00000000000000, 0x0C00000000000000, 0x0, 0x0]
+#     # モータ番号0と1はMOTOR_STATE,ABS_SPD,ABS_POSをフィードバック
+#     # モータ番号2と3はMOTOR_STATEのみフィードバック
+#     # monitor_reg1: [0x0C00000000000002, 0x0C00000000000002, 0x2, 0x2]
+#     # VESC_CURRENT + VESC_ERPMをフィードバック
+#     monitor_reg2: [0x18, 0x18, 0x18, 0x18]
+#     monitor_period: 10
+# 独ステホイール
 sabacan_robomasv2_node_id1:
   ros__parameters:
     board_id: 1
-    enable_initialize: false
+    # 起動時に基板初期化シーケンスを流すかどうか。独ステは初期化を行わないとおかしくなるのでtrueにする。
+    enable_initialize: true
+    # status publish 周期 [Hz]
     publish_timer_rate: 100.0
+    # 接続されているモータ種別
+    # board1: 0=右前タイヤ, 1=左前タイヤ, 2=左後タイヤ, 3=右後タイヤ
     motor_type: ["VESC", "VESC", "VESC", "VESC"]
+    # 制御モード
     control_type: ["VELOCITY", "VELOCITY", "VELOCITY", "VELOCITY"]
-    # モータ番号0と1はABS_SPD,ABS_POSをフィードバック
-    # モータ番号2と3はフィードバックなし
-    monitor_reg1: [0x0C00000000000000, 0x0C00000000000000, 0x0, 0x0]
-    # モータ番号0と1はMOTOR_STATE,ABS_SPD,ABS_POSをフィードバック
-    # モータ番号2と3はMOTOR_STATEのみフィードバック
-    # monitor_reg1: [0x0C00000000000002, 0x0C00000000000002, 0x2, 0x2]
-    # VESC_CURRENT + VESC_ERPMをフィードバック
-    monitor_reg2: [0x18, 0x18, 0x18, 0x18]
-    monitor_period: 10
-    # monitor_period: 0
-
-# KFS回収前、展開補助前
+    # VESCの極数
+    vesc_pole: [28, 28, 28, 28]
+    # VESCなので monitor_reg1は0。monitor_reg2はVESC_ERPMを有効。
+    monitor_reg1: [0x0, 0x0, 0x0,0x0]
+    monitor_reg2: [0x10, 0x10, 0x10, 0x10]
+    monitor_period: 100
+# 独ステ旋回
 sabacan_robomasv2_node_id2:
   ros__parameters:
     board_id: 2
-    enable_initialize: false
-    publish_timer_rate: 10.0
+    # 起動時に基板初期化シーケンスを流すかどうか。独ステは初期化を行わないとおかしくなるのでtrueにする。
+    enable_initialize: true
+    # status publish 周期 [Hz]
+    publish_timer_rate: 100.0
+    # motor_number 0..3 に接続されているモータ種別
+    # board2: 0=右前ステア, 1=左前ステア, 2=左後ステア, 3=右後ステア
     motor_type: ["C610", "C610", "C610", "C610"]
+    # 制御モード
     control_type: ["POS", "POS", "POS", "POS"]
+    # アブソリュートエンコーダの有効/無効。すべて有効にする
+    abs_enc_en: [true, true, true, true]
+    # アブソリュートエンコーダのギア比。反転する。
+    abs_gear_ratio: [-1.0, -1.0, -1.0, -1.0]
+    # 速度 P ゲイン。C610のみ有効
     speed_gain_p: [0.5, 0.5, 0.5, 0.5]
+    # 速度 I ゲイン。C610のみ有効
     speed_gain_i: [0.2, 0.2, 0.2, 0.2]
+    # 速度 D ゲイン。C610のみ有効
     speed_gain_d: [0.0, 0.0, 0.0, 0.0]
-    torque_lim: [0.9, 0.9, 0.9, 1.0]
+    # トルク制限。C610のみ有効
+    torque_lim: [1.0, 1.0, 1.0, 1.0]
+    # 位置 P ゲイン。C610のみ有効
     pos_gain_p: [6.0, 6.0, 6.0, 6.0]
+    # 位置 I ゲイン。C610のみ有効
     pos_gain_i: [3.0, 3.0, 3.0, 3.0]
+    # 位置 D ゲイン。C610のみ有効
     pos_gain_d: [0.0, 0.0, 0.0, 0.0]
-    speed_lim: [20.0, 20.0, 20.0, 10.0]
-    # TRQ+SPD+POSをフィードバック
-    monitor_reg1: [0x0001000100010000, 0x0001000100010000, 0x0001000100010000, 0x0001000100010000]
-    # TRQ+SPD+POS+MOTOR_STATEをフィードバック
-    # monitor_reg1: [0x0001000100010002, 0x0001000100010002, 0x0001000100010002, 0x0001000100010002]
-    # VESCのフィードバックは無効化
-    monitor_reg2: [0, 0, 0, 0]
+    # 速度上限。C610のみ有効
+    speed_lim: [6.28, 6.28, 6.28, 6.28]
+    # アブソの回転回数、ステアがバグるのを防止するため、0に設定
+    abs_turn_cnt: [0, 0, 0, 0]
+    # VESCの極数
+    vesc_pole: [0, 0, 0, 0]
+    # monitor_reg1のABS_SPDとABS_POSを有効。monitor_reg2は無効
+    monitor_reg1: [0x0C00000000000000, 0x0C00000000000000, 0x0C00000000000000,0x0C00000000000000]
+    monitor_reg2: [0x0, 0x0, 0x0, 0x0]
     monitor_period: 100
-    # monitor_period: 0
-# KFS回収後、展開補助後
+
+# KFS回収前、昇降前
 sabacan_robomasv2_node_id3:
   ros__parameters:
     board_id: 3
     enable_initialize: false
     publish_timer_rate: 10.0
-    # motor_number 3だけSESCなので、ゲインを半分にしている
-    motor_type: ["C610", "C610", "C610", "C610"]
-    control_type: ["POS", "POS", "POS", "POS"]
-    speed_gain_p: [0.5, 0.5, 0.5, 0.25]
-    speed_gain_i: [0.2, 0.2, 0.2, 0.1]
+    # kfs_fx, kfs_fz, kfs_fyaw, r2_flift
+    motor_type: ["C610", "C610", "C610", "C620"]
+    control_type: ["POS", "POS", "POS", "VELOCITY"]
+    speed_gain_p: [0.5, 0.5, 0.5, 0.5]
+    speed_gain_i: [0.2, 0.2, 0.2, 0.2]
     speed_gain_d: [0.0, 0.0, 0.0, 0.0]
-    torque_lim: [0.9, 0.9, 0.9, 1.0]
+    torque_lim: [1.0, 1.0, 1.0, 4.5]
     pos_gain_p: [6.0, 6.0, 6.0, 6.0]
-    pos_gain_i: [3.0, 3.0, 3.0, 0.0]
+    pos_gain_i: [3.0, 3.0, 3.0, 3.0]
     pos_gain_d: [0.0, 0.0, 0.0, 0.0]
-    speed_lim: [20.0, 20.0, 20.0, 10.0]
+    speed_lim: [20.0, 20.0, 20.0, 20.0]
     # TRQ+SPD+POSをフィードバック
     monitor_reg1: [0x0001000100010000, 0x0001000100010000, 0x0001000100010000, 0x0001000100010000]
     # TRQ+SPD+POS+MOTOR_STATEをフィードバック
@@ -635,13 +678,37 @@ sabacan_robomasv2_node_id3:
     # VESCのフィードバックは無効化
     monitor_reg2: [0, 0, 0, 0]
     monitor_period: 100
-    # monitor_period: 0
-# ポール回収
+# KFS回収後、昇降後
 sabacan_robomasv2_node_id4:
   ros__parameters:
     board_id: 4
     enable_initialize: false
     publish_timer_rate: 10.0
+    # kfs_rx, kfs_rz, kfs_ryaw, r2_rlift
+    motor_type: ["C610", "C610", "C610", "C620"]
+    control_type: ["POS", "POS", "POS", "VELOCITY"]
+    speed_gain_p: [0.5, 0.5, 0.5, 0.5]
+    speed_gain_i: [0.2, 0.2, 0.2, 0.2]
+    speed_gain_d: [0.0, 0.0, 0.0, 0.0]
+    torque_lim: [1.0, 1.0, 1.0, 4.5]
+    pos_gain_p: [6.0, 6.0, 6.0, 6.0]
+    pos_gain_i: [3.0, 3.0, 3.0, 0.0]
+    pos_gain_d: [0.0, 0.0, 0.0, 0.0]
+    speed_lim: [20.0, 20.0, 20.0, 20.0]
+    # TRQ+SPD+POSをフィードバック
+    monitor_reg1: [0x0001000100010000, 0x0001000100010000, 0x0001000100010000, 0x0001000100010000]
+    # TRQ+SPD+POS+MOTOR_STATEをフィードバック
+    # monitor_reg1: [0x0001000100010002, 0x0001000100010002, 0x0001000100010002, 0x0001000100010002]
+    # VESCのフィードバックは無効化
+    monitor_reg2: [0, 0, 0, 0]
+    monitor_period: 100
+# やり
+sabacan_robomasv2_node_id5:
+  ros__parameters:
+    board_id: 5
+    enable_initialize: false
+    publish_timer_rate: 10.0
+    # spear1, spear2, spear3, spear4
     motor_type: ["C610", "C610", "C610", "C610"]
     control_type: ["POS", "POS", "POS", "POS"]
     speed_gain_p: [0.5, 0.5, 0.5, 0.5]
@@ -651,7 +718,7 @@ sabacan_robomasv2_node_id4:
     pos_gain_p: [6.0, 6.0, 6.0, 6.0]
     pos_gain_i: [3.0, 3.0, 3.0, 3.0]
     pos_gain_d: [0.0, 0.0, 0.0, 0.0]
-    speed_lim: [20.0, 20.0, 10.0, 10.0]
+    speed_lim: [20.0, 20.0, 20.0, 20.0]
     # TRQ+SPD+POSをフィードバック
     monitor_reg1: [0x0001000100010000, 0x0001000100010000, 0x0001000100010000, 0x0001000100010000]
     # TRQ+SPD+POS+MOTOR_STATEをフィードバック
@@ -659,103 +726,95 @@ sabacan_robomasv2_node_id4:
     # VESCのフィードバックは無効化
     monitor_reg2: [0, 0, 0, 0]
     monitor_period: 100
-    # monitor_period: 0
 # やり
-sabacan_robomasv2_node_id5:
-  ros__parameters:
-    board_id: 5
-    enable_initialize: false
-    publish_timer_rate: 10.0
-    motor_type: ["C610", "C610", "C610", "C610"]
-    control_type: ["POS", "POS", "POS", "POS"]
-    speed_gain_p: [0.5, 0.5, 0.5, 0.5]
-    speed_gain_i: [0.2, 0.2, 0.2, 0.2]
-    speed_gain_d: [0.0, 0.0, 0.0, 0.0]
-    torque_lim: [1.0, 1.0, 1.0, 0.7]
-    pos_gain_p: [6.0, 6.0, 6.0, 6.0]
-    pos_gain_i: [3.0, 3.0, 3.0, 0.0]
-    pos_gain_d: [0.0, 0.0, 0.0, 0.0]
-    speed_lim: [10.0, 10.0, 15.0, 10.0]
-    # TRQ+SPD+POSをフィードバック
-    monitor_reg1: [0x0001000100010000, 0x0001000100010000, 0x0001000100010000, 0x0001000100010000]
-    # TRQ+SPD+POS+MOTOR_STATEをフィードバック
-    # monitor_reg1: [0x0001000100010002, 0x0001000100010002, 0x0001000100010002, 0x0001000100010002]
-    # VESCのフィードバックは無効化
-    monitor_reg2: [0, 0, 0, 0]
-    monitor_period: 100
-    # monitor_period: 0
-# R2昇降
 sabacan_robomasv2_node_id6:
   ros__parameters:
     board_id: 6
     enable_initialize: false
     publish_timer_rate: 10.0
-    motor_type: ["C620", "C610", "C610", "C610"]
-    control_type: ["VELOCITY", "POS", "POS", "POS"]
+    # spear_x, spear_y, spear_pitch1, spear_pitch2
+    motor_type: ["C610", "C620", "C620", "C620"]
+    control_type: ["POS", "POS", "POS", "POS"]
     speed_gain_p: [0.5, 0.5, 0.5, 0.5]
     speed_gain_i: [0.2, 0.2, 0.2, 0.2]
     speed_gain_d: [0.0, 0.0, 0.0, 0.0]
-    torque_lim: [5.5, 1.0, 1.0, 0.5]
+    torque_lim: [1.0, 4.5, 4.5, 4.5]
     pos_gain_p: [6.0, 6.0, 6.0, 6.0]
     pos_gain_i: [3.0, 3.0, 3.0, 3.0]
     pos_gain_d: [0.0, 0.0, 0.0, 0.0]
-    speed_lim: [15.0, 10.0, 10.0, 10.0]
+    speed_lim: [15.0, 15.0, 15.0, 15.0]
     # TRQ+SPD+POSをフィードバック
-    monitor_reg1: [0x0001000100010000, 0x0, 0x0, 0x0]
+    monitor_reg1: [0x0001000100010000, 0x0001000100010000, 0x0001000100010000, 0x0001000100010000]
     # TRQ+SPD+POS+MOTOR_STATEをフィードバック
     # monitor_reg1: [0x0001000100010002, 0x0001000100010002, 0x0001000100010002, 0x0001000100010002]
     # VESCのフィードバックは無効化
     monitor_reg2: [0, 0, 0, 0]
     monitor_period: 100
-    # monitor_period: 0
-# PWM出力
+# 計測輪
+sabacan_robomasv2_node_id7:
+  ros__parameters:
+    board_id: 7
+    enable_initialize: false
+    publish_timer_rate: 100.0
+    # none, none, x, y
+    # monitor_reg1のABS_SPDとABS_POSを有効。monitor_reg2は無効
+    monitor_reg1: [0x0, 0x0, 0x0C00000000000000,0x0C00000000000000]
+    monitor_reg2: [0x0, 0x0, 0x0, 0x0]
+    monitor_period: 10
 sabacan_gpio_node_id1:
   ros__parameters:
     board_id: 1
     enable_initialize: false
     publish_timer_rate: 10.0
-    pin_type: ["OUTPUT_PWM", "OUTPUT_PWM", "OUTPUT_PWM", "OUTPUT_PWM", "OUTPUT_PWM", "OUTPUT_PWM", "OUTPUT_PWM", "OUTPUT_PWM", "OUTPUT_PWM"]
-    pwm_freq: [1000, 1000, 1000, 1000, 1000, 1000, 1000, 1000, 1000]
-    # monitor_regは無効
-    monitor_reg: 0
-    monitor_period: 0
-# センサー入力
+    pin_type: ["OUTPUT_PWM", "OUTPUT_PWM", "OUTPUT_PWM", "OUTPUT_PWM", "OUTPUT_PWM", "OUTPUT_PWM", "OUTPUT_PWM", "INPUT", "INPUT"]
+    pwm_freq: [1000, 1000, 1000, 1000, 1000, 1000, 1000, 0, 0]
+    # monitor_regはPORT_READを有効化
+    monitor_reg: 0x4
+    monitor_period: 100
+# やり用
 sabacan_gpio_node_id2:
   ros__parameters:
     board_id: 2
     enable_initialize: false
     publish_timer_rate: 10.0
-    pin_type: ["INPUT", "INPUT", "INPUT", "INPUT", "INPUT", "INPUT", "INPUT", "OUTPUT_PWM", "OUTPUT_PWM"]
-    pwm_freq: [0, 0, 0, 0, 0, 0, 0, 1000, 1000]
-    # monitor_regはPORT_READを有効化
-    monitor_reg: 0x4
-    monitor_period: 100
-    # monitor_period: 0
-# ポール用
+    pin_type: ["OUTPUT_PWM", "OUTPUT_PWM", "OUTPUT_PWM", "OUTPUT_PWM", "OUTPUT_PWM", "OUTPUT_PWM", "OUTPUT_PWM", "OUTPUT_PWM", "OUTPUT_PWM"]
+    pwm_freq: [1000, 1000, 1000, 1000, 1000, 1000, 1000, 1000, 1000]
+    # monitor_regは無効化
+    monitor_reg: 0
+    monitor_period: 0
+# やり用、現在は未使用
 sabacan_gpio_node_id3:
   ros__parameters:
     board_id: 3
     enable_initialize: false
     publish_timer_rate: 10.0
-    # 0~3はサーボ、4~7は電磁弁
-    pin_type: ["OUTPUT_SERVO", "OUTPUT_SERVO", "OUTPUT_SERVO", "OUTPUT_SERVO", "OUTPUT_PWM", "OUTPUT_PWM", "OUTPUT_PWM", "OUTPUT_PWM", "OUTPUT_PWM"]
-    pwm_freq: [0, 0, 0, 0, 1000, 1000, 1000, 1000, 1000]
-    servo_max_angle: [270, 270, 270, 270, 270, 270, 270, 270, 270]
-    # monitor_regは無効
+    pin_type: ["OUTPUT_PWM", "OUTPUT_PWM", "OUTPUT_PWM", "OUTPUT_PWM", "OUTPUT_PWM", "OUTPUT_PWM", "OUTPUT_PWM", "OUTPUT_PWM", "OUTPUT_PWM"]
+    pwm_freq: [1000, 1000, 1000, 1000, 1000, 1000, 1000, 1000, 1000]
+    # monitor_regは無効化
     monitor_reg: 0
     monitor_period: 0
-
 sabacan_power_node_id0:
   ros__parameters:
     board_id: 0
     enable_initialize: false
     publish_timer_rate: 10.0
     monitor_period: 100
-    # monitor_period: 0
 
 sabacan_led_node_id1:
   ros__parameters:
     board_id: 1
     enable_initialize: false
 
-# sabacan_single_controlのパラメータのみ、launchファイルに記述されている
+# can1
+sabacan_robstride_node_id2:
+  ros__parameters:
+    board_id: 2 # 使用するID
+    robstride_type: "EL05"
+    # 制御パラメータ
+    velocity_mode_limit_cur: 11.0
+    velocity_mode_acc_rad: 20.0
+    csp_mode_limit_spd: 50.0
+    pp_mode_vel_max: 10.0
+    pp_mode_acc_set: 10.0
+    espcan_time_ms: 100
+    # espcan_time_ms: 10

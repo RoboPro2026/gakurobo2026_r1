@@ -134,16 +134,16 @@
 | `angle_motion_timer_rate` | double | `100.0` | `AngleMotionChannel` 系 status 全体の publish 周期 [Hz]。 |
 | `velocity_control_timer_rate` | double | `100.0` | 速度制御系 status 全体の publish 周期 [Hz]。現状は `r2_lift` に使います。 |
 | `gpio_timer_rate` | double | `100.0` | GPIO 入力状態 publish 周期 [Hz]。 |
-| `swerve_wheel_control_type` | string | `"VELOCITY"` | 独ステ wheel 系へ流す control_type。 |
-| `swerve_steer_control_type` | string | `"POSITION"` | 独ステ steer 系へ流す control_type。 |
-
 補足:
 
-- `drive_mode`、`swerve_wheel_control_type`、`swerve_steer_control_type` は実行中の `ros2 param set` で更新できます。
+- `drive_mode` は実行中の `ros2 param set` で更新できます。
 - timer 系パラメータは起動時に読み込まれます。
 - 独ステの board_id / motor_number はソースコード内で固定しています。
   - wheel 側: `[1, 0]`, `[1, 1]`, `[1, 2]`, `[1, 3]`
   - steer 側: `[2, 0]`, `[2, 1]`, `[2, 2]`, `[2, 3]`
+- 独ステの control_type もソースコード内で固定しています。
+  - wheel 側: `VELOCITY`
+  - steer 側: `POSITION`
 - 非常停止中の open-loop 停止はパラメータではなく固定動作です。
   - Robomas: `TORQUE 0.0`
   - VESC: `CURRENT 0.0`

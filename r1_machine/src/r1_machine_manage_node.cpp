@@ -42,6 +42,8 @@
 
 constexpr uint32_t kEmsBitMask = 1u << 0;
 constexpr uint32_t kSoftEmsBitMask = 1u << 1;
+constexpr const char * kSwerveWheelControlType = "VELOCITY";
+constexpr const char * kSwerveSteerControlType = "POSITION";
 
 /**
  * @brief 足回りの制御方式を表す列挙型。
@@ -241,17 +243,14 @@ struct MotorCommandChannel
    * @param ref_topic_name 指令値 topic
    * @param status_topic_name 状態出力 topic
    * @param debug_topic_name デバッグ出力 topic
-   * @param channel_availability 有効となる drive mode
    */
   MotorCommandChannel(
     BoardInfo info, const char * ref_topic_name, const char * status_topic_name,
-    const char * debug_topic_name,
-    ChannelAvailability channel_availability = ChannelAvailability::MecanumOnly)
+    const char * debug_topic_name)
   : board_info(info),
     ref_topic(ref_topic_name),
     status_topic(status_topic_name),
-    debug_topic(debug_topic_name),
-    availability(channel_availability)
+    debug_topic(debug_topic_name)
   {
   }
 
@@ -259,7 +258,6 @@ struct MotorCommandChannel
   const char * ref_topic{};
   const char * status_topic{};
   const char * debug_topic{};
-  ChannelAvailability availability{ChannelAvailability::MecanumOnly};
   SingleRefPublisher ref_publisher;
   SubscriptionPtr<r1_msgs::msg::MotorRef> ref_subscription;
   PublisherPtr<StatusMsgT> status_publisher;
@@ -448,10 +446,6 @@ private:
   void load_drive_configuration()
   {
     drive_mode_ = parse_drive_mode(this->declare_parameter<std::string>("drive_mode", "mecanum"));
-    swerve_wheel_control_type_ = normalize_control_type(
-      this->declare_parameter<std::string>("swerve_wheel_control_type", "VELOCITY"));
-    swerve_steer_control_type_ = normalize_control_type(
-      this->declare_parameter<std::string>("swerve_steer_control_type", "POSITION"));
   }
 
   /**
@@ -479,16 +473,6 @@ private:
           result.reason = e.what();
           return result;
         }
-      } else if (name == "swerve_wheel_control_type") {
-        swerve_wheel_control_type_ = normalize_control_type(parameter.as_string());
-        RCLCPP_INFO(
-          this->get_logger(), "Updated parameter: swerve_wheel_control_type = %s",
-          swerve_wheel_control_type_.c_str());
-      } else if (name == "swerve_steer_control_type") {
-        swerve_steer_control_type_ = normalize_control_type(parameter.as_string());
-        RCLCPP_INFO(
-          this->get_logger(), "Updated parameter: swerve_steer_control_type = %s",
-          swerve_steer_control_type_.c_str());
       }
     }
 
@@ -578,9 +562,9 @@ private:
    */
   void initialize_machine_interfaces()
   {
-    initialize_motor_channels(linear_motion_channels_);
-    initialize_motor_channels(angle_motion_channels_);
-    initialize_motor_channels(velocity_control_channels_);
+    initialize_linear_motion_channels();
+    initialize_angle_motion_channels();
+    initialize_velocity_control_channels();
 
     initialize_gpio_float_output_channels(gpio_float_output_channels_);
     initialize_gpio_int_output_channels(gpio_int_output_channels_);
@@ -631,25 +615,56 @@ private:
   }
 
   /**
+   * @brief LinearMotionChannel 系の購読と publisher を初期化する。
+   */
+  void initialize_linear_motion_channels()
+  {
+    initialize_motor_channels(
+      linear_motion_channels_, [this]() { return drive_mode_ == DriveMode::Mecanum; });
+  }
+
+  /**
+   * @brief AngleMotionChannel 系の購読と publisher を初期化する。
+   */
+  void initialize_angle_motion_channels()
+  {
+    initialize_motor_channels(
+      angle_motion_channels_, [this]() { return drive_mode_ == DriveMode::Mecanum; });
+  }
+
+  /**
+   * @brief 速度制御系チャネルの購読と publisher を初期化する。
+   */
+  void initialize_velocity_control_channels()
+  {
+    initialize_motor_channels(velocity_control_channels_, []() { return true; });
+  }
+
+  /**
    * @brief 同種のモータチャネル群を初期化する。
    * @tparam StatusMsgT フィードバックに使うメッセージ型
+   * @tparam EnabledFn そのチャネル群が現在有効かを返す関数型
    * @param channels 初期化対象のチャネル配列
+   * @param is_enabled 現在の drive mode などに基づく有効判定
    */
-  template <typename StatusMsgT>
-  void initialize_motor_channels(std::vector<MotorCommandChannel<StatusMsgT>> & channels)
+  template <typename StatusMsgT, typename EnabledFn>
+  void initialize_motor_channels(
+    std::vector<MotorCommandChannel<StatusMsgT>> & channels, EnabledFn is_enabled)
   {
     for (auto & channel : channels) {
-      initialize_motor_channel(channel);
+      initialize_motor_channel(channel, is_enabled);
     }
   }
 
   /**
    * @brief 単一のモータチャネルを初期化する。
    * @tparam StatusMsgT フィードバックに使うメッセージ型
+   * @tparam EnabledFn そのチャネルが現在有効かを返す関数型
    * @param channel 初期化対象のチャネル
+   * @param is_enabled 現在の drive mode などに基づく有効判定
    */
-  template <typename StatusMsgT>
-  void initialize_motor_channel(MotorCommandChannel<StatusMsgT> & channel)
+  template <typename StatusMsgT, typename EnabledFn>
+  void initialize_motor_channel(MotorCommandChannel<StatusMsgT> & channel, EnabledFn is_enabled)
   {
     channel.ref_publisher = create_single_ref_publisher(channel.board_info);
     channel.status_publisher = this->create_publisher<StatusMsgT>(channel.status_topic, 10);
@@ -657,8 +672,9 @@ private:
 
     auto * channel_ptr = &channel;
     channel.ref_subscription = this->create_subscription<r1_msgs::msg::MotorRef>(
-      channel.ref_topic, 10, [this, channel_ptr](const r1_msgs::msg::MotorRef::SharedPtr msg) {
-        if (!is_channel_enabled(channel_ptr->availability)) {
+      channel.ref_topic, 10,
+      [this, channel_ptr, is_enabled](const r1_msgs::msg::MotorRef::SharedPtr msg) {
+        if (!is_enabled()) {
           return;
         }
         publish_motor_ref(channel_ptr->board_info, channel_ptr->ref_publisher, *msg);
@@ -989,16 +1005,13 @@ private:
 
   /**
    * @brief チャネル配列に含まれる全モータへ open-loop 停止指令を publish する。
-   * @tparam ChannelT board_info / ref_publisher / availability を持つチャネル型
+   * @tparam ChannelT board_info / ref_publisher を持つチャネル型
    * @param channels 停止指令を送りたいチャネル配列
    */
   template <typename ChannelT>
   void publish_open_loop_stop_channels(const std::vector<ChannelT> & channels) const
   {
     for (const auto & channel : channels) {
-      if (!is_channel_enabled(channel.availability)) {
-        continue;
-      }
       publish_open_loop_stop(channel.board_info, channel.ref_publisher);
     }
   }
@@ -1008,11 +1021,14 @@ private:
    */
   void publish_open_loop_stop_to_enabled_motors() const
   {
-    publish_open_loop_stop_channels(mecanum_channels_);
-    publish_open_loop_stop_channels(swerve_wheel_channels_);
-    publish_open_loop_stop_channels(swerve_steer_channels_);
-    publish_open_loop_stop_channels(linear_motion_channels_);
-    publish_open_loop_stop_channels(angle_motion_channels_);
+    if (drive_mode_ == DriveMode::Mecanum) {
+      publish_open_loop_stop_channels(mecanum_channels_);
+      publish_open_loop_stop_channels(linear_motion_channels_);
+      publish_open_loop_stop_channels(angle_motion_channels_);
+    } else {
+      publish_open_loop_stop_channels(swerve_wheel_channels_);
+      publish_open_loop_stop_channels(swerve_steer_channels_);
+    }
     publish_open_loop_stop_channels(velocity_control_channels_);
   }
 
@@ -1055,8 +1071,10 @@ private:
     const auto motor_status = to_motor_status(*msg);
 
     update_drive_status(receive, *msg, motor_status);
-    update_motor_channels(linear_motion_channels_, receive, *msg, motor_status);
-    update_motor_channels(angle_motion_channels_, receive, *msg, motor_status);
+    if (drive_mode_ == DriveMode::Mecanum) {
+      update_motor_channels(linear_motion_channels_, receive, *msg, motor_status);
+      update_motor_channels(angle_motion_channels_, receive, *msg, motor_status);
+    }
     update_motor_channels(velocity_control_channels_, receive, *msg, motor_status);
   }
 
@@ -1064,8 +1082,7 @@ private:
    * @brief SabacanPowerStatus を受け取り、非常停止ラッチ状態を更新する。
    * @param msg 受信した電源状態メッセージ
    */
-  void sabacan_power_status_callback(
-    const sabacan_msgs::msg::SabacanPowerStatus::SharedPtr msg)
+  void sabacan_power_status_callback(const sabacan_msgs::msg::SabacanPowerStatus::SharedPtr msg)
   {
     const bool emergency_active = is_emergency_active(*msg);
     if (emergency_feedback_active_ == emergency_active) {
@@ -1097,8 +1114,7 @@ private:
 
     if (emergency_feedback_active_) {
       RCLCPP_WARN(
-        this->get_logger(),
-        "ignored /r1_machine_initialize because sabacan is still in emergency");
+        this->get_logger(), "ignored /r1_machine_initialize because sabacan is still in emergency");
       return;
     }
     if (!emergency_reinit_required_) {
@@ -1234,7 +1250,7 @@ private:
     MotorCommandChannel<StatusMsgT> & channel, const BoardInfo & receive,
     const sabacan_msgs::msg::SabacanRobomasStatus & msg, const r1_msgs::msg::Motor & motor_status)
   {
-    if (!is_channel_enabled(channel.availability) || !(receive == channel.board_info)) {
+    if (!(receive == channel.board_info)) {
       return false;
     }
 
@@ -1285,8 +1301,9 @@ private:
       msg->rr_wheel_speed,
     };
 
-    const std::size_t channel_count =
-      mecanum_channels_.size() < wheel_speeds.size() ? mecanum_channels_.size() : wheel_speeds.size();
+    const std::size_t channel_count = mecanum_channels_.size() < wheel_speeds.size()
+                                        ? mecanum_channels_.size()
+                                        : wheel_speeds.size();
     for (std::size_t i = 0; i < channel_count; ++i) {
       publish_motor_ref(
         mecanum_channels_[i].board_info, mecanum_channels_[i].ref_publisher, "VELOCITY",
@@ -1317,19 +1334,21 @@ private:
       msg->theta3,
     };
 
-    const std::size_t wheel_channel_count =
-      swerve_wheel_channels_.size() < wheel_refs.size() ? swerve_wheel_channels_.size() : wheel_refs.size();
-    const std::size_t steer_channel_count =
-      swerve_steer_channels_.size() < steer_refs.size() ? swerve_steer_channels_.size() : steer_refs.size();
+    const std::size_t wheel_channel_count = swerve_wheel_channels_.size() < wheel_refs.size()
+                                              ? swerve_wheel_channels_.size()
+                                              : wheel_refs.size();
+    const std::size_t steer_channel_count = swerve_steer_channels_.size() < steer_refs.size()
+                                              ? swerve_steer_channels_.size()
+                                              : steer_refs.size();
     const std::size_t channel_count =
       wheel_channel_count < steer_channel_count ? wheel_channel_count : steer_channel_count;
     for (std::size_t i = 0; i < channel_count; ++i) {
       publish_motor_ref(
         swerve_wheel_channels_[i].board_info, swerve_wheel_channels_[i].ref_publisher,
-        swerve_wheel_control_type_, wheel_refs[i]);
+        kSwerveWheelControlType, wheel_refs[i]);
       publish_motor_ref(
         swerve_steer_channels_[i].board_info, swerve_steer_channels_[i].ref_publisher,
-        swerve_steer_control_type_, steer_refs[i]);
+        kSwerveSteerControlType, steer_refs[i]);
     }
   }
 
@@ -1376,9 +1395,6 @@ private:
   void publish_status_channels(const std::vector<MotorCommandChannel<StatusMsgT>> & channels) const
   {
     for (const auto & channel : channels) {
-      if (!is_channel_enabled(channel.availability)) {
-        continue;
-      }
       channel.status_publisher->publish(channel.value);
     }
   }
@@ -1388,6 +1404,9 @@ private:
    */
   void publish_linear_motion_status()
   {
+    if (drive_mode_ != DriveMode::Mecanum) {
+      return;
+    }
     publish_status_channels(linear_motion_channels_);
   }
 
@@ -1396,16 +1415,16 @@ private:
    */
   void publish_angle_motion_status()
   {
+    if (drive_mode_ != DriveMode::Mecanum) {
+      return;
+    }
     publish_status_channels(angle_motion_channels_);
   }
 
   /**
    * @brief 速度制御系チャネルの状態を publish する。
    */
-  void publish_velocity_control_status()
-  {
-    publish_status_channels(velocity_control_channels_);
-  }
+  void publish_velocity_control_status() { publish_status_channels(velocity_control_channels_); }
 
   /**
    * @brief GPIO 入力の状態を publish する。
@@ -1433,8 +1452,6 @@ private:
 
   // drive mode と足回りの制御設定。
   DriveMode drive_mode_{DriveMode::Mecanum};
-  std::string swerve_wheel_control_type_{"VELOCITY"};
-  std::string swerve_steer_control_type_{"POSITION"};
   bool emergency_feedback_active_{false};
   bool emergency_reinit_required_{false};
   std::vector<MotorTypeCacheEntry> motor_type_cache_;
@@ -1448,8 +1465,8 @@ private:
     MecanumWheelChannel{{1, 3}, "/debug_mecanum_rr_motor_status"},
   };
   std::vector<BoardInfo> odometry_encoder_channels_{
-    BoardInfo{1, 0},
-    BoardInfo{1, 1},
+    BoardInfo{7, 2},
+    BoardInfo{7, 3},
   };
   // 独ステの board_id / motor_number は頻繁に変えない前提でソース内に固定する。
   std::vector<DriveMotorChannel> swerve_wheel_channels_{
@@ -1468,79 +1485,34 @@ private:
   // 足回り以外のモータチャネルは、機構別ではなく役割別の vector でまとめて保持する。
   std::vector<MotorStatusChannel> velocity_control_channels_{
     MotorStatusChannel{
-      {6, 0},
-      "/r2_lift_motor_ref",
-      "/r2_lift_motor_status",
-      "/debug_r2_lift_motor_status",
-      ChannelAvailability::Both},
+      {3, 3}, "/r2_flift_motor_ref", "/r2_flift_motor_status", "/debug_r2_flift_motor_status"},
+    MotorStatusChannel{
+      {4, 3}, "/r2_rlift_motor_ref", "/r2_rlift_motor_status", "/debug_r2_rlift_motor_status"},
   };
   std::vector<LinearMotionChannel> linear_motion_channels_{
     LinearMotionChannel{
-      {2, 0},
-      "/kfs_fx_motor_ref",
-      "/kfs_fx_linear_motion_status",
-      "/debug_kfs_fx_motor_status"},
+      {3, 0}, "/kfs_fx_motor_ref", "/kfs_fx_linear_motion_status", "/debug_kfs_fx_motor_status"},
     LinearMotionChannel{
-      {2, 1},
-      "/kfs_fz_motor_ref",
-      "/kfs_fz_linear_motion_status",
-      "/debug_kfs_fz_motor_status"},
+      {3, 1}, "/kfs_fz_motor_ref", "/kfs_fz_linear_motion_status", "/debug_kfs_fz_motor_status"},
     LinearMotionChannel{
-      {3, 0},
-      "/kfs_rx_motor_ref",
-      "/kfs_rx_linear_motion_status",
-      "/debug_kfs_rx_motor_status"},
+      {4, 0}, "/kfs_rx_motor_ref", "/kfs_rx_linear_motion_status", "/debug_kfs_rx_motor_status"},
     LinearMotionChannel{
-      {3, 1},
-      "/kfs_rz_motor_ref",
-      "/kfs_rz_linear_motion_status",
-      "/debug_kfs_rz_motor_status"},
+      {4, 1}, "/kfs_rz_motor_ref", "/kfs_rz_linear_motion_status", "/debug_kfs_rz_motor_status"},
     LinearMotionChannel{
-      {2, 3},
-      "/front_expand_motor_ref",
-      "/front_expand_linear_motion_status",
-      "/debug_front_expand_motor_status"},
+      {5, 0}, "/spear1_motor_ref", "/spear1_linear_motion_status", "/debug_spear1_motor_status"},
     LinearMotionChannel{
-      {3, 3},
-      "/rear_expand_motor_ref",
-      "/rear_expand_linear_motion_status",
-      "/debug_rear_expand_motor_status"},
+      {5, 1}, "/spear2_motor_ref", "/spear2_linear_motion_status", "/debug_spear2_motor_status"},
     LinearMotionChannel{
-      {4, 0},
-      "/pole_x1_motor_ref",
-      "/pole_x1_linear_motion_status",
-      "/debug_pole_x1_motor_status"},
+      {5, 2}, "/spear3_motor_ref", "/spear3_linear_motion_status", "/debug_spear3_motor_status"},
     LinearMotionChannel{
-      {4, 1},
-      "/pole_x2_motor_ref",
-      "/pole_x2_linear_motion_status",
-      "/debug_pole_x2_motor_status"},
+      {5, 3}, "/spear4_motor_ref", "/spear4_linear_motion_status", "/debug_spear4_motor_status"},
     LinearMotionChannel{
-      {4, 2},
-      "/pole_y_motor_ref",
-      "/pole_y_linear_motion_status",
-      "/debug_pole_y_motor_status"},
+      {6, 0}, "/spear_x_motor_ref", "/spear_x_linear_motion_status", "/debug_spear_x_motor_status"},
     LinearMotionChannel{
-      {4, 3},
-      "/pole_roger_motor_ref",
-      "/pole_roger_linear_motion_status",
-      "/debug_pole_roger_motor_status"},
-    LinearMotionChannel{
-      {5, 0},
-      "/spear_roger1_motor_ref",
-      "/spear_roger1_linear_motion_status",
-      "/debug_spear_roger1_motor_status"},
-    LinearMotionChannel{
-      {5, 1},
-      "/spear_roger2_motor_ref",
-      "/spear_roger2_linear_motion_status",
-      "/debug_spear_roger2_motor_status"},
-    LinearMotionChannel{
-      {5, 2},
-      "/spear_move_motor_ref",
-      "/spear_move_linear_motion_status",
-      "/debug_spear_move_motor_status"},
-  };
+      {6, 1},
+      "/spear_y_motor_ref",
+      "/spear_y_linear_motion_status",
+      "/debug_spear_y_motor_status"}};
   std::vector<AngleMotionChannel> angle_motion_channels_{
     AngleMotionChannel{
       {2, 2},
@@ -1553,36 +1525,38 @@ private:
       "/kfs_ryaw_angle_motion_status",
       "/debug_kfs_ryaw_motor_status"},
     AngleMotionChannel{
-      {5, 3},
-      "/spear_rotate_motor_ref",
-      "/spear_rotate_angle_motion_status",
-      "/debug_spear_rotate_motor_status"},
-  };
+      {6, 2},
+      "/spear_pitch1_motor_ref",
+      "/spear_pitch1_angle_motion_status",
+      "/debug_spear_pitch1_motor_status"},
+    AngleMotionChannel{
+      {6, 3},
+      "/spear_pitch2_motor_ref",
+      "/spear_pitch2_angle_motion_status",
+      "/debug_spear_pitch2_motor_status"}};
 
   std::vector<GpioFloatOutputChannel> gpio_float_output_channels_{
     GpioFloatOutputChannel{{1, 0}, "/kfs_front_pump_gpio_pwm_ref"},
     GpioFloatOutputChannel{{1, 1}, "/kfs_rear_pump_gpio_pwm_ref"},
     GpioFloatOutputChannel{{1, 2}, "/kfs_front_valve_gpio_pwm_ref"},
     GpioFloatOutputChannel{{1, 3}, "/kfs_rear_valve_gpio_pwm_ref"},
-    GpioFloatOutputChannel{{3, 4}, "/pole_valve1_gpio_pwm_ref"},
-    GpioFloatOutputChannel{{3, 5}, "/pole_valve2_gpio_pwm_ref"},
-    GpioFloatOutputChannel{{3, 6}, "/pole_valve3_gpio_pwm_ref"},
-    GpioFloatOutputChannel{{3, 7}, "/pole_valve4_gpio_pwm_ref"},
-    GpioFloatOutputChannel{{1, 8}, "/spear_hand_valve1_gpio_pwm_ref"},
-    GpioFloatOutputChannel{{2, 7}, "/spear_hand_valve2_gpio_pwm_ref"},
-    GpioFloatOutputChannel{{2, 8}, "/brake_valve_gpio_pwm_ref"},
+    GpioFloatOutputChannel{{2, 0}, "/spear_u1_value_gpio_pwm_ref"},
+    GpioFloatOutputChannel{{2, 1}, "/spear_d2_value_gpio_pwm_ref"},
+    GpioFloatOutputChannel{{2, 2}, "/spear_u2_value_gpio_pwm_ref"},
+    GpioFloatOutputChannel{{2, 3}, "/spear_d2_value_gpio_pwm_ref"},
+    // 電磁弁は何個つながるかわからないので一旦ここで止めとく
   };
   std::vector<GpioIntOutputChannel> gpio_int_output_channels_{
-    GpioIntOutputChannel{{3, 0}, "/pole_servo1_gpio_servo_ref"},
-    GpioIntOutputChannel{{3, 1}, "/pole_servo2_gpio_servo_ref"},
-    GpioIntOutputChannel{{3, 2}, "/pole_servo3_gpio_servo_ref"},
-    GpioIntOutputChannel{{3, 3}, "/pole_servo4_gpio_servo_ref"},
+    // GpioIntOutputChannel{{3, 0}, "/pole_servo1_gpio_servo_ref"},
+    // GpioIntOutputChannel{{3, 1}, "/pole_servo2_gpio_servo_ref"},
+    // GpioIntOutputChannel{{3, 2}, "/pole_servo3_gpio_servo_ref"},
+    // GpioIntOutputChannel{{3, 3}, "/pole_servo4_gpio_servo_ref"},
   };
   std::vector<GpioInputChannel> gpio_input_channels_{
-    GpioInputChannel{{2, 0}, "/kfs_front_switch_status", "/debug_kfs_front_switch_status"},
-    GpioInputChannel{{2, 1}, "/kfs_rear_switch_status", "/debug_kfs_rear_switch_status"},
-    GpioInputChannel{{2, 2}, "/spear_move_switch_status", "/debug_spear_move_switch_status"},
-    GpioInputChannel{{2, 3}, "/spear_rotate_switch_status", "/debug_spear_rotate_switch_status"},
+    GpioInputChannel{
+      {1, 7}, "/kfs_fz_low_switch_status", "/debug_kfs_fz_low_switch_status"},
+    GpioInputChannel{
+      {1, 8}, "/kfs_rz_low_switch_status", "/debug_kfs_rz_low_switch_status"},
   };
 
   // r1_msgs 側の足回り publisher / subscription。
