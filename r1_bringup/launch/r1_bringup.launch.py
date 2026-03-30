@@ -80,10 +80,10 @@ def generate_launch_description():
         arguments=["--ros-args", "--log-level", "warn"],
     )
 
-    r1_sabacan_msgs_converter_node = Node(
+    r1_machine_manage_node = Node(
         package="r1_machine",
-        executable="r1_sabacan_msgs_converter_node",
-        name="r1_sabacan_msgs_converter_node",
+        executable="r1_machine_manage_node",
+        name="r1_machine_manage_node",
         parameters=[param_file],
         arguments=["--ros-args", "--log-level", "warn"],
     )
@@ -494,7 +494,7 @@ def generate_launch_description():
         r1_chassis_control_node,
         r1_mecanum_node,
         ps4_node,
-        r1_sabacan_msgs_converter_node,
+        r1_machine_manage_node,
         # r1_kfs_fx_node,
         # r1_kfs_fz_node,
         # r1_kfs_fyaw_node,

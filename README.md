@@ -99,7 +99,7 @@ python src/gakurobo2026_r1/src/trajectory_planner_gui.py
   - r1_mainにも制御に関するプログラムは含まれているが、ここは理論寄り。（経路生成、経路追従など）
 - r1_machine
   - ハードウェアの抽象化的な立ち位置。
-  - r1_sabacan_msgs_converter_nodeで各種トピックの整理を行っている。（実装は汚い）
+  - r1_machine_manage_nodeでSabacanと各種機構トピックの整理を行っている。
 - r1_main
   - ロボット全体のシーケンスや操縦を管理するノード。
 - r1_msgs

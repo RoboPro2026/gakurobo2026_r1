@@ -8,6 +8,6 @@
 
 [r1_odometry_node](./docs/r1_odometry_node.md)
 
-[r1_swerve_drive_node](./docs/r1_swerve_drive_node.md)
+[r1_machine_manage_node](./docs/r1_machine_manage_node.md)
 
-[r1_sabacan_msgs_converter_node](./docs/r1_sabacan_msgs_converter_node.md)
+[r1_swerve_drive_node](./docs/r1_swerve_drive_node.md)

@@ -548,17 +548,21 @@ r1_spear_rotate_node:
     use_high_switch: false
     inverse_low_switch_logic: false
     inverse_high_switch_logic: false
-r1_sabacan_msgs_converter_node:
+r1_machine_manage_node:
   ros__parameters:
-    # フィードバックデータのpublish_rate
-    mecanum_timer_rate: 10.0
+    # 足回りの制御方式。"mecanum" または "swerve"
+    drive_mode: "mecanum"
+    # シャーシ系フィードバックの publish_rate
+    chassis_timer_rate: 10.0
     odometry_encoder_timer_rate: 100.0
-    kfs_timer_rate: 10.0
-    expand_timer_rate: 10.0
-    r2_lift_timer_rate: 10.0
-    pole_timer_rate: 10.0
-    spear_timer_rate: 10.0
+    linear_motion_timer_rate: 10.0
+    angle_motion_timer_rate: 10.0
+    velocity_control_timer_rate: 10.0
     gpio_timer_rate: 10.0
+    # 独ステ使用時に wheel 系へ流す control_type
+    swerve_wheel_control_type: "VELOCITY"
+    # 独ステ使用時に steer 系へ流す control_type
+    swerve_steer_control_type: "POSITION"
 # IMU
 bno086_node:
   ros__parameters:
