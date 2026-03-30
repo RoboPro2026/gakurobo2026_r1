@@ -3,7 +3,7 @@
 `gakurobo2026_r1` は、学生ロボコン 2026 R1の ROS 2 ワークスペース用リポジトリです。  
 このリポジトリには、ロボット全体の状態管理、足回り制御、機構制御、起動設定、独自メッセージ定義が入っています。
 
-初めて見る人向けに一言でまとめると、役割は次のように分かれています。
+パッケージの役割は次のとおりです。  
 
 - `r1_bringup`
   - 全ノードを起動する。
@@ -247,16 +247,6 @@ cd ~/ros2_ws
 colcon build --symlink-install r1_control
 python src/gakurobo2026_r1/src/trajectory_planner_gui.py
 ```
-
-## 初見の人向けの読み順
-
-どこから見ればよいか迷ったら、次の順がおすすめです。
-
-1. この README で package 全体の役割を把握する
-2. [`r1_bringup.launch.py`](/home/user/ros2_ws/src/gakurobo2026_r1/r1_bringup/launch/r1_bringup.launch.py) を見て、起動されるノードを確認する
-3. [`r1_main_node.md`](/home/user/ros2_ws/src/gakurobo2026_r1/r1_main/docs/r1_main_node.md) を見て、ロボット全体の流れを把握する
-4. [`r1_machine_manage_node.md`](/home/user/ros2_ws/src/gakurobo2026_r1/r1_machine/docs/r1_machine_manage_node.md) を見て、機構指令がどのように実機へつながるか確認する
-5. 必要に応じて `r1_control` や各機構ノードの docs を読む
 
 ## ドキュメント
 
