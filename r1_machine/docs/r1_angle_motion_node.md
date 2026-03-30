@@ -1,6 +1,6 @@
 # r1_angle_motion_node
 
-`r1_angle_motion_node` は回転軸用モータの位置制御と原点検出を行う ROS 2 ノードです。`/angle_motion_status` で取得したトルク・速度・角度・リミットスイッチを監視し、通常は角度指令を `/angle_motion_motor_ref` に出力します。原点検出要求が入ると速度モードへ切り替え、スイッチまたはトルク上昇を検出してオフセットを更新し、その場で位置モードに戻します。角度指令はラジアン単位で受け付け、減速比 `gear_ratio` でモータ角度へ換算します。周期処理の実行レートは `timer_rate` で変更できます。
+`r1_angle_motion_node` は回転軸用モータの位置制御、原点検出、機械端への押し当て移動を行う ROS 2 ノードです。`/angle_motion_status` で取得したトルク・速度・角度・リミットスイッチを監視し、通常は角度指令を `/angle_motion_motor_ref` に出力します。原点検出要求や `move_mech_lock` 要求が入ると速度モードへ切り替え、スイッチまたはトルク上昇を検出して停止します。原点検出ではオフセットを更新して通常角へ戻り、`move_mech_lock` ではオフセットを更新せず、その場の機械位置を保持します。角度指令はラジアン単位で受け付け、減速比 `gear_ratio` でモータ角度へ換算します。周期処理の実行レートは `timer_rate` で変更できます。
 
 ## トピック
 
@@ -10,6 +10,7 @@
 - `/high_switch_status`(`r1_msgs/msg/GpioInput`): スイッチの値。 `inverse_*data` で XOR 反転されます。
   - `/angle_motion_position_ref` (`std_msgs/msg/Float64`): 目標角度 [rad]。原点検出中（速度モード）は無視されます。
   - `/angle_motion_detect_origin` (`std_msgs/msg/Bool`): `true` で原点検出モードへ移行し、`false` で位置モードに戻します。
+  - `/angle_motion_move_mech_lock` (`std_msgs/msg/Int32`): 機械端まで押し当てる移動要求。`data > 0` で正方向、`data < 0` で逆方向、`data == 0` で停止して位置モードに戻ります。
 - **Publish**
   - `/angle_motion_motor_ref` (`r1_msgs/msg/MotorRef`): `r1_machine_manage_node` へ渡す制御指令。`control_type` は `"POSITION"` または `"VELOCITY"`、`ref` は角度 [rad] もしくは角速度 [rad/s]。
   - `/angle_motion_mode_status` (`std_msgs/msg/Int32`): モードを送信。mode=0のとき、通常動作（位置制御モード）。mode=1のとき、原点復帰中（速度制御モード）。
@@ -26,6 +27,7 @@
 | `torque_threshold` | double | `1.0` | 許容トルク [Nm]。この絶対値を超え続けたら原点とみなします。 |
 | `origin_detect_threshold_time` | double | `0.2` | トルクしきい値超過を原点とみなすまでの継続時間 [s]。 |
 | `origin_detect_speed` | double | `-3.14` | 原点検出中に流す一定角速度 [rad/s]。符号は `inverse_motor` に応じて反転します。 |
+| `move_mech_lock_speed` | double | `3.14` | `move_mech_lock` 中に流す角速度の大きさ [rad/s]。向きは topic の符号で指定します。 |
 | `angle_min` | double | `-3.14` | 指令として受け付ける角度の下限 [rad]。外れた場合はクランプされます。 |
 | `angle_max` | double | `3.14` | 指令として受け付ける角度の上限 [rad]。 |
 | `normal_angle` | double | `0.0` | 原点検出後の通常時の角度。 [rad]。 |
@@ -42,6 +44,7 @@
    - `use_low_switch`/`use_high_switch` が有効で、対応するスイッチがオン。  
    - `|torque| > torque_threshold` の状態が `origin_detect_threshold_time` 秒以上続く。
 4. 検出条件を満たすと、現在の `pos` から `angle_offset = gear_ratio * pos` を設定し、その場の角度で `"POSITION"` 指令を出して位置モードへ復帰します。`/angle_motion_detect_origin` に `false` を送れば手動でも位置モードへ戻せます（オフセット更新は行いません）。
+5. `/angle_motion_move_mech_lock` に `1` または `-1` を送ると、指定方向へ `"VELOCITY"` 指令 `move_mech_lock_speed` を流し続けます。停止判定は原点検出と同じで、トルク上昇またはスイッチ反応が `origin_detect_threshold_time` 以上続いたときです。停止後はオフセットを更新せず、その時点のモータ位置を `"POSITION"` 指令で保持します。
 
 ## 起動と利用例
 
@@ -56,6 +59,12 @@
 
   ```bash
   ros2 topic pub /angle_motion_detect_origin std_msgs/Bool '{data: true}'
+  ```
+
+- 正方向へ機械端まで移動する:
+
+  ```bash
+  ros2 topic pub /angle_motion_move_mech_lock std_msgs/Int32 '{data: 1}'
   ```
 
 - 原点決め後に 1.0 rad へ移動させる指令:

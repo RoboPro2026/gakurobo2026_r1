@@ -52,6 +52,10 @@ public:
       "/angle_motion_detect_origin", 10,
       std::bind(&MyNode::detect_origin_callback, this, std::placeholders::_1));
 
+    move_mech_lock_subscription_ = this->create_subscription<std_msgs::msg::Int32>(
+      "/angle_motion_move_mech_lock", 10,
+      std::bind(&MyNode::move_mech_lock_callback, this, std::placeholders::_1));
+
     mode_status_publisher_ =
       this->create_publisher<std_msgs::msg::Int32>("/angle_motion_mode_status", 10);
 
@@ -66,6 +70,7 @@ public:
     this->declare_parameter("origin_detect_threshold_time", 0.2);  // s
     // 原点検出時の速度は負の符号でも可、原点としたい方向に回転させる
     this->declare_parameter("origin_detect_speed", -3.14);  // rad/s
+    this->declare_parameter("move_mech_lock_speed", 3.14);  // rad/s
     this->declare_parameter("angle_min", -3.14);            // rad
     this->declare_parameter("angle_max", 3.14);             // rad
     this->declare_parameter("normal_angle", 0.0);           // rad
@@ -81,6 +86,7 @@ public:
     this->get_parameter("torque_threshold", torque_threshold_);
     this->get_parameter("origin_detect_threshold_time", origin_detect_threshold_time_);
     this->get_parameter("origin_detect_speed", origin_detect_speed_);
+    this->get_parameter("move_mech_lock_speed", move_mech_lock_speed_);
     this->get_parameter("angle_min", angle_min_);
     this->get_parameter("angle_max", angle_max_);
     this->get_parameter("normal_angle", normal_angle_);
@@ -140,6 +146,17 @@ private:
         RCLCPP_INFO(
           this->get_logger(), "Updated parameter: origin_detect_speed = %.3f",
           origin_detect_speed_);
+      } else if (name == "move_mech_lock_speed") {
+        if (parameter.as_double() < 0.0) {
+          result.successful = false;
+          result.reason = "move_mech_lock_speed must be greater than or equal to 0.0";
+          RCLCPP_ERROR(this->get_logger(), "%s", result.reason.c_str());
+          continue;
+        }
+        move_mech_lock_speed_ = parameter.as_double();
+        RCLCPP_INFO(
+          this->get_logger(), "Updated parameter: move_mech_lock_speed = %.3f",
+          move_mech_lock_speed_);
       } else if (name == "angle_min") {
         angle_min_ = parameter.as_double();
         RCLCPP_INFO(this->get_logger(), "Updated parameter: angle_min = %.3f", angle_min_);
@@ -226,21 +243,45 @@ private:
   {
     if (msg->data) {
       mode_ = MODE_SPEED;
-      // 最後に通常のトルクを検出した時刻を更新
-      last_normal_torque_time_ = this->now();
-      last_low_switch_not_detect_time_ = this->now();
-      last_high_switch_not_detect_time_ = this->now();
+      speed_mode_reason_ = SPEED_MODE_ORIGIN_DETECTION;
+      reset_speed_mode_detection_timestamps();
       RCLCPP_INFO(this->get_logger(), "Switched to speed control mode for origin detection.");
     } else {
       mode_ = MODE_POSITION;
+      speed_mode_reason_ = SPEED_MODE_NONE;
       RCLCPP_INFO(this->get_logger(), "Switched to position control mode.");
     }
+  }
+
+  void move_mech_lock_callback(const std_msgs::msg::Int32::SharedPtr msg)
+  {
+    if (msg->data == 0) {
+      mode_ = MODE_POSITION;
+      speed_mode_reason_ = SPEED_MODE_NONE;
+      RCLCPP_INFO(this->get_logger(), "Stopped mech lock move and switched to position mode.");
+      return;
+    }
+
+    mode_ = MODE_SPEED;
+    speed_mode_reason_ = SPEED_MODE_MECH_LOCK;
+    mech_lock_direction_ = (msg->data > 0) ? 1.0 : -1.0;
+    reset_speed_mode_detection_timestamps();
+    RCLCPP_INFO(
+      this->get_logger(), "Switched to speed control mode for mech lock move. direction = %.0f",
+      mech_lock_direction_);
+  }
+
+  void reset_speed_mode_detection_timestamps()
+  {
+    last_normal_torque_time_ = this->now();
+    last_low_switch_not_detect_time_ = this->now();
+    last_high_switch_not_detect_time_ = this->now();
   }
 
   void timer_callback()
   {
     if (mode_ == MODE_SPEED) {
-      bool detect_origin = false;
+      bool detect_stop = false;
 
       // 現在のトルクがしきい値以下のとき
       if (std::abs(current_torque_) <= torque_threshold_) {
@@ -258,30 +299,41 @@ private:
       }
 
       // 一定時間トルクのしきい値を超えた場合、原点検出とみなす
-      detect_origin |=
+      detect_stop |=
         ((this->now() - last_normal_torque_time_).seconds() > origin_detect_threshold_time_);
       // 一定時間リミットスイッチが反応した場合、原点検出とみなす
-      detect_origin |=
+      detect_stop |=
         (use_low_switch_ && (this->now() - last_low_switch_not_detect_time_).seconds() >
                               origin_detect_threshold_time_);
-      detect_origin |=
+      detect_stop |=
         (use_high_switch_ && (this->now() - last_high_switch_not_detect_time_).seconds() >
                                origin_detect_threshold_time_);
 
       auto motor_ref_msg = r1_msgs::msg::MotorRef();
-      if (detect_origin) {
-        // 原点検出時: オフセットを更新し、位置制御モードへ切り替え
+      if (detect_stop) {
         mode_ = MODE_POSITION;
-        angle_offset_ = gear_ratio_ * current_angle_;
-        RCLCPP_INFO(this->get_logger(), "Origin detected at angle: %.3f", angle_offset_);
-        // 原点検出後はnormal_angleに移動
-        motor_ref_msg.control_type = "POSITION";
-        motor_ref_msg.ref = (motor_dir_ * normal_angle_ + angle_offset_) / gear_ratio_;
-        RCLCPP_INFO(this->get_logger(), "Moving to normal angle position: %.3f", motor_ref_msg.ref);
+        if (speed_mode_reason_ == SPEED_MODE_ORIGIN_DETECTION) {
+          angle_offset_ = gear_ratio_ * current_angle_;
+          RCLCPP_INFO(this->get_logger(), "Origin detected at angle: %.3f", angle_offset_);
+          motor_ref_msg.control_type = "POSITION";
+          motor_ref_msg.ref = (motor_dir_ * normal_angle_ + angle_offset_) / gear_ratio_;
+          RCLCPP_INFO(
+            this->get_logger(), "Moving to normal angle position: %.3f", motor_ref_msg.ref);
+        } else {
+          motor_ref_msg.control_type = "POSITION";
+          motor_ref_msg.ref = current_angle_;
+          RCLCPP_INFO(
+            this->get_logger(), "Detected mechanical lock. Holding current angle: %.3f",
+            motor_ref_msg.ref);
+        }
+        speed_mode_reason_ = SPEED_MODE_NONE;
       } else {
-        // 原点検出中は負の方向にモータを回転させる
         motor_ref_msg.control_type = "VELOCITY";
-        motor_ref_msg.ref = motor_dir_ * origin_detect_speed_;
+        if (speed_mode_reason_ == SPEED_MODE_ORIGIN_DETECTION) {
+          motor_ref_msg.ref = motor_dir_ * origin_detect_speed_;
+        } else {
+          motor_ref_msg.ref = motor_dir_ * mech_lock_direction_ * move_mech_lock_speed_;
+        }
       }
       angle_motion_ref_publisher_->publish(motor_ref_msg);
       // RCLCPP_INFO(
@@ -300,6 +352,7 @@ private:
   rclcpp::Publisher<r1_msgs::msg::MotorRef>::SharedPtr angle_motion_ref_publisher_;
   rclcpp::Subscription<std_msgs::msg::Float64>::SharedPtr position_ref_subscription_;
   rclcpp::Subscription<std_msgs::msg::Bool>::SharedPtr detect_origin_subscription_;
+  rclcpp::Subscription<std_msgs::msg::Int32>::SharedPtr move_mech_lock_subscription_;
   rclcpp::Publisher<std_msgs::msg::Int32>::SharedPtr mode_status_publisher_;
   rclcpp::node_interfaces::OnSetParametersCallbackHandle::SharedPtr parameter_callback_handler_;
 
@@ -310,9 +363,11 @@ private:
   bool use_low_switch_ = true;
   bool use_high_switch_ = true;
   double origin_detect_speed_ = 0.0;
+  double move_mech_lock_speed_ = 0.0;
   double torque_threshold_ = 0.0;
   double origin_detect_threshold_time_ = 0.0;
   double motor_dir_ = 1.0;
+  double mech_lock_direction_ = 1.0;
   double angle_min_ = -3.14;
   double angle_max_ = 3.14;
   double normal_angle_ = 0.0;
@@ -330,7 +385,11 @@ private:
   double gear_ratio_ = 0.05;
   static constexpr int MODE_POSITION = 0;
   static constexpr int MODE_SPEED = 1;
+  static constexpr int SPEED_MODE_NONE = 0;
+  static constexpr int SPEED_MODE_ORIGIN_DETECTION = 1;
+  static constexpr int SPEED_MODE_MECH_LOCK = 2;
   int mode_ = MODE_POSITION;
+  int speed_mode_reason_ = SPEED_MODE_NONE;
 };
 
 int main(int argc, char ** argv)
