@@ -18,6 +18,7 @@
 #include "rcl_interfaces/msg/parameter_descriptor.hpp"
 #include "rclcpp/rclcpp.hpp"
 #include "std_msgs/msg/bool.hpp"
+#include "std_msgs/msg/empty.hpp"
 #include "std_msgs/msg/float64.hpp"
 #include "std_msgs/msg/int32.hpp"
 
@@ -54,6 +55,10 @@ public:
     move_mech_lock_subscription_ = this->create_subscription<std_msgs::msg::Int32>(
       "/linear_motion_move_mech_lock", 10,
       std::bind(&MyNode::move_mech_lock_callback, this, std::placeholders::_1));
+
+    initialize_subscription_ = this->create_subscription<std_msgs::msg::Empty>(
+      "/linear_motion_initialize", 10,
+      std::bind(&MyNode::initialize_callback, this, std::placeholders::_1));
 
     mode_status_publisher_ =
       this->create_publisher<std_msgs::msg::Int32>("/linear_motion_mode_status", 10);
@@ -269,11 +274,27 @@ public:
       mech_lock_direction_);
   }
 
+  void initialize_callback(const std_msgs::msg::Empty::SharedPtr)
+  {
+    mode_ = MODE_POSITON;
+    speed_mode_reason_ = SPEED_MODE_NONE;
+    publish_hold_current_position();
+    RCLCPP_INFO(this->get_logger(), "Received initialize signal. Switched to position hold mode.");
+  }
+
   void reset_speed_mode_detection_timestamps()
   {
     last_normal_torque_time_ = this->now();
     last_low_switch_not_detect_time_ = this->now();
     last_high_switch_not_detect_time_ = this->now();
+  }
+
+  void publish_hold_current_position()
+  {
+    auto motor_ref_msg = r1_msgs::msg::MotorRef();
+    motor_ref_msg.control_type = "POSITION";
+    motor_ref_msg.ref = current_pos_;
+    linear_motion_ref_publisher_->publish(motor_ref_msg);
   }
 
   void timer_callback()
@@ -350,6 +371,7 @@ private:
   rclcpp::Subscription<std_msgs::msg::Float64>::SharedPtr position_ref_subscription_;
   rclcpp::Subscription<std_msgs::msg::Bool>::SharedPtr detect_origin_subscription_;
   rclcpp::Subscription<std_msgs::msg::Int32>::SharedPtr move_mech_lock_subscription_;
+  rclcpp::Subscription<std_msgs::msg::Empty>::SharedPtr initialize_subscription_;
   rclcpp::Publisher<std_msgs::msg::Int32>::SharedPtr mode_status_publisher_;
   rclcpp::node_interfaces::OnSetParametersCallbackHandle::SharedPtr parameter_callback_handler_;
 

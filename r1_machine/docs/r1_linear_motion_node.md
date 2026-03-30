@@ -11,6 +11,7 @@
   - `/linear_motion_position_ref` (`std_msgs/msg/Float64`): 目標位置 [m]。原点検出中（速度モード）は無視されます。
   - `/linear_motion_detect_origin` (`std_msgs/msg/Bool`): `true` で原点検出モードに移行し、`false` で通常の位置モードに戻ります。
   - `/linear_motion_move_mech_lock` (`std_msgs/msg/Int32`): 機械端まで押し当てる移動要求。`data > 0` で正方向、`data < 0` で逆方向、`data == 0` で停止して位置モードに戻ります。
+  - `/linear_motion_initialize` (`std_msgs/msg/Empty`): 特殊モードを中断して位置モードへ戻し、その時点のモータ位置を保持します。`r1_machine_manage_node` から中継されます。
 - **Publish**
   - `/linear_motion_motor_ref` (`r1_msgs/msg/MotorRef`): `r1_machine_manage_node` へ渡す制御指令。`control_type` は `"POSITION"` または `"VELOCITY"`、`ref` は角度 [rad] もしくは角速度 [rad/s]。
   - `/linear_motion_mode_status` (`std_msgs/msg/Int32`): モードを送信。mode=0のとき、通常動作（位置制御モード）。mode=1のとき、原点復帰中または機械端移動中（速度制御モード）。
@@ -45,6 +46,7 @@
    - `|torque| > torque_threshold` の状態が `origin_detect_threshold_time` 秒以上続く。
 4. 検出条件を満たすと、現在の `pos` から `pos_offset = radius * pos` を設定し、`"POSITION"` 指令でその場に停止したうえで位置モードへ復帰します。`/linear_motion_detect_origin` に `false` を送れば手動でも位置モードへ戻せます（オフセット更新は行いません）。
 5. `/linear_motion_move_mech_lock` に `1` または `-1` を送ると、指定方向へ `"VELOCITY"` 指令 `move_mech_lock_speed` を流し続けます。停止判定は原点検出と同じで、トルク上昇またはスイッチ反応が `origin_detect_threshold_time` 以上続いたときです。停止後はオフセットを更新せず、その時点のモータ位置を `"POSITION"` 指令で保持します。
+6. `/linear_motion_initialize` を受けると、原点検出中や `move_mech_lock` 中であっても速度モードを中断し、現在のモータ位置を `"POSITION"` で保持します。オフセットは変更しません。
 
 ## 起動と利用例
 

@@ -305,12 +305,13 @@ struct MotorCommandChannel
    */
   MotorCommandChannel(
     BoardInfo info, const char * ref_topic_name, const char * status_topic_name,
-    const char * debug_topic_name,
+    const char * debug_topic_name, const char * initialize_topic_name = nullptr,
     MotorControllerType controller_type = MotorControllerType::Robomas)
   : board_info(info),
     ref_topic(ref_topic_name),
     status_topic(status_topic_name),
     debug_topic(debug_topic_name),
+    initialize_topic(initialize_topic_name),
     controller_type(controller_type)
   {
   }
@@ -319,12 +320,14 @@ struct MotorCommandChannel
   const char * ref_topic{};
   const char * status_topic{};
   const char * debug_topic{};
+  const char * initialize_topic{};
   MotorControllerType controller_type{MotorControllerType::Robomas};
   SingleRefPublisher ref_publisher;
   RobstrideRefPublisher robstride_ref_publisher;
   SubscriptionPtr<r1_msgs::msg::MotorRef> ref_subscription;
   PublisherPtr<StatusMsgT> status_publisher;
   PublisherPtr<r1_msgs::msg::Motor> debug_publisher;
+  PublisherPtr<std_msgs::msg::Empty> initialize_publisher;
   StatusMsgT value{};
 };
 
@@ -748,6 +751,10 @@ private:
     }
     channel.status_publisher = this->create_publisher<StatusMsgT>(channel.status_topic, 10);
     channel.debug_publisher = this->create_publisher<r1_msgs::msg::Motor>(channel.debug_topic, 10);
+    if (channel.initialize_topic != nullptr) {
+      channel.initialize_publisher =
+        this->create_publisher<std_msgs::msg::Empty>(channel.initialize_topic, 10);
+    }
 
     auto * channel_ptr = &channel;
     channel.ref_subscription = this->create_subscription<r1_msgs::msg::MotorRef>(
@@ -758,6 +765,23 @@ private:
         }
         publish_motor_ref(*channel_ptr, *msg);
       });
+  }
+
+  /**
+   * @brief 機構 node の initialize topic へ空メッセージをまとめて publish する。
+   * @tparam StatusMsgT フィードバックに使うメッセージ型
+   * @param channels publish 対象のチャネル配列
+   */
+  template <typename StatusMsgT>
+  void publish_initialize_channels(const std::vector<MotorCommandChannel<StatusMsgT>> & channels)
+  {
+    std_msgs::msg::Empty msg;
+    for (const auto & channel : channels) {
+      if (!channel.initialize_publisher) {
+        continue;
+      }
+      channel.initialize_publisher->publish(msg);
+    }
   }
 
   /**
@@ -1450,17 +1474,21 @@ private:
         this->get_logger(), "ignored /r1_machine_initialize because sabacan is still in emergency");
       return;
     }
-    if (!emergency_reinit_required_) {
+    const bool was_reinit_required = emergency_reinit_required_;
+    emergency_reinit_required_ = false;
+    publish_initialize_channels(linear_motion_channels_);
+    publish_initialize_channels(angle_motion_channels_);
+
+    if (was_reinit_required) {
       RCLCPP_INFO(
         this->get_logger(),
-        "received /r1_machine_initialize but open-loop latch is already cleared");
+        "received /r1_machine_initialize. restoring normal motor control routing and forwarding initialize to motion nodes");
       return;
     }
 
-    emergency_reinit_required_ = false;
     RCLCPP_INFO(
       this->get_logger(),
-      "received /r1_machine_initialize. restoring normal motor control routing");
+      "received /r1_machine_initialize. forwarding initialize to motion nodes");
   }
 
   /**
@@ -1880,55 +1908,97 @@ private:
   };
   std::vector<LinearMotionChannel> linear_motion_channels_{
     LinearMotionChannel{
-      {3, 0}, "/kfs_fx_motor_ref", "/kfs_fx_linear_motion_status", "/debug_kfs_fx_motor_status"},
+      {3, 0},
+      "/kfs_fx_motor_ref",
+      "/kfs_fx_linear_motion_status",
+      "/debug_kfs_fx_motor_status",
+      "/kfs_fx_initialize"},
     LinearMotionChannel{
-      {3, 1}, "/kfs_fz_motor_ref", "/kfs_fz_linear_motion_status", "/debug_kfs_fz_motor_status"},
+      {3, 1},
+      "/kfs_fz_motor_ref",
+      "/kfs_fz_linear_motion_status",
+      "/debug_kfs_fz_motor_status",
+      "/kfs_fz_initialize"},
     LinearMotionChannel{
-      {4, 0}, "/kfs_rx_motor_ref", "/kfs_rx_linear_motion_status", "/debug_kfs_rx_motor_status"},
+      {4, 0},
+      "/kfs_rx_motor_ref",
+      "/kfs_rx_linear_motion_status",
+      "/debug_kfs_rx_motor_status",
+      "/kfs_rx_initialize"},
     LinearMotionChannel{
-      {4, 1}, "/kfs_rz_motor_ref", "/kfs_rz_linear_motion_status", "/debug_kfs_rz_motor_status"},
+      {4, 1},
+      "/kfs_rz_motor_ref",
+      "/kfs_rz_linear_motion_status",
+      "/debug_kfs_rz_motor_status",
+      "/kfs_rz_initialize"},
     LinearMotionChannel{
-      {5, 0}, "/spear1_motor_ref", "/spear1_linear_motion_status", "/debug_spear1_motor_status"},
+      {5, 0},
+      "/spear1_motor_ref",
+      "/spear1_linear_motion_status",
+      "/debug_spear1_motor_status",
+      "/spear1_initialize"},
     LinearMotionChannel{
-      {5, 1}, "/spear2_motor_ref", "/spear2_linear_motion_status", "/debug_spear2_motor_status"},
+      {5, 1},
+      "/spear2_motor_ref",
+      "/spear2_linear_motion_status",
+      "/debug_spear2_motor_status",
+      "/spear2_initialize"},
     LinearMotionChannel{
-      {5, 2}, "/spear3_motor_ref", "/spear3_linear_motion_status", "/debug_spear3_motor_status"},
+      {5, 2},
+      "/spear3_motor_ref",
+      "/spear3_linear_motion_status",
+      "/debug_spear3_motor_status",
+      "/spear3_initialize"},
     LinearMotionChannel{
-      {5, 3}, "/spear4_motor_ref", "/spear4_linear_motion_status", "/debug_spear4_motor_status"},
+      {5, 3},
+      "/spear4_motor_ref",
+      "/spear4_linear_motion_status",
+      "/debug_spear4_motor_status",
+      "/spear4_initialize"},
     LinearMotionChannel{
-      {6, 0}, "/spear_x_motor_ref", "/spear_x_linear_motion_status", "/debug_spear_x_motor_status"},
+      {6, 0},
+      "/spear_x_motor_ref",
+      "/spear_x_linear_motion_status",
+      "/debug_spear_x_motor_status",
+      "/spear_x_initialize"},
     LinearMotionChannel{
       {6, 1},
       "/spear_y_motor_ref",
       "/spear_y_linear_motion_status",
-      "/debug_spear_y_motor_status"}};
+      "/debug_spear_y_motor_status",
+      "/spear_y_initialize"}};
   std::vector<AngleMotionChannel> angle_motion_channels_{
     AngleMotionChannel{
       {2, 2},
       "/kfs_fyaw_motor_ref",
       "/kfs_fyaw_angle_motion_status",
-      "/debug_kfs_fyaw_motor_status"},
+      "/debug_kfs_fyaw_motor_status",
+      "/kfs_fyaw_initialize"},
     AngleMotionChannel{
       {3, 2},
       "/kfs_ryaw_motor_ref",
       "/kfs_ryaw_angle_motion_status",
-      "/debug_kfs_ryaw_motor_status"},
+      "/debug_kfs_ryaw_motor_status",
+      "/kfs_ryaw_initialize"},
     AngleMotionChannel{
       {6, 2},
       "/spear_pitch1_motor_ref",
       "/spear_pitch1_angle_motion_status",
-      "/debug_spear_pitch1_motor_status"},
+      "/debug_spear_pitch1_motor_status",
+      "/spear_pitch1_initialize"},
     AngleMotionChannel{
       {6, 3},
       "/spear_pitch2_motor_ref",
       "/spear_pitch2_angle_motion_status",
-      "/debug_spear_pitch2_motor_status"},
+      "/debug_spear_pitch2_motor_status",
+      "/spear_pitch2_initialize"},
     // spear_rollはrobstride
     AngleMotionChannel{
       {2, -1},
       "/spear_roll_motor_ref",
       "/spear_roll_angle_motion_status",
       "/debug_spear_roll_motor_status",
+      "/spear_roll_initialize",
       MotorControllerType::Robstride}};
 
   std::vector<GpioFloatOutputChannel> gpio_float_output_channels_{

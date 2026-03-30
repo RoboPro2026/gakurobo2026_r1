@@ -15,6 +15,7 @@
 - 足回り以外の機構チャネルは drive mode に関係なく有効で、Robomas と Robstride の両方を扱える。
 - `SabacanPowerStatus` による非常停止中は、全モータ指令を open-loop 停止へ上書きする。
 - 非常停止解除後は `/r1_machine_initialize` 受信まで open-loop 停止を継続する。
+- `/r1_machine_initialize` を受けると、linear / angle motion node へ initialize 信号も中継する。
 
 ## Drive Mode
 
@@ -186,3 +187,4 @@ ros2 run r1_machine r1_machine_manage_node --ros-args -p drive_mode:=swerve
   - `ros2 topic echo /debug_swerve_fr_steer_motor_status`
 - 非常停止解除後に制御復帰させる:
   - `ros2 topic pub --once /r1_machine_initialize std_msgs/msg/Empty "{}"`
+- この信号は非常停止ラッチ解除だけでなく、`r1_linear_motion_node` / `r1_angle_motion_node` の soft reset にも使われます。
