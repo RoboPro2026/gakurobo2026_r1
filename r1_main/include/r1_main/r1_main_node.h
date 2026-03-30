@@ -43,6 +43,7 @@
 #include "sensor_msgs/msg/imu.hpp"
 #include "sensor_msgs/msg/joy.hpp"
 #include "std_msgs/msg/bool.hpp"
+#include "std_msgs/msg/empty.hpp"
 #include "std_msgs/msg/float64.hpp"
 #include "std_msgs/msg/float64_multi_array.hpp"
 #include "std_msgs/msg/int32.hpp"
@@ -152,6 +153,8 @@ public:
   rclcpp::Subscription<std_msgs::msg::Int32>::SharedPtr chassis_act_status_subscription_;
   // robot_moveのPublisher
   rclcpp::Publisher<r1_msgs::msg::RobotMove>::SharedPtr robot_move_publisher_;
+  // r1_machine_manage_node の初期化要求
+  rclcpp::Publisher<std_msgs::msg::Empty>::SharedPtr r1_machine_initialize_publisher_;
   // タイマー
   rclcpp::TimerBase::SharedPtr timer_publisher_;
   double timer_rate_ = 100.0;
@@ -168,8 +171,8 @@ public:
   // zone
   std::string zone_;
   // スイッチの状態
-  bool kfs_fz_switch_status_ = false;
-  bool kfs_rz_switch_status_ = false;
+  bool kfs_fz_low_switch_status_ = false;
+  bool kfs_rz_low_switch_status_ = false;
   // 指令値
   double kfs_fx_position_ref_ = 0.0;
   double kfs_fz_position_ref_ = 0.0;
@@ -309,6 +312,7 @@ public:
   void sabacan_reset(void);
   void sabacan_power_ref(bool is_ems);
   void sabacan_led_ref(uint8_t r, uint8_t g, uint8_t b);
+  void publish_r1_machine_initialize(void);
   // 現在の状態に応じて、LEDを光らせる。
   void sabacan_led_update(void);
   // IMU
@@ -379,8 +383,8 @@ public:
   void spear_pitch1_detect_origin(void);
   void spear_pitch2_detect_origin(void);
   // ========== センサーの取得 ==========
-  bool get_kfs_fz_switch_status(void) { return kfs_fz_switch_status_; }
-  bool get_kfs_rz_switch_status(void) { return kfs_rz_switch_status_; }
+  bool get_kfs_fz_low_switch_status(void) { return kfs_fz_low_switch_status_; }
+  bool get_kfs_rz_low_switch_status(void) { return kfs_rz_low_switch_status_; }
   // ========== 各状態のタスク ==========
   void idle_task(void);
   void emergency_task(void);

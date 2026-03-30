@@ -302,8 +302,8 @@ R1MainNode::R1MainNode() : Node("r1_main_node")
   register_gpio_pwm_output("kfs_rear_pump", &kfs_rear_pump_ref_, nullptr);
   register_gpio_pwm_output("kfs_front_valve", nullptr, &kfs_front_valve_ref_);
   register_gpio_pwm_output("kfs_rear_valve", nullptr, &kfs_rear_valve_ref_);
-  register_gpio_input("kfs_fz_low_switch", &kfs_fz_switch_status_);
-  register_gpio_input("kfs_rz_low_switch", &kfs_rz_switch_status_);
+  register_gpio_input("kfs_fz_low_switch", &kfs_fz_low_switch_status_);
+  register_gpio_input("kfs_rz_low_switch", &kfs_rz_low_switch_status_);
 
   // ========== Sabacan ==========
   // 電源基板の指令値Publisher
@@ -363,6 +363,9 @@ R1MainNode::R1MainNode() : Node("r1_main_node")
     std::bind(&R1MainNode::chassis_act_status_callback, this, std::placeholders::_1));
   // robot_moveのPublisher
   robot_move_publisher_ = this->create_publisher<r1_msgs::msg::RobotMove>("/robot_move", 10);
+  // r1_machine_manage_node の初期化要求
+  r1_machine_initialize_publisher_ =
+    this->create_publisher<std_msgs::msg::Empty>("/r1_machine_initialize", 10);
 
   // tf関連
   tf_buffer_ = std::make_shared<tf2_ros::Buffer>(this->get_clock());
@@ -656,6 +659,13 @@ void R1MainNode::sabacan_led_ref(uint8_t r, uint8_t g, uint8_t b)
   msg.b = b;
   sabacan_led_ref_publisher_->publish(msg);
   // RCLCPP_INFO(this->get_logger(), "sabacan led ref r: %d, g: %d, b: %d", r, g, b);
+}
+
+void R1MainNode::publish_r1_machine_initialize(void)
+{
+  std_msgs::msg::Empty msg;
+  r1_machine_initialize_publisher_->publish(msg);
+  RCLCPP_INFO(this->get_logger(), "publish /r1_machine_initialize");
 }
 
 void R1MainNode::sabacan_led_update(void)
@@ -1901,6 +1911,7 @@ void R1MainNode::manual_task(void)
     // psボタンが押されたときはsabacan resetを行う
     if (ps4_->is_pushed_ps()) {
       reset_robot();
+      publish_r1_machine_initialize();
     }
     // shareボタンが押されたときはモードを切り替える
     if (ps4_->is_pushed_share()) {
@@ -1972,6 +1983,7 @@ void R1MainNode::auto_task(void)
     // psボタンが押されたときはsabacan resetを行う
     if (ps4_->is_pushed_ps()) {
       reset_robot();
+      publish_r1_machine_initialize();
     }
     // shareボタンが押されたときはモードを切り替える
     if (ps4_->is_pushed_share()) {
