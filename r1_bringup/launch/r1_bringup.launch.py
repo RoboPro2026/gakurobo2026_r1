@@ -419,6 +419,23 @@ def generate_launch_description():
 
     # r1_mainのノードの起動を遅延させる
     common_nodes = [
+        # 最初にsabacanを起動
+        # can0
+        sabacan_robomasv2_node_id1,
+        sabacan_robomasv2_node_id2,
+        sabacan_robomasv2_node_id3,
+        sabacan_robomasv2_node_id4,
+        sabacan_robomasv2_node_id5,
+        sabacan_robomasv2_node_id6,
+        sabacan_robomasv2_node_id7,
+        sabacan_gpio_node_id1,
+        sabacan_gpio_node_id2,
+        sabacan_gpio_node_id3,
+        sabacan_power_node_id0,
+        sabacan_led_node_id1,
+        # can1
+        sabacan_robstride_node_id1,
+        # 次にsabacan_single_control以外のノードを起動
         r1_chassis_control_node,
         # r1_mecanum_node,
         r1_swerve_drive_node,
@@ -438,6 +455,7 @@ def generate_launch_description():
         r1_spear_roll_node,
         r1_spear_pitch1_node,
         r1_spear_pitch2_node,
+        # 最後にsabacan_single_controlを起動
         sabacan_single_control_id1_motor0,
         sabacan_single_control_id1_motor1,
         sabacan_single_control_id1_motor2,
@@ -462,21 +480,6 @@ def generate_launch_description():
         sabacan_single_control_id6_motor1,
         sabacan_single_control_id6_motor2,
         sabacan_single_control_id6_motor3,
-        # can0
-        sabacan_robomasv2_node_id1,
-        sabacan_robomasv2_node_id2,
-        sabacan_robomasv2_node_id3,
-        sabacan_robomasv2_node_id4,
-        sabacan_robomasv2_node_id5,
-        sabacan_robomasv2_node_id6,
-        sabacan_robomasv2_node_id7,
-        sabacan_gpio_node_id1,
-        sabacan_gpio_node_id2,
-        sabacan_gpio_node_id3,
-        sabacan_power_node_id0,
-        sabacan_led_node_id1,
-        # can1
-        sabacan_robstride_node_id1,
     ]
 
     real_nodes = [
