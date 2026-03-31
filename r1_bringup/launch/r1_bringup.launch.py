@@ -94,7 +94,7 @@ def generate_launch_description():
         executable="r1_machine_manage_node",
         name="r1_machine_manage_node",
         parameters=[param_file],
-        arguments=["--ros-args", "--log-level", "warn"],
+        arguments=["--ros-args", "--log-level", "info"],
     )
 
     def create_r1_linear_motion_node(
@@ -232,6 +232,7 @@ def generate_launch_description():
         board_id: int,
         motor_number: int,
         control_cycle: float,
+        change_mode_delay: float = 0.2,
         log_level="warn",
     ) -> Node:
         return Node(
@@ -244,7 +245,7 @@ def generate_launch_description():
                     "board_id": board_id,
                     "motor_number": motor_number,
                     "control_cycle": control_cycle,
-                    "change_mode_delay": 0.2,
+                    "change_mode_delay": change_mode_delay,
                 },
             ],
             arguments=["--ros-args", "--log-level", log_level],
