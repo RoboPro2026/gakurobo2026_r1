@@ -4,7 +4,17 @@
 
 現行実装では、足回りの制御方式を `drive_mode` パラメータで `mecanum` / `swerve` に切り替えられます。`mecanum` では従来の `/mecanum_wheel_speeds_ref` と `/mecanum_wheel_speeds_feedback` を使い、`swerve` では `/swerve_drive_ref` から 4 輪の wheel / steer 指令へ分解して Sabacan 単軸指令へ流します。
 
-また、`/sabacan_power_status0` の EMS / SOFT EMS を監視し、非常停止中は `r1_machine_manage_node` 内で全モータ指令を open-loop 停止へ強制します。Robomas は `TORQUE 0.0`、VESC / Robstride は `CURRENT 0.0` を出し、非常停止解除後も `/r1_machine_initialize` を受け取るまでは open-loop 停止を維持します。
+また、`/sabacan_power_status0` の EMS / SOFT EMS を監視し、非常停止中は `r1_machine_manage_node` 内で全モータ指令を open-loop 停止へ強制します。Robomas は `TORQUE 0.0`、VESC / Robstride は `CURRENT 0.0` を出し、非常停止解除後も `/r1_machine_initialize` を受け取るまでは open-loop 停止を維持します。`/r1_machine_initialize` を受けたときは、Sabacan reset を順番に発行したあとで motion node へ initialize を中継します。
+
+## Sabacan 構成
+
+- Robomas は `board_id=1..7` を使用します。
+- GPIO は `board_id=1..3` を使用します。
+- Robstride は `board_id=1` を使用します。
+- Power と LED はそれぞれ 1 台だけを単独で扱い、配列化していません。
+- これらの使用数は `r1_machine_manage_node` 内の定数 `kSabacanRobomasNumber`、`kSabacanGpioNumber`、`kSabacanRobstrideNumber`、`kSabacanPowerNumber`、`kSabacanLedNumber` を変更すると追従します。
+- `board_id` を index に使う内部 vector は、最大 board_id に合わせて `0..7` の slot を確保しています。
+- reset service は `/sabacan_power_reset`、`/sabacan_robomas_reset_id1..7`、`/sabacan_gpio_reset_id1..3`、`/sabacan_led_reset` を使用します。
 
 ## 役割
 
@@ -16,7 +26,7 @@
 - 足回り以外の機構チャネルは drive mode に関係なく有効で、Robomas と Robstride の両方を扱える。
 - `SabacanPowerStatus` による非常停止中は、全モータ指令を open-loop 停止へ上書きする。
 - 非常停止解除後は `/r1_machine_initialize` 受信まで open-loop 停止を継続する。
-- `/r1_machine_initialize` を受けると、linear / angle motion node へ initialize 信号も中継する。
+- `/r1_machine_initialize` を受けると、Sabacan reset を順番に実行し、その完了後に linear / angle motion node へ initialize 信号を中継する。
 
 ## Drive Mode
 
@@ -44,18 +54,22 @@
 
 ### Common Subscribe
 
-- `/sabacan_robomas_status0` ... `/sabacan_robomas_status9` (`sabacan_msgs/msg/SabacanRobomasStatus`)
-- `/sabacan_robstride_status0` ... `/sabacan_robstride_status9` (`sabacan_msgs/msg/SabacanRobstrideStatus`)
-- `/sabacan_gpio_status0` ... `/sabacan_gpio_status9` (`sabacan_msgs/msg/SabacanGPIOStatus`)
+- `/sabacan_robomas_status1` ... `/sabacan_robomas_status7` (`sabacan_msgs/msg/SabacanRobomasStatus`)
+- `/sabacan_robstride_status1` (`sabacan_msgs/msg/SabacanRobstrideStatus`)
+- `/sabacan_gpio_status1` ... `/sabacan_gpio_status3` (`sabacan_msgs/msg/SabacanGPIOStatus`)
 - `/sabacan_power_status0` (`sabacan_msgs/msg/SabacanPowerStatus`)
 - `/r1_machine_initialize` (`std_msgs/msg/Empty`)
 - `*_torque_limit_ref` (`std_msgs/msg/Float64`): Robomas の linear / angle motion 軸だけを対象に購読し、対応 board / motor の `torque_lim` へ反映します。
 
 ### Common Publish
 
-- `/sabacan_gpio_ref_int0` ... `/sabacan_gpio_ref_int9` (`sabacan_msgs/msg/SabacanGPIORefInt`)
-- `/sabacan_gpio_ref_float0` ... `/sabacan_gpio_ref_float9` (`sabacan_msgs/msg/SabacanGPIORefFloat`)
-- `/sabacan_robomasv2_node_id*/set_robomas_gains` (`sabacan_msgs/srv/SetRobomasGains`)
+- `/sabacan_gpio_ref_int0` ... `/sabacan_gpio_ref_int7` (`sabacan_msgs/msg/SabacanGPIORefInt`)
+- `/sabacan_gpio_ref_float0` ... `/sabacan_gpio_ref_float7` (`sabacan_msgs/msg/SabacanGPIORefFloat`)
+- `/set_robomas_gains_id0` ... `/set_robomas_gains_id7` (`sabacan_msgs/srv/SetRobomasGains`)
+- `/sabacan_power_reset` (`sabacan_msgs/srv/SabacanReset`)
+- `/sabacan_robomas_reset_id1` ... `/sabacan_robomas_reset_id7`
+- `/sabacan_gpio_reset_id1` ... `/sabacan_gpio_reset_id3`
+- `/sabacan_led_reset`
 
 ### Mecanum Mode
 
@@ -190,4 +204,4 @@ ros2 run r1_machine r1_machine_manage_node --ros-args -p drive_mode:=swerve
   - `ros2 topic echo /debug_swerve_fr_steer_motor_status`
 - 非常停止解除後に制御復帰させる:
   - `ros2 topic pub --once /r1_machine_initialize std_msgs/msg/Empty "{}"`
-- この信号は非常停止ラッチ解除だけでなく、`r1_linear_motion_node` / `r1_angle_motion_node` の soft reset にも使われます。
+- この信号は非常停止ラッチ解除だけでなく、Sabacan reset と `r1_linear_motion_node` / `r1_angle_motion_node` の soft reset にも使われます。

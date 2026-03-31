@@ -216,10 +216,11 @@ def generate_launch_description():
                 ("from_can_bus", from_can_bus),
                 ("to_can_bus", to_can_bus),
                 ("sabacan_robomas_reset", f"sabacan_robomas_reset_id{board_id}"),
+                ("set_robomas_gains", f"set_robomas_gains_id{board_id}"),
             ],
         )
 
-    sabacan_robomasv2_node_id1 = create_sabacan_robomasv2_node(1)
+    sabacan_robomasv2_node_id1 = create_sabacan_robomasv2_node(1, "info")
     sabacan_robomasv2_node_id2 = create_sabacan_robomasv2_node(2)
     sabacan_robomasv2_node_id3 = create_sabacan_robomasv2_node(3)
     sabacan_robomasv2_node_id4 = create_sabacan_robomasv2_node(4)
@@ -341,8 +342,8 @@ def generate_launch_description():
         )
 
     # canbus1
-    sabacan_robstride_node_id2 = create_sabacan_robstride_node(
-        2, from_can_bus="from_can_bus1", to_can_bus="to_can_bus1"
+    sabacan_robstride_node_id1 = create_sabacan_robstride_node(
+        1, from_can_bus="from_can_bus1", to_can_bus="to_can_bus1"
     )
 
     # socket_can_bridge_launch = GroupAction(
@@ -465,7 +466,7 @@ def generate_launch_description():
         sabacan_power_node_id0,
         sabacan_led_node_id1,
         # can1
-        sabacan_robstride_node_id2,
+        sabacan_robstride_node_id1,
     ]
 
     real_nodes = [
@@ -480,10 +481,7 @@ def generate_launch_description():
         r1_sim_launch,
     ]
 
-    delay_nodes = [
-        r1_machine_manage_node,
-        r1_main_node
-    ]
+    delay_nodes = [r1_machine_manage_node, r1_main_node]
 
     # sabacanは遅延させて起動
     return LaunchDescription(

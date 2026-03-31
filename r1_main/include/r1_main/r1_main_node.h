@@ -39,7 +39,6 @@
 #include "rclcpp/rclcpp.hpp"
 #include "sabacan_msgs/msg/sabacan_led_ref.hpp"
 #include "sabacan_msgs/msg/sabacan_power_ref.hpp"
-#include "sabacan_msgs/srv/sabacan_reset.hpp"
 #include "sensor_msgs/msg/imu.hpp"
 #include "sensor_msgs/msg/joy.hpp"
 #include "std_msgs/msg/bool.hpp"
@@ -116,21 +115,6 @@ public:
   rclcpp::Publisher<sabacan_msgs::msg::SabacanPowerRef>::SharedPtr sabacan_power_ref_publisher_;
   // LED基板の指令値Publisher
   rclcpp::Publisher<sabacan_msgs::msg::SabacanLEDRef>::SharedPtr sabacan_led_ref_publisher_;
-  // リセットクライアント
-  rclcpp::Client<sabacan_msgs::srv::SabacanReset>::SharedPtr sabacan_power_reset_client_;
-  rclcpp::Client<sabacan_msgs::srv::SabacanReset>::SharedPtr sabacan_robomas_reset_client_id1_;
-  rclcpp::Client<sabacan_msgs::srv::SabacanReset>::SharedPtr sabacan_robomas_reset_client_id2_;
-  rclcpp::Client<sabacan_msgs::srv::SabacanReset>::SharedPtr sabacan_robomas_reset_client_id3_;
-  rclcpp::Client<sabacan_msgs::srv::SabacanReset>::SharedPtr sabacan_robomas_reset_client_id4_;
-  rclcpp::Client<sabacan_msgs::srv::SabacanReset>::SharedPtr sabacan_robomas_reset_client_id5_;
-  rclcpp::Client<sabacan_msgs::srv::SabacanReset>::SharedPtr sabacan_robomas_reset_client_id6_;
-  rclcpp::Client<sabacan_msgs::srv::SabacanReset>::SharedPtr sabacan_gpio_reset_client_id1_;
-  rclcpp::Client<sabacan_msgs::srv::SabacanReset>::SharedPtr sabacan_gpio_reset_client_id2_;
-  rclcpp::Client<sabacan_msgs::srv::SabacanReset>::SharedPtr sabacan_gpio_reset_client_id3_;
-  rclcpp::Client<sabacan_msgs::srv::SabacanReset>::SharedPtr sabacan_led_reset_client_;
-  rclcpp::Time sabacan_reset_last_send_time_ = rclcpp::Time(0LL, RCL_SYSTEM_TIME);
-  bool sabacan_reset_last_send_valid_ = false;
-  size_t sabacan_reset_step_ = 0;
   // IMUのSubscription
   rclcpp::Subscription<sensor_msgs::msg::Imu>::SharedPtr imu_subscription_;
   double yaw_ = 0.0;
@@ -198,14 +182,6 @@ public:
 
   // sabacan
   bool sabacan_is_ems_ = false;
-  static constexpr int SABACAN_AVAILABLE = 0;
-  static constexpr int SABACAN_RESET_NOW = 1;
-  static constexpr int SABACAN_RESET_SENDING = 2;
-  int sabacan_reset_status_ = SABACAN_AVAILABLE;
-  // actuator
-  static constexpr int ACTUATOR_AVAILABLE = 0;
-  static constexpr int ACTUATOR_INITIALIZING = 1;
-  int actuator_status_ = ACTUATOR_AVAILABLE;
 
   // robot_move
   r1_msgs::msg::RobotMove current_robot_move_;
@@ -308,8 +284,6 @@ public:
     const std::string & name, double & value, double default_value = 0.0);
   void declare_and_get_parameter(const std::string & name, int & value, int default_value = 0);
   // sabacan
-  void sabacan_reset_update(void);
-  void sabacan_reset(void);
   void sabacan_power_ref(bool is_ems);
   void sabacan_led_ref(uint8_t r, uint8_t g, uint8_t b);
   void publish_r1_machine_initialize(void);
@@ -361,9 +335,6 @@ public:
   // 位置制御は止められないので、そのまま
   // TODO: 位置制御系も止められるようにする
   void stop_actuator(void);
-  // 位置制御系のアクチュエータを初期位置に移動する
-  void init_actuator(void);
-  void actuator_update(void);
   // ========== 原点検出関数 ==========
   // KFS回収
   void kfs_fx_detect_origin(void);

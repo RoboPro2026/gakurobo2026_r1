@@ -312,31 +312,6 @@ R1MainNode::R1MainNode() : Node("r1_main_node")
   // LED基板の指令値Publisher
   sabacan_led_ref_publisher_ =
     this->create_publisher<sabacan_msgs::msg::SabacanLEDRef>("/sabacan_led_ref1", 10);
-  // 電源基板のリセットサービスClient
-  sabacan_power_reset_client_ =
-    this->create_client<sabacan_msgs::srv::SabacanReset>("/sabacan_power_reset");
-  // ロボマス制御基板のリセットサービスClient
-  sabacan_robomas_reset_client_id1_ =
-    this->create_client<sabacan_msgs::srv::SabacanReset>("/sabacan_robomas_reset_id1");
-  sabacan_robomas_reset_client_id2_ =
-    this->create_client<sabacan_msgs::srv::SabacanReset>("/sabacan_robomas_reset_id2");
-  sabacan_robomas_reset_client_id3_ =
-    this->create_client<sabacan_msgs::srv::SabacanReset>("/sabacan_robomas_reset_id3");
-  sabacan_robomas_reset_client_id4_ =
-    this->create_client<sabacan_msgs::srv::SabacanReset>("/sabacan_robomas_reset_id4");
-  sabacan_robomas_reset_client_id5_ =
-    this->create_client<sabacan_msgs::srv::SabacanReset>("/sabacan_robomas_reset_id5");
-  sabacan_robomas_reset_client_id6_ =
-    this->create_client<sabacan_msgs::srv::SabacanReset>("/sabacan_robomas_reset_id6");
-  // GPIO基板のリセットサービスClient
-  sabacan_gpio_reset_client_id1_ =
-    this->create_client<sabacan_msgs::srv::SabacanReset>("/sabacan_gpio_reset_id1");
-  sabacan_gpio_reset_client_id2_ =
-    this->create_client<sabacan_msgs::srv::SabacanReset>("/sabacan_gpio_reset_id2");
-  sabacan_gpio_reset_client_id3_ =
-    this->create_client<sabacan_msgs::srv::SabacanReset>("/sabacan_gpio_reset_id3");
-  sabacan_led_reset_client_ =
-    this->create_client<sabacan_msgs::srv::SabacanReset>("/sabacan_led_reset");
 
   // IMU
   imu_subscription_ = this->create_subscription<sensor_msgs::msg::Imu>(
@@ -554,91 +529,6 @@ void R1MainNode::joy_callback(const sensor_msgs::msg::Joy::SharedPtr msg)
   ps4_->joy_callback(msg);
 }
 
-void R1MainNode::sabacan_reset_update(void)
-{
-  // resetクライアントのやることがないときはreturn
-  if (sabacan_reset_status_ == SABACAN_AVAILABLE) {
-    return;
-  }
-
-  if (sabacan_reset_status_ == SABACAN_RESET_NOW) {
-    sabacan_reset_status_ = SABACAN_RESET_SENDING;
-    sabacan_reset_step_ = 0;
-    sabacan_reset_last_send_valid_ = false;
-  }
-
-  const rclcpp::Duration send_interval = rclcpp::Duration::from_seconds(1.0);
-  const auto now = this->get_clock()->now();
-  if (sabacan_reset_last_send_valid_ && (now - sabacan_reset_last_send_time_) < send_interval) {
-    return;
-  }
-
-  auto try_send = [this](
-                    const rclcpp::Client<sabacan_msgs::srv::SabacanReset>::SharedPtr & client,
-                    const char * service_name) -> void {
-    auto request = std::make_shared<sabacan_msgs::srv::SabacanReset::Request>();
-    client->async_send_request(
-      request,
-      [this, service_name](rclcpp::Client<sabacan_msgs::srv::SabacanReset>::SharedFuture future) {
-        (void)future.get();
-        RCLCPP_INFO(this->get_logger(), "sabacan reset sent: %s", service_name);
-      });
-  };
-
-  switch (sabacan_reset_step_) {
-    case 0:
-      try_send(sabacan_power_reset_client_, "/sabacan_power_reset");
-      break;
-    case 1:
-      try_send(sabacan_robomas_reset_client_id1_, "/sabacan_robomas_reset_id1");
-      break;
-    case 2:
-      try_send(sabacan_robomas_reset_client_id2_, "/sabacan_robomas_reset_id2");
-      break;
-    case 3:
-      try_send(sabacan_robomas_reset_client_id3_, "/sabacan_robomas_reset_id3");
-      break;
-    case 4:
-      try_send(sabacan_robomas_reset_client_id4_, "/sabacan_robomas_reset_id4");
-      break;
-    case 5:
-      try_send(sabacan_robomas_reset_client_id5_, "/sabacan_robomas_reset_id5");
-      break;
-    case 6:
-      try_send(sabacan_robomas_reset_client_id6_, "/sabacan_robomas_reset_id6");
-      break;
-    case 7:
-      try_send(sabacan_gpio_reset_client_id1_, "/sabacan_gpio_reset_id1");
-      break;
-    case 8:
-      try_send(sabacan_gpio_reset_client_id2_, "/sabacan_gpio_reset_id2");
-      break;
-    case 9:
-      try_send(sabacan_gpio_reset_client_id3_, "/sabacan_gpio_reset_id3");
-      break;
-    case 10:
-      try_send(sabacan_led_reset_client_, "/sabacan_led_reset");
-      break;
-  }
-
-  sabacan_reset_last_send_time_ = now;
-  sabacan_reset_last_send_valid_ = true;
-  sabacan_reset_step_++;
-  // stepは最後の処理が終わるのにかかる時間も考慮し、1つ多く設定する
-  if (sabacan_reset_step_ >= 12) {
-    sabacan_reset_status_ = SABACAN_AVAILABLE;
-    RCLCPP_INFO(this->get_logger(), "sabacan reset completed");
-  }
-}
-
-void R1MainNode::sabacan_reset(void)
-{
-  if (sabacan_reset_status_ != SABACAN_AVAILABLE) {
-    return;
-  }
-  sabacan_reset_status_ = SABACAN_RESET_NOW;
-}
-
 void R1MainNode::sabacan_power_ref(bool is_ems)
 {
   sabacan_msgs::msg::SabacanPowerRef msg;
@@ -773,9 +663,7 @@ geometry_msgs::msg::PoseStamped R1MainNode::get_map_pos()
 void R1MainNode::timer_callback(void)
 {
   ps4_->update();
-  sabacan_reset_update();
   sabacan_led_update();
-  actuator_update();
   // 状態を更新
   state_machine_->update();
   // タスクを実行
@@ -862,28 +750,6 @@ void R1MainNode::stop_actuator(void)
   // KFS回収電磁弁を止める
   kfs_front_valve(false);
   kfs_rear_valve(false);
-}
-
-void R1MainNode::init_actuator(void) { actuator_status_ = ACTUATOR_INITIALIZING; }
-
-void R1MainNode::actuator_update(void)
-{
-  // sabacanのresetが完了したら、actuatorを初期化する
-  if (sabacan_reset_status_ == SABACAN_AVAILABLE && actuator_status_ == ACTUATOR_INITIALIZING) {
-    // 位置制御系のアクチュエータを初期位置に移動
-    // TODO: 将来的にはこの関数で原点検出も行う
-    // TODO: 現在リファクタリング中のため、一旦コメントアウト
-    // kfs_fx(KFS_FX_NORMAL_POS);
-    // kfs_fz(KFS_FZ_NORMAL_POS);
-    // kfs_fyaw(KFS_FYAW_NORMAL_ANGLE);
-    // kfs_rx(KFS_RX_NORMAL_POS);
-    // kfs_rz(KFS_RZ_NORMAL_POS);
-    // kfs_ryaw(KFS_RYAW_NORMAL_ANGLE);
-    // 位置制御系以外のアクチュエータは停止状態にする
-    stop_actuator();
-    actuator_status_ = ACTUATOR_AVAILABLE;
-    RCLCPP_INFO(this->get_logger(), "robot initialized");
-  }
 }
 
 // --- 各状態のタスク ---
@@ -1869,15 +1735,13 @@ void R1MainNode::reset_step(void)
 
 void R1MainNode::reset_robot(void)
 {
-  // sabacanにリセット信号を送信する
-  sabacan_reset();
   // stepをリセットする
   reset_step();
   // 現在の角度が0度となるようなオフセットを設定する。
   set_mecanum_yaw(0.0);
   // 位置は適当
   set_odometry(0.0, 0.0, 0.0);
-  init_actuator();
+  stop_actuator();
   is_initialized_ = true;
 }
 

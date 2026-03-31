@@ -9,6 +9,7 @@
  *
  */
 
+#include <algorithm>
 #include <array>
 #include <cctype>
 #include <chrono>
@@ -40,6 +41,7 @@
 #include "sabacan_msgs/msg/sabacan_robomas_status.hpp"
 #include "sabacan_msgs/msg/sabacan_robstride_ref.hpp"
 #include "sabacan_msgs/msg/sabacan_robstride_status.hpp"
+#include "sabacan_msgs/srv/sabacan_reset.hpp"
 #include "sabacan_msgs/srv/set_robomas_gains.hpp"
 #include "sabacan_single_control_msgs/msg/sabacan_robomas_single_ref.hpp"
 #include "std_msgs/msg/empty.hpp"
@@ -51,6 +53,19 @@ constexpr const char * kSwerveWheelControlType = "VELOCITY";
 constexpr const char * kSwerveSteerControlType = "POSITION";
 constexpr const char * kRobstrideMotorType = "ROBSTRIDE";
 constexpr const char * kRobstridePositionControlType = "PP";
+
+// 使用するデバイスの数
+// Robomas / GPIO は board_id 1..N を使用する。
+// Power / LED はそれぞれ 1 台だけを単独で扱う。
+constexpr int kSabacanRobomasNumber = 7;
+constexpr int kSabacanGpioNumber = 3;
+constexpr int kSabacanRobstrideNumber = 1;
+constexpr int kSabacanPowerNumber = 1;
+constexpr int kSabacanLedNumber = 1;
+constexpr std::size_t kSabacanBoardSlotCount = static_cast<std::size_t>(
+  std::max({kSabacanRobomasNumber, kSabacanGpioNumber, kSabacanRobstrideNumber}) + 1);
+constexpr std::size_t kSabacanResetServiceNumber = static_cast<std::size_t>(
+  kSabacanPowerNumber + kSabacanLedNumber + kSabacanRobomasNumber + kSabacanGpioNumber);
 
 /**
  * @brief 足回りの制御方式を表す列挙型。
@@ -251,6 +266,13 @@ using SubscriptionPtr = typename rclcpp::Subscription<MsgT>::SharedPtr;
 using SingleRefPublisher = PublisherPtr<sabacan_single_control_msgs::msg::SabacanRobomasSingleRef>;
 using RobstrideRefPublisher = PublisherPtr<sabacan_msgs::msg::SabacanRobstrideRef>;
 using SetRobomasGainsClient = rclcpp::Client<sabacan_msgs::srv::SetRobomasGains>;
+using SabacanResetClient = rclcpp::Client<sabacan_msgs::srv::SabacanReset>;
+
+struct SabacanResetServiceEntry
+{
+  std::string service_name;
+  SabacanResetClient::SharedPtr client;
+};
 
 /**
  * @brief メカナム足回り 1 輪分の配線情報を保持する。
@@ -390,8 +412,12 @@ static MotorStatusChannel make_velocity_control_channel(
   MotorControllerType controller_type = MotorControllerType::Robomas)
 {
   return MotorStatusChannel{
-    info, make_topic(name, "_motor_ref"), make_topic(name, "_motor_status"),
-    make_debug_motor_status_topic(name), "", controller_type};
+    info,
+    make_topic(name, "_motor_ref"),
+    make_topic(name, "_motor_status"),
+    make_debug_motor_status_topic(name),
+    "",
+    controller_type};
 }
 
 /**
@@ -648,6 +674,8 @@ public:
    */
   MachineManageNode() : Node("r1_machine_manage_node")
   {
+    sabacan_reset_last_send_time_ = rclcpp::Time(0, 0, this->get_clock()->get_clock_type());
+
     load_drive_configuration();
     initialize_sabacan_gpio_publishers();
     initialize_sabacan_status_subscriptions();
@@ -680,6 +708,13 @@ private:
     TIMER_VELOCITY_CONTROL,
     TIMER_GPIO,
     TIMER_COUNT,
+  };
+
+  enum class SabacanResetState
+  {
+    Idle,
+    Requested,
+    Sending,
   };
 
   /**
@@ -726,8 +761,8 @@ private:
    */
   void initialize_sabacan_gpio_publishers()
   {
-    sabacan_gpio_ref_int_publishers_.resize(10);
-    sabacan_gpio_ref_float_publishers_.resize(10);
+    sabacan_gpio_ref_int_publishers_.resize(kSabacanBoardSlotCount);
+    sabacan_gpio_ref_float_publishers_.resize(kSabacanBoardSlotCount);
     for (std::size_t i = 0; i < sabacan_gpio_ref_int_publishers_.size(); ++i) {
       sabacan_gpio_ref_int_publishers_[i] =
         this->create_publisher<sabacan_msgs::msg::SabacanGPIORefInt>(
@@ -743,31 +778,37 @@ private:
    */
   void initialize_sabacan_status_subscriptions()
   {
-    sabacan_robomas_status_subscriptions_.resize(10);
-    sabacan_robstride_status_subscriptions_.resize(10);
-    sabacan_gpio_status_subscriptions_.resize(10);
-
-    for (std::size_t i = 0; i < sabacan_robomas_status_subscriptions_.size(); ++i) {
-      sabacan_robomas_status_subscriptions_[i] =
+    sabacan_robomas_status_subscriptions_.clear();
+    sabacan_robomas_status_subscriptions_.reserve(kSabacanRobomasNumber);
+    for (int board_id = 1; board_id <= kSabacanRobomasNumber; ++board_id) {
+      sabacan_robomas_status_subscriptions_.push_back(
         this->create_subscription<sabacan_msgs::msg::SabacanRobomasStatus>(
-          "/sabacan_robomas_status" + std::to_string(i), 10,
-          [this, i](sabacan_msgs::msg::SabacanRobomasStatus::SharedPtr msg) {
-            this->sabacan_robomas_status_callback(static_cast<int>(i), msg);
-          });
+          "/sabacan_robomas_status" + std::to_string(board_id), 10,
+          [this, board_id](sabacan_msgs::msg::SabacanRobomasStatus::SharedPtr msg) {
+            this->sabacan_robomas_status_callback(board_id, msg);
+          }));
+    }
 
-      sabacan_robstride_status_subscriptions_[i] =
+    sabacan_robstride_status_subscriptions_.clear();
+    sabacan_robstride_status_subscriptions_.reserve(kSabacanRobstrideNumber);
+    for (int board_id = 1; board_id <= kSabacanRobstrideNumber; ++board_id) {
+      sabacan_robstride_status_subscriptions_.push_back(
         this->create_subscription<sabacan_msgs::msg::SabacanRobstrideStatus>(
-          "/sabacan_robstride_status" + std::to_string(i), 10,
-          [this, i](sabacan_msgs::msg::SabacanRobstrideStatus::SharedPtr msg) {
-            this->sabacan_robstride_status_callback(static_cast<int>(i), msg);
-          });
+          "/sabacan_robstride_status" + std::to_string(board_id), 10,
+          [this, board_id](sabacan_msgs::msg::SabacanRobstrideStatus::SharedPtr msg) {
+            this->sabacan_robstride_status_callback(board_id, msg);
+          }));
+    }
 
-      sabacan_gpio_status_subscriptions_[i] =
+    sabacan_gpio_status_subscriptions_.clear();
+    sabacan_gpio_status_subscriptions_.reserve(kSabacanGpioNumber);
+    for (int board_id = 1; board_id <= kSabacanGpioNumber; ++board_id) {
+      sabacan_gpio_status_subscriptions_.push_back(
         this->create_subscription<sabacan_msgs::msg::SabacanGPIOStatus>(
-          "/sabacan_gpio_status" + std::to_string(i), 10,
-          [this, i](sabacan_msgs::msg::SabacanGPIOStatus::SharedPtr msg) {
-            this->sabacan_gpio_status_callback(static_cast<int>(i), msg);
-          });
+          "/sabacan_gpio_status" + std::to_string(board_id), 10,
+          [this, board_id](sabacan_msgs::msg::SabacanGPIOStatus::SharedPtr msg) {
+            this->sabacan_gpio_status_callback(board_id, msg);
+          }));
     }
   }
 
@@ -776,11 +817,29 @@ private:
    */
   void initialize_sabacan_service_clients()
   {
-    set_robomas_gains_clients_.resize(10);
+    set_robomas_gains_clients_.resize(kSabacanBoardSlotCount);
     for (std::size_t i = 0; i < set_robomas_gains_clients_.size(); ++i) {
       set_robomas_gains_clients_[i] = this->create_client<sabacan_msgs::srv::SetRobomasGains>(
-        "/sabacan_robomasv2_node_id" + std::to_string(i) + "/set_robomas_gains");
+        "/set_robomas_gains_id" + std::to_string(i));
     }
+
+    sabacan_reset_service_entries_.clear();
+    sabacan_reset_service_entries_.reserve(kSabacanResetServiceNumber);
+
+    auto add_reset_service = [this](const std::string & service_name) {
+      sabacan_reset_service_entries_.push_back(
+        SabacanResetServiceEntry{
+          service_name, this->create_client<sabacan_msgs::srv::SabacanReset>(service_name)});
+    };
+
+    add_reset_service("/sabacan_power_reset");
+    for (int board_id = 1; board_id <= kSabacanRobomasNumber; ++board_id) {
+      add_reset_service("/sabacan_robomas_reset_id" + std::to_string(board_id));
+    }
+    for (int board_id = 1; board_id <= kSabacanGpioNumber; ++board_id) {
+      add_reset_service("/sabacan_gpio_reset_id" + std::to_string(board_id));
+    }
+    add_reset_service("/sabacan_led_reset");
   }
 
   /**
@@ -795,6 +854,8 @@ private:
     initialize_signal_subscription_ = this->create_subscription<std_msgs::msg::Empty>(
       "/r1_machine_initialize", 10,
       std::bind(&MachineManageNode::initialize_signal_callback, this, std::placeholders::_1));
+    sabacan_reset_timer_ = this->create_wall_timer(
+      std::chrono::milliseconds(100), std::bind(&MachineManageNode::sabacan_reset_update, this));
   }
 
   /**
@@ -1462,7 +1523,106 @@ private:
    */
   bool should_force_open_loop() const
   {
-    return emergency_feedback_active_ || emergency_reinit_required_;
+    return emergency_feedback_active_ || emergency_reinit_required_ ||
+           sabacan_reset_state_ != SabacanResetState::Idle;
+  }
+
+  /**
+   * @brief Sabacan reset シーケンスを開始する。
+   * @param request_name 起動契機の topic / 操作名
+   */
+  void start_sabacan_reset_sequence(const char * request_name)
+  {
+    if (sabacan_reset_state_ != SabacanResetState::Idle) {
+      RCLCPP_WARN(
+        this->get_logger(), "ignored %s because sabacan reset is already running", request_name);
+      return;
+    }
+
+    sabacan_reset_state_ = SabacanResetState::Requested;
+    sabacan_reset_step_ = 0;
+    sabacan_reset_last_send_valid_ = false;
+    publish_open_loop_stop_to_enabled_motors();
+    RCLCPP_INFO(this->get_logger(), "received %s. starting sabacan reset sequence", request_name);
+  }
+
+  /**
+   * @brief reset 完了後に motion node へ initialize を転送し、必要なら open-loop ラッチを解除する。
+   */
+  void finish_initialize_sequence_after_reset()
+  {
+    if (emergency_feedback_active_) {
+      RCLCPP_WARN(
+        this->get_logger(),
+        "sabacan reset completed while emergency is active. keep open-loop stop and skip "
+        "initialize forwarding");
+      return;
+    }
+
+    const bool was_reinit_required = emergency_reinit_required_;
+    emergency_reinit_required_ = false;
+    publish_initialize_channels(linear_motion_channels_);
+    publish_initialize_channels(angle_motion_channels_);
+
+    if (was_reinit_required) {
+      RCLCPP_INFO(
+        this->get_logger(),
+        "sabacan reset completed. restoring normal motor control routing and forwarding "
+        "initialize to motion nodes");
+      return;
+    }
+
+    RCLCPP_INFO(
+      this->get_logger(), "sabacan reset completed. forwarding initialize to motion nodes");
+  }
+
+  /**
+   * @brief Sabacan reset service 群へ順番に request を送り、完了後に initialize を転送する。
+   */
+  void sabacan_reset_update()
+  {
+    if (sabacan_reset_state_ == SabacanResetState::Idle) {
+      return;
+    }
+
+    if (sabacan_reset_state_ == SabacanResetState::Requested) {
+      sabacan_reset_state_ = SabacanResetState::Sending;
+      sabacan_reset_step_ = 0;
+      sabacan_reset_last_send_valid_ = false;
+    }
+
+    const rclcpp::Duration send_interval = rclcpp::Duration::from_seconds(1.0);
+    const auto now = this->get_clock()->now();
+    if (sabacan_reset_last_send_valid_ && (now - sabacan_reset_last_send_time_) < send_interval) {
+      return;
+    }
+
+    if (sabacan_reset_step_ >= sabacan_reset_service_entries_.size()) {
+      sabacan_reset_state_ = SabacanResetState::Idle;
+      finish_initialize_sequence_after_reset();
+      return;
+    }
+
+    const auto & entry = sabacan_reset_service_entries_[sabacan_reset_step_];
+    if (!entry.client) {
+      RCLCPP_WARN(
+        this->get_logger(), "sabacan reset client is null: %s", entry.service_name.c_str());
+    } else if (!entry.client->wait_for_service(std::chrono::milliseconds(0))) {
+      RCLCPP_WARN(
+        this->get_logger(), "sabacan reset service is not ready: %s", entry.service_name.c_str());
+    } else {
+      auto request = std::make_shared<sabacan_msgs::srv::SabacanReset::Request>();
+      entry.client->async_send_request(
+        request, [this, service_name = entry.service_name](
+                   rclcpp::Client<sabacan_msgs::srv::SabacanReset>::SharedFuture future) {
+          (void)future.get();
+          RCLCPP_INFO(this->get_logger(), "sabacan reset sent: %s", service_name.c_str());
+        });
+    }
+
+    sabacan_reset_last_send_time_ = now;
+    sabacan_reset_last_send_valid_ = true;
+    ++sabacan_reset_step_;
   }
 
   /**
@@ -1700,21 +1860,7 @@ private:
         this->get_logger(), "ignored /r1_machine_initialize because sabacan is still in emergency");
       return;
     }
-    const bool was_reinit_required = emergency_reinit_required_;
-    emergency_reinit_required_ = false;
-    publish_initialize_channels(linear_motion_channels_);
-    publish_initialize_channels(angle_motion_channels_);
-
-    if (was_reinit_required) {
-      RCLCPP_INFO(
-        this->get_logger(),
-        "received /r1_machine_initialize. restoring normal motor control routing and forwarding "
-        "initialize to motion nodes");
-      return;
-    }
-
-    RCLCPP_INFO(
-      this->get_logger(), "received /r1_machine_initialize. forwarding initialize to motion nodes");
+    start_sabacan_reset_sequence("/r1_machine_initialize");
   }
 
   /**
@@ -2075,13 +2221,19 @@ private:
   std::vector<SubscriptionPtr<sabacan_msgs::msg::SabacanGPIOStatus>>
     sabacan_gpio_status_subscriptions_;
   std::vector<SetRobomasGainsClient::SharedPtr> set_robomas_gains_clients_;
+  std::vector<SabacanResetServiceEntry> sabacan_reset_service_entries_;
   SubscriptionPtr<sabacan_msgs::msg::SabacanPowerStatus> sabacan_power_status_subscription_;
   SubscriptionPtr<std_msgs::msg::Empty> initialize_signal_subscription_;
+  rclcpp::TimerBase::SharedPtr sabacan_reset_timer_;
 
   // drive mode と足回りの制御設定。
   DriveMode drive_mode_{DriveMode::Mecanum};
   bool emergency_feedback_active_{false};
   bool emergency_reinit_required_{false};
+  SabacanResetState sabacan_reset_state_{SabacanResetState::Idle};
+  rclcpp::Time sabacan_reset_last_send_time_{0LL, RCL_SYSTEM_TIME};
+  bool sabacan_reset_last_send_valid_{false};
+  std::size_t sabacan_reset_step_{0};
   std::vector<MotorTypeCacheEntry> motor_type_cache_;
   rclcpp::node_interfaces::OnSetParametersCallbackHandle::SharedPtr parameter_callback_handler_;
 
@@ -2116,23 +2268,17 @@ private:
     make_velocity_control_channel({4, 3}, "r2_rlift"),
   };
   std::vector<LinearMotionChannel> linear_motion_channels_{
-    make_linear_motion_channel({3, 0}, "kfs_fx"),
-    make_linear_motion_channel({3, 1}, "kfs_fz"),
-    make_linear_motion_channel({4, 0}, "kfs_rx"),
-    make_linear_motion_channel({4, 1}, "kfs_rz"),
-    make_linear_motion_channel({5, 0}, "spear1"),
-    make_linear_motion_channel({5, 1}, "spear2"),
-    make_linear_motion_channel({5, 2}, "spear3"),
-    make_linear_motion_channel({5, 3}, "spear4"),
-    make_linear_motion_channel({6, 0}, "spear_x"),
-    make_linear_motion_channel({6, 1}, "spear_y")};
+    make_linear_motion_channel({3, 0}, "kfs_fx"),  make_linear_motion_channel({3, 1}, "kfs_fz"),
+    make_linear_motion_channel({4, 0}, "kfs_rx"),  make_linear_motion_channel({4, 1}, "kfs_rz"),
+    make_linear_motion_channel({5, 0}, "spear1"),  make_linear_motion_channel({5, 1}, "spear2"),
+    make_linear_motion_channel({5, 2}, "spear3"),  make_linear_motion_channel({5, 3}, "spear4"),
+    make_linear_motion_channel({6, 0}, "spear_x"), make_linear_motion_channel({6, 1}, "spear_y")};
   std::vector<AngleMotionChannel> angle_motion_channels_{
-    make_angle_motion_channel({2, 2}, "kfs_fyaw"),
-    make_angle_motion_channel({3, 2}, "kfs_ryaw"),
+    make_angle_motion_channel({2, 2}, "kfs_fyaw"), make_angle_motion_channel({3, 2}, "kfs_ryaw"),
     make_angle_motion_channel({6, 2}, "spear_pitch1"),
     make_angle_motion_channel({6, 3}, "spear_pitch2"),
     // spear_rollはrobstride
-    make_angle_motion_channel({2, -1}, "spear_roll", MotorControllerType::Robstride)};
+    make_angle_motion_channel({1, -1}, "spear_roll", MotorControllerType::Robstride)};
 
   std::vector<GpioFloatOutputChannel> gpio_float_output_channels_{
     make_gpio_float_output_channel({1, 0}, "kfs_front_pump"),
@@ -2140,7 +2286,7 @@ private:
     make_gpio_float_output_channel({1, 2}, "kfs_front_valve"),
     make_gpio_float_output_channel({1, 3}, "kfs_rear_valve"),
     make_gpio_float_output_channel({2, 0}, "spear_u1_value"),
-    make_gpio_float_output_channel({2, 1}, "spear_d2_value"),
+    make_gpio_float_output_channel({2, 1}, "spear_d1_value"),
     make_gpio_float_output_channel({2, 2}, "spear_u2_value"),
     make_gpio_float_output_channel({2, 3}, "spear_d2_value"),
     // 電磁弁は何個つながるかわからないので一旦ここで止めとく

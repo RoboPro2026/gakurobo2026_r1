@@ -834,9 +834,9 @@ sabacan_led_node_id1:
     enable_initialize: false
 
 # can1
-sabacan_robstride_node_id2:
+sabacan_robstride_node_id1:
   ros__parameters:
-    board_id: 2 # 使用するID
+    board_id: 1 # 使用するID
     robstride_type: "EL05"
     # 制御パラメータ
     velocity_mode_limit_cur: 11.0

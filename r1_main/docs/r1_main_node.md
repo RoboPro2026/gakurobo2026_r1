@@ -1,6 +1,6 @@
 # r1_main_node
 
-`r1_main_node` は、R1 全体の高レベル制御を担当する ROS 2 ノードです。PS4 入力、状態遷移、足回り指令、各機構への目標値 publish、Sabacan の reset 要求、自己位置初期化要求をまとめて扱います。
+`r1_main_node` は、R1 全体の高レベル制御を担当する ROS 2 ノードです。PS4 入力、状態遷移、足回り指令、各機構への目標値 publish、`r1_machine_manage_node` への初期化要求、自己位置初期化要求をまとめて扱います。
 
 現行実装では、各機構の topic を `register_position_axis` / `register_velocity_axis` / `register_gpio_*` で登録し、`manual_task()` と `auto_task()` から共通 helper を通して publish する構成になっています。
 
@@ -10,9 +10,8 @@
 - 状態遷移を `StateMachine` で管理し、`IDLE` / `EMERGENCY` / `MANUAL` / `AUTO` を切り替える。
 - 足回りへ `/cmd_vel` を publish する。
 - 各機構へ位置指令、速度指令、GPIO 指令、原点検出指令を publish する。
-- Sabacan の reset service を順番に呼び出す。
 - yaw / odometry / initialpose の初期化を行う。
-- PS ボタン押下時に `/r1_machine_initialize` を publish して、`r1_machine_manage_node` 側の初期化トリガにも使う。
+- PS ボタン押下時に `/r1_machine_initialize` を publish して、`r1_machine_manage_node` 側で Sabacan reset と機構初期化を開始させる。
 
 ## 状態遷移
 
@@ -85,14 +84,10 @@
     - `kfs_front_valve`
     - `kfs_rear_valve`
 
-### Sabacan 関連 Publish / Service
+### Sabacan 関連 Publish
 
 - `/sabacan_power_ref0` (`sabacan_msgs/msg/SabacanPowerRef`)
 - `/sabacan_led_ref1` (`sabacan_msgs/msg/SabacanLEDRef`)
-- `/sabacan_power_reset` (`sabacan_msgs/srv/SabacanReset`)
-- `/sabacan_robomas_reset_id1` ... `/sabacan_robomas_reset_id6`
-- `/sabacan_gpio_reset_id1` ... `/sabacan_gpio_reset_id3`
-- `/sabacan_led_reset`
 
 ## 登録している機構
 
@@ -176,11 +171,11 @@
 
 `reset_robot()` の内容は次の通りです。
 
-- Sabacan reset シーケンスを開始する。
 - 各手順の step を初期化する。
 - `/set_mecanum_yaw` に `0.0` を送る。
 - `/set_odometry` に `(0.0, 0.0, 0.0)` を送る。
-- `init_actuator()` を呼ぶ。
+- 危険なアクチュエータを停止する。
+- Sabacan reset と motion node の initialize は `/r1_machine_initialize` を受けた `r1_machine_manage_node` 側で実行する。
 
 ## パラメータ
 
