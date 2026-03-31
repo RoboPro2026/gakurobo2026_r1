@@ -197,7 +197,7 @@ r1_main_node:
 #     gear_ratio: 0.5
 #     motor_inverse: [true, false, false, true]
 #     use_imu: true
-ode:
+r1_swerve_drive_node:
   ros__parameters:
     robot_length: 0.8
     robot_width: 0.8
