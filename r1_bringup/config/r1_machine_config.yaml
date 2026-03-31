@@ -219,7 +219,7 @@ r1_swerve_drive_node:
     zero_omega_threshold: 0.01
     # 各 steer 軸のゼロ点補正 [rad]
     # 順序は [fr, fl, rl, rr]
-    steer_theta_offset: [1.58920410473878, -2.3163109739595136, 1.61834970315034, 0.6519416888528546]
+    steer_theta_offset: [1.5661944150924683, -2.3700003623962402, 1.5109710693359375, 0.6120583415031433]
     # 各 wheel モータの回転方向反転設定
     # 順序は [fr, fl, rl, rr]
     wheel_motor_inverse: [false, false, false, false]
@@ -253,7 +253,7 @@ r1_kfs_fx_node:
     origin_detect_threshold_time: 0.5 # 秒
     # 原点検出のときは、0の方向に戻るので、負の速度にする
     output_detect_speed: -6.28 # rad/s
-    pos_min: 0.0
+    pos_min: -0.1
     pos_max: 1.0
     normal_pos: 0.05
     # ギアが一周すると2*pi*15mm進むので、半径は15mm
@@ -276,11 +276,11 @@ r1_kfs_fz_node:
     origin_detect_threshold_time: 0.5 # 秒
     # 原点検出のときは、0の方向に戻るので、負の速度にする
     output_detect_speed: -3.14 # rad/s
-    pos_min: 0.0
+    pos_min: -0.1
     pos_max: 1.0
     normal_pos: 0.05
-    # ギアが一周すると2*pi*15mm進むので、半径は15mm
-    radius: 0.015
+    # ギアが一周すると2*pi*14.325mm進むので、半径は14.325mm
+    radius: 0.014325
     inverse_motor: true
     use_low_switch: false
     use_high_switch: false
@@ -302,8 +302,8 @@ r1_kfs_fyaw_node:
     angle_max: 5.0
     normal_angle: 0.0
     # ギア比で割った値がモーターの角度指令値となる
-    # 減速比は26 / 80 = 0.325
-    gear_ratio: 0.325
+    # 減速比は1 / 1 = 1.0
+    gear_ratio: 1.0
     inverse_motor: false
     use_low_switch: false
     use_high_switch: false
@@ -348,8 +348,8 @@ r1_kfs_rz_node:
     pos_min: 0.0
     pos_max: 1.0
     normal_pos: 0.05
-    # ギアが一周すると2*pi*15mm進むので、半径は15mm
-    radius: 0.015
+    # ギアが一周すると2*pi*14.325mm進むので、半径は14.325mm
+    radius: 0.014325
     inverse_motor: false
     use_low_switch: false
     use_high_switch: false
@@ -371,9 +371,9 @@ r1_kfs_ryaw_node:
     angle_max: 5.0
     normal_angle: 0.0
     # ギア比で割った値がモーターの角度指令値となる
-    # 減速比は26 / 80 = 0.325
-    gear_ratio: 0.325
-    inverse_motor: true
+    # 減速比は1 / 1 = 1.0
+    gear_ratio: 1.0
+    inverse_motor: false
     use_low_switch: false
     use_high_switch: false
     inverse_low_switch_logic: false
