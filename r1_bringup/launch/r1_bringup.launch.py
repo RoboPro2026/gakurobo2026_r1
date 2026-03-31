@@ -244,6 +244,7 @@ def generate_launch_description():
                     "board_id": board_id,
                     "motor_number": motor_number,
                     "control_cycle": control_cycle,
+                    "change_mode_delay": 0.2,
                 },
             ],
             arguments=["--ros-args", "--log-level", log_level],
@@ -254,10 +255,18 @@ def generate_launch_description():
     sabacan_single_control_id1_motor1 = create_sabacan_single_control_node(1, 1, 100.0)
     sabacan_single_control_id1_motor2 = create_sabacan_single_control_node(1, 2, 100.0)
     sabacan_single_control_id1_motor3 = create_sabacan_single_control_node(1, 3, 100.0)
-    sabacan_single_control_id2_motor0 = create_sabacan_single_control_node(2, 0, 100.0)
-    sabacan_single_control_id2_motor1 = create_sabacan_single_control_node(2, 1, 100.0)
-    sabacan_single_control_id2_motor2 = create_sabacan_single_control_node(2, 2, 100.0)
-    sabacan_single_control_id2_motor3 = create_sabacan_single_control_node(2, 3, 100.0)
+    sabacan_single_control_id2_motor0 = create_sabacan_single_control_node(
+        2, 0, 100.0, 0.0
+    )
+    sabacan_single_control_id2_motor1 = create_sabacan_single_control_node(
+        2, 1, 100.0, 0.0
+    )
+    sabacan_single_control_id2_motor2 = create_sabacan_single_control_node(
+        2, 2, 100.0, 0.0
+    )
+    sabacan_single_control_id2_motor3 = create_sabacan_single_control_node(
+        2, 3, 100.0, 0.0
+    )
     # それ以外は25Hz(仮)
     sabacan_single_control_id3_motor0 = create_sabacan_single_control_node(3, 0, 25.0)
     sabacan_single_control_id3_motor1 = create_sabacan_single_control_node(3, 1, 25.0)
