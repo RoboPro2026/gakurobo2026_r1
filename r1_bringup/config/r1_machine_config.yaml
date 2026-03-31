@@ -624,7 +624,8 @@ sabacan_robomasv2_node_id1:
   ros__parameters:
     board_id: 1
     # 起動時に基板初期化シーケンスを流すかどうか。独ステは初期化を行わないとおかしくなるのでtrueにする。
-    enable_initialize: true
+    # enable_initialize: true
+    enable_initialize: false
     # status publish 周期 [Hz]
     publish_timer_rate: 100.0
     # 接続されているモータ種別
@@ -643,7 +644,8 @@ sabacan_robomasv2_node_id2:
   ros__parameters:
     board_id: 2
     # 起動時に基板初期化シーケンスを流すかどうか。独ステは初期化を行わないとおかしくなるのでtrueにする。
-    enable_initialize: true
+    # enable_initialize: true
+    enable_initialize: false
     # status publish 周期 [Hz]
     publish_timer_rate: 100.0
     # motor_number 0..3 に接続されているモータ種別

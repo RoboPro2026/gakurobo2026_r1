@@ -71,12 +71,13 @@ def generate_launch_description():
     #     arguments=["--ros-args", "--log-level", "warn"],
     # )
 
+    # サーボの指令値を知りたいときはinfoにする
     r1_swerve_drive_node = Node(
         package="r1_machine",
         executable="r1_swerve_drive_node",
         name="r1_swerve_drive_node",
         parameters=[param_file],
-        arguments=["--ros-args", "--log-level", "info"],
+        arguments=["--ros-args", "--log-level", "warn"],
     )
 
     # オドメトリの値を知りたいときはinfoにする
@@ -411,7 +412,6 @@ def generate_launch_description():
         # r1_mecanum_node,
         r1_swerve_drive_node,
         ps4_node,
-        r1_machine_manage_node,
         r1_kfs_fx_node,
         r1_kfs_fz_node,
         r1_kfs_fyaw_node,
@@ -469,7 +469,8 @@ def generate_launch_description():
     ]
 
     real_nodes = [
-        r1_slam_launch,
+        # r1_slamは一旦コメントアウト
+        # r1_slam_launch,
         eth2can_node,
         bno086_node,
         r1_odometry_node,
@@ -479,16 +480,21 @@ def generate_launch_description():
         r1_sim_launch,
     ]
 
+    delay_nodes = [
+        r1_machine_manage_node,
+        r1_main_node
+    ]
+
     # sabacanは遅延させて起動
     return LaunchDescription(
         [
             DeclareLaunchArgument("use_sim", default_value="false"),
             # TimerAction(period=0.0, actions=[foxglove_node]),
-            TimerAction(period=2.0, actions=common_nodes),
+            TimerAction(period=0.0, actions=common_nodes),
             TimerAction(
-                period=2.0, actions=real_nodes, condition=UnlessCondition(use_sim)
+                period=0.0, actions=real_nodes, condition=UnlessCondition(use_sim)
             ),
-            TimerAction(period=2.0, actions=sim_nodes, condition=IfCondition(use_sim)),
-            TimerAction(period=4.0, actions=[r1_main_node]),
+            TimerAction(period=0.0, actions=sim_nodes, condition=IfCondition(use_sim)),
+            TimerAction(period=3.0, actions=delay_nodes),
         ]
     )
