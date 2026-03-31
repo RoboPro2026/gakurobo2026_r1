@@ -39,6 +39,9 @@ def create_sabacan_single_control_node(
             }
         ],
         arguments=["--ros-args", "--log-level", log_level],
+        remappings=[
+            ("set_robomas_gains", f"set_robomas_gains_id{board_id}"),
+        ],
     )
 
 

@@ -632,8 +632,8 @@ sabacan_robomasv2_node_id1:
     # 接続されているモータ種別
     # board1: 0=右前タイヤ, 1=左前タイヤ, 2=左後タイヤ, 3=右後タイヤ
     motor_type: ["VESC", "VESC", "VESC", "VESC"]
-    # 制御モード
-    control_type: ["VELOCITY", "VELOCITY", "VELOCITY", "VELOCITY"]
+    # 制御モード。安全のため初期値はCURRENTにする
+    control_type: ["CURRENT", "CURRENT", "CURRENT", "CURRENT"]
     # VESCの極数
     vesc_pole: [28, 28, 28, 28]
     # VESCなので monitor_reg1は0。monitor_reg2はVESC_ERPMを有効。
@@ -652,8 +652,8 @@ sabacan_robomasv2_node_id2:
     # motor_number 0..3 に接続されているモータ種別
     # board2: 0=右前ステア, 1=左前ステア, 2=左後ステア, 3=右後ステア
     motor_type: ["C610", "C610", "C610", "C610"]
-    # 制御モード
-    control_type: ["POS", "POS", "POS", "POS"]
+    # 制御モード。安全のため初期値はTORQUEにする
+    control_type: ["TORQUE", "TORQUE", "TORQUE", "TORQUE"]
     # アブソリュートエンコーダの有効/無効。すべて有効にする
     abs_enc_en: [true, true, true, true]
     # アブソリュートエンコーダのギア比。反転する。
@@ -691,7 +691,7 @@ sabacan_robomasv2_node_id3:
     publish_timer_rate: 10.0
     # kfs_fx, kfs_fz, kfs_fyaw, r2_flift
     motor_type: ["C610", "C610", "C610", "C620"]
-    control_type: ["POS", "POS", "POS", "VELOCITY"]
+    control_type: ["TORQUE", "TORQUE", "TORQUE", "TORQUE"]
     speed_gain_p: [0.5, 0.5, 0.5, 0.5]
     speed_gain_i: [0.2, 0.2, 0.2, 0.2]
     speed_gain_d: [0.0, 0.0, 0.0, 0.0]
@@ -715,7 +715,7 @@ sabacan_robomasv2_node_id4:
     publish_timer_rate: 10.0
     # kfs_rx, kfs_rz, kfs_ryaw, r2_rlift
     motor_type: ["C610", "C610", "C610", "C620"]
-    control_type: ["POS", "POS", "POS", "VELOCITY"]
+    control_type: ["TORQUE", "TORQUE", "TORQUE", "TORQUE"]
     speed_gain_p: [0.5, 0.5, 0.5, 0.5]
     speed_gain_i: [0.2, 0.2, 0.2, 0.2]
     speed_gain_d: [0.0, 0.0, 0.0, 0.0]
@@ -739,7 +739,7 @@ sabacan_robomasv2_node_id5:
     publish_timer_rate: 10.0
     # spear1, spear2, spear3, spear4
     motor_type: ["C610", "C610", "C610", "C610"]
-    control_type: ["POS", "POS", "POS", "POS"]
+    control_type: ["TORQUE", "TORQUE", "TORQUE", "TORQUE"]
     speed_gain_p: [0.5, 0.5, 0.5, 0.5]
     speed_gain_i: [0.2, 0.2, 0.2, 0.2]
     speed_gain_d: [0.0, 0.0, 0.0, 0.0]
@@ -763,7 +763,7 @@ sabacan_robomasv2_node_id6:
     publish_timer_rate: 10.0
     # spear_x, spear_y, spear_pitch1, spear_pitch2
     motor_type: ["C610", "C620", "C620", "C620"]
-    control_type: ["POS", "POS", "POS", "POS"]
+    control_type: ["TORQUE", "TORQUE", "TORQUE", "TORQUE"]
     speed_gain_p: [0.5, 0.5, 0.5, 0.5]
     speed_gain_i: [0.2, 0.2, 0.2, 0.2]
     speed_gain_d: [0.0, 0.0, 0.0, 0.0]
