@@ -356,6 +356,7 @@ R1MainNode::R1MainNode() : Node("r1_main_node")
   }
   // 足回り
   declare_and_get_parameter("timer_rate", timer_rate_, 100.0);
+  declare_and_get_parameter("ps4_connection_timeout", ps4_connection_timeout_, 0.3);
   declare_and_get_parameter("chassis_max_velocity", CHASSIS_MAX_VELOCITY);
   declare_and_get_parameter("chassis_max_omega", CHASSIS_MAX_OMEGA);
 
@@ -467,6 +468,7 @@ R1MainNode::R1MainNode() : Node("r1_main_node")
   simple_trapezoid_omega_ = SimpleTrapezoid(3.0, timer_dt);
 
   ps4_ = std::make_shared<PS4>("PS4");
+  ps4_->set_connection_timeout(ps4_connection_timeout_);
 
   state_machine_ = std::make_shared<StateMachine>();
   // state_machine_->set_next_state({MainState::MANUAL, ManualSubState::TEST});

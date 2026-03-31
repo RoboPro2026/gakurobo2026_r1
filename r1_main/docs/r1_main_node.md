@@ -184,6 +184,7 @@
 - 基本:
   - `zone`
   - `timer_rate`
+  - `ps4_connection_timeout`
 - 足回り:
   - `chassis_max_velocity`
   - `chassis_max_omega`

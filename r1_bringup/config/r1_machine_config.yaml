@@ -84,6 +84,7 @@ r1_chassis_control_node:
 r1_main_node:
   ros__parameters:
     timer_rate: 25.0
+    ps4_connection_timeout: 1.0
     # ========== 足回り ==========
     chassis_max_velocity: 0.4
     chassis_max_omega: 0.5
@@ -824,7 +825,8 @@ sabacan_gpio_node_id3:
 sabacan_power_node_id0:
   ros__parameters:
     board_id: 0
-    enable_initialize: false
+    # 電源基板のみenable_initializeをtrueにする。これをtrueにすると、基板起動時に電源ON/OFFの初期化シーケンスが流れる。
+    enable_initialize: true
     publish_timer_rate: 10.0
     monitor_period: 100
 

@@ -53,6 +53,7 @@ private:
   bool prev_is_connected_ = false;
   sensor_msgs::msg::Joy::SharedPtr msg_;
   double deadzone_ = 0.1;
+  double connection_timeout_ = 0.3;
   std::string logger_name_;
 
   double apply_deadzone(double x) { return std::abs(x) >= deadzone_ ? x : 0.0; }
@@ -77,7 +78,7 @@ public:
     if (msg_ == nullptr) return;
     // 接続状況を更新
     prev_is_connected_ = is_connected_;
-    if ((rclcpp::Clock().now() - last_time_).seconds() < 0.3) {
+    if ((rclcpp::Clock().now() - last_time_).seconds() < connection_timeout_) {
       is_connected_ = true;
     } else {
       is_connected_ = false;
@@ -167,7 +168,14 @@ public:
       deadzone_ = deadzone;
     }
   }
+  void set_connection_timeout(double connection_timeout)
+  {
+    if (0.0 < connection_timeout) {
+      connection_timeout_ = connection_timeout;
+    }
+  }
   double get_deadzone(void) { return deadzone_; }
+  double get_connection_timeout(void) { return connection_timeout_; }
   bool is_connected() { return is_connected_; }
 
   // --- Left Stick ---

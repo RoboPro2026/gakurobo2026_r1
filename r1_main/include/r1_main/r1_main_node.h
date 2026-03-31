@@ -183,6 +183,8 @@ public:
   // sabacan
   bool sabacan_is_ems_ = false;
 
+  double ps4_connection_timeout_ = 0.3;
+
   // robot_move
   r1_msgs::msg::RobotMove current_robot_move_;
 
