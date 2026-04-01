@@ -537,14 +537,14 @@ struct GpioFloatOutputChannel
    */
   GpioFloatOutputChannel(
     BoardInfo info, std::string topic,
-    ChannelAvailability channel_availability = ChannelAvailability::MecanumOnly)
+    ChannelAvailability channel_availability = ChannelAvailability::Both)
   : board_info(info), ref_topic(std::move(topic)), availability(channel_availability)
   {
   }
 
   BoardInfo board_info;
   std::string ref_topic;
-  ChannelAvailability availability{ChannelAvailability::MecanumOnly};
+  ChannelAvailability availability{ChannelAvailability::Both};
   SubscriptionPtr<r1_msgs::msg::GpioPwmRef> ref_subscription;
 };
 
@@ -566,14 +566,14 @@ struct GpioIntOutputChannel
    */
   GpioIntOutputChannel(
     BoardInfo info, std::string topic,
-    ChannelAvailability channel_availability = ChannelAvailability::MecanumOnly)
+    ChannelAvailability channel_availability = ChannelAvailability::Both)
   : board_info(info), ref_topic(std::move(topic)), availability(channel_availability)
   {
   }
 
   BoardInfo board_info;
   std::string ref_topic;
-  ChannelAvailability availability{ChannelAvailability::MecanumOnly};
+  ChannelAvailability availability{ChannelAvailability::Both};
   SubscriptionPtr<r1_msgs::msg::GpioServoRef> ref_subscription;
 };
 
@@ -596,7 +596,7 @@ struct GpioInputChannel
    */
   GpioInputChannel(
     BoardInfo info, std::string status_topic_name, std::string debug_topic_name,
-    ChannelAvailability channel_availability = ChannelAvailability::MecanumOnly)
+    ChannelAvailability channel_availability = ChannelAvailability::Both)
   : board_info(info),
     status_topic(std::move(status_topic_name)),
     debug_topic(std::move(debug_topic_name)),
@@ -607,7 +607,7 @@ struct GpioInputChannel
   BoardInfo board_info;
   std::string status_topic;
   std::string debug_topic;
-  ChannelAvailability availability{ChannelAvailability::MecanumOnly};
+  ChannelAvailability availability{ChannelAvailability::Both};
   PublisherPtr<r1_msgs::msg::GpioInput> status_publisher;
   PublisherPtr<r1_msgs::msg::GpioInput> debug_publisher;
   r1_msgs::msg::GpioInput value{};
@@ -632,7 +632,7 @@ static std::string make_debug_gpio_status_topic(const std::string & name)
  */
 static GpioFloatOutputChannel make_gpio_float_output_channel(
   BoardInfo info, const std::string & name,
-  ChannelAvailability availability = ChannelAvailability::MecanumOnly)
+  ChannelAvailability availability = ChannelAvailability::Both)
 {
   return GpioFloatOutputChannel{info, make_topic(name, "_gpio_pwm_ref"), availability};
 }
@@ -646,7 +646,7 @@ static GpioFloatOutputChannel make_gpio_float_output_channel(
  */
 [[maybe_unused]] static GpioIntOutputChannel make_gpio_int_output_channel(
   BoardInfo info, const std::string & name,
-  ChannelAvailability availability = ChannelAvailability::MecanumOnly)
+  ChannelAvailability availability = ChannelAvailability::Both)
 {
   return GpioIntOutputChannel{info, make_topic(name, "_gpio_servo_ref"), availability};
 }
@@ -660,7 +660,7 @@ static GpioFloatOutputChannel make_gpio_float_output_channel(
  */
 static GpioInputChannel make_gpio_input_channel(
   BoardInfo info, const std::string & name,
-  ChannelAvailability availability = ChannelAvailability::MecanumOnly)
+  ChannelAvailability availability = ChannelAvailability::Both)
 {
   return GpioInputChannel{
     info, make_topic(name, "_status"), make_debug_gpio_status_topic(name), availability};
