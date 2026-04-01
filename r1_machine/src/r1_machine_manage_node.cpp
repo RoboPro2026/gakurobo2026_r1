@@ -2274,7 +2274,7 @@ private:
     make_linear_motion_channel({5, 2}, "spear3"),  make_linear_motion_channel({5, 3}, "spear4"),
     make_linear_motion_channel({6, 0}, "spear_x"), make_linear_motion_channel({6, 1}, "spear_y")};
   std::vector<AngleMotionChannel> angle_motion_channels_{
-    make_angle_motion_channel({2, 2}, "kfs_fyaw"), make_angle_motion_channel({3, 2}, "kfs_ryaw"),
+    make_angle_motion_channel({3, 2}, "kfs_fyaw"), make_angle_motion_channel({4, 2}, "kfs_ryaw"),
     make_angle_motion_channel({6, 2}, "spear_pitch1"),
     make_angle_motion_channel({6, 3}, "spear_pitch2"),
     // spear_rollはrobstride
