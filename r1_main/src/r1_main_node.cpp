@@ -1328,11 +1328,11 @@ void R1MainNode::manual_mode5_rkfs(void)
     }
     RCLCPP_INFO(this->get_logger(), "ryaw_step: %d", ryaw_step);
     if (ryaw_step == 1) {
-      kfs_fyaw(KFS_RYAW_FRONT_ANGLE);
+      kfs_ryaw(KFS_RYAW_FRONT_ANGLE);
     } else if (ryaw_step == 2) {
-      kfs_fyaw(KFS_RYAW_SIDE_ANGLE);
+      kfs_ryaw(KFS_RYAW_SIDE_ANGLE);
     } else if (ryaw_step == 3) {
-      kfs_fyaw(KFS_RYAW_REAR_ANGLE);
+      kfs_ryaw(KFS_RYAW_REAR_ANGLE);
     }
   }
 
