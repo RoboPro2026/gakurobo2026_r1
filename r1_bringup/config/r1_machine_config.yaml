@@ -121,7 +121,7 @@ r1_main_node:
     # ========== 展開 ==========
     # R2昇降
     r2_lift_up_velocity: 10.0
-    r2_lift_down_velocity: -3.14
+    r2_lift_down_velocity: -10.0
 
     # ========== やり ==========
     # spear1
