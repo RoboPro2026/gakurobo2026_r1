@@ -262,13 +262,13 @@ private:
 
     // 範囲内に収める
     if (msg->data < angle_min_) {
-      target_angle = angle_min_ + angle_offset_;
+      target_angle = angle_min_;
       RCLCPP_WARN(this->get_logger(), "Target angle below minimum. Clamping to %.3f", target_angle);
     } else if (msg->data > angle_max_) {
-      target_angle = angle_max_ + angle_offset_;
+      target_angle = angle_max_;
       RCLCPP_WARN(this->get_logger(), "Target angle above maximum. Clamping to %.3f", target_angle);
     } else {
-      target_angle = msg->data + angle_offset_;
+      target_angle = msg->data;
     }
 
     auto motor_msg = r1_msgs::msg::MotorRef();
