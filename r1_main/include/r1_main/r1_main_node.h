@@ -225,7 +225,8 @@ public:
   double KFS_RYAW_REAR_ANGLE = 0.0;
   // ========== 展開 ==========
   // R2昇降
-  double R2_LIFT_MAX_VELOCITY = 0.0;
+  double R2_LIFT_UP_VELOCITY = 0.0;
+  double R2_LIFT_DOWN_VELOCITY = 0.0;
 
   // ========== やり ==========
   // spear1

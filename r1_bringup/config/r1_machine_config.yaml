@@ -120,7 +120,8 @@ r1_main_node:
 
     # ========== 展開 ==========
     # R2昇降
-    r2_lift_max_velocity: 15.0
+    r2_lift_up_velocity: 10.0
+    r2_lift_down_velocity: -3.14
 
     # ========== やり ==========
     # spear1
@@ -249,7 +250,7 @@ r1_kfs_fx_node:
     # 通常位置モード時に Robomas の torque_lim として使う値
     normal_torque_limit: 1.0 # Nm
     # 原点検出・メカロック移動中に Robomas の torque_lim として使う値
-    contact_torque_limit: 1.0 # Nm
+    contact_torque_limit: 0.7 # Nm
     origin_detect_threshold_time: 0.5 # 秒
     # 原点検出のときは、0の方向に戻るので、負の速度にする
     output_detect_speed: -6.28 # rad/s
@@ -272,7 +273,7 @@ r1_kfs_fz_node:
     # 通常位置モード時に Robomas の torque_lim として使う値
     normal_torque_limit: 1.0 # Nm
     # 原点検出・メカロック移動中に Robomas の torque_lim として使う値
-    contact_torque_limit: 1.0 # Nm
+    contact_torque_limit: 0.7 # Nm
     origin_detect_threshold_time: 0.5 # 秒
     # 原点検出のときは、0の方向に戻るので、負の速度にする
     output_detect_speed: -3.14 # rad/s
@@ -293,9 +294,9 @@ r1_kfs_fyaw_node:
     # トルク検出時のしきい値
     torque_threshold: 0.5 # Nm
     # 通常位置モード時に Robomas の torque_lim として使う値
-    normal_torque_limit: 1.0 # Nm
+    normal_torque_limit: 0.75 # Nm
     # 原点検出・メカロック移動中に Robomas の torque_lim として使う値
-    contact_torque_limit: 1.0 # Nm
+    contact_torque_limit: 0.75 # Nm
     origin_detect_threshold_time: 0.5 # 秒
     origin_detect_speed: -3.14 # rad/s
     angle_min: -5.0
@@ -318,11 +319,11 @@ r1_kfs_rx_node:
     # 通常位置モード時に Robomas の torque_lim として使う値
     normal_torque_limit: 1.0 # Nm
     # 原点検出・メカロック移動中に Robomas の torque_lim として使う値
-    contact_torque_limit: 1.0 # Nm
+    contact_torque_limit: 0.7 # Nm
     origin_detect_threshold_time: 0.5 # 秒
     # 原点検出のときは、0の方向に戻るので、負の速度にする
     output_detect_speed: -3.14 # rad/s
-    pos_min: 0.0
+    pos_min: -0.1
     pos_max: 1.0
     normal_pos: 0.05
     # ギアが一周すると2*pi*15mm進むので、半径は15mm
@@ -341,11 +342,11 @@ r1_kfs_rz_node:
     # 通常位置モード時に Robomas の torque_lim として使う値
     normal_torque_limit: 1.0 # Nm
     # 原点検出・メカロック移動中に Robomas の torque_lim として使う値
-    contact_torque_limit: 1.0 # Nm
+    contact_torque_limit: 0.7 # Nm
     origin_detect_threshold_time: 0.5 # 秒
     # 原点検出のときは、0の方向に戻るので、負の速度にする
     output_detect_speed: -3.14 # rad/s
-    pos_min: 0.0
+    pos_min: -0.1
     pos_max: 1.0
     normal_pos: 0.05
     # ギアが一周すると2*pi*14.325mm進むので、半径は14.325mm
@@ -362,17 +363,18 @@ r1_kfs_ryaw_node:
     # トルク検出時のしきい値
     torque_threshold: 0.5 # Nm
     # 通常位置モード時に Robomas の torque_lim として使う値
-    normal_torque_limit: 1.0 # Nm
+    normal_torque_limit: 0.75 # Nm
     # 原点検出・メカロック移動中に Robomas の torque_lim として使う値
-    contact_torque_limit: 1.0 # Nm
+    contact_torque_limit: 0.75 # Nm
     origin_detect_threshold_time: 0.5 # 秒
     origin_detect_speed: -3.14 # rad/s
     angle_min: -5.0
     angle_max: 5.0
     normal_angle: 0.0
+    # NOTE: 実験でryawだけギア比を変えている。
     # ギア比で割った値がモーターの角度指令値となる
-    # 減速比は1 / 1 = 1.0
-    gear_ratio: 1.0
+    # 減速比は1 / 2 = 0.5
+    gear_ratio: 0.5
     inverse_motor: false
     use_low_switch: false
     use_high_switch: false
@@ -392,7 +394,7 @@ r1_spear1_node:
     origin_detect_threshold_time: 0.5 # 秒
     # 原点検出のときは、0の方向に戻るので、負の速度にする
     output_detect_speed: -6.28 # rad/s
-    pos_min: 0.0
+    pos_min: -0.1
     pos_max: 1.0
     normal_pos: 0.05
     # ギアが一周すると2*pi*15mm進むので、半径は15mm
@@ -415,7 +417,7 @@ r1_spear2_node:
     origin_detect_threshold_time: 0.5 # 秒
     # 原点検出のときは、0の方向に戻るので、負の速度にする
     output_detect_speed: -6.28 # rad/s
-    pos_min: 0.0
+    pos_min: -0.1
     pos_max: 1.0
     normal_pos: 0.05
     # ギアが一周すると2*pi*15mm進むので、半径は15mm
@@ -438,7 +440,7 @@ r1_spear3_node:
     origin_detect_threshold_time: 0.5 # 秒
     # 原点検出のときは、0の方向に戻るので、負の速度にする
     output_detect_speed: -6.28 # rad/s
-    pos_min: 0.0
+    pos_min: -0.1
     pos_max: 1.0
     normal_pos: 0.05
     # ギアが一周すると2*pi*15mm進むので、半径は15mm
@@ -461,7 +463,7 @@ r1_spear4_node:
     origin_detect_threshold_time: 0.5 # 秒
     # 原点検出のときは、0の方向に戻るので、負の速度にする
     output_detect_speed: -6.28 # rad/s
-    pos_min: 0.0
+    pos_min: -0.1
     pos_max: 1.0
     normal_pos: 0.05
     # ギアが一周すると2*pi*15mm進むので、半径は15mm
@@ -484,7 +486,7 @@ r1_spear_x_node:
     origin_detect_threshold_time: 0.5 # 秒
     # 原点検出のときは、0の方向に戻るので、負の速度にする
     output_detect_speed: -6.28 # rad/s
-    pos_min: 0.0
+    pos_min: -0.1
     pos_max: 1.0
     normal_pos: 0.05
     # ギアが一周すると2*pi*15mm進むので、半径は15mm
@@ -507,7 +509,7 @@ r1_spear_y_node:
     origin_detect_threshold_time: 0.5 # 秒
     # 原点検出のときは、0の方向に戻るので、負の速度にする
     output_detect_speed: -6.28 # rad/s
-    pos_min: 0.0
+    pos_min: -0.1
     pos_max: 1.0
     normal_pos: 0.05
     # ギアが一周すると2*pi*15mm進むので、半径は15mm
@@ -658,21 +660,21 @@ sabacan_robomasv2_node_id2:
     abs_enc_en: [true, true, true, true]
     # アブソリュートエンコーダのギア比。反転する。
     abs_gear_ratio: [-1.0, -1.0, -1.0, -1.0]
-    # 速度 P ゲイン。C610のみ有効
+    # 速度 P ゲイン。
     speed_gain_p: [0.5, 0.5, 0.5, 0.5]
-    # 速度 I ゲイン。C610のみ有効
-    speed_gain_i: [0.2, 0.2, 0.2, 0.2]
-    # 速度 D ゲイン。C610のみ有効
+    # 速度 I ゲイン。
+    speed_gain_i: [0.1, 0.1, 0.1, 0.1]
+    # 速度 D ゲイン。
     speed_gain_d: [0.0, 0.0, 0.0, 0.0]
-    # トルク制限。C610のみ有効
+    # トルク制限。
     torque_lim: [1.0, 1.0, 1.0, 1.0]
-    # 位置 P ゲイン。C610のみ有効
-    pos_gain_p: [6.0, 6.0, 6.0, 6.0]
-    # 位置 I ゲイン。C610のみ有効
-    pos_gain_i: [3.0, 3.0, 3.0, 3.0]
-    # 位置 D ゲイン。C610のみ有効
+    # 位置 P ゲイン。
+    pos_gain_p: [5.0, 5.0, 5.0, 5.0]
+    # 位置 I ゲイン。
+    pos_gain_i: [0.0, 0.0, 0.0, 0.0]
+    # 位置 D ゲイン。
     pos_gain_d: [0.0, 0.0, 0.0, 0.0]
-    # 速度上限。C610のみ有効
+    # 速度上限。
     speed_lim: [6.28, 6.28, 6.28, 6.28]
     # アブソの回転回数、ステアがバグるのを防止するため、0に設定
     abs_turn_cnt: [0, 0, 0, 0]
@@ -693,11 +695,12 @@ sabacan_robomasv2_node_id3:
     motor_type: ["C610", "C610", "C610", "C620"]
     control_type: ["TORQUE", "TORQUE", "TORQUE", "TORQUE"]
     speed_gain_p: [0.5, 0.5, 0.5, 0.5]
-    speed_gain_i: [0.2, 0.2, 0.2, 0.2]
+    speed_gain_i: [0.1, 0.1, 0.1, 0.1]
     speed_gain_d: [0.0, 0.0, 0.0, 0.0]
-    torque_lim: [1.0, 1.0, 1.0, 4.5]
-    pos_gain_p: [6.0, 6.0, 6.0, 6.0]
-    pos_gain_i: [3.0, 3.0, 3.0, 3.0]
+    # 位置制御のときはここのトルクリミットは適応されない。r1_linear_motion_nodeかr1_angle_motion_nodeのtorque_limitが適応される。
+    torque_lim: [1.0, 1.0, 1.0, 4.0]
+    pos_gain_p: [5.0, 5.0, 5.0, 5.0]
+    pos_gain_i: [0.0, 0.0, 0.0, 0.0]
     pos_gain_d: [0.0, 0.0, 0.0, 0.0]
     speed_lim: [20.0, 20.0, 20.0, 20.0]
     # TRQ+SPD+POSをフィードバック
@@ -717,11 +720,12 @@ sabacan_robomasv2_node_id4:
     motor_type: ["C610", "C610", "C610", "C620"]
     control_type: ["TORQUE", "TORQUE", "TORQUE", "TORQUE"]
     speed_gain_p: [0.5, 0.5, 0.5, 0.5]
-    speed_gain_i: [0.2, 0.2, 0.2, 0.2]
+    speed_gain_i: [0.1, 0.1, 0.1, 0.1]
     speed_gain_d: [0.0, 0.0, 0.0, 0.0]
-    torque_lim: [1.0, 1.0, 1.0, 4.5]
-    pos_gain_p: [6.0, 6.0, 6.0, 6.0]
-    pos_gain_i: [3.0, 3.0, 3.0, 0.0]
+    # 位置制御のときはここのトルクリミットは適応されない。r1_linear_motion_nodeかr1_angle_motion_nodeのtorque_limitが適応される。
+    torque_lim: [1.0, 1.0, 1.0, 4.0]
+    pos_gain_p: [5.0, 5.0, 5.0, 5.0]
+    pos_gain_i: [0.0, 0.0, 0.0, 0.0]
     pos_gain_d: [0.0, 0.0, 0.0, 0.0]
     speed_lim: [20.0, 20.0, 20.0, 20.0]
     # TRQ+SPD+POSをフィードバック
@@ -741,11 +745,12 @@ sabacan_robomasv2_node_id5:
     motor_type: ["C610", "C610", "C610", "C610"]
     control_type: ["TORQUE", "TORQUE", "TORQUE", "TORQUE"]
     speed_gain_p: [0.5, 0.5, 0.5, 0.5]
-    speed_gain_i: [0.2, 0.2, 0.2, 0.2]
+    speed_gain_i: [0.1, 0.1, 0.1, 0.1]
     speed_gain_d: [0.0, 0.0, 0.0, 0.0]
+    # 位置制御のときはここのトルクリミットは適応されない。r1_linear_motion_nodeかr1_angle_motion_nodeのtorque_limitが適応される。
     torque_lim: [1.0, 1.0, 1.0, 1.0]
-    pos_gain_p: [6.0, 6.0, 6.0, 6.0]
-    pos_gain_i: [3.0, 3.0, 3.0, 3.0]
+    pos_gain_p: [5.0, 5.0, 5.0, 5.0]
+    pos_gain_i: [0.0, 0.0, 0.0, 0.0]
     pos_gain_d: [0.0, 0.0, 0.0, 0.0]
     speed_lim: [20.0, 20.0, 20.0, 20.0]
     # TRQ+SPD+POSをフィードバック
@@ -765,11 +770,12 @@ sabacan_robomasv2_node_id6:
     motor_type: ["C610", "C620", "C620", "C620"]
     control_type: ["TORQUE", "TORQUE", "TORQUE", "TORQUE"]
     speed_gain_p: [0.5, 0.5, 0.5, 0.5]
-    speed_gain_i: [0.2, 0.2, 0.2, 0.2]
+    speed_gain_i: [0.1, 0.1, 0.1, 0.1]
     speed_gain_d: [0.0, 0.0, 0.0, 0.0]
+    # 位置制御のときはここのトルクリミットは適応されない。r1_linear_motion_nodeかr1_angle_motion_nodeのtorque_limitが適応される。
     torque_lim: [1.0, 4.5, 4.5, 4.5]
-    pos_gain_p: [6.0, 6.0, 6.0, 6.0]
-    pos_gain_i: [3.0, 3.0, 3.0, 3.0]
+    pos_gain_p: [5.0, 5.0, 5.0, 5.0]
+    pos_gain_i: [0.0, 0.0, 0.0, 0.0]
     pos_gain_d: [0.0, 0.0, 0.0, 0.0]
     speed_lim: [15.0, 15.0, 15.0, 15.0]
     # TRQ+SPD+POSをフィードバック
