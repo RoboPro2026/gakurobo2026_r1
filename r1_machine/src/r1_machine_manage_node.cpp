@@ -483,11 +483,13 @@ struct DriveMotorChannel
    * @param channel_availability 有効となる drive mode
    */
   DriveMotorChannel(
-    BoardInfo info, std::string ref_topic_name, std::string debug_topic_name,
+    BoardInfo info, std::string ref_topic_name, std::string status_topic_name,
+    std::string debug_topic_name,
     MotorControllerType controller_type = MotorControllerType::Robomas,
     ChannelAvailability channel_availability = ChannelAvailability::SwerveOnly)
   : board_info(info),
     ref_topic(std::move(ref_topic_name)),
+    status_topic(std::move(status_topic_name)),
     debug_topic(std::move(debug_topic_name)),
     controller_type(controller_type),
     availability(channel_availability)
@@ -496,12 +498,15 @@ struct DriveMotorChannel
 
   BoardInfo board_info;
   std::string ref_topic;
+  std::string status_topic;
   std::string debug_topic;
   MotorControllerType controller_type{MotorControllerType::Robomas};
   ChannelAvailability availability{ChannelAvailability::SwerveOnly};
   SingleRefPublisher ref_publisher;
   SubscriptionPtr<r1_msgs::msg::MotorRef> ref_subscription;
+  PublisherPtr<r1_msgs::msg::Motor> status_publisher;
   PublisherPtr<r1_msgs::msg::Motor> debug_publisher;
+  r1_msgs::msg::Motor value{};
 };
 
 /**
@@ -516,7 +521,11 @@ static DriveMotorChannel make_drive_motor_channel(
   MotorControllerType controller_type = MotorControllerType::Robomas)
 {
   return DriveMotorChannel{
-    info, make_topic(name, "_motor_ref"), make_debug_motor_status_topic(name), controller_type};
+    info,
+    make_topic(name, "_motor_ref"),
+    make_topic(name, "_motor_status"),
+    make_debug_motor_status_topic(name),
+    controller_type};
 }
 
 /**
@@ -675,8 +684,10 @@ public:
   MachineManageNode() : Node("r1_machine_manage_node")
   {
     sabacan_reset_last_send_time_ = rclcpp::Time(0, 0, this->get_clock()->get_clock_type());
+    post_reset_initialize_sent_time_ = rclcpp::Time(0, 0, this->get_clock()->get_clock_type());
 
     load_drive_configuration();
+    load_safety_configuration();
     initialize_sabacan_gpio_publishers();
     initialize_sabacan_status_subscriptions();
     initialize_sabacan_service_clients();
@@ -715,6 +726,7 @@ private:
     Idle,
     Requested,
     Sending,
+    WaitingPostInitializeDelay,
   };
 
   /**
@@ -723,6 +735,17 @@ private:
   void load_drive_configuration()
   {
     drive_mode_ = parse_drive_mode(this->declare_parameter<std::string>("drive_mode", "mecanum"));
+  }
+
+  /**
+   * @brief 安全系の時系列制御に関するパラメータを読み込む。
+   */
+  void load_safety_configuration()
+  {
+    sabacan_reset_send_interval_sec_ =
+      this->declare_parameter<double>("sabacan_reset_send_interval_sec", 1.0);
+    post_reset_initialize_delay_sec_ =
+      this->declare_parameter<double>("post_reset_initialize_delay_sec", 0.2);
   }
 
   /**
@@ -750,6 +773,26 @@ private:
           result.reason = e.what();
           return result;
         }
+      } else if (name == "sabacan_reset_send_interval_sec") {
+        const double value = parameter.as_double();
+        if (value < 0.0) {
+          result.successful = false;
+          result.reason = "sabacan_reset_send_interval_sec must be >= 0.0";
+          return result;
+        }
+        sabacan_reset_send_interval_sec_ = value;
+        RCLCPP_INFO(
+          this->get_logger(), "Updated parameter: sabacan_reset_send_interval_sec = %.3f", value);
+      } else if (name == "post_reset_initialize_delay_sec") {
+        const double value = parameter.as_double();
+        if (value < 0.0) {
+          result.successful = false;
+          result.reason = "post_reset_initialize_delay_sec must be >= 0.0";
+          return result;
+        }
+        post_reset_initialize_delay_sec_ = value;
+        RCLCPP_INFO(
+          this->get_logger(), "Updated parameter: post_reset_initialize_delay_sec = %.3f", value);
       }
     }
 
@@ -865,6 +908,8 @@ private:
   {
     initialize_mecanum_channels();
     initialize_swerve_channels();
+    swerve_drive_initialize_publisher_ =
+      this->create_publisher<std_msgs::msg::Empty>("/swerve_drive_initialize", 10);
 
     mecanum_wheel_speeds_ref_subscription_ = this->create_subscription<r1_msgs::msg::Mecanum>(
       "/mecanum_wheel_speeds_ref", 10,
@@ -923,6 +968,8 @@ private:
   {
     for (auto & channel : channels) {
       channel.ref_publisher = create_single_ref_publisher(channel.board_info);
+      channel.status_publisher =
+        this->create_publisher<r1_msgs::msg::Motor>(channel.status_topic, 10);
       channel.debug_publisher =
         this->create_publisher<r1_msgs::msg::Motor>(channel.debug_topic, 10);
 
@@ -1072,6 +1119,19 @@ private:
       }
       channel.initialize_publisher->publish(msg);
     }
+  }
+
+  /**
+   * @brief motion node 群と swerve drive node へ initialize をまとめて publish する。
+   */
+  void publish_all_initialize_signals()
+  {
+    if (swerve_drive_initialize_publisher_) {
+      std_msgs::msg::Empty msg;
+      swerve_drive_initialize_publisher_->publish(msg);
+    }
+    publish_initialize_channels(linear_motion_channels_);
+    publish_initialize_channels(angle_motion_channels_);
   }
 
   /**
@@ -1542,16 +1602,24 @@ private:
     sabacan_reset_state_ = SabacanResetState::Requested;
     sabacan_reset_step_ = 0;
     sabacan_reset_last_send_valid_ = false;
+    post_reset_initialize_sent_valid_ = false;
     publish_open_loop_stop_to_enabled_motors();
-    RCLCPP_INFO(this->get_logger(), "received %s. starting sabacan reset sequence", request_name);
+    publish_all_initialize_signals();
+    RCLCPP_INFO(
+      this->get_logger(),
+      "received %s. forwarded pre-reset initialize under open-loop stop and starting sabacan "
+      "reset sequence",
+      request_name);
   }
 
   /**
-   * @brief reset 完了後に motion node へ initialize を転送し、必要なら open-loop ラッチを解除する。
+   * @brief reset 完了後に post-reset initialize を送信し、解除待ち状態へ移る。
    */
   void finish_initialize_sequence_after_reset()
   {
     if (emergency_feedback_active_) {
+      sabacan_reset_state_ = SabacanResetState::Idle;
+      post_reset_initialize_sent_valid_ = false;
       RCLCPP_WARN(
         this->get_logger(),
         "sabacan reset completed while emergency is active. keep open-loop stop and skip "
@@ -1559,21 +1627,51 @@ private:
       return;
     }
 
-    const bool was_reinit_required = emergency_reinit_required_;
-    emergency_reinit_required_ = false;
-    publish_initialize_channels(linear_motion_channels_);
-    publish_initialize_channels(angle_motion_channels_);
+    publish_all_initialize_signals();
+    post_reset_initialize_sent_time_ = this->get_clock()->now();
+    post_reset_initialize_sent_valid_ = true;
+    sabacan_reset_state_ = SabacanResetState::WaitingPostInitializeDelay;
 
-    if (was_reinit_required) {
-      RCLCPP_INFO(
-        this->get_logger(),
-        "sabacan reset completed. restoring normal motor control routing and forwarding "
-        "initialize to motion nodes");
+    if (post_reset_initialize_delay_sec_ <= 0.0) {
+      complete_initialize_sequence_after_delay();
       return;
     }
 
     RCLCPP_INFO(
-      this->get_logger(), "sabacan reset completed. forwarding initialize to motion nodes");
+      this->get_logger(),
+      "sabacan reset completed. forwarded post-reset initialize and waiting %.3f sec before "
+      "restoring normal motor control routing",
+      post_reset_initialize_delay_sec_);
+  }
+
+  /**
+   * @brief post-reset initialize 後の待機時間が満了したら通常制御へ戻す。
+   */
+  void complete_initialize_sequence_after_delay()
+  {
+    if (emergency_feedback_active_) {
+      sabacan_reset_state_ = SabacanResetState::Idle;
+      post_reset_initialize_sent_valid_ = false;
+      RCLCPP_WARN(
+        this->get_logger(),
+        "skipped restoring normal motor control routing because emergency is active");
+      return;
+    }
+
+    const bool was_reinit_required = emergency_reinit_required_;
+    emergency_reinit_required_ = false;
+    sabacan_reset_state_ = SabacanResetState::Idle;
+    post_reset_initialize_sent_valid_ = false;
+
+    if (was_reinit_required) {
+      RCLCPP_INFO(
+        this->get_logger(),
+        "post-reset initialize delay completed. restoring normal motor control routing");
+      return;
+    }
+
+    RCLCPP_INFO(
+      this->get_logger(), "post-reset initialize delay completed");
   }
 
   /**
@@ -1585,20 +1683,46 @@ private:
       return;
     }
 
+    if (sabacan_reset_state_ == SabacanResetState::WaitingPostInitializeDelay) {
+      if (emergency_feedback_active_) {
+        sabacan_reset_state_ = SabacanResetState::Idle;
+        post_reset_initialize_sent_valid_ = false;
+        RCLCPP_WARN(
+          this->get_logger(),
+          "emergency became active during post-reset initialize delay. aborting restore to "
+          "normal motor control");
+        return;
+      }
+
+      if (!post_reset_initialize_sent_valid_) {
+        complete_initialize_sequence_after_delay();
+        return;
+      }
+
+      const auto now = this->get_clock()->now();
+      const rclcpp::Duration post_initialize_delay =
+        rclcpp::Duration::from_seconds(post_reset_initialize_delay_sec_);
+      if ((now - post_reset_initialize_sent_time_) < post_initialize_delay) {
+        return;
+      }
+      complete_initialize_sequence_after_delay();
+      return;
+    }
+
     if (sabacan_reset_state_ == SabacanResetState::Requested) {
       sabacan_reset_state_ = SabacanResetState::Sending;
       sabacan_reset_step_ = 0;
       sabacan_reset_last_send_valid_ = false;
     }
 
-    const rclcpp::Duration send_interval = rclcpp::Duration::from_seconds(1.0);
+    const rclcpp::Duration send_interval =
+      rclcpp::Duration::from_seconds(sabacan_reset_send_interval_sec_);
     const auto now = this->get_clock()->now();
     if (sabacan_reset_last_send_valid_ && (now - sabacan_reset_last_send_time_) < send_interval) {
       return;
     }
 
     if (sabacan_reset_step_ >= sabacan_reset_service_entries_.size()) {
-      sabacan_reset_state_ = SabacanResetState::Idle;
       finish_initialize_sequence_after_reset();
       return;
     }
@@ -1943,6 +2067,10 @@ private:
         continue;
       }
 
+      channel.value = motor_status;
+      if (channel.status_publisher) {
+        channel.status_publisher->publish(channel.value);
+      }
       publish_debug_motor(channel.debug_publisher, motor_status);
       break;
     }
@@ -2233,7 +2361,11 @@ private:
   SabacanResetState sabacan_reset_state_{SabacanResetState::Idle};
   rclcpp::Time sabacan_reset_last_send_time_{0LL, RCL_SYSTEM_TIME};
   bool sabacan_reset_last_send_valid_{false};
+  rclcpp::Time post_reset_initialize_sent_time_{0LL, RCL_SYSTEM_TIME};
+  bool post_reset_initialize_sent_valid_{false};
   std::size_t sabacan_reset_step_{0};
+  double sabacan_reset_send_interval_sec_{1.0};
+  double post_reset_initialize_delay_sec_{0.2};
   std::vector<MotorTypeCacheEntry> motor_type_cache_;
   rclcpp::node_interfaces::OnSetParametersCallbackHandle::SharedPtr parameter_callback_handler_;
 
@@ -2307,6 +2439,7 @@ private:
   SubscriptionPtr<r1_msgs::msg::SwerveDrive> swerve_drive_ref_subscription_;
   PublisherPtr<r1_msgs::msg::Mecanum> mecanum_wheel_speeds_feedback_publisher_;
   PublisherPtr<r1_msgs::msg::OdometryEncoder> odometry_encoder_publisher_;
+  PublisherPtr<std_msgs::msg::Empty> swerve_drive_initialize_publisher_;
 
   // 一定周期 publish のために保持する最新値キャッシュ。
   std::vector<double> mecanum_wheel_speeds_feedback_{0.0, 0.0, 0.0, 0.0};

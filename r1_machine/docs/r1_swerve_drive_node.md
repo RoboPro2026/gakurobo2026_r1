@@ -4,6 +4,8 @@
 
 手動で `/manual_swerve_drive_ref` を与えると、その値を（回転方向・ギア比・ステアオフセットを反映して）そのまま `/swerve_drive_ref` に流します。
 
+また、`/swerve_drive_initialize` を受けると、`r1_machine_manage_node` が再配信する steer status を使って内部の前回ステア角キャッシュを現在角へ合わせ直します。非常停止復帰後に古いキャッシュを再利用しないための処理です。
+
 ## トピック
 
 - **Subscribe**
@@ -11,6 +13,11 @@
   - `/manual_swerve_drive_ref` (`r1_msgs/msg/SwerveDrive`): 手動指令（limitチェックは行いません）。
   - `/bno086/imu/data_raw` (`sensor_msgs/msg/Imu`): IMU姿勢（`use_imu=true` のときYawを使用）。
   - `/set_swerve_drive_yaw` (`std_msgs/msg/Float64`): IMU の現在ヨー角に対するオフセットを更新し、計算で用いるYawを指定値に合わせます（`use_imu=true` のときのみ有効）。受け取った `data` [rad] を「現在のYaw」とみなすよう `yaw_offset = data - yaw_raw` を設定し、以降は `yaw = normalize(yaw_raw + yaw_offset)` を用います（`normalize` は `-pi`〜`pi` に正規化）。
+  - `/swerve_drive_initialize` (`std_msgs/msg/Empty`): 内部の前回ステア角キャッシュを再初期化します。現在の steer status がそろっていれば、その角度を初期値として採用します。
+  - `/swerve_fr_steer_motor_status` (`r1_msgs/msg/Motor`): front-right steer の現在モータ状態。
+  - `/swerve_fl_steer_motor_status` (`r1_msgs/msg/Motor`): front-left steer の現在モータ状態。
+  - `/swerve_rl_steer_motor_status` (`r1_msgs/msg/Motor`): rear-left steer の現在モータ状態。
+  - `/swerve_rr_steer_motor_status` (`r1_msgs/msg/Motor`): rear-right steer の現在モータ状態。
 - **Publish**
   - `/swerve_drive_ref` (`r1_msgs/msg/SwerveDrive`): 各輪の角速度指令 `omega0..omega3` とステア角指令 `theta0..theta3`。
 
@@ -52,7 +59,7 @@ steer_theta[i] = atan2(wheel_vy[i], wheel_vx[i])
 
 ステア角 `steer_theta[i]` は前回指令 `prev_steer_theta_[i]` と比較し、角度差が `angle_diff_range` 未満のときに `-pi..pi` をまたがないように unwrap して連続性を保つようにしています。
 
-また、`|linear.x| < zero_velocity_threshold` かつ `|linear.y| < zero_velocity_threshold` かつ `|angular.z| < zero_omega_threshold` のときは、停止指令とみなして wheel 角速度だけを 0 にし、ステア角は前回値を維持します。
+また、`|linear.x| < zero_velocity_threshold` かつ `|linear.y| < zero_velocity_threshold` かつ `|angular.z| < zero_omega_threshold` のときは、停止指令とみなして wheel 角速度だけを 0 にし、ステア角は前回値を維持します。`/swerve_drive_initialize` 直後は、steer status から同期できていればその現在角を、同期できていなければ前回値なしとして扱います。
 
 最後に、回転方向・ギア比・ステアオフセットを反映して `/swerve_drive_ref` を出力します。
 
