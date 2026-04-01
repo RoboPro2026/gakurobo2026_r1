@@ -1365,7 +1365,7 @@ void R1MainNode::manual_mode5_rkfs(void)
 void R1MainNode::manual_mode6_r2_lift(void)
 {
   int & r2_lift_step = manual_mode6_r2_lift_step_;
-
+  // fliftは逆転、rliftは正転させると、上昇する。
   if (ps4_->data.triangle) {
     if (r2_lift_step != 2) {
       r2_flift(-R2_LIFT_UP_VELOCITY);
@@ -1375,8 +1375,8 @@ void R1MainNode::manual_mode6_r2_lift(void)
     }
   } else if (ps4_->data.cross) {
     if (r2_lift_step != 3) {
-      r2_flift(R2_LIFT_DOWN_VELOCITY);
-      r2_rlift(-R2_LIFT_DOWN_VELOCITY);
+      r2_flift(-R2_LIFT_DOWN_VELOCITY);
+      r2_rlift(R2_LIFT_DOWN_VELOCITY);
       RCLCPP_INFO(this->get_logger(), "r2 lift down");
       r2_lift_step = 3;
     }

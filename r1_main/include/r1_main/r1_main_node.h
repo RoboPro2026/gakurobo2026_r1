@@ -223,7 +223,6 @@ public:
   double KFS_RYAW_FRONT_ANGLE = 0.0;
   double KFS_RYAW_SIDE_ANGLE = 0.0;
   double KFS_RYAW_REAR_ANGLE = 0.0;
-  // ========== 展開 ==========
   // R2昇降
   double R2_LIFT_UP_VELOCITY = 0.0;
   double R2_LIFT_DOWN_VELOCITY = 0.0;
