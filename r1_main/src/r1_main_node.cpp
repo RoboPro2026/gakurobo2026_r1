@@ -765,25 +765,25 @@ void R1MainNode::emergency_task(void) {}
 
 void R1MainNode::manual_mode1_detect_origin(void)
 {
-  // if (ps4_->is_pushed_up()) {
-  //   kfs_fx_detect_origin();
-  // }
+  if (ps4_->is_pushed_up()) {
+    kfs_fx_detect_origin();
+  }
 
-  // if (ps4_->is_pushed_right()) {
-  //   kfs_fz_detect_origin();
-  // }
+  if (ps4_->is_pushed_right()) {
+    kfs_fz_detect_origin();
+  }
 
-  // if (ps4_->is_pushed_down()) {
-  //   kfs_fyaw_detect_origin();
-  // }
+  if (ps4_->is_pushed_down()) {
+    kfs_fyaw_detect_origin();
+  }
 
   // if (ps4_->is_pushed_left()) {
   //   front_expand_detect_origin();
   // }
 
-  // if (ps4_->is_pushed_triangle()) {
-  //   kfs_rx_detect_origin();
-  // }
+  if (ps4_->is_pushed_triangle()) {
+    kfs_rx_detect_origin();
+  }
 
   if (ps4_->is_pushed_circle()) {
     kfs_rz_detect_origin();
@@ -1098,135 +1098,135 @@ void R1MainNode::manual_mode3_spear(void)
 
 void R1MainNode::manual_mode4_fkfs(void)
 {
-  // int & fx_step = manual_mode4_fx_step_;
-  // int & fz_step = manual_mode4_fz_step_;
-  // int & fyaw_step = manual_mode4_fyaw_step_;
-  // int & front_pump_step = manual_mode4_front_pump_step_;
+  int & fx_step = manual_mode4_fx_step_;
+  int & fz_step = manual_mode4_fz_step_;
+  int & fyaw_step = manual_mode4_fyaw_step_;
+  int & front_pump_step = manual_mode4_front_pump_step_;
 
-  // if (ps4_->is_pushed_up()) {
-  //   // 1段上のkfs_fz位置へ移動
-  //   fz_step++;
-  //   if (fz_step > 4) {
-  //     fz_step = 4;
-  //   }
-  //   RCLCPP_INFO(this->get_logger(), "fz_step: %d", fz_step);
-  //   if (fz_step == 1) {
-  //     kfs_fz(KFS_FZ_LOW_POS);
-  //   } else if (fz_step == 2) {
-  //     kfs_fz(KFS_FZ_MIDDLE_POS);
-  //   } else if (fz_step == 3) {
-  //     kfs_fz(KFS_FZ_HIGH_POS);
-  //   } else if (fz_step == 4) {
-  //     kfs_fz(KFS_FZ_BOOK_POS);
-  //   }
-  // }
+  if (ps4_->is_pushed_up()) {
+    // 1段上のkfs_fz位置へ移動
+    fz_step++;
+    if (fz_step > 4) {
+      fz_step = 4;
+    }
+    RCLCPP_INFO(this->get_logger(), "fz_step: %d", fz_step);
+    if (fz_step == 1) {
+      kfs_fz(KFS_FZ_LOW_POS);
+    } else if (fz_step == 2) {
+      kfs_fz(KFS_FZ_MIDDLE_POS);
+    } else if (fz_step == 3) {
+      kfs_fz(KFS_FZ_HIGH_POS);
+    } else if (fz_step == 4) {
+      kfs_fz(KFS_FZ_BOOK_POS);
+    }
+  }
 
-  // if (ps4_->is_pushed_right()) {
-  //   // kfs_fxを動かす
-  //   if (fx_step == 1) {
-  //     kfs_fx(KFS_FX_EXPAND_POS);
-  //     fx_step = 2;
-  //   } else {
-  //     kfs_fx(KFS_FX_NORMAL_POS);
-  //     fx_step = 1;
-  //   }
-  // }
+  if (ps4_->is_pushed_right()) {
+    // kfs_fxを動かす
+    if (fx_step == 1) {
+      kfs_fx(KFS_FX_EXPAND_POS);
+      fx_step = 2;
+    } else {
+      kfs_fx(KFS_FX_NORMAL_POS);
+      fx_step = 1;
+    }
+  }
 
-  // if (ps4_->is_pushed_down()) {
-  //   // 1段下のkfs_fz位置へ移動
-  //   fz_step--;
-  //   if (fz_step < 1) {
-  //     fz_step = 1;
-  //   }
-  //   RCLCPP_INFO(this->get_logger(), "fz_step: %d", fz_step);
-  //   if (fz_step == 1) {
-  //     kfs_fz(KFS_FZ_LOW_POS);
-  //   } else if (fz_step == 2) {
-  //     kfs_fz(KFS_FZ_MIDDLE_POS);
-  //   } else if (fz_step == 3) {
-  //     kfs_fz(KFS_FZ_HIGH_POS);
-  //   }
-  // }
+  if (ps4_->is_pushed_down()) {
+    // 1段下のkfs_fz位置へ移動
+    fz_step--;
+    if (fz_step < 1) {
+      fz_step = 1;
+    }
+    RCLCPP_INFO(this->get_logger(), "fz_step: %d", fz_step);
+    if (fz_step == 1) {
+      kfs_fz(KFS_FZ_LOW_POS);
+    } else if (fz_step == 2) {
+      kfs_fz(KFS_FZ_MIDDLE_POS);
+    } else if (fz_step == 3) {
+      kfs_fz(KFS_FZ_HIGH_POS);
+    }
+  }
 
-  // if (ps4_->is_pushed_left()) {
-  //   // front_pumpを動かす。止めるときは電磁弁も一緒に動く
-  //   if (front_pump_step == 1) {
-  //     kfs_front_pump(1.0);
-  //     kfs_front_valve(false);
-  //     front_pump_step = 2;
-  //   } else {
-  //     kfs_front_pump(0.0);
-  //     kfs_front_valve(true);
-  //     // setTimeout風で電磁弁をOFFにする。
-  //     manual_mode4_front_valve_timer_ = this->create_wall_timer(250ms, [this]() {
-  //       kfs_front_valve(false);
-  //       manual_mode4_front_valve_timer_->cancel();
-  //     });
-  //     front_pump_step = 1;
-  //   }
-  // }
+  if (ps4_->is_pushed_left()) {
+    // front_pumpを動かす。止めるときは電磁弁も一緒に動く
+    if (front_pump_step == 1) {
+      kfs_front_pump(1.0);
+      kfs_front_valve(false);
+      front_pump_step = 2;
+    } else {
+      kfs_front_pump(0.0);
+      kfs_front_valve(true);
+      // setTimeout風で電磁弁をOFFにする。
+      manual_mode4_front_valve_timer_ = this->create_wall_timer(250ms, [this]() {
+        kfs_front_valve(false);
+        manual_mode4_front_valve_timer_->cancel();
+      });
+      front_pump_step = 1;
+    }
+  }
 
-  // if (ps4_->is_pushed_triangle()) {
-  //   // kfs_fyawを90度進める
-  //   fyaw_step++;
-  //   if (fyaw_step > 3) {
-  //     fyaw_step = 3;
-  //   }
-  //   RCLCPP_INFO(this->get_logger(), "fyaw_step: %d", fyaw_step);
-  //   if (fyaw_step == 1) {
-  //     kfs_fyaw(KFS_FYAW_FRONT_ANGLE);
-  //   } else if (fyaw_step == 2) {
-  //     kfs_fyaw(KFS_FYAW_SIDE_ANGLE);
-  //   } else if (fyaw_step == 3) {
-  //     kfs_fyaw(KFS_FYAW_REAR_ANGLE);
-  //   }
-  // }
+  if (ps4_->is_pushed_triangle()) {
+    // kfs_fyawを90度進める
+    fyaw_step++;
+    if (fyaw_step > 3) {
+      fyaw_step = 3;
+    }
+    RCLCPP_INFO(this->get_logger(), "fyaw_step: %d", fyaw_step);
+    if (fyaw_step == 1) {
+      kfs_fyaw(KFS_FYAW_FRONT_ANGLE);
+    } else if (fyaw_step == 2) {
+      kfs_fyaw(KFS_FYAW_SIDE_ANGLE);
+    } else if (fyaw_step == 3) {
+      kfs_fyaw(KFS_FYAW_REAR_ANGLE);
+    }
+  }
 
-  // if (ps4_->is_pushed_circle()) {
-  //   // kfs_fyawを微調整（指令値を増加）
-  //   kfs_fyaw(kfs_fyaw_position_ref_ + 0.1);
-  // }
+  if (ps4_->is_pushed_circle()) {
+    // kfs_fyawを微調整（指令値を増加）
+    kfs_fyaw(kfs_fyaw_position_ref_ + 0.1);
+  }
 
-  // if (ps4_->is_pushed_cross()) {
-  //   // kfs_fyawを90度戻す
-  //   fyaw_step--;
-  //   if (fyaw_step < 1) {
-  //     fyaw_step = 1;
-  //   }
-  //   RCLCPP_INFO(this->get_logger(), "fyaw_step: %d", fyaw_step);
-  //   if (fyaw_step == 1) {
-  //     kfs_fyaw(KFS_FYAW_FRONT_ANGLE);
-  //   } else if (fyaw_step == 2) {
-  //     kfs_fyaw(KFS_FYAW_SIDE_ANGLE);
-  //   } else if (fyaw_step == 3) {
-  //     kfs_fyaw(KFS_FYAW_REAR_ANGLE);
-  //   }
-  // }
+  if (ps4_->is_pushed_cross()) {
+    // kfs_fyawを90度戻す
+    fyaw_step--;
+    if (fyaw_step < 1) {
+      fyaw_step = 1;
+    }
+    RCLCPP_INFO(this->get_logger(), "fyaw_step: %d", fyaw_step);
+    if (fyaw_step == 1) {
+      kfs_fyaw(KFS_FYAW_FRONT_ANGLE);
+    } else if (fyaw_step == 2) {
+      kfs_fyaw(KFS_FYAW_SIDE_ANGLE);
+    } else if (fyaw_step == 3) {
+      kfs_fyaw(KFS_FYAW_REAR_ANGLE);
+    }
+  }
 
-  // if (ps4_->is_pushed_square()) {
-  //   // kfs_fyawを微調整（指令値を減少）
-  //   kfs_fyaw(kfs_fyaw_position_ref_ - 0.1);
-  // }
+  if (ps4_->is_pushed_square()) {
+    // kfs_fyawを微調整（指令値を減少）
+    kfs_fyaw(kfs_fyaw_position_ref_ - 0.1);
+  }
 
-  // if (ps4_->is_pushed_l1()) {
-  //   // kfs_fxの微調整（指令値を減少）
-  //   kfs_fx(kfs_fx_position_ref_ - 0.01);
-  // }
+  if (ps4_->is_pushed_l1()) {
+    // kfs_fxの微調整（指令値を減少）
+    kfs_fx(kfs_fx_position_ref_ - 0.01);
+  }
 
-  // if (ps4_->is_pushed_r1()) {
-  //   // kfs_fxの微調整（指令値を増加）
-  //   kfs_fx(kfs_fx_position_ref_ + 0.01);
-  // }
+  if (ps4_->is_pushed_r1()) {
+    // kfs_fxの微調整（指令値を増加）
+    kfs_fx(kfs_fx_position_ref_ + 0.01);
+  }
 
-  // if (ps4_->is_pushed_l2()) {
-  //   // kfs_fzの微調整（指令値を減少）
-  //   kfs_fz(kfs_fz_position_ref_ - 0.01);
-  // }
+  if (ps4_->is_pushed_l2()) {
+    // kfs_fzの微調整（指令値を減少）
+    kfs_fz(kfs_fz_position_ref_ - 0.01);
+  }
 
-  // if (ps4_->is_pushed_r2()) {
-  //   // kfs_fzの微調整（指令値を増加）
-  //   kfs_fz(kfs_fz_position_ref_ + 0.01);
-  // }
+  if (ps4_->is_pushed_r2()) {
+    // kfs_fzの微調整（指令値を増加）
+    kfs_fz(kfs_fz_position_ref_ + 0.01);
+  }
 }
 
 void R1MainNode::manual_mode5_rkfs(void)
