@@ -199,6 +199,7 @@ rosdep install -i --from-paths urg_node2
 ## ROS 2 の起動
 
 `r1_bringup.launch.py` は `use_sim` 引数で、実機モードとシミュレーションモードを切り替えられます。  
+実機モードではさらに `use_lidar` 引数で、LiDAR を使う構成と使わない構成を切り替えられます。  
 `zone` は現在 [`r1_bringup.launch.py`](/home/user/ros2_ws/src/gakurobo2026_r1/r1_bringup/launch/r1_bringup.launch.py) 内で設定しています。
 
 ### 実機モード
@@ -215,27 +216,48 @@ ros2 launch ros2_socketcan socket_can_bridge.launch.xml interface:=can0
 
 ターミナル 2:
 
+- LiDAR を使う場合:
+
 ```bash
 cd ~/ros2_ws
 source install/setup.bash
-ros2 launch r1_bringup r1_bringup.launch.py use_sim:=false
+ros2 launch r1_bringup r1_bringup.launch.py use_sim:=false use_lidar:=true
 ```
 
-`use_sim:=false` はデフォルトなので、以下でも同じです。
+- LiDAR を使わない場合:
+
+```bash
+cd ~/ros2_ws
+source install/setup.bash
+ros2 launch r1_bringup r1_bringup.launch.py use_sim:=false use_lidar:=false
+```
+
+`use_sim:=false` と `use_lidar:=true` はデフォルトなので、LiDAR を使う通常の実機起動は以下でも同じです。
 
 ```bash
 ros2 launch r1_bringup r1_bringup.launch.py
 ```
 
+LiDAR を使わない場合は、`r1_dummy_map_node` が `map -> odom` TF を publish します。`/initialpose` を送ると、その内容に合わせて `map -> odom` が更新されます。
+
 ### シミュレーションモード
 
-シミュレーションモードでは、`r1_dummy_odometry_node` が `/odometry`、`/map`、`map -> odom` TF を publish します。  
-このとき `amcl` や実機用のセンサ・CAN 系ノードは起動しません。
+シミュレーションモードでは、`nav2_map_server` が `/map` を publish し、`r1_dummy_map_node` が `map -> odom` TF、`r1_dummy_odometry_node` が `/odometry` と `odom -> base_link` TF を publish します。  
+このとき実機用のセンサ・CAN 系ノードは起動しません。
 
 ```bash
 cd ~/ros2_ws
 source install/setup.bash
 ros2 launch r1_bringup r1_bringup.launch.py use_sim:=true
+```
+
+## foxgloveを使うときは
+foxgloveとはROS 2のトピックを可視化できる便利なツールです。  
+次のコマンドでfoxgloveのサーバを起動できます。ただし、起動したままロボットを動かすと重くなることがあるので注意。  
+
+```bash
+source install/setup.bash
+ros2 launch foxglove_bridge foxglove_bridge_launch.xml port:=8765
 ```
 
 ## 軌道生成 GUI の実行
@@ -262,4 +284,4 @@ python src/gakurobo2026_r1/src/trajectory_planner_gui.py
 
 ## 外部共通ライブラリについて
 
-`bno086` や `sabacan` など、複数機体で共有しているライブラリは `gakurobo2026_common` 側にあります。  
+`bno086` や `sabacan` など、複数プロジェクトで共有しているライブラリは `gakurobo2026_common` 側にあります。  

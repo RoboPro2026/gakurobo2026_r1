@@ -29,6 +29,7 @@ add_executable(test_spline_node example/test_spline_node.cpp)
 add_executable(test_trajectory_planner_node example/test_trajectory_planner_node.cpp)
 add_executable(test_trapezoid_node example/test_trapezoid_node.cpp)
 add_executable(r1_chassis_control_node src/r1_chassis_control_node.cpp)
+add_executable(r1_dummy_map_node src/r1_dummy_map_node.cpp)
 add_executable(r1_dummy_odometry_node src/r1_dummy_odometry_node.cpp)
 add_executable(r1_laser_filter_node src/r1_laser_filter_node.cpp)
 
@@ -60,6 +61,14 @@ ament_target_dependencies(r1_chassis_control_node
   tf2_geometry_msgs
   tf2_ros
   visualization_msgs
+)
+
+ament_target_dependencies(r1_dummy_map_node
+  geometry_msgs
+  rclcpp
+  tf2
+  tf2_geometry_msgs
+  tf2_ros
 )
 
 ament_target_dependencies(r1_dummy_odometry_node
@@ -127,6 +136,12 @@ target_include_directories(r1_chassis_control_node PUBLIC
   $<INSTALL_INTERFACE:include>
 )
 
+target_include_directories(r1_dummy_map_node PUBLIC
+  $<BUILD_INTERFACE:${EIGEN3_INCLUDE_DIR}>
+  $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+  $<INSTALL_INTERFACE:include>
+)
+
 target_include_directories(r1_dummy_odometry_node PUBLIC
   $<BUILD_INTERFACE:${EIGEN3_INCLUDE_DIR}>
   $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
@@ -162,6 +177,10 @@ install(TARGETS test_trapezoid_node
 )
 
 install(TARGETS r1_chassis_control_node
+  DESTINATION lib/${PROJECT_NAME}
+)
+
+install(TARGETS r1_dummy_map_node
   DESTINATION lib/${PROJECT_NAME}
 )
 

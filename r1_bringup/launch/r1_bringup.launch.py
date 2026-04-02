@@ -25,6 +25,7 @@ def generate_launch_description():
     # パッケージの共有ディレクトリのパスを取得
     pkg_dir = get_package_share_directory("r1_bringup")
     use_sim = LaunchConfiguration("use_sim")
+    use_lidar = LaunchConfiguration("use_lidar")
 
     # パラメータファイルのフルパスを作成
     param_file = os.path.join(pkg_dir, "config", "r1_machine_config.yaml")
@@ -440,6 +441,15 @@ def generate_launch_description():
                 "r1_slam.launch.py",
             )
         ),
+        condition=IfCondition(use_lidar),
+    )
+
+    r1_dummy_map_node = Node(
+        package="r1_control",
+        executable="r1_dummy_map_node",
+        name="r1_dummy_map_node",
+        arguments=["--ros-args", "--log-level", "warn"],
+        condition=UnlessCondition(use_lidar),
     )
 
     r1_sim_launch = IncludeLaunchDescription(
@@ -531,8 +541,8 @@ def generate_launch_description():
     ]
 
     real_nodes = [
-        # r1_slamは一旦コメントアウト
-        # r1_slam_launch,
+        r1_slam_launch,
+        r1_dummy_map_node,
         eth2can_node,
         bno086_node,
         r1_odometry_node,
@@ -548,6 +558,7 @@ def generate_launch_description():
     return LaunchDescription(
         [
             DeclareLaunchArgument("use_sim", default_value="false"),
+            DeclareLaunchArgument("use_lidar", default_value="true"),
             # TimerAction(period=0.0, actions=[foxglove_node]),
             TimerAction(period=0.0, actions=common_nodes),
             TimerAction(

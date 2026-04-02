@@ -2,22 +2,20 @@
 
 `r1_dummy_odometry_node` は、`/cmd_vel` と `Path` を入力として簡易的なオドメトリ `/odometry` を生成するシミュレーション用 ROS 2 ノードです。現在の既定動作では `/waypoints` の `nav_msgs/msg/Path` を subscription し、その軌道上を `cmd_vel` の並進速度で進みます。`cmd_vel` は速度として使い、位置そのものは Path 上へ拘束します。Path が無い場合だけ、30 kg のロボットを想定した簡易ダイナミクスモデルへフォールバックします。
 
-`r1_bringup.launch.py` を `use_sim:=true` で起動したときに使う前提のノードです。実機モードでは起動しません。`/map` 自体は `nav2_map_server` が publish します。
+`r1_bringup.launch.py` を `use_sim:=true` で起動したときに使う前提のノードです。実機モードでは起動しません。`/map` 自体は `nav2_map_server` が publish し、`map -> odom` は [`r1_dummy_map_node`](./r1_dummy_map_node.md) が担当します。
 
 ## トピック
 
 - Subscribe
   - `/cmd_vel` (`geometry_msgs/msg/Twist`): ダミーオドメトリの入力速度指令です。`linear.x`, `linear.y`, `angular.z` を使用します。
-  - `/waypoints` (`nav_msgs/msg/Path`): 追従する軌道です。既定ではこの Path 上を `cmd_vel` の並進速度に応じて進みます。
-  - `/target_pose` (`geometry_msgs/msg/PoseStamped`): 積分ドリフト補正用の目標姿勢です。`enable_target_pose_correction` が true のとき、一定周期ごとにこの姿勢との差を判定し、閾値を超えていれば現在位置をこの姿勢へ直接合わせます。
-  - `/initialpose` (`geometry_msgs/msg/PoseWithCovarianceStamped`): ダミー自己位置のリセット用です。受信した姿勢を現在位置として即座に反映します。
+  - `/waypoints` (`nav_msgs/msg/Path`): 追従する軌道です。既定ではこの Path 上を `cmd_vel` の並進速度に応じて進みます。`frame_id` が `odom` 以外でも、TF で `odom` へ変換できれば利用できます。
+  - `/target_pose` (`geometry_msgs/msg/PoseStamped`): 積分ドリフト補正用の目標姿勢です。`enable_target_pose_correction` が true のとき、一定周期ごとにこの姿勢との差を判定し、閾値を超えていれば現在位置をこの姿勢へ直接合わせます。`frame_id` が `odom` 以外でも、TF で `odom` へ変換できれば利用できます。
   - `/set_odometry` (`std_msgs/msg/Float64MultiArray`): `r1_main_node` 互換の自己位置リセット用です。`[x, y, yaw]` の 3 要素を受け取ります。
 - Publish
   - `/odometry` (`nav_msgs/msg/Odometry`): ダミーの自己位置です。`header.frame_id = "odom"`、`child_frame_id = "base_link"` 固定です。
 
 ## TF
 
-- `map -> odom`: 固定 TF を publish
 - `odom -> base_link`: ダミーオドメトリに対応した TF を publish
 
 ## 主なパラメータ
@@ -54,9 +52,9 @@
 7. `enable_target_pose_correction` が true のときは、フォールバックモードでのみ `/target_pose` を使った補正を行います。
 8. 補正後の姿勢を `nav_msgs/msg/Odometry` として `/odometry` に publish します。
 9. 同じ姿勢を `odom -> base_link` TF として publish します。
-10. 起動時に `map -> odom` の固定 TF を publish します。
+10. `map` 系の `/waypoints` や `/target_pose` を受けたときは、TF を使って `odom` へ変換してから内部利用します。
 
-`/initialpose` または `/set_odometry` を受け取ったときは、現在位置を即座に更新し、内部の速度状態もゼロへリセットします。
+`/set_odometry` を受け取ったときは、現在位置を即座に更新し、内部の速度状態もゼロへリセットします。`/initialpose` と `map -> odom` は `r1_dummy_map_node` が担当します。
 
 ## 起動例
 
@@ -93,20 +91,6 @@ ros2 topic pub --once /target_pose geometry_msgs/msg/PoseStamped "{
   pose: {
     position: {x: -5.0, y: 1.0, z: 0.0},
     orientation: {x: 0.0, y: 0.0, z: 0.0, w: 1.0}
-  }
-}"
-```
-
-`/initialpose` で位置をリセットする例:
-
-```bash
-ros2 topic pub --once /initialpose geometry_msgs/msg/PoseWithCovarianceStamped "{
-  header: {frame_id: 'map'},
-  pose: {
-    pose: {
-      position: {x: -5.5, y: 0.5, z: 0.0},
-      orientation: {x: 0.0, y: 0.0, z: 0.0, w: 1.0}
-    }
   }
 }"
 ```
