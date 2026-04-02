@@ -127,9 +127,9 @@ r1_main_node:
     # spear1
     spear1_normal_pos: 0.0
     # ポールを掴む位置
-    spear1_collect1_pos: 0.45
+    spear1_collect1_pos: 0.3
     # ポールを掴んでちょっとだけ上げたときの位置
-    spear1_collect2_pos: 0.55
+    spear1_collect2_pos: 0.4
     # ポールを受け渡す位置
     spear1_collect3_pos: 0.80
     spear1_make_spear_start_pos: 0.0
@@ -137,9 +137,9 @@ r1_main_node:
     # spear2
     spear2_normal_pos: 0.0
     # ポールを掴む位置
-    spear2_collect1_pos: 0.45
+    spear2_collect1_pos: 0.3
     # ポールを掴んでちょっとだけ上げたときの位置
-    spear2_collect2_pos: 0.55
+    spear2_collect2_pos: 0.4
     # ポールを受け渡す位置
     spear2_collect3_pos: 0.80
     spear2_make_spear_start_pos: 0.0
