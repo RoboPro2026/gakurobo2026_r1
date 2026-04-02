@@ -913,7 +913,7 @@ void R1MainNode::manual_mode2_pole(void)
   }
 
   if (ps4_->is_pushed_right()) {
-    spear2(spear2_position_ref_ + 0.01);
+    spear_y(spear_y_position_ref_ + 0.01);
   }
 
   if (ps4_->is_pushed_down()) {
@@ -921,7 +921,7 @@ void R1MainNode::manual_mode2_pole(void)
   }
 
   if (ps4_->is_pushed_left()) {
-    spear2(spear2_position_ref_ - 0.01);
+    spear_y(spear_y_position_ref_ - 0.01);
   }
 
   if (ps4_->is_pushed_triangle()) {
@@ -1015,7 +1015,7 @@ void R1MainNode::manual_mode3_spear(void)
   }
 
   if (ps4_->is_pushed_right()) {
-    spear2(spear2_position_ref_ + 0.01);
+    spear_y(spear_y_position_ref_ + 0.01);
   }
 
   if (ps4_->is_pushed_down()) {
@@ -1023,7 +1023,7 @@ void R1MainNode::manual_mode3_spear(void)
   }
 
   if (ps4_->is_pushed_left()) {
-    spear2(spear2_position_ref_ - 0.01);
+    spear_y(spear_y_position_ref_ - 0.01);
   }
 
   if (ps4_->is_pushed_triangle()) {
