@@ -162,6 +162,11 @@ private:
       return true;
     }
 
+    // target_pose / waypoints は保持したメッセージを周期的に再解釈するため、
+    // 元の stamp を使うと古い時刻で map->odom を引きに行ってしまう。
+    // ここでは stamp=0 にして、常に最新の TF で odom へ変換する。
+    normalized_pose.header.stamp = rclcpp::Time(0, 0, this->get_clock()->get_clock_type());
+
     try {
       pose_out = tf_buffer_->transform(normalized_pose, "odom", tf2::durationFromSec(0.01));
       return true;
