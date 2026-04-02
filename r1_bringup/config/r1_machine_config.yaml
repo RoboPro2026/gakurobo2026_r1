@@ -152,7 +152,7 @@ r1_main_node:
     spear_x_make_spear4_pos: 0.0
     # spear_y
     spear_y_normal_pos: 0.0
-    spear_y_normal_pos: 0.25
+    spear_y_expand_pos: 0.25
     # spear_roll
     spear_roll_normal_angle: 0.0
     spear_roll_vertical_angle: 1.5707963267948966
@@ -275,7 +275,7 @@ r1_kfs_fx_node:
     contact_torque_limit: 0.7 # Nm
     origin_detect_threshold_time: 0.5 # 秒
     # 原点検出のときは、0の方向に戻るので、負の速度にする
-    output_detect_speed: -6.28 # rad/s
+    origin_detect_speed: -6.28 # rad/s
     pos_min: -0.1
     pos_max: 1.0
     normal_pos: 0.05
@@ -298,7 +298,7 @@ r1_kfs_fz_node:
     contact_torque_limit: 0.7 # Nm
     origin_detect_threshold_time: 0.5 # 秒
     # 原点検出のときは、0の方向に戻るので、負の速度にする
-    output_detect_speed: -3.14 # rad/s
+    origin_detect_speed: -3.14 # rad/s
     pos_min: -0.1
     pos_max: 1.0
     normal_pos: 0.05
@@ -344,7 +344,7 @@ r1_kfs_rx_node:
     contact_torque_limit: 0.7 # Nm
     origin_detect_threshold_time: 0.5 # 秒
     # 原点検出のときは、0の方向に戻るので、負の速度にする
-    output_detect_speed: -3.14 # rad/s
+    origin_detect_speed: -3.14 # rad/s
     pos_min: -0.1
     pos_max: 1.0
     normal_pos: 0.05
@@ -367,7 +367,7 @@ r1_kfs_rz_node:
     contact_torque_limit: 0.7 # Nm
     origin_detect_threshold_time: 0.5 # 秒
     # 原点検出のときは、0の方向に戻るので、負の速度にする
-    output_detect_speed: -3.14 # rad/s
+    origin_detect_speed: -3.14 # rad/s
     pos_min: -0.1
     pos_max: 1.0
     normal_pos: 0.05
@@ -415,7 +415,7 @@ r1_spear1_node:
     contact_torque_limit: 1.0 # Nm
     origin_detect_threshold_time: 0.5 # 秒
     # 原点検出のときは、0の方向に戻るので、負の速度にする
-    output_detect_speed: -6.28 # rad/s
+    origin_detect_speed: -6.28 # rad/s
     pos_min: -0.1
     pos_max: 1.0
     normal_pos: 0.05
@@ -439,7 +439,7 @@ r1_spear2_node:
     contact_torque_limit: 1.0 # Nm
     origin_detect_threshold_time: 0.5 # 秒
     # 原点検出のときは、0の方向に戻るので、負の速度にする
-    output_detect_speed: -6.28 # rad/s
+    origin_detect_speed: -6.28 # rad/s
     pos_min: -0.1
     pos_max: 1.0
     # モータが1回転すると100mm進むので、半径は15.9mm
@@ -462,7 +462,7 @@ r1_spear3_node:
     contact_torque_limit: 1.0 # Nm
     origin_detect_threshold_time: 0.5 # 秒
     # 原点検出のときは、0の方向に戻るので、負の速度にする
-    output_detect_speed: -6.28 # rad/s
+    origin_detect_speed: -6.28 # rad/s
     pos_min: -0.1
     pos_max: 1.0
     normal_pos: 0.05
@@ -486,7 +486,7 @@ r1_spear4_node:
     contact_torque_limit: 1.0 # Nm
     origin_detect_threshold_time: 0.5 # 秒
     # 原点検出のときは、0の方向に戻るので、負の速度にする
-    output_detect_speed: -6.28 # rad/s
+    origin_detect_speed: -6.28 # rad/s
     pos_min: -0.1
     pos_max: 1.0
     normal_pos: 0.05
@@ -510,7 +510,7 @@ r1_spear_x_node:
     contact_torque_limit: 1.0 # Nm
     origin_detect_threshold_time: 0.5 # 秒
     # 原点検出のときは、0の方向に戻るので、負の速度にする
-    output_detect_speed: -6.28 # rad/s
+    origin_detect_speed: -6.28 # rad/s
     pos_min: -0.1
     pos_max: 1.0
     normal_pos: 0.05
@@ -534,7 +534,7 @@ r1_spear_y_node:
     contact_torque_limit: 4.0 # Nm
     origin_detect_threshold_time: 0.5 # 秒
     # 原点検出のときは、0の方向に戻るので、負の速度にする
-    output_detect_speed: -6.28 # rad/s
+    origin_detect_speed: -6.28 # rad/s
     pos_min: -0.1
     pos_max: 1.0
     normal_pos: 0.05
