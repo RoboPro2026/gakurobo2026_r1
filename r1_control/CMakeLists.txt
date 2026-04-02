@@ -1,9 +1,23 @@
 cmake_minimum_required(VERSION 3.8)
 project(r1_control)
 
+# r1_control は計算量が比較的大きいため、この package では build type を
+# 明示的に Release に固定します。最適化レベルは add_compile_options() で個別に
+# 指定せず、CMake の Release 設定に任せます。
+set(CMAKE_BUILD_TYPE Release CACHE STRING "Build type" FORCE)
+
+# ccache が入っていれば、コンパイル結果を再利用して再ビルド時間を短縮します。
+find_program(CCACHE_PROGRAM ccache)
+if(CCACHE_PROGRAM)
+  set(CMAKE_C_COMPILER_LAUNCHER ${CCACHE_PROGRAM})
+  set(CMAKE_CXX_COMPILER_LAUNCHER ${CCACHE_PROGRAM})
+endif()
+
+set(CMAKE_CXX_STANDARD 20)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+
 if(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
-  # r1_controlは重い処理が多いので、-O3でコンパイルする
-  add_compile_options(-std=c++20 -Wall -Wextra -Wpedantic -O3)
+  add_compile_options(-Wall -Wextra -Wpedantic)
 endif()
 
 # find dependencies
@@ -24,32 +38,22 @@ find_package(Eigen3 REQUIRED)
 find_package(Python3 COMPONENTS Interpreter Development MODULE REQUIRED)
 find_package(pybind11 REQUIRED)
 
-add_executable(test_minimum_jerk_node example/test_minimum_jerk_node.cpp)
-add_executable(test_spline_node example/test_spline_node.cpp)
-add_executable(test_trajectory_planner_node example/test_trajectory_planner_node.cpp)
-add_executable(test_trapezoid_node example/test_trapezoid_node.cpp)
+set(COMMON_INCLUDE_DIRS
+  $<BUILD_INTERFACE:${EIGEN3_INCLUDE_DIR}>
+  $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+  $<INSTALL_INTERFACE:include>
+)
+
 add_executable(r1_chassis_control_node src/r1_chassis_control_node.cpp)
 add_executable(r1_dummy_map_node src/r1_dummy_map_node.cpp)
 add_executable(r1_dummy_odometry_node src/r1_dummy_odometry_node.cpp)
 add_executable(r1_laser_filter_node src/r1_laser_filter_node.cpp)
+add_executable(test_minimum_jerk_node example/test_minimum_jerk_node.cpp)
+add_executable(test_spline_node example/test_spline_node.cpp)
+add_executable(test_trajectory_planner_node example/test_trajectory_planner_node.cpp)
+add_executable(test_trapezoid_node example/test_trapezoid_node.cpp)
 
 pybind11_add_module(trajectory_planner src/trajectory_planner.cpp)
-
-ament_target_dependencies(test_minimum_jerk_node
-  rclcpp
-)
-
-ament_target_dependencies(test_spline_node
-  rclcpp
-)
-
-ament_target_dependencies(test_trajectory_planner_node
-  rclcpp
-)
-
-ament_target_dependencies(test_trapezoid_node
-  rclcpp
-)
 
 ament_target_dependencies(r1_chassis_control_node
   geometry_msgs
@@ -82,77 +86,34 @@ ament_target_dependencies(r1_dummy_odometry_node
 )
 
 ament_target_dependencies(r1_laser_filter_node
-  geometry_msgs
-  nav_msgs
   rclcpp
+  r1_util
   sensor_msgs
-  std_msgs
-  tf2
-  tf2_geometry_msgs
-  tf2_ros 
 )
 
+ament_target_dependencies(test_minimum_jerk_node
+  rclcpp
+)
+
+ament_target_dependencies(test_spline_node
+  rclcpp
+)
+
+ament_target_dependencies(test_trajectory_planner_node
+  rclcpp
+)
+
+ament_target_dependencies(test_trapezoid_node
+  rclcpp
+)
+
+target_link_libraries(r1_chassis_control_node r1_util::r1_util magic_enum::magic_enum)
+target_link_libraries(r1_dummy_odometry_node r1_util::r1_util)
+target_link_libraries(r1_laser_filter_node r1_util::r1_util)
 target_link_libraries(test_minimum_jerk_node r1_util::r1_util)
 target_link_libraries(test_spline_node r1_util::r1_util)
 target_link_libraries(test_trajectory_planner_node r1_util::r1_util)
 target_link_libraries(test_trapezoid_node r1_util::r1_util)
-target_link_libraries(r1_chassis_control_node r1_util::r1_util magic_enum::magic_enum)
-target_link_libraries(r1_dummy_odometry_node r1_util::r1_util)
-target_link_libraries(r1_laser_filter_node r1_util::r1_util)
-
-target_include_directories(test_minimum_jerk_node PUBLIC
-  $<BUILD_INTERFACE:${EIGEN3_INCLUDE_DIR}>
-  $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
-  $<INSTALL_INTERFACE:include>
-)
-
-target_include_directories(test_spline_node PUBLIC
-  $<BUILD_INTERFACE:${EIGEN3_INCLUDE_DIR}>
-  $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
-  $<INSTALL_INTERFACE:include>
-)
-
-target_include_directories(test_trajectory_planner_node PUBLIC
-  $<BUILD_INTERFACE:${EIGEN3_INCLUDE_DIR}>
-  $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
-  $<INSTALL_INTERFACE:include>
-)
-
-target_include_directories(test_trapezoid_node PUBLIC
-  $<BUILD_INTERFACE:${EIGEN3_INCLUDE_DIR}>
-  $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
-  $<INSTALL_INTERFACE:include>
-)
-
-target_include_directories(trajectory_planner PUBLIC
-  $<BUILD_INTERFACE:${EIGEN3_INCLUDE_DIR}>
-  $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
-  $<INSTALL_INTERFACE:include>
-)
-
-target_include_directories(r1_chassis_control_node PUBLIC
-  $<BUILD_INTERFACE:${EIGEN3_INCLUDE_DIR}>
-  $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
-  $<INSTALL_INTERFACE:include>
-)
-
-target_include_directories(r1_dummy_map_node PUBLIC
-  $<BUILD_INTERFACE:${EIGEN3_INCLUDE_DIR}>
-  $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
-  $<INSTALL_INTERFACE:include>
-)
-
-target_include_directories(r1_dummy_odometry_node PUBLIC
-  $<BUILD_INTERFACE:${EIGEN3_INCLUDE_DIR}>
-  $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
-  $<INSTALL_INTERFACE:include>
-)
-
-target_include_directories(r1_laser_filter_node PUBLIC
-  $<BUILD_INTERFACE:${EIGEN3_INCLUDE_DIR}>
-  $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
-  $<INSTALL_INTERFACE:include>
-)
 
 target_link_libraries(trajectory_planner
   PRIVATE
@@ -160,35 +121,25 @@ target_link_libraries(trajectory_planner
     r1_util::r1_util
 )
 
-install(TARGETS test_minimum_jerk_node
-  DESTINATION lib/${PROJECT_NAME}
-)
+target_include_directories(r1_chassis_control_node PUBLIC ${COMMON_INCLUDE_DIRS})
+target_include_directories(r1_dummy_map_node PUBLIC ${COMMON_INCLUDE_DIRS})
+target_include_directories(r1_dummy_odometry_node PUBLIC ${COMMON_INCLUDE_DIRS})
+target_include_directories(r1_laser_filter_node PUBLIC ${COMMON_INCLUDE_DIRS})
+target_include_directories(test_minimum_jerk_node PUBLIC ${COMMON_INCLUDE_DIRS})
+target_include_directories(test_spline_node PUBLIC ${COMMON_INCLUDE_DIRS})
+target_include_directories(test_trajectory_planner_node PUBLIC ${COMMON_INCLUDE_DIRS})
+target_include_directories(test_trapezoid_node PUBLIC ${COMMON_INCLUDE_DIRS})
+target_include_directories(trajectory_planner PUBLIC ${COMMON_INCLUDE_DIRS})
 
-install(TARGETS test_spline_node
-  DESTINATION lib/${PROJECT_NAME}
-)
-
-install(TARGETS test_trajectory_planner_node
-  DESTINATION lib/${PROJECT_NAME}
-)
-
-install(TARGETS test_trapezoid_node
-  DESTINATION lib/${PROJECT_NAME}
-)
-
-install(TARGETS r1_chassis_control_node
-  DESTINATION lib/${PROJECT_NAME}
-)
-
-install(TARGETS r1_dummy_map_node
-  DESTINATION lib/${PROJECT_NAME}
-)
-
-install(TARGETS r1_dummy_odometry_node
-  DESTINATION lib/${PROJECT_NAME}
-)
-
-install(TARGETS r1_laser_filter_node
+install(TARGETS
+  r1_chassis_control_node
+  r1_dummy_map_node
+  r1_dummy_odometry_node
+  r1_laser_filter_node
+  test_minimum_jerk_node
+  test_spline_node
+  test_trajectory_planner_node
+  test_trapezoid_node
   DESTINATION lib/${PROJECT_NAME}
 )
 

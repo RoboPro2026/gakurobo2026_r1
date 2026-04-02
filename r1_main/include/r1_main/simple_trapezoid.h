@@ -11,8 +11,6 @@
 
 #pragma once
 
-#include "rclcpp/rclcpp.hpp"
-
 /**
  * @brief 距離の制約条件のない台形制御を計算する
  * 

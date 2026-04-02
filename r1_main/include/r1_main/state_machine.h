@@ -11,10 +11,6 @@
 
 #pragma once
 
-#include <chrono>
-#include <functional>
-#include <map>
-#include <memory>
 #include <string>
 #include <variant>
 
@@ -59,7 +55,6 @@ enum class AutoSubState
 
 // SubStateを保持するvariant
 using SubState = std::variant<IdleSubState, EmergencySubState, ManualSubState, AutoSubState>;
-using namespace std::chrono_literals;
 
 // 現在の状態を管理する構造体
 struct RobotState

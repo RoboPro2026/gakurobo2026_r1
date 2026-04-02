@@ -12,8 +12,7 @@
 
 #pragma once
 
-#include "r1_util/r1_util.h"
-#include "rclcpp/rclcpp.hpp"
+#include <cmath>
 
 class MinimumJerk
 {

@@ -14,11 +14,8 @@
 
 #include <algorithm>  //< for std::max, std::min
 #include <array>
-#include <iostream>  //< for std::cout
-#include <ostream>
 
 #include "r1_control/accel_curve.h"
-#include "r1_util/r1_util.h"
 #include "rclcpp/rclcpp.hpp"
 
 /**

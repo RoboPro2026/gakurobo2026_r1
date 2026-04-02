@@ -10,31 +10,11 @@
  * 
  */
 
-#include <algorithm>
-#include <chrono>
-#include <complex>
+#include <cmath>
 #include <limits>
 
-#include "geometry_msgs/msg/pose_stamped.hpp"
-#include "geometry_msgs/msg/transform_stamped.hpp"
-#include "geometry_msgs/msg/twist.hpp"
-#include "nav_msgs/msg/odometry.hpp"
-#include "nav_msgs/msg/path.hpp"
-#include "r1_util/r1_util.h"
-#include "rcl_interfaces/msg/floating_point_range.hpp"
-#include "rcl_interfaces/msg/parameter_descriptor.hpp"
 #include "rclcpp/rclcpp.hpp"
 #include "sensor_msgs/msg/laser_scan.hpp"
-#include "std_msgs/msg/float64.hpp"
-#include "std_msgs/msg/float64_multi_array.hpp"
-#include "std_msgs/msg/int32.hpp"
-#include "tf2/LinearMath/Matrix3x3.h"
-#include "tf2/LinearMath/Quaternion.h"
-#include "tf2/utils.h"
-#include "tf2_geometry_msgs/tf2_geometry_msgs.hpp"
-#include "tf2_ros/transform_broadcaster.h"
-
-using namespace std::chrono_literals;
 
 class MyNode : public rclcpp::Node
 {
