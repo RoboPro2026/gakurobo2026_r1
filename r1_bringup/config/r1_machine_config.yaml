@@ -541,7 +541,7 @@ r1_spear_y_node:
     normal_pos: 0.05
     # モータが1回転すると110mm進むので、半径は17.5mm
     radius: 0.01750704374010849
-    inverse_motor: true
+    inverse_motor: false
     use_low_switch: false
     use_high_switch: false
     inverse_low_switch_logic: false
@@ -565,7 +565,7 @@ r1_spear_roll_node:
     # ギア比で割った値がモーターの角度指令値となる
     # 1.0 / 5.0 = 0.2
     gear_ratio: 0.2
-    inverse_motor: false
+    inverse_motor: true
     use_low_switch: false
     use_high_switch: false
     inverse_low_switch_logic: false
