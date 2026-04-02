@@ -39,10 +39,19 @@ def generate_launch_description():
         arguments=["--ros-args", "--log-level", "warn"],
     )
 
+    r1_dummy_map_node = Node(
+        package="r1_control",
+        executable="r1_dummy_map_node",
+        name="r1_dummy_map_node",
+        parameters=[sim_param_file],
+        arguments=["--ros-args", "--log-level", "warn"],
+    )
+
     return LaunchDescription(
         [
             sim_map_server_node,
             sim_map_lifecycle_manager_node,
+            r1_dummy_map_node,
             r1_dummy_odometry_node,
         ]
     )

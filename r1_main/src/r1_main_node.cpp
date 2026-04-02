@@ -11,6 +11,15 @@
 
 #include "r1_main/r1_main_node.h"
 
+#include <chrono>
+
+#include "tf2/LinearMath/Matrix3x3.h"
+#include "tf2/LinearMath/Quaternion.h"
+#include "tf2/utils.h"
+#include "tf2_geometry_msgs/tf2_geometry_msgs.hpp"
+
+using namespace std::chrono_literals;
+
 /**
  * @brief double 型パラメータを declare して取得する。
  * @param name パラメータ名。
@@ -408,12 +417,16 @@ R1MainNode::R1MainNode() : Node("r1_main_node")
   // ========== やり ==========
   // spear1
   declare_and_get_parameter("spear1_normal_pos", SPEAR1_NORMAL_POS);
-  declare_and_get_parameter("spear1_collect_pos", SPEAR1_COLLECT_POS);
+  declare_and_get_parameter("spear1_collect1_pos", SPEAR1_COLLECT1_POS);
+  declare_and_get_parameter("spear1_collect2_pos", SPEAR1_COLLECT2_POS);
+  declare_and_get_parameter("spear1_collect3_pos", SPEAR1_COLLECT3_POS);
   declare_and_get_parameter("spear1_make_spear_start_pos", SPEAR1_MAKE_SPEAR_START_POS);
   declare_and_get_parameter("spear1_make_spear_end_pos", SPEAR1_MAKE_SPEAR_END_POS);
   // spear2
   declare_and_get_parameter("spear2_normal_pos", SPEAR2_NORMAL_POS);
-  declare_and_get_parameter("spear2_collect_pos", SPEAR2_COLLECT_POS);
+  declare_and_get_parameter("spear2_collect1_pos", SPEAR2_COLLECT1_POS);
+  declare_and_get_parameter("spear2_collect2_pos", SPEAR2_COLLECT2_POS);
+  declare_and_get_parameter("spear2_collect3_pos", SPEAR2_COLLECT3_POS);
   declare_and_get_parameter("spear2_make_spear_start_pos", SPEAR2_MAKE_SPEAR_START_POS);
   declare_and_get_parameter("spear2_make_spear_end_pos", SPEAR2_MAKE_SPEAR_END_POS);
   // spear3
@@ -503,7 +516,6 @@ R1MainNode::R1MainNode() : Node("r1_main_node")
   ps4_->set_connection_timeout(ps4_connection_timeout_);
 
   state_machine_ = std::make_shared<StateMachine>();
-  // state_machine_->set_next_state({MainState::MANUAL, ManualSubState::TEST});
   state_machine_->set_next_state({MainState::MANUAL, ManualSubState::MODE1_DETECT_ORIGIN});
   // state_machine_->set_next_state({MainState::AUTO, AutoSubState::ACT0});
   // アクチュエータを初期化
@@ -875,23 +887,47 @@ void R1MainNode::manual_mode2_collect_pole_task(void)
     spear_pitch2(SPEAR_PITCH2_VERTICAL_ANGLE);
     step++;
   } else if (step == 3) {
+    spear_y(SPEAR_Y_EXPAND_POS);
+    step++;
+  } else if (step == 4) {
     spear_u1_valve(true);
     spear_d1_valve(true);
     spear_u2_valve(true);
     spear_d2_valve(true);
-    spear1(SPEAR1_COLLECT_POS);
-    spear2(SPEAR2_COLLECT_POS);
-    step++;
-  } else if (step == 4) {
-    spear_y(SPEAR_Y_EXPAND_POS);
+    spear1(SPEAR1_COLLECT1_POS);
+    spear2(SPEAR2_COLLECT1_POS);
     step++;
   } else if (step == 5) {
-    spear_u1_valve(false);
     spear_d1_valve(false);
-    spear_u2_valve(false);
     spear_d2_valve(false);
     step++;
   } else if (step == 6) {
+    spear1(SPEAR1_COLLECT2_POS);
+    spear2(SPEAR2_COLLECT2_POS);
+    step++;
+  } else if (step == 7) {
+    spear1(SPEAR1_COLLECT3_POS);
+    spear2(SPEAR2_COLLECT3_POS);
+    step++;
+  } else if (step == 8) {
+    spear_u1_valve(false);
+    spear_u2_valve(false);
+    step++;
+  } else if (step == 9) {
+    spear_d1_valve(true);
+    spear_d2_valve(true);
+    step++;
+  } else if (step == 10) {
+    spear1(SPEAR1_NORMAL_POS);
+    spear2(SPEAR2_NORMAL_POS);
+    spear_pitch1(SPEAR_PITCH1_NORMAL_ANGLE);
+    spear_pitch2(SPEAR_PITCH2_NORMAL_ANGLE);
+    step++;
+  } else if (step == 11) {
+    spear_d1_valve(false);
+    spear_d2_valve(false);
+    step++;
+  } else if (step == 12) {
     spear_y(SPEAR_Y_NORMAL_POS);
     RCLCPP_INFO(this->get_logger(), "pole collect task completed");
     step = 1;
@@ -901,19 +937,19 @@ void R1MainNode::manual_mode2_collect_pole_task(void)
 void R1MainNode::manual_mode2_pole(void)
 {
   if (ps4_->is_pushed_up()) {
-    spear_roll(spear_roll_position_ref_ + 0.1);
+    spear_roll(spear_roll_position_ref_ + 0.05);
   }
 
   if (ps4_->is_pushed_right()) {
-    spear2(spear2_position_ref_ + 0.01);
+    spear_y(spear_y_position_ref_ + 0.01);
   }
 
   if (ps4_->is_pushed_down()) {
-    spear_roll(spear_roll_position_ref_ - 0.1);
+    spear_roll(spear_roll_position_ref_ - 0.05);
   }
 
   if (ps4_->is_pushed_left()) {
-    spear2(spear2_position_ref_ - 0.01);
+    spear_y(spear_y_position_ref_ - 0.01);
   }
 
   if (ps4_->is_pushed_triangle()) {
@@ -933,19 +969,19 @@ void R1MainNode::manual_mode2_pole(void)
   }
 
   if (ps4_->is_pushed_l1()) {
-    spear_pitch1(spear_pitch1_position_ref_ - 0.1);
+    spear_pitch1(spear_pitch1_position_ref_ - 0.05);
   }
 
   if (ps4_->is_pushed_r1()) {
-    spear_pitch1(spear_pitch1_position_ref_ + 0.1);
+    spear_pitch1(spear_pitch1_position_ref_ + 0.05);
   }
 
   if (ps4_->is_pushed_l2()) {
-    spear_pitch2(spear_pitch2_position_ref_ - 0.1);
+    spear_pitch2(spear_pitch2_position_ref_ - 0.05);
   }
 
   if (ps4_->is_pushed_r2()) {
-    spear_pitch2(spear_pitch2_position_ref_ + 0.1);
+    spear_pitch2(spear_pitch2_position_ref_ + 0.05);
   }
 }
 
@@ -1003,19 +1039,19 @@ void R1MainNode::manual_mode3_make_spear_task(int n)
 void R1MainNode::manual_mode3_spear(void)
 {
   if (ps4_->is_pushed_up()) {
-    spear_roll(spear_roll_position_ref_ + 0.1);
+    spear_roll(spear_roll_position_ref_ + 0.05);
   }
 
   if (ps4_->is_pushed_right()) {
-    spear2(spear2_position_ref_ + 0.01);
+    spear_y(spear_y_position_ref_ + 0.01);
   }
 
   if (ps4_->is_pushed_down()) {
-    spear_roll(spear_roll_position_ref_ - 0.1);
+    spear_roll(spear_roll_position_ref_ - 0.05);
   }
 
   if (ps4_->is_pushed_left()) {
-    spear2(spear2_position_ref_ - 0.01);
+    spear_y(spear_y_position_ref_ - 0.01);
   }
 
   if (ps4_->is_pushed_triangle()) {
@@ -1035,19 +1071,19 @@ void R1MainNode::manual_mode3_spear(void)
   }
 
   if (ps4_->is_pushed_l1()) {
-    spear_pitch1(spear_pitch1_position_ref_ - 0.1);
+    spear_pitch1(spear_pitch1_position_ref_ - 0.05);
   }
 
   if (ps4_->is_pushed_r1()) {
-    spear_pitch1(spear_pitch1_position_ref_ + 0.1);
+    spear_pitch1(spear_pitch1_position_ref_ + 0.05);
   }
 
   if (ps4_->is_pushed_l2()) {
-    spear_pitch2(spear_pitch2_position_ref_ - 0.1);
+    spear_pitch2(spear_pitch2_position_ref_ - 0.05);
   }
 
   if (ps4_->is_pushed_r2()) {
-    spear_pitch2(spear_pitch2_position_ref_ + 0.1);
+    spear_pitch2(spear_pitch2_position_ref_ + 0.05);
   }
 }
 
@@ -1160,7 +1196,7 @@ void R1MainNode::manual_mode4_fkfs(void)
 
   if (ps4_->is_pushed_square()) {
     // kfs_fyawを微調整（指令値を減少）
-    kfs_fyaw(kfs_fyaw_position_ref_ - 0.1);
+    kfs_fyaw(kfs_fyaw_position_ref_ - 0.05);
   }
 
   if (ps4_->is_pushed_l1()) {

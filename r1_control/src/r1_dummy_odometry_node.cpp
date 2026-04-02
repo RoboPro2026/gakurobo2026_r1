@@ -16,7 +16,6 @@
 #include <vector>
 
 #include "geometry_msgs/msg/pose_stamped.hpp"
-#include "geometry_msgs/msg/pose_with_covariance_stamped.hpp"
 #include "geometry_msgs/msg/transform_stamped.hpp"
 #include "geometry_msgs/msg/twist.hpp"
 #include "nav_msgs/msg/odometry.hpp"
@@ -27,8 +26,9 @@
 #include "tf2/LinearMath/Quaternion.h"
 #include "tf2/utils.h"
 #include "tf2_geometry_msgs/tf2_geometry_msgs.hpp"
-#include "tf2_ros/static_transform_broadcaster.h"
+#include "tf2_ros/buffer.h"
 #include "tf2_ros/transform_broadcaster.h"
+#include "tf2_ros/transform_listener.h"
 
 using namespace std::chrono_literals;
 
@@ -82,7 +82,8 @@ public:
 
     odometry_publisher_ = this->create_publisher<nav_msgs::msg::Odometry>("/odometry", 10);
     tf_broadcaster_ = std::make_shared<tf2_ros::TransformBroadcaster>(*this);
-    static_tf_broadcaster_ = std::make_shared<tf2_ros::StaticTransformBroadcaster>(*this);
+    tf_buffer_ = std::make_shared<tf2_ros::Buffer>(this->get_clock());
+    tf_listener_ = std::make_shared<tf2_ros::TransformListener>(*tf_buffer_);
 
     target_pose_subscription_ = this->create_subscription<geometry_msgs::msg::PoseStamped>(
       "/target_pose", 10, std::bind(&MyNode::target_pose_callback, this, std::placeholders::_1));
@@ -90,16 +91,11 @@ public:
       "/waypoints", 10, std::bind(&MyNode::path_callback, this, std::placeholders::_1));
     cmd_vel_subscription_ = this->create_subscription<geometry_msgs::msg::Twist>(
       "/cmd_vel", 10, std::bind(&MyNode::cmd_vel_callback, this, std::placeholders::_1));
-    initialpose_subscription_ =
-      this->create_subscription<geometry_msgs::msg::PoseWithCovarianceStamped>(
-        "/initialpose", 10, std::bind(&MyNode::initialpose_callback, this, std::placeholders::_1));
     set_odometry_subscription_ = this->create_subscription<std_msgs::msg::Float64MultiArray>(
       "/set_odometry", 10, std::bind(&MyNode::set_odometry_callback, this, std::placeholders::_1));
 
     timer_ = this->create_wall_timer(
       std::chrono::duration<double>(1.0 / timer_rate_), std::bind(&MyNode::timer_callback, this));
-
-    publish_map_to_odom_tf();
   }
 
 private:
@@ -118,42 +114,18 @@ private:
 
   void target_pose_callback(const geometry_msgs::msg::PoseStamped::SharedPtr msg)
   {
-    latest_target_pose_ = *msg;
-    has_target_pose_ = true;
+    latest_target_pose_source_ = *msg;
+    has_target_pose_source_ = true;
+    refresh_target_pose_to_odom();
   }
 
   void path_callback(const nav_msgs::msg::Path::SharedPtr msg)
   {
-    latest_path_ = *msg;
-    path_arc_length_.clear();
-    path_arc_length_.reserve(latest_path_.poses.size());
-    path_arc_length_.push_back(0.0);
-
-    for (size_t i = 1; i < latest_path_.poses.size(); ++i) {
-      const auto & prev = latest_path_.poses[i - 1].pose.position;
-      const auto & curr = latest_path_.poses[i].pose.position;
-      const double ds = std::hypot(curr.x - prev.x, curr.y - prev.y);
-      path_arc_length_.push_back(path_arc_length_.back() + ds);
-    }
-
-    has_path_ = !latest_path_.poses.empty();
-    if (!has_path_) {
-      current_path_distance_ = 0.0;
+    latest_path_source_ = *msg;
+    has_path_source_ = !msg->poses.empty();
+    if (!refresh_path_to_odom(true)) {
       return;
     }
-
-    // 現在位置に一番近い点から再開して、path 更新時の不連続を減らす。
-    size_t nearest_index = 0;
-    double nearest_dist = std::numeric_limits<double>::max();
-    for (size_t i = 0; i < latest_path_.poses.size(); ++i) {
-      const auto & p = latest_path_.poses[i].pose.position;
-      const double dist = std::hypot(p.x - pos_x_, p.y - pos_y_);
-      if (dist < nearest_dist) {
-        nearest_dist = dist;
-        nearest_index = i;
-      }
-    }
-    current_path_distance_ = path_arc_length_[nearest_index];
   }
 
   void reset_pose(double x, double y, double yaw, const char * source)
@@ -177,11 +149,124 @@ private:
 
   void cmd_vel_callback(const geometry_msgs::msg::Twist::SharedPtr msg) { target_cmd_vel_ = *msg; }
 
-  void initialpose_callback(const geometry_msgs::msg::PoseWithCovarianceStamped::SharedPtr msg)
+  bool transform_pose_to_odom(
+    const geometry_msgs::msg::PoseStamped & pose_in, geometry_msgs::msg::PoseStamped & pose_out)
   {
-    reset_pose(
-      msg->pose.pose.position.x, msg->pose.pose.position.y, tf2::getYaw(msg->pose.pose.orientation),
-      "/initialpose");
+    geometry_msgs::msg::PoseStamped normalized_pose = pose_in;
+    if (normalized_pose.header.frame_id.empty()) {
+      normalized_pose.header.frame_id = "odom";
+    }
+
+    if (normalized_pose.header.frame_id == "odom") {
+      pose_out = normalized_pose;
+      return true;
+    }
+
+    // target_pose / waypoints は保持したメッセージを周期的に再解釈するため、
+    // 元の stamp を使うと古い時刻で map->odom を引きに行ってしまう。
+    // ここでは stamp=0 にして、常に最新の TF で odom へ変換する。
+    normalized_pose.header.stamp = rclcpp::Time(0, 0, this->get_clock()->get_clock_type());
+
+    try {
+      pose_out = tf_buffer_->transform(normalized_pose, "odom", tf2::durationFromSec(0.01));
+      return true;
+    } catch (const tf2::TransformException & ex) {
+      RCLCPP_WARN(
+        this->get_logger(), "Failed to transform pose from %s to odom: %s",
+        normalized_pose.header.frame_id.c_str(), ex.what());
+      return false;
+    }
+  }
+
+  bool transform_path_to_odom(const nav_msgs::msg::Path & path_in, nav_msgs::msg::Path & path_out)
+  {
+    path_out.header = path_in.header;
+    path_out.header.frame_id = "odom";
+    path_out.poses.clear();
+    path_out.poses.reserve(path_in.poses.size());
+
+    for (const auto & pose : path_in.poses) {
+      geometry_msgs::msg::PoseStamped normalized_pose = pose;
+      if (normalized_pose.header.frame_id.empty()) {
+        normalized_pose.header.frame_id =
+          path_in.header.frame_id.empty() ? "odom" : path_in.header.frame_id;
+      }
+
+      geometry_msgs::msg::PoseStamped transformed_pose;
+      if (!transform_pose_to_odom(normalized_pose, transformed_pose)) {
+        return false;
+      }
+      path_out.poses.push_back(transformed_pose);
+    }
+    return true;
+  }
+
+  bool refresh_target_pose_to_odom()
+  {
+    if (!has_target_pose_source_) {
+      has_target_pose_ = false;
+      return true;
+    }
+
+    geometry_msgs::msg::PoseStamped transformed_target_pose;
+    if (!transform_pose_to_odom(latest_target_pose_source_, transformed_target_pose)) {
+      return false;
+    }
+    latest_target_pose_ = transformed_target_pose;
+    has_target_pose_ = true;
+    return true;
+  }
+
+  bool refresh_path_to_odom(bool reset_progress_to_nearest)
+  {
+    if (!has_path_source_) {
+      latest_path_.poses.clear();
+      path_arc_length_.clear();
+      has_path_ = false;
+      current_path_distance_ = 0.0;
+      return true;
+    }
+
+    nav_msgs::msg::Path transformed_path;
+    if (!transform_path_to_odom(latest_path_source_, transformed_path)) {
+      return false;
+    }
+    latest_path_ = transformed_path;
+    path_arc_length_.clear();
+    path_arc_length_.reserve(latest_path_.poses.size());
+    path_arc_length_.push_back(0.0);
+
+    for (size_t i = 1; i < latest_path_.poses.size(); ++i) {
+      const auto & prev = latest_path_.poses[i - 1].pose.position;
+      const auto & curr = latest_path_.poses[i].pose.position;
+      const double ds = std::hypot(curr.x - prev.x, curr.y - prev.y);
+      path_arc_length_.push_back(path_arc_length_.back() + ds);
+    }
+
+    has_path_ = !latest_path_.poses.empty();
+    if (!has_path_) {
+      current_path_distance_ = 0.0;
+      return true;
+    }
+
+    if (reset_progress_to_nearest) {
+      // 現在位置に一番近い点から再開して、path 更新時の不連続を減らす。
+      size_t nearest_index = 0;
+      double nearest_dist = std::numeric_limits<double>::max();
+      for (size_t i = 0; i < latest_path_.poses.size(); ++i) {
+        const auto & p = latest_path_.poses[i].pose.position;
+        const double dist = std::hypot(p.x - pos_x_, p.y - pos_y_);
+        if (dist < nearest_dist) {
+          nearest_dist = dist;
+          nearest_index = i;
+        }
+      }
+      current_path_distance_ = path_arc_length_[nearest_index];
+    } else {
+      current_path_distance_ = std::clamp(current_path_distance_, 0.0, path_arc_length_.back());
+    }
+
+    return true;
   }
 
   void set_odometry_callback(const std_msgs::msg::Float64MultiArray::SharedPtr msg)
@@ -191,19 +276,6 @@ private:
       return;
     }
     reset_pose(msg->data[0], msg->data[1], msg->data[2], "/set_odometry");
-  }
-
-  void publish_map_to_odom_tf()
-  {
-    geometry_msgs::msg::TransformStamped map_to_odom;
-    map_to_odom.header.stamp = this->get_clock()->now();
-    map_to_odom.header.frame_id = "map";
-    map_to_odom.child_frame_id = "odom";
-    map_to_odom.transform.translation.x = 0.0;
-    map_to_odom.transform.translation.y = 0.0;
-    map_to_odom.transform.translation.z = 0.0;
-    map_to_odom.transform.rotation.w = 1.0;
-    static_tf_broadcaster_->sendTransform(map_to_odom);
   }
 
   geometry_msgs::msg::PoseStamped sample_path_pose(double distance) const
@@ -254,6 +326,12 @@ private:
   void timer_callback()
   {
     const double dt = 1.0 / timer_rate_;
+    if (has_target_pose_source_) {
+      refresh_target_pose_to_odom();
+    }
+    if (has_path_source_) {
+      refresh_path_to_odom(false);
+    }
     // 指令値をそのまま使うと角が立ちやすいので、まずは速度指令自体をなめらかにする。
     filtered_cmd_vel_.linear.x =
       lpf(target_cmd_vel_.linear.x, filtered_cmd_vel_.linear.x, tau_, dt);
@@ -377,17 +455,18 @@ private:
 
   rclcpp::Publisher<nav_msgs::msg::Odometry>::SharedPtr odometry_publisher_;
   std::shared_ptr<tf2_ros::TransformBroadcaster> tf_broadcaster_;
-  std::shared_ptr<tf2_ros::StaticTransformBroadcaster> static_tf_broadcaster_;
+  std::shared_ptr<tf2_ros::Buffer> tf_buffer_;
+  std::shared_ptr<tf2_ros::TransformListener> tf_listener_;
   rclcpp::Subscription<geometry_msgs::msg::PoseStamped>::SharedPtr target_pose_subscription_;
   rclcpp::Subscription<nav_msgs::msg::Path>::SharedPtr path_subscription_;
   rclcpp::Subscription<geometry_msgs::msg::Twist>::SharedPtr cmd_vel_subscription_;
-  rclcpp::Subscription<geometry_msgs::msg::PoseWithCovarianceStamped>::SharedPtr
-    initialpose_subscription_;
   rclcpp::Subscription<std_msgs::msg::Float64MultiArray>::SharedPtr set_odometry_subscription_;
   rclcpp::TimerBase::SharedPtr timer_;
 
   geometry_msgs::msg::PoseStamped latest_target_pose_;
+  geometry_msgs::msg::PoseStamped latest_target_pose_source_;
   nav_msgs::msg::Path latest_path_;
+  nav_msgs::msg::Path latest_path_source_;
   geometry_msgs::msg::Twist target_cmd_vel_;
   geometry_msgs::msg::Twist filtered_cmd_vel_;
   std::vector<double> path_arc_length_;
@@ -413,7 +492,9 @@ private:
   double target_pose_correction_elapsed_ = 0.0;
   double current_path_distance_ = 0.0;
   bool has_target_pose_ = false;
+  bool has_target_pose_source_ = false;
   bool has_path_ = false;
+  bool has_path_source_ = false;
   double pos_x_ = 0.0;
   double pos_y_ = 0.0;
   double yaw_ = 0.0;

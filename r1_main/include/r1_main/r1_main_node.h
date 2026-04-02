@@ -11,8 +11,6 @@
 
 #pragma once
 
-#include <chrono>
-#include <cstddef>
 #include <functional>
 #include <map>
 #include <memory>
@@ -46,10 +44,6 @@
 #include "std_msgs/msg/float64.hpp"
 #include "std_msgs/msg/float64_multi_array.hpp"
 #include "std_msgs/msg/int32.hpp"
-#include "tf2/LinearMath/Matrix3x3.h"
-#include "tf2/LinearMath/Quaternion.h"
-#include "tf2/utils.h"
-#include "tf2_geometry_msgs/tf2_geometry_msgs.hpp"
 #include "tf2_ros/buffer.h"
 #include "tf2_ros/transform_listener.h"
 
@@ -234,12 +228,16 @@ public:
   // ========== やり ==========
   // spear1
   double SPEAR1_NORMAL_POS = 0.0;
-  double SPEAR1_COLLECT_POS = 0.0;
+  double SPEAR1_COLLECT1_POS = 0.0;
+  double SPEAR1_COLLECT2_POS = 0.0;
+  double SPEAR1_COLLECT3_POS = 0.0;
   double SPEAR1_MAKE_SPEAR_START_POS = 0.0;
   double SPEAR1_MAKE_SPEAR_END_POS = 0.0;
   // spear2
   double SPEAR2_NORMAL_POS = 0.0;
-  double SPEAR2_COLLECT_POS = 0.0;
+  double SPEAR2_COLLECT1_POS = 0.0;
+  double SPEAR2_COLLECT2_POS = 0.0;
+  double SPEAR2_COLLECT3_POS = 0.0;
   double SPEAR2_MAKE_SPEAR_START_POS = 0.0;
   double SPEAR2_MAKE_SPEAR_END_POS = 0.0;
   // spear3

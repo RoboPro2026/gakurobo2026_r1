@@ -13,9 +13,7 @@
 
 #include <cmath>    //< for std::sqrt, std::cbrt, std::pow
 #include <complex>  //< for std::complex
-#include <ostream>
 
-#include "r1_util/r1_util.h"
 #include "rclcpp/rclcpp.hpp"
 
 /**

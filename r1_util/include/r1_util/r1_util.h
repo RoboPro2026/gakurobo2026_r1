@@ -13,8 +13,7 @@
 
 #include <cmath>
 #include <complex>
-
-#include "rclcpp/rclcpp.hpp"
+#include <vector>
 
 constexpr int FOREST_N = 12;
 constexpr int ACT_N = 4;

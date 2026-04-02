@@ -1,23 +1,27 @@
 cmake_minimum_required(VERSION 3.8)
 project(r1_util)
 
+# r1_util を利用する package では実行時性能を優先したいため、
+# この package でも build type を明示的に Release に固定します。
+set(CMAKE_BUILD_TYPE Release CACHE STRING "Build type" FORCE)
+
+# ccache が入っていれば、コンパイル結果を再利用して再ビルド時間を短縮します。
+find_program(CCACHE_PROGRAM ccache)
+if(CCACHE_PROGRAM)
+  set(CMAKE_C_COMPILER_LAUNCHER ${CCACHE_PROGRAM})
+  set(CMAKE_CXX_COMPILER_LAUNCHER ${CCACHE_PROGRAM})
+endif()
+
 if(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
   add_compile_options(-Wall -Wextra -Wpedantic)
 endif()
 
-# find dependencies
 find_package(ament_cmake REQUIRED)
-find_package(rclcpp REQUIRED)
-find_package(std_msgs REQUIRED)
 
 add_library(${PROJECT_NAME} INTERFACE)
 target_include_directories(${PROJECT_NAME} INTERFACE
   $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
   $<INSTALL_INTERFACE:include>
-)
-ament_target_dependencies(${PROJECT_NAME} INTERFACE
-  rclcpp
-  std_msgs
 )
 
 install(DIRECTORY include/
@@ -28,7 +32,6 @@ install(TARGETS ${PROJECT_NAME}
 )
 
 ament_export_targets(export_${PROJECT_NAME} NAMESPACE ${PROJECT_NAME}::)
-ament_export_dependencies(rclcpp std_msgs)
 
 if(BUILD_TESTING)
   find_package(ament_lint_auto REQUIRED)

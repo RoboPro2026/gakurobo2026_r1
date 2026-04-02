@@ -19,7 +19,6 @@
 #include "r1_control/accel_designer.h"
 #include "r1_control/minimum_jerk.h"
 #include "r1_control/spline.h"
-#include "r1_util/r1_util.h"
 #include "rclcpp/rclcpp.hpp"
 
 /**
