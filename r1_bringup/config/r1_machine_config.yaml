@@ -157,10 +157,12 @@ r1_main_node:
     spear_roll_normal_angle: 0.0
     spear_roll_vertical_angle: 1.5707963267948966
     # spear_pitch1
-    spear_pitch1_normal_angle: 0.0
+    # デフォルトで少しだけ位置を上げる
+    spear_pitch1_normal_angle: 0.1
     spear_pitch1_vertical_angle: 1.0
     # spear_pitch2
-    spear_pitch2_normal_angle: 0.0
+    # デフォルトで少しだけ位置を上げる
+    spear_pitch2_normal_angle: 0.1
     spear_pitch2_vertical_angle: 1.0
     # ========== KFS回収の移動関連 ==========
     # KFSが置かれている場所
@@ -583,7 +585,7 @@ r1_spear_pitch1_node:
     origin_detect_speed: -3.14 # rad/s
     angle_min: -5.0
     angle_max: 5.0
-    normal_angle: 0.0
+    normal_angle: 0.1
     # ギア比で割った値がモーターの角度指令値となる
     # 1.0 / 5.0 = 0.2
     gear_ratio: 0.2
@@ -606,7 +608,7 @@ r1_spear_pitch2_node:
     origin_detect_speed: -3.14 # rad/s
     angle_min: -5.0
     angle_max: 5.0
-    normal_angle: 0.0
+    normal_angle: 0.1
     # ギア比で割った値がモーターの角度指令値となる
     # 1.0 / 5.0 = 0.2
     gear_ratio: 0.2
