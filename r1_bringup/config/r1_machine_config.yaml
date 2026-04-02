@@ -155,8 +155,8 @@ r1_main_node:
     spear_y_expand_pos: 0.1
     # spear_roll
     spear_roll_normal_angle: 0.0
-    # spear_roll_vertical_angle: 1.5707963267948966
-    spear_roll_vertical_angle: 1.9
+    spear_roll_vertical_angle: 1.5707963267948966
+    # spear_roll_vertical_angle: 1.9
     # spear_pitch1
     # デフォルトで少しだけ位置を上げる
     spear_pitch1_normal_angle: 0.1

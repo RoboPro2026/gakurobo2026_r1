@@ -2415,10 +2415,10 @@ private:
     make_gpio_float_output_channel({1, 1}, "kfs_rear_pump"),
     make_gpio_float_output_channel({1, 2}, "kfs_front_valve"),
     make_gpio_float_output_channel({1, 3}, "kfs_rear_valve"),
-    make_gpio_float_output_channel({2, 0}, "spear_u1_value"),
-    make_gpio_float_output_channel({2, 1}, "spear_d1_value"),
-    make_gpio_float_output_channel({2, 2}, "spear_u2_value"),
-    make_gpio_float_output_channel({2, 3}, "spear_d2_value"),
+    make_gpio_float_output_channel({2, 0}, "spear_u1_valve"),
+    make_gpio_float_output_channel({2, 1}, "spear_d1_valve"),
+    make_gpio_float_output_channel({2, 2}, "spear_u2_valve"),
+    make_gpio_float_output_channel({2, 3}, "spear_d2_valve"),
     // 電磁弁は何個つながるかわからないので一旦ここで止めとく
   };
   std::vector<GpioIntOutputChannel> gpio_int_output_channels_{
