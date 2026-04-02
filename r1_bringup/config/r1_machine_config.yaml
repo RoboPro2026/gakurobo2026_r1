@@ -325,8 +325,8 @@ r1_kfs_fyaw_node:
     angle_max: 5.0
     normal_angle: 0.1
     # ギア比で割った値がモーターの角度指令値となる
-    # 減速比は1 / 1 = 1.0
-    gear_ratio: 1.0
+    # 減速比は1 / 2 = 0.5
+    gear_ratio: 0.5
     inverse_motor: false
     use_low_switch: false
     use_high_switch: false
@@ -393,7 +393,6 @@ r1_kfs_ryaw_node:
     angle_min: -5.0
     angle_max: 5.0
     normal_angle: 0.1
-    # NOTE: 実験でryawだけギア比を変えている。
     # ギア比で割った値がモーターの角度指令値となる
     # 減速比は1 / 2 = 0.5
     gear_ratio: 0.5
