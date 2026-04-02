@@ -9,17 +9,20 @@
  * 
  */
 
+#include <array>
 #include <chrono>
 #include <complex>
 #include <limits>
 
 #include "geometry_msgs/msg/twist.hpp"
+#include "r1_msgs/msg/motor.hpp"
 #include "r1_msgs/msg/swerve_drive.hpp"
 #include "r1_util/r1_util.h"
 #include "rcl_interfaces/msg/floating_point_range.hpp"
 #include "rcl_interfaces/msg/parameter_descriptor.hpp"
 #include "rclcpp/rclcpp.hpp"
 #include "sensor_msgs/msg/imu.hpp"
+#include "std_msgs/msg/empty.hpp"
 #include "std_msgs/msg/float64.hpp"
 #include "std_msgs/msg/float64_multi_array.hpp"
 #include "tf2/LinearMath/Matrix3x3.h"
@@ -28,6 +31,8 @@
 class MyNode : public rclcpp::Node
 {
 public:
+  static constexpr int N = 4;
+
   MyNode() : Node("r1_swerve_drive_node")
   {
     // 速度指令値Subscription
@@ -54,6 +59,21 @@ public:
     set_swerve_drive_yaw_subscription_ = this->create_subscription<std_msgs::msg::Float64>(
       "set_swerve_drive_yaw", 10,
       std::bind(&MyNode::set_swerve_drive_yaw_callback, this, std::placeholders::_1));
+    swerve_drive_initialize_subscription_ = this->create_subscription<std_msgs::msg::Empty>(
+      "/swerve_drive_initialize", 10,
+      std::bind(&MyNode::swerve_drive_initialize_callback, this, std::placeholders::_1));
+    steer_status_subscriptions_[0] = this->create_subscription<r1_msgs::msg::Motor>(
+      "/swerve_fr_steer_motor_status", 10,
+      [this](const r1_msgs::msg::Motor::SharedPtr msg) { steer_status_callback(0, msg); });
+    steer_status_subscriptions_[1] = this->create_subscription<r1_msgs::msg::Motor>(
+      "/swerve_fl_steer_motor_status", 10,
+      [this](const r1_msgs::msg::Motor::SharedPtr msg) { steer_status_callback(1, msg); });
+    steer_status_subscriptions_[2] = this->create_subscription<r1_msgs::msg::Motor>(
+      "/swerve_rl_steer_motor_status", 10,
+      [this](const r1_msgs::msg::Motor::SharedPtr msg) { steer_status_callback(2, msg); });
+    steer_status_subscriptions_[3] = this->create_subscription<r1_msgs::msg::Motor>(
+      "/swerve_rr_steer_motor_status", 10,
+      [this](const r1_msgs::msg::Motor::SharedPtr msg) { steer_status_callback(3, msg); });
 
     this->declare_parameter("robot_length", 0.5);
     this->declare_parameter("robot_width", 0.5);
@@ -252,6 +272,7 @@ public:
     prev_steer_theta_[3] = msg->theta3;
 
     prev_swerve_drive_ref_ = swerve_drive_ref_;
+    has_valid_prev_steer_ref_ = true;
 
     RCLCPP_INFO(
       this->get_logger(),
@@ -279,6 +300,13 @@ public:
     if (
       std::abs(vx_ref) < zero_velocity_threshold_ && std::abs(vy_ref) < zero_velocity_threshold_ &&
       std::abs(omega_ref) < zero_omega_threshold_) {
+      if (!has_valid_prev_steer_ref_) {
+        swerve_drive_ref_.omega0 = 0.0;
+        swerve_drive_ref_.omega1 = 0.0;
+        swerve_drive_ref_.omega2 = 0.0;
+        swerve_drive_ref_.omega3 = 0.0;
+        return;
+      }
       // 旋回角は前回と同じ値、速度はゼロにする
       RCLCPP_INFO(
         this->get_logger(), "Velocity command is near zero, maintaining previous steering angles.");
@@ -365,6 +393,69 @@ public:
       prev_steer_theta_[i] = steer_theta[i];
     }
     prev_swerve_drive_ref_ = swerve_drive_ref_;
+    has_valid_prev_steer_ref_ = true;
+  }
+
+  void steer_status_callback(std::size_t index, const r1_msgs::msg::Motor::SharedPtr msg)
+  {
+    if (index >= N) {
+      return;
+    }
+    current_steer_motor_status_[index] = *msg;
+    has_current_steer_status_[index] = true;
+  }
+
+  /**
+   * @brief initialize_swerve_driveトピックを受け取ったときのコールバック関数
+   * TODO: ここに関数の説明を書く
+   * 
+   */
+  void swerve_drive_initialize_callback(const std_msgs::msg::Empty::SharedPtr)
+  {
+    // 非常停止復帰後は Sabacan 側の状態だけがリセットされ、ここに残っている
+    // prev_steer_theta_ / prev_swerve_drive_ref_ が実機の現在角とずれることがある。
+    // そのままゼロ速度指令を受けると古いキャッシュ角を再送してしまうので、
+    // initialize 時点の steer motor status を基準に内部キャッシュを同期し直す。
+    bool has_all_steer_status = true;
+    for (int i = 0; i < N; i++) {
+      has_all_steer_status = has_all_steer_status && has_current_steer_status_[i];
+    }
+
+    // 指令値を初期化
+    swerve_drive_ref_ = r1_msgs::msg::SwerveDrive();
+    prev_swerve_drive_ref_ = r1_msgs::msg::SwerveDrive();
+    for (int i = 0; i < N; i++) {
+      wheel_reverse_[i] = false;
+    }
+
+    if (!has_all_steer_status) {
+      for (int i = 0; i < N; i++) {
+        prev_steer_theta_[i] = 0.0;
+      }
+      has_valid_prev_steer_ref_ = false;
+      RCLCPP_WARN(
+        this->get_logger(),
+        "Received initialize signal before all steer status topics were available. Cleared cached "
+        "steering state only.");
+      return;
+    }
+
+    const auto update_prev_ref = [this](float & theta_ref, std::size_t i) {
+      double current_pos = current_steer_motor_status_[i].abs_pos;
+      theta_ref = current_pos;
+      prev_steer_theta_[i] =
+        (current_pos * steer_gear_ratio_ - steer_theta_offset_[i]) / steer_motor_dir_[i];
+    };
+
+    update_prev_ref(prev_swerve_drive_ref_.theta0, 0);
+    update_prev_ref(prev_swerve_drive_ref_.theta1, 1);
+    update_prev_ref(prev_swerve_drive_ref_.theta2, 2);
+    update_prev_ref(prev_swerve_drive_ref_.theta3, 3);
+    swerve_drive_ref_ = prev_swerve_drive_ref_;
+    has_valid_prev_steer_ref_ = true;
+    RCLCPP_INFO(
+      this->get_logger(),
+      "Received initialize signal. Synced cached steering state from current steer motor status.");
   }
 
   rclcpp::Subscription<geometry_msgs::msg::Twist>::SharedPtr cmd_vel_subscription_;
@@ -373,12 +464,13 @@ public:
   rclcpp::node_interfaces::OnSetParametersCallbackHandle::SharedPtr parameter_callback_handler_;
   rclcpp::Subscription<sensor_msgs::msg::Imu>::SharedPtr imu_subscription_;
   rclcpp::Subscription<std_msgs::msg::Float64>::SharedPtr set_swerve_drive_yaw_subscription_;
+  rclcpp::Subscription<std_msgs::msg::Empty>::SharedPtr swerve_drive_initialize_subscription_;
+  std::array<rclcpp::Subscription<r1_msgs::msg::Motor>::SharedPtr, N> steer_status_subscriptions_;
   r1_msgs::msg::SwerveDrive swerve_drive_ref_;
   r1_msgs::msg::SwerveDrive prev_swerve_drive_ref_;
   double prev_steer_theta_[4] = {0};
 
   // ========== 機械パラメータ ==========
-  static constexpr int N = 4;
   double robot_length_;      // ロボットの長さ (m)
   double robot_width_;       // ロボットの幅 (m)
   double robot_radius_;      // ロボットの半径 (m) = sqrt((length/2)^2 + (width/2)^2)
@@ -402,6 +494,9 @@ public:
   double yaw_ = 0.0;                                                // IMUのyaw角
   double yaw_raw_ = 0.0;                                            // IMUのyaw角（オフセットなし）
   std::vector<bool> wheel_reverse_ = {false, false, false, false};  // ホイールの回転方向反転設定
+  bool has_valid_prev_steer_ref_ = false;                           // 前回ステア角が有効かどうか
+  std::array<r1_msgs::msg::Motor, N> current_steer_motor_status_;
+  std::array<bool, N> has_current_steer_status_ = {false, false, false, false};
 };
 
 int main(int argc, char * argv[])

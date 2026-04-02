@@ -63,10 +63,19 @@ def generate_launch_description():
 
     # ========== 足回り ==========
     # メカナムホイールの指令値を知りたいときはinfoにする
-    r1_mecanum_node = Node(
+    # r1_mecanum_node = Node(
+    #     package="r1_machine",
+    #     executable="r1_mecanum_node",
+    #     name="r1_mecanum_node",  # YAMLファイル内のノード名と一致させる
+    #     parameters=[param_file],
+    #     arguments=["--ros-args", "--log-level", "warn"],
+    # )
+
+    # サーボの指令値を知りたいときはinfoにする
+    r1_swerve_drive_node = Node(
         package="r1_machine",
-        executable="r1_mecanum_node",
-        name="r1_mecanum_node",  # YAMLファイル内のノード名と一致させる
+        executable="r1_swerve_drive_node",
+        name="r1_swerve_drive_node",
         parameters=[param_file],
         arguments=["--ros-args", "--log-level", "warn"],
     )
@@ -80,259 +89,123 @@ def generate_launch_description():
         arguments=["--ros-args", "--log-level", "warn"],
     )
 
-    r1_sabacan_msgs_converter_node = Node(
+    r1_machine_manage_node = Node(
         package="r1_machine",
-        executable="r1_sabacan_msgs_converter_node",
-        name="r1_sabacan_msgs_converter_node",
+        executable="r1_machine_manage_node",
+        name="r1_machine_manage_node",
         parameters=[param_file],
-        arguments=["--ros-args", "--log-level", "warn"],
+        arguments=["--ros-args", "--log-level", "info"],
     )
+
+    def create_r1_linear_motion_node(
+        node_name: str, topic_prefix: str, extra_remappings=None, log_level="warn"
+    ) -> Node:
+        remappings = [
+            ("linear_motion_status", f"{topic_prefix}_linear_motion_status"),
+            ("linear_motion_motor_ref", f"{topic_prefix}_motor_ref"),
+            ("linear_motion_position_ref", f"{topic_prefix}_position_ref"),
+            ("linear_motion_detect_origin", f"{topic_prefix}_detect_origin"),
+            ("linear_motion_initialize", f"{topic_prefix}_initialize"),
+            ("linear_motion_mode_status", f"{topic_prefix}_mode_status"),
+            ("linear_motion_torque_limit_ref", f"{topic_prefix}_torque_limit_ref"),
+        ]
+        if extra_remappings is not None:
+            remappings.extend(extra_remappings)
+
+        return Node(
+            package="r1_machine",
+            executable="r1_linear_motion_node",
+            name=node_name,
+            parameters=[param_file],
+            arguments=["--ros-args", "--log-level", log_level],
+            remappings=remappings,
+        )
+
+    def create_r1_angle_motion_node(
+        node_name: str, topic_prefix: str, extra_remappings=None, log_level="warn"
+    ) -> Node:
+        remappings = [
+            ("angle_motion_status", f"{topic_prefix}_angle_motion_status"),
+            ("angle_motion_motor_ref", f"{topic_prefix}_motor_ref"),
+            ("angle_motion_position_ref", f"{topic_prefix}_position_ref"),
+            ("angle_motion_detect_origin", f"{topic_prefix}_detect_origin"),
+            ("angle_motion_initialize", f"{topic_prefix}_initialize"),
+            ("angle_motion_mode_status", f"{topic_prefix}_mode_status"),
+            ("angle_motion_torque_limit_ref", f"{topic_prefix}_torque_limit_ref"),
+        ]
+        if extra_remappings is not None:
+            remappings.extend(extra_remappings)
+
+        return Node(
+            package="r1_machine",
+            executable="r1_angle_motion_node",
+            name=node_name,
+            parameters=[param_file],
+            arguments=["--ros-args", "--log-level", log_level],
+            remappings=remappings,
+        )
 
     # ========== KFS回収 ==========
-    r1_kfs_fx_node = Node(
-        package="r1_machine",
-        executable="r1_linear_motion_node",
-        name="r1_kfs_fx_node",
-        parameters=[param_file],
-        arguments=["--ros-args", "--log-level", "warn"],
-        remappings=[
-            ("linear_motion_status", "kfs_fx_linear_motion_status"),
-            ("linear_motion_motor_ref", "kfs_fx_motor_ref"),
-            ("linear_motion_position_ref", "kfs_fx_position_ref"),
-            ("linear_motion_detect_origin", "kfs_fx_detect_origin"),
-            ("linear_motion_mode_status", "kfs_fx_mode_status"),
-        ],
+    r1_kfs_fx_node = create_r1_linear_motion_node("r1_kfs_fx_node", "kfs_fx")
+    r1_kfs_fz_node = create_r1_linear_motion_node(
+        "r1_kfs_fz_node",
+        "kfs_fz",
+        extra_remappings=[("low_switch_status", "kfs_fz_low_switch_status")],
+    )
+    r1_kfs_fyaw_node = create_r1_angle_motion_node("r1_kfs_fyaw_node", "kfs_fyaw")
+    r1_kfs_rx_node = create_r1_linear_motion_node("r1_kfs_rx_node", "kfs_rx")
+    r1_kfs_rz_node = create_r1_linear_motion_node(
+        "r1_kfs_rz_node",
+        "kfs_rz",
+        extra_remappings=[("low_switch_status", "kfs_rz_low_switch_status")],
+    )
+    r1_kfs_ryaw_node = create_r1_angle_motion_node("r1_kfs_ryaw_node", "kfs_ryaw")
+
+    # ========== やり ==========
+    r1_spear1_node = create_r1_linear_motion_node(
+        "r1_spear1_node",
+        "spear1",
+        extra_remappings=[("low_switch_status", "spear1_low_switch_status")],
+    )
+    r1_spear2_node = create_r1_linear_motion_node(
+        "r1_spear2_node",
+        "spear2",
+        extra_remappings=[("low_switch_status", "spear2_low_switch_status")],
+    )
+    r1_spear3_node = create_r1_linear_motion_node(
+        "r1_spear3_node",
+        "spear3",
+        extra_remappings=[("low_switch_status", "spear3_low_switch_status")],
+    )
+    r1_spear4_node = create_r1_linear_motion_node(
+        "r1_spear4_node",
+        "spear4",
+        extra_remappings=[("low_switch_status", "spear4_low_switch_status")],
+    )
+    r1_spear_x_node = create_r1_linear_motion_node(
+        "r1_spear_x_node",
+        "spear_x",
+        extra_remappings=[("low_switch_status", "spear_x_low_switch_status")],
+    )
+    r1_spear_y_node = create_r1_linear_motion_node(
+        "r1_spear_y_node",
+        "spear_y",
+        extra_remappings=[("low_switch_status", "spear_y_low_switch_status")],
+    )
+    r1_spear_roll_node = create_r1_angle_motion_node("r1_spear_roll_node", "spear_roll")
+    r1_spear_pitch1_node = create_r1_angle_motion_node(
+        "r1_spear_pitch1_node", "spear_pitch1"
+    )
+    r1_spear_pitch2_node = create_r1_angle_motion_node(
+        "r1_spear_pitch2_node", "spear_pitch2"
     )
 
-    r1_kfs_fz_node = Node(
-        package="r1_machine",
-        executable="r1_linear_motion_node",
-        name="r1_kfs_fz_node",
-        parameters=[param_file],
-        arguments=["--ros-args", "--log-level", "warn"],
-        remappings=[
-            ("linear_motion_status", "kfs_fz_linear_motion_status"),
-            ("linear_motion_motor_ref", "kfs_fz_motor_ref"),
-            ("linear_motion_position_ref", "kfs_fz_position_ref"),
-            ("linear_motion_detect_origin", "kfs_fz_detect_origin"),
-            ("linear_motion_mode_status", "kfs_fz_mode_status"),
-        ],
-    )
-
-    r1_kfs_fyaw_node = Node(
-        package="r1_machine",
-        executable="r1_angle_motion_node",
-        name="r1_kfs_fyaw_node",
-        parameters=[param_file],
-        arguments=["--ros-args", "--log-level", "warn"],
-        remappings=[
-            ("angle_motion_status", "kfs_fyaw_angle_motion_status"),
-            ("angle_motion_motor_ref", "kfs_fyaw_motor_ref"),
-            ("angle_motion_position_ref", "kfs_fyaw_position_ref"),
-            ("angle_motion_detect_origin", "kfs_fyaw_detect_origin"),
-            ("angle_motion_mode_status", "kfs_fyaw_mode_status"),
-        ],
-    )
-
-    r1_kfs_rx_node = Node(
-        package="r1_machine",
-        executable="r1_linear_motion_node",
-        name="r1_kfs_rx_node",
-        parameters=[param_file],
-        arguments=["--ros-args", "--log-level", "warn"],
-        remappings=[
-            ("linear_motion_status", "kfs_rx_linear_motion_status"),
-            ("linear_motion_motor_ref", "kfs_rx_motor_ref"),
-            ("linear_motion_position_ref", "kfs_rx_position_ref"),
-            ("linear_motion_detect_origin", "kfs_rx_detect_origin"),
-            ("linear_motion_mode_status", "kfs_rx_mode_status"),
-        ],
-    )
-
-    r1_kfs_rz_node = Node(
-        package="r1_machine",
-        executable="r1_linear_motion_node",
-        name="r1_kfs_rz_node",
-        parameters=[param_file],
-        arguments=["--ros-args", "--log-level", "warn"],
-        remappings=[
-            ("linear_motion_status", "kfs_rz_linear_motion_status"),
-            ("linear_motion_motor_ref", "kfs_rz_motor_ref"),
-            ("linear_motion_position_ref", "kfs_rz_position_ref"),
-            ("linear_motion_detect_origin", "kfs_rz_detect_origin"),
-            ("linear_motion_mode_status", "kfs_rz_mode_status"),
-        ],
-    )
-
-    r1_kfs_ryaw_node = Node(
-        package="r1_machine",
-        executable="r1_angle_motion_node",
-        name="r1_kfs_ryaw_node",
-        parameters=[param_file],
-        arguments=["--ros-args", "--log-level", "warn"],
-        remappings=[
-            ("angle_motion_status", "kfs_ryaw_angle_motion_status"),
-            ("angle_motion_motor_ref", "kfs_ryaw_motor_ref"),
-            ("angle_motion_position_ref", "kfs_ryaw_position_ref"),
-            ("angle_motion_detect_origin", "kfs_ryaw_detect_origin"),
-            ("angle_motion_mode_status", "kfs_ryaw_mode_status"),
-        ],
-    )
-
-    # ========== 展開 ==========
-    r1_front_expand_node = Node(
-        package="r1_machine",
-        executable="r1_linear_motion_node",
-        name="r1_front_expand_node",
-        parameters=[param_file],
-        arguments=["--ros-args", "--log-level", "warn"],
-        remappings=[
-            ("linear_motion_status", "front_expand_linear_motion_status"),
-            ("linear_motion_motor_ref", "front_expand_motor_ref"),
-            ("linear_motion_position_ref", "front_expand_position_ref"),
-            ("linear_motion_detect_origin", "front_expand_detect_origin"),
-            ("linear_motion_mode_status", "front_expand_mode_status"),
-        ],
-    )
-
-    r1_rear_expand_node = Node(
-        package="r1_machine",
-        executable="r1_linear_motion_node",
-        name="r1_rear_expand_node",
-        parameters=[param_file],
-        arguments=["--ros-args", "--log-level", "warn"],
-        remappings=[
-            ("linear_motion_status", "rear_expand_linear_motion_status"),
-            ("linear_motion_motor_ref", "rear_expand_motor_ref"),
-            ("linear_motion_position_ref", "rear_expand_position_ref"),
-            ("linear_motion_detect_origin", "rear_expand_detect_origin"),
-            ("linear_motion_mode_status", "rear_expand_mode_status"),
-        ],
-    )
-
-    # ========== ポール ==========
-    r1_pole_x1_node = Node(
-        package="r1_machine",
-        executable="r1_linear_motion_node",
-        name="r1_pole_x1_node",
-        parameters=[param_file],
-        arguments=["--ros-args", "--log-level", "warn"],
-        remappings=[
-            ("linear_motion_status", "pole_x1_linear_motion_status"),
-            ("linear_motion_motor_ref", "pole_x1_motor_ref"),
-            ("linear_motion_position_ref", "pole_x1_position_ref"),
-            ("linear_motion_detect_origin", "pole_x1_detect_origin"),
-            ("linear_motion_mode_status", "pole_x1_mode_status"),
-        ],
-    )
-    r1_pole_x2_node = Node(
-        package="r1_machine",
-        executable="r1_linear_motion_node",
-        name="r1_pole_x2_node",
-        parameters=[param_file],
-        arguments=["--ros-args", "--log-level", "warn"],
-        remappings=[
-            ("linear_motion_status", "pole_x2_linear_motion_status"),
-            ("linear_motion_motor_ref", "pole_x2_motor_ref"),
-            ("linear_motion_position_ref", "pole_x2_position_ref"),
-            ("linear_motion_detect_origin", "pole_x2_detect_origin"),
-            ("linear_motion_mode_status", "pole_x2_mode_status"),
-        ],
-    )
-
-    r1_pole_y_node = Node(
-        package="r1_machine",
-        executable="r1_linear_motion_node",
-        name="r1_pole_y_node",
-        parameters=[param_file],
-        arguments=["--ros-args", "--log-level", "warn"],
-        remappings=[
-            ("linear_motion_status", "pole_y_linear_motion_status"),
-            ("linear_motion_motor_ref", "pole_y_motor_ref"),
-            ("linear_motion_position_ref", "pole_y_position_ref"),
-            ("linear_motion_detect_origin", "pole_y_detect_origin"),
-            ("linear_motion_mode_status", "pole_y_mode_status"),
-        ],
-    )
-
-    r1_pole_roger_node = Node(
-        package="r1_machine",
-        executable="r1_linear_motion_node",
-        name="r1_pole_roger_node",
-        parameters=[param_file],
-        arguments=["--ros-args", "--log-level", "warn"],
-        remappings=[
-            ("linear_motion_status", "pole_roger_linear_motion_status"),
-            ("linear_motion_motor_ref", "pole_roger_motor_ref"),
-            ("linear_motion_position_ref", "pole_roger_position_ref"),
-            ("linear_motion_detect_origin", "pole_roger_detect_origin"),
-            ("linear_motion_mode_status", "pole_roger_mode_status"),
-        ],
-    )
-
-    r1_spear_roger1_node = Node(
-        package="r1_machine",
-        executable="r1_linear_motion_node",
-        name="r1_spear_roger1_node",
-        parameters=[param_file],
-        arguments=["--ros-args", "--log-level", "warn"],
-        remappings=[
-            ("linear_motion_status", "spear_roger1_linear_motion_status"),
-            ("linear_motion_motor_ref", "spear_roger1_motor_ref"),
-            ("linear_motion_position_ref", "spear_roger1_position_ref"),
-            ("linear_motion_detect_origin", "spear_roger1_detect_origin"),
-            ("linear_motion_mode_status", "spear_roger1_mode_status"),
-        ],
-    )
-
-    r1_spear_roger2_node = Node(
-        package="r1_machine",
-        executable="r1_linear_motion_node",
-        name="r1_spear_roger2_node",
-        parameters=[param_file],
-        arguments=["--ros-args", "--log-level", "warn"],
-        remappings=[
-            ("linear_motion_status", "spear_roger2_linear_motion_status"),
-            ("linear_motion_motor_ref", "spear_roger2_motor_ref"),
-            ("linear_motion_position_ref", "spear_roger2_position_ref"),
-            ("linear_motion_detect_origin", "spear_roger2_detect_origin"),
-            ("linear_motion_mode_status", "spear_roger2_mode_status"),
-        ],
-    )
-
-    r1_spear_move_node = Node(
-        package="r1_machine",
-        executable="r1_linear_motion_node",
-        name="r1_spear_move_node",
-        parameters=[param_file],
-        arguments=["--ros-args", "--log-level", "warn"],
-        remappings=[
-            ("linear_motion_status", "spear_move_linear_motion_status"),
-            ("linear_motion_motor_ref", "spear_move_motor_ref"),
-            ("linear_motion_position_ref", "spear_move_position_ref"),
-            ("linear_motion_detect_origin", "spear_move_detect_origin"),
-            ("linear_motion_mode_status", "spear_move_mode_status"),
-            ("low_switch_status", "spear_move_switch_status"),
-        ],
-    )
-
-    r1_spear_rotate_node = Node(
-        package="r1_machine",
-        executable="r1_angle_motion_node",
-        name="r1_spear_rotate_node",
-        parameters=[param_file],
-        arguments=["--ros-args", "--log-level", "warn"],
-        remappings=[
-            ("angle_motion_status", "spear_rotate_angle_motion_status"),
-            ("angle_motion_motor_ref", "spear_rotate_motor_ref"),
-            ("angle_motion_position_ref", "spear_rotate_position_ref"),
-            ("angle_motion_detect_origin", "spear_rotate_detect_origin"),
-            ("angle_motion_mode_status", "spear_rotate_mode_status"),
-            ("low_switch_status", "spear_rotate_switch_status"),
-        ],
-    )
-
-    def create_sabacan_robomasv2_node(board_id: int, log_level="warn") -> Node:
+    def create_sabacan_robomasv2_node(
+        board_id: int,
+        from_can_bus="from_can_bus0",
+        to_can_bus="to_can_bus0",
+        log_level="warn",
+    ) -> Node:
         return Node(
             package="sabacan",
             executable="sabacan_robomasv2_node",
@@ -340,19 +213,28 @@ def generate_launch_description():
             parameters=[param_file],
             arguments=["--ros-args", "--log-level", log_level],
             remappings=[
+                ("from_can_bus", from_can_bus),
+                ("to_can_bus", to_can_bus),
                 ("sabacan_robomas_reset", f"sabacan_robomas_reset_id{board_id}"),
+                ("set_robomas_gains", f"set_robomas_gains_id{board_id}"),
             ],
         )
 
-    sabacan_robomasv2_node_id1 = create_sabacan_robomasv2_node(1)
+    sabacan_robomasv2_node_id1 = create_sabacan_robomasv2_node(1, "info")
     sabacan_robomasv2_node_id2 = create_sabacan_robomasv2_node(2)
     sabacan_robomasv2_node_id3 = create_sabacan_robomasv2_node(3)
     sabacan_robomasv2_node_id4 = create_sabacan_robomasv2_node(4)
     sabacan_robomasv2_node_id5 = create_sabacan_robomasv2_node(5)
     sabacan_robomasv2_node_id6 = create_sabacan_robomasv2_node(6)
+    sabacan_robomasv2_node_id7 = create_sabacan_robomasv2_node(7)
 
     def create_sabacan_single_control_node(
-        board_id: int, motor_number: int, control_cycle: float, log_level="warn"
+        board_id: int,
+        motor_number: int,
+        control_cycle: float,
+        control_type: str,
+        change_mode_delay: float = 0.2,
+        log_level="warn",
     ) -> Node:
         return Node(
             package="sabacan_single_control",
@@ -364,39 +246,101 @@ def generate_launch_description():
                     "board_id": board_id,
                     "motor_number": motor_number,
                     "control_cycle": control_cycle,
+                    "control_type": control_type,
+                    "change_mode_delay": change_mode_delay,
+                    "control_type_update_method": "service",
+                    # control_typeの初期値はロボマスとVESCのどちらにでも対応できるようにVELOCITY
                 },
             ],
             arguments=["--ros-args", "--log-level", log_level],
+            remappings=[
+                ("set_robomas_gains", f"set_robomas_gains_id{board_id}"),
+            ],
         )
 
     # 足回りは100Hz
-    sabacan_single_control_id1_motor0 = create_sabacan_single_control_node(1, 0, 100.0)
-    sabacan_single_control_id1_motor1 = create_sabacan_single_control_node(1, 1, 100.0)
-    sabacan_single_control_id1_motor2 = create_sabacan_single_control_node(1, 2, 100.0)
-    sabacan_single_control_id1_motor3 = create_sabacan_single_control_node(1, 3, 100.0)
+    # vescだけ初期値はCURRENT
+    sabacan_single_control_id1_motor0 = create_sabacan_single_control_node(
+        1, 0, 100.0, "CURRENT"
+    )
+    sabacan_single_control_id1_motor1 = create_sabacan_single_control_node(
+        1, 1, 100.0, "CURRENT"
+    )
+    sabacan_single_control_id1_motor2 = create_sabacan_single_control_node(
+        1, 2, 100.0, "CURRENT"
+    )
+    sabacan_single_control_id1_motor3 = create_sabacan_single_control_node(
+        1, 3, 100.0, "CURRENT"
+    )
+    sabacan_single_control_id2_motor0 = create_sabacan_single_control_node(
+        2, 0, 100.0, "TORQUE"
+    )
+    sabacan_single_control_id2_motor1 = create_sabacan_single_control_node(
+        2, 1, 100.0, "TORQUE"
+    )
+    sabacan_single_control_id2_motor2 = create_sabacan_single_control_node(
+        2, 2, 100.0, "TORQUE"
+    )
+    sabacan_single_control_id2_motor3 = create_sabacan_single_control_node(
+        2, 3, 100.0, "TORQUE"
+    )
     # それ以外は25Hz(仮)
-    sabacan_single_control_id2_motor0 = create_sabacan_single_control_node(2, 0, 25.0)
-    sabacan_single_control_id2_motor1 = create_sabacan_single_control_node(2, 1, 25.0)
-    sabacan_single_control_id2_motor2 = create_sabacan_single_control_node(2, 2, 25.0)
-    sabacan_single_control_id2_motor3 = create_sabacan_single_control_node(2, 3, 25.0)
-    sabacan_single_control_id3_motor0 = create_sabacan_single_control_node(3, 0, 25.0)
-    sabacan_single_control_id3_motor1 = create_sabacan_single_control_node(3, 1, 25.0)
-    sabacan_single_control_id3_motor2 = create_sabacan_single_control_node(3, 2, 25.0)
-    sabacan_single_control_id3_motor3 = create_sabacan_single_control_node(3, 3, 25.0)
-    sabacan_single_control_id4_motor0 = create_sabacan_single_control_node(4, 0, 25.0)
-    sabacan_single_control_id4_motor1 = create_sabacan_single_control_node(4, 1, 25.0)
-    sabacan_single_control_id4_motor2 = create_sabacan_single_control_node(4, 2, 25.0)
-    sabacan_single_control_id4_motor3 = create_sabacan_single_control_node(4, 3, 25.0)
-    sabacan_single_control_id5_motor0 = create_sabacan_single_control_node(5, 0, 25.0)
-    sabacan_single_control_id5_motor1 = create_sabacan_single_control_node(5, 1, 25.0)
-    sabacan_single_control_id5_motor2 = create_sabacan_single_control_node(5, 2, 25.0)
-    sabacan_single_control_id5_motor3 = create_sabacan_single_control_node(5, 3, 25.0)
-    sabacan_single_control_id6_motor0 = create_sabacan_single_control_node(6, 0, 25.0)
-    sabacan_single_control_id6_motor1 = create_sabacan_single_control_node(6, 1, 25.0)
-    sabacan_single_control_id6_motor2 = create_sabacan_single_control_node(6, 2, 25.0)
-    sabacan_single_control_id6_motor3 = create_sabacan_single_control_node(6, 3, 25.0)
+    sabacan_single_control_id3_motor0 = create_sabacan_single_control_node(
+        3, 0, 25.0, "TORQUE"
+    )
+    sabacan_single_control_id3_motor1 = create_sabacan_single_control_node(
+        3, 1, 25.0, "TORQUE"
+    )
+    sabacan_single_control_id3_motor2 = create_sabacan_single_control_node(
+        3, 2, 25.0, "TORQUE"
+    )
+    sabacan_single_control_id3_motor3 = create_sabacan_single_control_node(
+        3, 3, 25.0, "TORQUE"
+    )
+    sabacan_single_control_id4_motor0 = create_sabacan_single_control_node(
+        4, 0, 25.0, "TORQUE"
+    )
+    sabacan_single_control_id4_motor1 = create_sabacan_single_control_node(
+        4, 1, 25.0, "TORQUE"
+    )
+    sabacan_single_control_id4_motor2 = create_sabacan_single_control_node(
+        4, 2, 25.0, "TORQUE"
+    )
+    sabacan_single_control_id4_motor3 = create_sabacan_single_control_node(
+        4, 3, 25.0, "TORQUE"
+    )
+    sabacan_single_control_id5_motor0 = create_sabacan_single_control_node(
+        5, 0, 25.0, "TORQUE"
+    )
+    sabacan_single_control_id5_motor1 = create_sabacan_single_control_node(
+        5, 1, 25.0, "TORQUE"
+    )
+    sabacan_single_control_id5_motor2 = create_sabacan_single_control_node(
+        5, 2, 25.0, "TORQUE"
+    )
+    sabacan_single_control_id5_motor3 = create_sabacan_single_control_node(
+        5, 3, 25.0, "TORQUE"
+    )
+    sabacan_single_control_id6_motor0 = create_sabacan_single_control_node(
+        6, 0, 25.0, "TORQUE"
+    )
+    sabacan_single_control_id6_motor1 = create_sabacan_single_control_node(
+        6, 1, 25.0, "TORQUE"
+    )
+    sabacan_single_control_id6_motor2 = create_sabacan_single_control_node(
+        6, 2, 25.0, "TORQUE"
+    )
+    sabacan_single_control_id6_motor3 = create_sabacan_single_control_node(
+        6, 3, 25.0, "TORQUE"
+    )
+    # id7は計測輪のみなので不要
 
-    def create_sabacan_gpio_node(board_id: int, log_level="warn") -> Node:
+    def create_sabacan_gpio_node(
+        board_id: int,
+        from_can_bus="from_can_bus0",
+        to_can_bus="to_can_bus0",
+        log_level="warn",
+    ) -> Node:
         return Node(
             package="sabacan",
             executable="sabacan_gpio_node",
@@ -404,6 +348,8 @@ def generate_launch_description():
             parameters=[param_file],
             arguments=["--ros-args", "--log-level", log_level],
             remappings=[
+                ("from_can_bus", from_can_bus),
+                ("to_can_bus", to_can_bus),
                 ("sabacan_gpio_reset", f"sabacan_gpio_reset_id{board_id}"),
             ],
         )
@@ -418,14 +364,44 @@ def generate_launch_description():
         name="sabacan_power_node_id0",
         parameters=[param_file],
         arguments=["--ros-args", "--log-level", "warn"],
+        remappings=[
+            ("from_can_bus", "from_can_bus0"),
+            ("to_can_bus", "to_can_bus0"),
+        ],
     )
-
     sabacan_led_node_id1 = Node(
         package="sabacan",
         executable="sabacan_led_node",
         name="sabacan_led_node_id1",
         parameters=[param_file],
         arguments=["--ros-args", "--log-level", "warn"],
+        remappings=[
+            ("from_can_bus", "from_can_bus0"),
+            ("to_can_bus", "to_can_bus0"),
+        ],
+    )
+
+    def create_sabacan_robstride_node(
+        board_id: int,
+        from_can_bus="from_can_bus1",
+        to_can_bus="to_can_bus1",
+        log_level="warn",
+    ) -> Node:
+        return Node(
+            package="sabacan",
+            executable="sabacan_robstride_node",
+            name=f"sabacan_robstride_node_id{board_id}",
+            parameters=[param_file],
+            arguments=["--ros-args", "--log-level", log_level],
+            remappings=[
+                ("from_can_bus", from_can_bus),
+                ("to_can_bus", to_can_bus),
+            ],
+        )
+
+    # canbus1
+    sabacan_robstride_node_id1 = create_sabacan_robstride_node(
+        1, from_can_bus="from_can_bus1", to_can_bus="to_can_bus1"
     )
 
     # socket_can_bridge_launch = GroupAction(
@@ -450,10 +426,10 @@ def generate_launch_description():
         name="eth2can_node",
         parameters=[param_file],
         arguments=["--ros-args", "--log-level", "warn"],
-            remappings=[
-                ("from_can_bus0", "from_can_bus"),
-                ("to_can_bus0", "to_can_bus"),
-            ],
+        # remappings=[
+        #     ("from_can_bus0", "from_can_bus"),
+        #     ("to_can_bus0", "to_can_bus"),
+        # ],
     )
 
     r1_slam_launch = IncludeLaunchDescription(
@@ -491,65 +467,72 @@ def generate_launch_description():
 
     # r1_mainのノードの起動を遅延させる
     common_nodes = [
-        r1_chassis_control_node,
-        r1_mecanum_node,
-        ps4_node,
-        r1_sabacan_msgs_converter_node,
-        # r1_kfs_fx_node,
-        # r1_kfs_fz_node,
-        # r1_kfs_fyaw_node,
-        # r1_kfs_rx_node,
-        # r1_kfs_rz_node,
-        # r1_kfs_ryaw_node,
-        # r1_front_expand_node,
-        # r1_rear_expand_node,
-        # r1_pole_x1_node,
-        # r1_pole_x2_node,
-        # r1_pole_y_node,
-        # r1_pole_roger_node,
-        # r1_spear_roger1_node,
-        # r1_spear_roger2_node,
-        # r1_spear_move_node,
-        # r1_spear_rotate_node,
-        sabacan_single_control_id1_motor0,
-        sabacan_single_control_id1_motor1,
-        sabacan_single_control_id1_motor2,
-        sabacan_single_control_id1_motor3,
-        # sabacan_single_control_id2_motor0,
-        # sabacan_single_control_id2_motor1,
-        # sabacan_single_control_id2_motor2,
-        # sabacan_single_control_id2_motor3,
-        # sabacan_single_control_id3_motor0,
-        # sabacan_single_control_id3_motor1,
-        # sabacan_single_control_id3_motor2,
-        # sabacan_single_control_id3_motor3,
-        # sabacan_single_control_id4_motor0,
-        # sabacan_single_control_id4_motor1,
-        # sabacan_single_control_id4_motor2,
-        # sabacan_single_control_id4_motor3,
-        # sabacan_single_control_id5_motor0,
-        # sabacan_single_control_id5_motor1,
-        # sabacan_single_control_id5_motor2,
-        # sabacan_single_control_id5_motor3,
-        # sabacan_single_control_id6_motor0,
-        # sabacan_single_control_id6_motor1,
-        # sabacan_single_control_id6_motor2,
-        # sabacan_single_control_id6_motor3,
+        # 最初にsabacanを起動
+        # can0
         sabacan_robomasv2_node_id1,
         sabacan_robomasv2_node_id2,
         sabacan_robomasv2_node_id3,
         sabacan_robomasv2_node_id4,
         sabacan_robomasv2_node_id5,
         sabacan_robomasv2_node_id6,
+        sabacan_robomasv2_node_id7,
         sabacan_gpio_node_id1,
         sabacan_gpio_node_id2,
         sabacan_gpio_node_id3,
         sabacan_power_node_id0,
         sabacan_led_node_id1,
+        # can1
+        sabacan_robstride_node_id1,
+        # 次にsabacan_single_control以外のノードを起動
+        r1_chassis_control_node,
+        # r1_mecanum_node,
+        r1_swerve_drive_node,
+        ps4_node,
+        r1_kfs_fx_node,
+        r1_kfs_fz_node,
+        r1_kfs_fyaw_node,
+        r1_kfs_rx_node,
+        r1_kfs_rz_node,
+        r1_kfs_ryaw_node,
+        r1_spear1_node,
+        r1_spear2_node,
+        r1_spear3_node,
+        r1_spear4_node,
+        r1_spear_x_node,
+        r1_spear_y_node,
+        r1_spear_roll_node,
+        r1_spear_pitch1_node,
+        r1_spear_pitch2_node,
+        # 最後にsabacan_single_controlを起動
+        sabacan_single_control_id1_motor0,
+        sabacan_single_control_id1_motor1,
+        sabacan_single_control_id1_motor2,
+        sabacan_single_control_id1_motor3,
+        sabacan_single_control_id2_motor0,
+        sabacan_single_control_id2_motor1,
+        sabacan_single_control_id2_motor2,
+        sabacan_single_control_id2_motor3,
+        sabacan_single_control_id3_motor0,
+        sabacan_single_control_id3_motor1,
+        sabacan_single_control_id3_motor2,
+        sabacan_single_control_id3_motor3,
+        sabacan_single_control_id4_motor0,
+        sabacan_single_control_id4_motor1,
+        sabacan_single_control_id4_motor2,
+        sabacan_single_control_id4_motor3,
+        sabacan_single_control_id5_motor0,
+        sabacan_single_control_id5_motor1,
+        sabacan_single_control_id5_motor2,
+        sabacan_single_control_id5_motor3,
+        sabacan_single_control_id6_motor0,
+        sabacan_single_control_id6_motor1,
+        sabacan_single_control_id6_motor2,
+        sabacan_single_control_id6_motor3,
     ]
 
     real_nodes = [
-        r1_slam_launch,
+        # r1_slamは一旦コメントアウト
+        # r1_slam_launch,
         eth2can_node,
         bno086_node,
         r1_odometry_node,
@@ -559,16 +542,18 @@ def generate_launch_description():
         r1_sim_launch,
     ]
 
+    delay_nodes = [r1_machine_manage_node, r1_main_node]
+
     # sabacanは遅延させて起動
     return LaunchDescription(
         [
             DeclareLaunchArgument("use_sim", default_value="false"),
             # TimerAction(period=0.0, actions=[foxglove_node]),
-            TimerAction(period=2.0, actions=common_nodes),
+            TimerAction(period=0.0, actions=common_nodes),
             TimerAction(
-                period=2.0, actions=real_nodes, condition=UnlessCondition(use_sim)
+                period=0.0, actions=real_nodes, condition=UnlessCondition(use_sim)
             ),
-            TimerAction(period=2.0, actions=sim_nodes, condition=IfCondition(use_sim)),
-            TimerAction(period=4.0, actions=[r1_main_node]),
+            TimerAction(period=0.0, actions=sim_nodes, condition=IfCondition(use_sim)),
+            TimerAction(period=3.0, actions=delay_nodes),
         ]
     )
