@@ -125,23 +125,43 @@ r1_main_node:
 
     # ========== やり ==========
     # spear1
-
+    spear1_normal_pos: 0.0
+    spear1_collect_pos: 0.0
+    spear1_make_spear_start_pos: 0.0
+    spear1_make_spear_end_pos: 0.5
     # spear2
-
+    spear2_normal_pos: 0.0
+    spear2_collect_pos: 0.0
+    spear2_make_spear_start_pos: 0.0
+    spear2_make_spear_end_pos: 0.5
     # spear3
-
+    spear3_normal_pos: 0.0
+    spear3_collect_pos: 0.0
+    spear3_make_spear_start_pos: 0.0
+    spear3_make_spear_end_pos: 0.5
     # spear4
-
+    spear4_normal_pos: 0.0
+    spear4_collect_pos: 0.0
+    spear4_make_spear_start_pos: 0.0
+    spear4_make_spear_end_pos: 0.5
     # spear_x
-
+    spear_x_normal_pos: 0.0
+    spear_x_make_spear1_pos: 0.0
+    spear_x_make_spear2_pos: 0.0
+    spear_x_make_spear3_pos: 0.0
+    spear_x_make_spear4_pos: 0.0
     # spear_y
-
+    spear_y_normal_pos: 0.0
+    spear_y_normal_pos: 0.25
     # spear_roll
-
+    spear_roll_normal_angle: 0.0
+    spear_roll_vertical_angle: 1.0
     # spear_pitch1
-
+    spear_pitch1_normal_angle: 0.0
+    spear_pitch1_vertical_angle: 1.0
     # spear_pitch2
-
+    spear_pitch2_normal_angle: 0.0
+    spear_pitch2_vertical_angle: 1.0
     # ========== KFS回収の移動関連 ==========
     # KFSが置かれている場所
     kfs_forest_number: [12, 11]
@@ -283,7 +303,7 @@ r1_kfs_fz_node:
     # ギアが一周すると2*pi*14.325mm進むので、半径は14.325mm
     radius: 0.014325
     inverse_motor: true
-    use_low_switch: false
+    use_low_switch: true
     use_high_switch: false
     inverse_low_switch_logic: false
     inverse_high_switch_logic: false
@@ -352,7 +372,7 @@ r1_kfs_rz_node:
     # ギアが一周すると2*pi*14.325mm進むので、半径は14.325mm
     radius: 0.014325
     inverse_motor: false
-    use_low_switch: false
+    use_low_switch: true
     use_high_switch: false
     inverse_low_switch_logic: false
     inverse_high_switch_logic: false
@@ -382,6 +402,7 @@ r1_kfs_ryaw_node:
     inverse_high_switch_logic: false
 # ---------- やり ----------
 # linear motion node
+# C610
 r1_spear1_node:
   ros__parameters:
     timer_rate: 10.0
@@ -397,14 +418,15 @@ r1_spear1_node:
     pos_min: -0.1
     pos_max: 1.0
     normal_pos: 0.05
-    # ギアが一周すると2*pi*15mm進むので、半径は15mm
-    radius: 0.015
+    # モータが1回転すると100mm進むので、半径は15.9mm
+    radius: 0.015915494309189534
     inverse_motor: false
     use_low_switch: false
     use_high_switch: false
     inverse_low_switch_logic: false
     inverse_high_switch_logic: false
 # linear motion node
+# C610
 r1_spear2_node:
   ros__parameters:
     timer_rate: 10.0
@@ -419,8 +441,8 @@ r1_spear2_node:
     output_detect_speed: -6.28 # rad/s
     pos_min: -0.1
     pos_max: 1.0
-    normal_pos: 0.05
-    # ギアが一周すると2*pi*15mm進むので、半径は15mm
+    # モータが1回転すると100mm進むので、半径は15.9mm
+    radius: 0.015915494309189534
     radius: 0.015
     inverse_motor: false
     use_low_switch: false
@@ -428,6 +450,7 @@ r1_spear2_node:
     inverse_low_switch_logic: false
     inverse_high_switch_logic: false
 # linear motion node
+# C610
 r1_spear3_node:
   ros__parameters:
     timer_rate: 10.0
@@ -443,14 +466,15 @@ r1_spear3_node:
     pos_min: -0.1
     pos_max: 1.0
     normal_pos: 0.05
-    # ギアが一周すると2*pi*15mm進むので、半径は15mm
-    radius: 0.015
+    # モータが1回転すると100mm進むので、半径は15.9mm
+    radius: 0.015915494309189534
     inverse_motor: false
     use_low_switch: false
     use_high_switch: false
     inverse_low_switch_logic: false
     inverse_high_switch_logic: false
 # linear motion node
+# C610
 r1_spear4_node:
   ros__parameters:
     timer_rate: 10.0
@@ -466,14 +490,15 @@ r1_spear4_node:
     pos_min: -0.1
     pos_max: 1.0
     normal_pos: 0.05
-    # ギアが一周すると2*pi*15mm進むので、半径は15mm
-    radius: 0.015
+    # モータが1回転すると100mm進むので、半径は15.9mm
+    radius: 0.015915494309189534
     inverse_motor: false
     use_low_switch: false
     use_high_switch: false
     inverse_low_switch_logic: false
     inverse_high_switch_logic: false
 # linear motion node
+# C610
 r1_spear_x_node:
   ros__parameters:
     timer_rate: 10.0
@@ -489,32 +514,33 @@ r1_spear_x_node:
     pos_min: -0.1
     pos_max: 1.0
     normal_pos: 0.05
-    # ギアが一周すると2*pi*15mm進むので、半径は15mm
-    radius: 0.015
+    # モータが1回転すると110mm進むので、半径は17.5mm
+    radius: 0.01750704374010849
     inverse_motor: false
     use_low_switch: false
     use_high_switch: false
     inverse_low_switch_logic: false
     inverse_high_switch_logic: false
 # linear motion node
+# C620
 r1_spear_y_node:
   ros__parameters:
     timer_rate: 10.0
     # トルク検出時のしきい値
     torque_threshold: 0.5 # Nm
     # 通常位置モード時に Robomas の torque_lim として使う値
-    normal_torque_limit: 1.0 # Nm
+    normal_torque_limit: 4.0 # Nm
     # 原点検出・メカロック移動中に Robomas の torque_lim として使う値
-    contact_torque_limit: 1.0 # Nm
+    contact_torque_limit: 4.0 # Nm
     origin_detect_threshold_time: 0.5 # 秒
     # 原点検出のときは、0の方向に戻るので、負の速度にする
     output_detect_speed: -6.28 # rad/s
     pos_min: -0.1
     pos_max: 1.0
     normal_pos: 0.05
-    # ギアが一周すると2*pi*15mm進むので、半径は15mm
-    radius: 0.015
-    inverse_motor: false
+    # モータが1回転すると110mm進むので、半径は17.5mm
+    radius: 0.01750704374010849
+    inverse_motor: true
     use_low_switch: false
     use_high_switch: false
     inverse_low_switch_logic: false
@@ -527,17 +553,17 @@ r1_spear_roll_node:
     torque_threshold: 0.5 # Nm
     # NOTE: robstrideなので、トルクしきい値は無効化
     # 通常位置モード時に Robomas の torque_lim として使う値
-    normal_torque_limit: 1.0 # Nm
+    normal_torque_limit: 1.5 # Nm
     # 原点検出・メカロック移動中に Robomas の torque_lim として使う値
-    contact_torque_limit: 1.0 # Nm
+    contact_torque_limit: 1.5 # Nm
     origin_detect_threshold_time: 0.5 # 秒
     origin_detect_speed: -3.14 # rad/s
     angle_min: -5.0
     angle_max: 5.0
     normal_angle: 0.0
     # ギア比で割った値がモーターの角度指令値となる
-    # 減速比は26 / 80 = 0.325
-    gear_ratio: 0.325
+    # 1.0 / 5.0 = 0.2
+    gear_ratio: 0.2
     inverse_motor: false
     use_low_switch: false
     use_high_switch: false
@@ -550,18 +576,18 @@ r1_spear_pitch1_node:
     # トルク検出時のしきい値
     torque_threshold: 0.5 # Nm
     # 通常位置モード時に Robomas の torque_lim として使う値
-    normal_torque_limit: 4.5 # Nm
+    normal_torque_limit: 4.0 # Nm
     # 原点検出・メカロック移動中に Robomas の torque_lim として使う値
-    contact_torque_limit: 4.5 # Nm
+    contact_torque_limit: 4.0 # Nm
     origin_detect_threshold_time: 0.5 # 秒
     origin_detect_speed: -3.14 # rad/s
     angle_min: -5.0
     angle_max: 5.0
     normal_angle: 0.0
     # ギア比で割った値がモーターの角度指令値となる
-    # 減速比は26 / 80 = 0.325
-    gear_ratio: 0.325
-    inverse_motor: false
+    # 1.0 / 5.0 = 0.2
+    gear_ratio: 0.2
+    inverse_motor: true
     use_low_switch: false
     use_high_switch: false
     inverse_low_switch_logic: false
@@ -573,17 +599,17 @@ r1_spear_pitch2_node:
     # トルク検出時のしきい値
     torque_threshold: 0.5 # Nm
     # 通常位置モード時に Robomas の torque_lim として使う値
-    normal_torque_limit: 4.5 # Nm
+    normal_torque_limit: 4.0 # Nm
     # 原点検出・メカロック移動中に Robomas の torque_lim として使う値
-    contact_torque_limit: 4.5 # Nm
+    contact_torque_limit: 4.0 # Nm
     origin_detect_threshold_time: 0.5 # 秒
     origin_detect_speed: -3.14 # rad/s
     angle_min: -5.0
     angle_max: 5.0
     normal_angle: 0.0
     # ギア比で割った値がモーターの角度指令値となる
-    # 減速比は26 / 80 = 0.325
-    gear_ratio: 0.325
+    # 1.0 / 5.0 = 0.2
+    gear_ratio: 0.2
     inverse_motor: false
     use_low_switch: false
     use_high_switch: false
@@ -756,7 +782,7 @@ sabacan_robomasv2_node_id5:
     pos_gain_p: [5.0, 5.0, 5.0, 5.0]
     pos_gain_i: [0.0, 0.0, 0.0, 0.0]
     pos_gain_d: [0.0, 0.0, 0.0, 0.0]
-    speed_lim: [20.0, 20.0, 20.0, 20.0]
+    speed_lim: [10.0, 10.0, 10.0, 10.0]
     # TRQ+SPD+POSをフィードバック
     monitor_reg1: [0x0001000100010000, 0x0001000100010000, 0x0001000100010000, 0x0001000100010000]
     # TRQ+SPD+POS+MOTOR_STATEをフィードバック
@@ -781,7 +807,7 @@ sabacan_robomasv2_node_id6:
     pos_gain_p: [5.0, 5.0, 5.0, 5.0]
     pos_gain_i: [0.0, 0.0, 0.0, 0.0]
     pos_gain_d: [0.0, 0.0, 0.0, 0.0]
-    speed_lim: [15.0, 15.0, 15.0, 15.0]
+    speed_lim: [10.0, 10.0, 10.0, 10.0]
     # TRQ+SPD+POSをフィードバック
     monitor_reg1: [0x0001000100010000, 0x0001000100010000, 0x0001000100010000, 0x0001000100010000]
     # TRQ+SPD+POS+MOTOR_STATEをフィードバック

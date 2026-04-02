@@ -318,9 +318,13 @@ private:
   {
     mode_ = MODE_POSITION;
     speed_mode_reason_ = SPEED_MODE_NONE;
+    angle_offset_ = gear_ratio_ * current_angle_;
     publish_active_torque_limit();
     publish_hold_current_angle();
-    RCLCPP_INFO(this->get_logger(), "Received initialize signal. Switched to position hold mode.");
+    RCLCPP_INFO(
+      this->get_logger(),
+      "Received initialize signal. Updated angle offset to %.6f so current angle becomes zero.",
+      angle_offset_);
   }
 
   double active_torque_limit() const

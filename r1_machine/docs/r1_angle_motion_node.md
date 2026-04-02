@@ -1,6 +1,6 @@
 # r1_angle_motion_node
 
-`r1_angle_motion_node` は回転軸用モータの位置制御、原点検出、機械端への押し当て移動を行う ROS 2 ノードです。`/angle_motion_status` で取得したトルク・速度・角度・リミットスイッチを監視し、通常は角度指令を `/angle_motion_motor_ref` に出力します。原点検出要求や `move_mech_lock` 要求が入ると速度モードへ切り替え、スイッチまたはトルク上昇を検出して停止します。原点検出ではオフセットを更新して通常角へ戻り、`move_mech_lock` ではオフセットを更新せず、その場の機械位置を保持します。加えて、通常時用と特殊動作用の 2 種類のトルク制限値を `/angle_motion_torque_limit_ref` へ publish し、`r1_machine_manage_node` 経由で Robomas 基板の `torque_lim` も切り替えます。角度指令はラジアン単位で受け付け、減速比 `gear_ratio` でモータ角度へ換算します。周期処理の実行レートは `timer_rate` で変更できます。
+`r1_angle_motion_node` は回転軸用モータの位置制御、原点検出、機械端への押し当て移動を行う ROS 2 ノードです。`/angle_motion_status` で取得したトルク・速度・角度・リミットスイッチを監視し、通常は角度指令を `/angle_motion_motor_ref` に出力します。原点検出要求や `move_mech_lock` 要求が入ると速度モードへ切り替え、スイッチまたはトルク上昇を検出して停止します。原点検出ではオフセットを更新して通常角へ戻り、`move_mech_lock` ではオフセットを更新せず、その場の機械位置を保持します。`initialize` を受けた場合も、現在のモータ角度が論理上の 0 rad になるようにオフセットを更新してから、その場を保持します。加えて、通常時用と特殊動作用の 2 種類のトルク制限値を `/angle_motion_torque_limit_ref` へ publish し、`r1_machine_manage_node` 経由で Robomas 基板の `torque_lim` も切り替えます。角度指令はラジアン単位で受け付け、減速比 `gear_ratio` でモータ角度へ換算します。周期処理の実行レートは `timer_rate` で変更できます。
 
 ## トピック
 
@@ -11,7 +11,7 @@
   - `/angle_motion_position_ref` (`std_msgs/msg/Float64`): 目標角度 [rad]。原点検出中（速度モード）は無視されます。
   - `/angle_motion_detect_origin` (`std_msgs/msg/Bool`): `true` で原点検出モードへ移行し、`false` で位置モードに戻します。
   - `/angle_motion_move_mech_lock` (`std_msgs/msg/Int32`): 機械端まで押し当てる移動要求。`data > 0` で正方向、`data < 0` で逆方向、`data == 0` で停止して位置モードに戻ります。
-  - `/angle_motion_initialize` (`std_msgs/msg/Empty`): 特殊モードを中断して位置モードへ戻し、その時点のモータ角度を保持します。`r1_machine_manage_node` から中継されます。
+  - `/angle_motion_initialize` (`std_msgs/msg/Empty`): 特殊モードを中断して位置モードへ戻し、その時点のモータ角度が論理上 0 rad になるよう `angle_offset` を更新してから保持します。`r1_machine_manage_node` から中継されます。
 - **Publish**
   - `/angle_motion_motor_ref` (`r1_msgs/msg/MotorRef`): `r1_machine_manage_node` へ渡す制御指令。`control_type` は `"POSITION"` または `"VELOCITY"`、`ref` は角度 [rad] もしくは角速度 [rad/s]。
   - `/angle_motion_mode_status` (`std_msgs/msg/Int32`): モードを送信。mode=0のとき、通常動作（位置制御モード）。mode=1のとき、原点復帰中（速度制御モード）。
@@ -49,7 +49,7 @@
    - `|torque| > torque_threshold` の状態が `origin_detect_threshold_time` 秒以上続く。
 4. 検出条件を満たすと、現在の `pos` から `angle_offset = gear_ratio * pos` を設定し、その場の角度で `"POSITION"` 指令を出して位置モードへ復帰します。`/angle_motion_detect_origin` に `false` を送れば手動でも位置モードへ戻せます（オフセット更新は行いません）。
 5. `/angle_motion_move_mech_lock` に `1` または `-1` を送ると、指定方向へ `"VELOCITY"` 指令 `move_mech_lock_speed` を流し続けます。開始時に `/angle_motion_torque_limit_ref` へ `contact_torque_limit` を publish します。停止判定は原点検出と同じで、トルク上昇またはスイッチ反応が `origin_detect_threshold_time` 以上続いたときです。停止後はオフセットを更新せず、その時点のモータ位置を `"POSITION"` 指令で保持し、トルク制限も `normal_torque_limit` に戻します。
-6. `/angle_motion_initialize` を受けると、原点検出中や `move_mech_lock` 中であっても速度モードを中断し、現在のモータ角度を `"POSITION"` で保持します。オフセットは変更しません。このときトルク制限も `normal_torque_limit` に戻します。
+6. `/angle_motion_initialize` を受けると、原点検出中や `move_mech_lock` 中であっても速度モードを中断し、`angle_offset = gear_ratio * pos` を再計算してその時点のモータ角度が論理上 0 rad になるようにします。その後、現在のモータ角度を `"POSITION"` で保持します。このときトルク制限も `normal_torque_limit` に戻します。
 
 ## 起動と利用例
 

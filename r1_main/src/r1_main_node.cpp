@@ -221,6 +221,7 @@ void R1MainNode::publish_velocity_axis(const std::string & name, double vel)
   if (it->second.velocity_ref_alias != nullptr) {
     *it->second.velocity_ref_alias = vel;
   }
+  // 速度制御はログが見づらくなるので、ログ出力はしない
 }
 
 /**
@@ -246,6 +247,7 @@ void R1MainNode::publish_gpio_pwm_output(const std::string & name, double ref)
   if (it->second.bool_ref_alias != nullptr) {
     *it->second.bool_ref_alias = (ref != 0.0);
   }
+  RCLCPP_INFO(this->get_logger(), "%s gpio pwm ref %f", name.c_str(), ref);
 }
 
 /**
@@ -268,6 +270,8 @@ void R1MainNode::publish_gpio_servo_output(const std::string & name, int ref)
   if (it->second.ref_alias != nullptr) {
     *it->second.ref_alias = ref;
   }
+
+  RCLCPP_INFO(this->get_logger(), "%s gpio servo ref %d", name.c_str(), ref);
 }
 
 R1MainNode::R1MainNode() : Node("r1_main_node")
@@ -298,10 +302,17 @@ R1MainNode::R1MainNode() : Node("r1_main_node")
   register_velocity_axis("r2_flift", "/r2_flift_motor_ref", &r2_flift_velocity_ref_);
   register_velocity_axis("r2_rlift", "/r2_rlift_motor_ref", &r2_rlift_velocity_ref_);
   // ========== GPIO ==========
+  // kfs
   register_gpio_pwm_output("kfs_front_pump", &kfs_front_pump_ref_, nullptr);
   register_gpio_pwm_output("kfs_rear_pump", &kfs_rear_pump_ref_, nullptr);
   register_gpio_pwm_output("kfs_front_valve", nullptr, &kfs_front_valve_ref_);
   register_gpio_pwm_output("kfs_rear_valve", nullptr, &kfs_rear_valve_ref_);
+  // 槍電磁弁
+  register_gpio_pwm_output("spear_u1_valve", nullptr, &spear_u1_valve_ref_);
+  register_gpio_pwm_output("spear_d1_valve", nullptr, &spear_d1_valve_ref_);
+  register_gpio_pwm_output("spear_u2_valve", nullptr, &spear_u2_valve_ref_);
+  register_gpio_pwm_output("spear_d2_valve", nullptr, &spear_d2_valve_ref_);
+  // センサー入力
   register_gpio_input("kfs_fz_low_switch", &kfs_fz_low_switch_status_);
   register_gpio_input("kfs_rz_low_switch", &kfs_rz_low_switch_status_);
 
@@ -396,22 +407,43 @@ R1MainNode::R1MainNode() : Node("r1_main_node")
   declare_and_get_parameter("r2_lift_down_velocity", R2_LIFT_DOWN_VELOCITY);
   // ========== やり ==========
   // spear1
-
+  declare_and_get_parameter("spear1_normal_pos", SPEAR1_NORMAL_POS);
+  declare_and_get_parameter("spear1_collect_pos", SPEAR1_COLLECT_POS);
+  declare_and_get_parameter("spear1_make_spear_start_pos", SPEAR1_MAKE_SPEAR_START_POS);
+  declare_and_get_parameter("spear1_make_spear_end_pos", SPEAR1_MAKE_SPEAR_END_POS);
   // spear2
-
+  declare_and_get_parameter("spear2_normal_pos", SPEAR2_NORMAL_POS);
+  declare_and_get_parameter("spear2_collect_pos", SPEAR2_COLLECT_POS);
+  declare_and_get_parameter("spear2_make_spear_start_pos", SPEAR2_MAKE_SPEAR_START_POS);
+  declare_and_get_parameter("spear2_make_spear_end_pos", SPEAR2_MAKE_SPEAR_END_POS);
   // spear3
-
+  declare_and_get_parameter("spear3_normal_pos", SPEAR3_NORMAL_POS);
+  declare_and_get_parameter("spear3_collect_pos", SPEAR3_COLLECT_POS);
+  declare_and_get_parameter("spear3_make_spear_start_pos", SPEAR3_MAKE_SPEAR_START_POS);
+  declare_and_get_parameter("spear3_make_spear_end_pos", SPEAR3_MAKE_SPEAR_END_POS);
   // spear4
-
+  declare_and_get_parameter("spear4_normal_pos", SPEAR4_NORMAL_POS);
+  declare_and_get_parameter("spear4_collect_pos", SPEAR4_COLLECT_POS);
+  declare_and_get_parameter("spear4_make_spear_start_pos", SPEAR4_MAKE_SPEAR_START_POS);
+  declare_and_get_parameter("spear4_make_spear_end_pos", SPEAR4_MAKE_SPEAR_END_POS);
   // spear_x
-
+  declare_and_get_parameter("spear_x_normal_pos", SPEAR_X_NORMAL_POS);
+  declare_and_get_parameter("spear_x_make_spear1_pos", SPEAR_X_MAKE_SPEAR1_POS);
+  declare_and_get_parameter("spear_x_make_spear2_pos", SPEAR_X_MAKE_SPEAR2_POS);
+  declare_and_get_parameter("spear_x_make_spear3_pos", SPEAR_X_MAKE_SPEAR3_POS);
+  declare_and_get_parameter("spear_x_make_spear4_pos", SPEAR_X_MAKE_SPEAR4_POS);
   // spear_y
-
+  declare_and_get_parameter("spear_y_normal_pos", SPEAR_Y_NORMAL_POS);
+  declare_and_get_parameter("spear_y_expand_pos", SPEAR_Y_EXPAND_POS);
   // spear_roll
-
+  declare_and_get_parameter("spear_roll_normal_angle", SPEAR_ROLL_NORMAL_ANGLE);
+  declare_and_get_parameter("spear_roll_vertical_angle", SPEAR_ROLL_VERTICAL_ANGLE);
   // spear_pitch1
-
+  declare_and_get_parameter("spear_pitch1_normal_angle", SPEAR_PITCH1_NORMAL_ANGLE);
+  declare_and_get_parameter("spear_pitch1_vertical_angle", SPEAR_PITCH1_VERTICAL_ANGLE);
   // spear_pitch2
+  declare_and_get_parameter("spear_pitch2_normal_angle", SPEAR_PITCH2_NORMAL_ANGLE);
+  declare_and_get_parameter("spear_pitch2_vertical_angle", SPEAR_PITCH2_VERTICAL_ANGLE);
 
   // FOREST関連
   this->declare_parameter<std::vector<int64_t>>("kfs_forest_number", std::vector<int64_t>{});
@@ -716,28 +748,38 @@ void R1MainNode::spear_pitch1(double angle) { publish_position_axis("spear_pitch
 
 void R1MainNode::spear_pitch2(double angle) { publish_position_axis("spear_pitch2", angle); }
 
-void R1MainNode::kfs_front_pump(double pwm)
-{
-  publish_gpio_pwm_output("kfs_front_pump", pwm);
-  RCLCPP_INFO(this->get_logger(), "kfs front pump pwm %f", pwm);
-}
+void R1MainNode::kfs_front_pump(double pwm) { publish_gpio_pwm_output("kfs_front_pump", pwm); }
 
-void R1MainNode::kfs_rear_pump(double pwm)
-{
-  publish_gpio_pwm_output("kfs_rear_pump", pwm);
-  RCLCPP_INFO(this->get_logger(), "kfs rear pump pwm %f", pwm);
-}
+void R1MainNode::kfs_rear_pump(double pwm) { publish_gpio_pwm_output("kfs_rear_pump", pwm); }
 
 void R1MainNode::kfs_front_valve(bool on)
 {
   publish_gpio_pwm_output("kfs_front_valve", on ? 1.0 : 0.0);
-  RCLCPP_INFO(this->get_logger(), "kfs front valve %d", on);
 }
 
 void R1MainNode::kfs_rear_valve(bool on)
 {
   publish_gpio_pwm_output("kfs_rear_valve", on ? 1.0 : 0.0);
-  RCLCPP_INFO(this->get_logger(), "kfs rear valve %d", on);
+}
+
+void R1MainNode::spear_u1_valve(bool on)
+{
+  publish_gpio_pwm_output("spear_u1_valve", on ? 1.0 : 0.0);
+}
+
+void R1MainNode::spear_d1_valve(bool on)
+{
+  publish_gpio_pwm_output("spear_d1_valve", on ? 1.0 : 0.0);
+}
+
+void R1MainNode::spear_u2_valve(bool on)
+{
+  publish_gpio_pwm_output("spear_u2_valve", on ? 1.0 : 0.0);
+}
+
+void R1MainNode::spear_d2_valve(bool on)
+{
+  publish_gpio_pwm_output("spear_d2_valve", on ? 1.0 : 0.0);
 }
 
 void R1MainNode::stop_actuator(void)
@@ -752,6 +794,11 @@ void R1MainNode::stop_actuator(void)
   // KFS回収電磁弁を止める
   kfs_front_valve(false);
   kfs_rear_valve(false);
+  // やりの電磁弁を止める
+  spear_u1_valve(false);
+  spear_d1_valve(false);
+  spear_u2_valve(false);
+  spear_d2_valve(false);
 }
 
 // --- 各状態のタスク ---
@@ -816,284 +863,192 @@ void R1MainNode::manual_mode1_detect_origin(void)
 
 void R1MainNode::manual_mode2_collect_pole_task(void)
 {
-  // int & step = manual_mode2_collect_pole_task_step_;
-  // RCLCPP_INFO(this->get_logger(), "manual_mode2_collect_pole_task step: %d", step);
-  // if (step == 1) {
-  //   pole_x1(POLE_X1_EXPAND_POS);
-  //   pole_x2(POLE_X2_EXPAND_POS);
-  //   pole_y(POLE_Y_COLLECT_POS);
-  //   step++;
-  // } else if (step == 2) {
-  //   pole_roger(POLE_ROGER_EXPAND_POS);
-  //   step++;
-  // } else if (step == 3) {
-  //   pole_valve(1, true);
-  //   pole_valve(2, true);
-  //   pole_valve(3, true);
-  //   pole_valve(4, true);
-  //   step++;
-  // } else if (step == 4) {
-  //   pole_valve(1, false);
-  //   pole_valve(2, false);
-  //   pole_valve(3, false);
-  //   pole_valve(4, false);
-  //   step++;
-  // } else if (step == 5) {
-  //   pole_x1(POLE_X1_NORMAL_POS);
-  //   pole_x2(POLE_X2_NORMAL_POS);
-  //   step++;
-  // } else if (step == 6) {
-  //   pole_roger(POLE_ROGER_NORMAL_POS);
-  //   RCLCPP_INFO(this->get_logger(), "pole collect task completed");
-  //   step = 1;
-  // }
-}
-
-void R1MainNode::manual_mode3_make_spear_task(int n)
-{
-  (void)n;
-  // int & step = manual_mode3_make_spear_task_step_;
-  // RCLCPP_INFO(this->get_logger(), "manual_mode2_make_spear_task step: %d", step);
-  // if (step == 1) {
-  //   // pole_yを受け渡し位置に移動
-  //   if (n == 1) {
-  //     pole_y(POLE_Y_TRANSFER1_POS);
-  //   } else if (n == 2) {
-  //     pole_y(POLE_Y_TRANSFER2_POS);
-  //   } else if (n == 3) {
-  //     pole_y(POLE_Y_TRANSFER3_POS);
-  //   } else if (n == 4) {
-  //     pole_y(POLE_Y_TRANSFER4_POS);
-  //   }
-  //   spear_roger1(SPEAR_ROGER1_TRANSFER_POS);
-  //   spear_roger2(SPEAR_ROGER2_TRANSFER_POS);
-  //   spear_move(SPEAR_MOVE_TRANSFER_POS);
-  //   spear_hand_valve2(true);
-  //   pole_roger(POLE_ROGER_EXPAND_POS);
-  //   step++;
-  // } else if (step == 2) {
-  //   // サーボモータを回転させ、ポールを水平にする
-  //   if (n == 1) {
-  //     pole_servo(1, POLE_SERVO1_HORIZONTAL_ANGLE);
-  //   } else if (n == 2) {
-  //     pole_servo(2, POLE_SERVO2_HORIZONTAL_ANGLE);
-  //   } else if (n == 3) {
-  //     pole_servo(3, POLE_SERVO3_HORIZONTAL_ANGLE);
-  //   } else if (n == 4) {
-  //     pole_servo(4, POLE_SERVO4_HORIZONTAL_ANGLE);
-  //   }
-  //   // やりハンドの電磁弁をONにし、ハンドを開放する。
-  //   spear_hand_valve1(true);
-  //   step++;
-  // } else if (step == 3) {
-  //   // やりハンドの電磁弁をOFFにし、ハンドを閉じる。
-  //   spear_hand_valve1(false);
-  //   // ポールハンドの電磁弁をONにし、やり機構にポールを受け渡す。
-  //   if (n == 1) {
-  //     pole_valve(1, true);
-  //   } else if (n == 2) {
-  //     pole_valve(2, true);
-  //   } else if (n == 3) {
-  //     pole_valve(3, true);
-  //   } else if (n == 4) {
-  //     pole_valve(4, true);
-  //   }
-  //   step++;
-  // } else if (step == 4) {
-  //   // R2とのやり合体位置に、やりハンドを移動する。
-  //   spear_move(SPEAR_MOVE_COMBINE_POS);
-  //   step++;
-  // } else if (step == 5) {
-  //   // サーボモータを回転させ、ポールを垂直にする。
-  //   if (n == 1) {
-  //     pole_servo(1, POLE_SERVO1_NORMAL_ANGLE);
-  //   } else if (n == 2) {
-  //     pole_servo(2, POLE_SERVO2_NORMAL_ANGLE);
-  //   } else if (n == 3) {
-  //     pole_servo(3, POLE_SERVO3_NORMAL_ANGLE);
-  //   } else if (n == 4) {
-  //     pole_servo(4, POLE_SERVO4_NORMAL_ANGLE);
-  //   }
-  //   step++;
-  // } else if (step == 6) {
-  //   // ポールハンドの電磁弁をOFFにする。
-  //   if (n == 1) {
-  //     pole_valve(1, false);
-  //   } else if (n == 2) {
-  //     pole_valve(2, false);
-  //   } else if (n == 3) {
-  //     pole_valve(3, false);
-  //   } else if (n == 4) {
-  //     pole_valve(4, false);
-  //   }
-  //   step++;
-  // } else if (step == 7) {
-  //   spear_rotate(SPEAR_ROTATE_COMBINE_ANGLE);  // 180度回転
-  //   step++;
-  // } else if (step == 8) {
-  //   pole_roger(POLE_ROGER_NORMAL_POS);
-  //   pole_y(POLE_Y_NORMAL_POS);
-  //   step++;
-  // } else if (step == 9) {
-  //   // spear_moveを受け渡し位置に移動
-  //   spear_move(SPEAR_MOVE_TRANSFER_POS);
-  //   // spear_rogerを初期位置に移動
-  //   spear_roger1(SPEAR_ROGER1_NORMAL_POS);
-  //   spear_roger2(SPEAR_ROGER2_NORMAL_POS);
-  //   step++;
-  // } else if (step == 10) {
-  //   // やりハンド1の電磁弁をON。やりハンド2の電磁弁をOFF。
-  //   spear_hand_valve1(true);
-  //   spear_hand_valve2(false);
-  //   step++;
-  // } else if (step == 11) {
-  //   // spear_moveを後ろに下げる。
-  //   spear_move(SPEAR_MOVE_VALVE1_POS);
-  //   step++;
-  // } else if (step == 12) {
-  //   // やりハンド1の電磁弁をOFF。
-  //   spear_hand_valve1(false);
-  //   step++;
-  // } else if (step == 13) {
-  //   // やりハンド2の電磁弁をON。
-  //   spear_hand_valve2(true);
-  //   step++;
-  // } else if (step == 14) {
-  //   // spear_moveを少し前に出す。
-  //   spear_move(SPEAR_MOVE_VALVE2_POS);
-  //   step++;
-  // } else if (step == 15) {
-  //   // やりハンド2の電磁弁をOFF。
-  //   spear_hand_valve2(false);
-  //   RCLCPP_INFO(this->get_logger(), "spear make task completed");
-  //   step = 1;
-  // }
+  int & step = manual_mode2_collect_pole_task_step_;
+  RCLCPP_INFO(this->get_logger(), "manual_mode2_collect_pole_task step: %d", step);
+  if (step == 1) {
+    spear_roll(SPEAR_ROLL_VERTICAL_ANGLE);
+    spear_x(SPEAR_X_NORMAL_POS);
+    spear_y(SPEAR_Y_NORMAL_POS);
+    step++;
+  } else if (step == 2) {
+    spear_pitch1(SPEAR_PITCH1_VERTICAL_ANGLE);
+    spear_pitch2(SPEAR_PITCH2_VERTICAL_ANGLE);
+    step++;
+  } else if (step == 3) {
+    spear_u1_valve(true);
+    spear_d1_valve(true);
+    spear_u2_valve(true);
+    spear_d2_valve(true);
+    spear1(SPEAR1_COLLECT_POS);
+    spear2(SPEAR2_COLLECT_POS);
+    step++;
+  } else if (step == 4) {
+    spear_y(SPEAR_Y_EXPAND_POS);
+    step++;
+  } else if (step == 5) {
+    spear_u1_valve(false);
+    spear_d1_valve(false);
+    spear_u2_valve(false);
+    spear_d2_valve(false);
+    step++;
+  } else if (step == 6) {
+    spear_y(SPEAR_Y_NORMAL_POS);
+    RCLCPP_INFO(this->get_logger(), "pole collect task completed");
+    step = 1;
+  }
 }
 
 void R1MainNode::manual_mode2_pole(void)
 {
-  // if (ps4_->is_pushed_up()) {
-  // }
+  if (ps4_->is_pushed_up()) {
+    spear_roll(spear_roll_position_ref_ + 0.1);
+  }
 
-  // if (ps4_->is_pushed_right()) {
-  //   pole_roger(pole_roger_position_ref_ + 0.01);
-  // }
+  if (ps4_->is_pushed_right()) {
+    spear2(spear2_position_ref_ + 0.01);
+  }
 
-  // if (ps4_->is_pushed_down()) {
-  //   pole_servo(1, pole_servo1_angle_ref_ - 1);
-  // }
+  if (ps4_->is_pushed_down()) {
+    spear_roll(spear_roll_position_ref_ - 0.1);
+  }
 
-  // if (ps4_->is_pushed_left()) {
-  //   pole_roger(pole_roger_position_ref_ - 0.01);
-  // }
+  if (ps4_->is_pushed_left()) {
+    spear2(spear2_position_ref_ - 0.01);
+  }
 
-  // if (ps4_->is_pushed_triangle()) {
-  //   // ポール回収
-  //   manual_mode2_collect_pole_task();
-  // }
+  if (ps4_->is_pushed_triangle()) {
+    // ポール回収
+    manual_mode2_collect_pole_task();
+  }
 
-  // if (ps4_->is_pushed_circle()) {
-  //   pole_y(pole_y_position_ref_ + 0.01);
-  // }
+  if (ps4_->is_pushed_circle()) {
+    spear1(spear1_position_ref_ + 0.01);
+  }
 
-  // if (ps4_->is_pushed_cross()) {
-  //   pole_servo(1, pole_servo1_angle_ref_ + 1);
-  // }
+  if (ps4_->is_pushed_cross()) {
+  }
 
-  // if (ps4_->is_pushed_square()) {
-  //   pole_y(pole_y_position_ref_ - 0.01);
-  // }
+  if (ps4_->is_pushed_square()) {
+    spear1(spear1_position_ref_ - 0.01);
+  }
 
-  // if (ps4_->is_pushed_l1()) {
-  //   pole_x1(pole_x1_position_ref_ - 0.01);
-  // }
+  if (ps4_->is_pushed_l1()) {
+    spear_pitch1(spear_pitch1_position_ref_ - 0.1);
+  }
 
-  // if (ps4_->is_pushed_r1()) {
-  //   pole_x1(pole_x1_position_ref_ + 0.01);
-  // }
+  if (ps4_->is_pushed_r1()) {
+    spear_pitch1(spear_pitch1_position_ref_ + 0.1);
+  }
 
-  // if (ps4_->is_pushed_l2()) {
-  //   pole_x2(pole_x2_position_ref_ - 0.01);
-  // }
+  if (ps4_->is_pushed_l2()) {
+    spear_pitch2(spear_pitch2_position_ref_ - 0.1);
+  }
 
-  // if (ps4_->is_pushed_r2()) {
-  //   pole_x2(pole_x2_position_ref_ + 0.01);
-  // }
+  if (ps4_->is_pushed_r2()) {
+    spear_pitch2(spear_pitch2_position_ref_ + 0.1);
+  }
+}
+
+void R1MainNode::manual_mode3_make_spear_task(int n)
+{
+  int & step = manual_mode3_make_spear_task_step_;
+  RCLCPP_INFO(this->get_logger(), "manual_mode3_make_spear_task step: %d", step);
+  if (step == 1) {
+    spear_x(SPEAR_X_NORMAL_POS);
+    // rollを横向きにする
+    spear_roll(SPEAR_ROLL_NORMAL_ANGLE);
+    step++;
+  } else if (step == 2) {
+    spear_pitch1(SPEAR_PITCH1_VERTICAL_ANGLE);
+    spear_pitch2(SPEAR_PITCH2_VERTICAL_ANGLE);
+    step++;
+  } else if (step == 3) {
+    if (n == 1) {
+      spear1(SPEAR1_MAKE_SPEAR_START_POS);
+    } else if (n == 2) {
+      spear2(SPEAR2_MAKE_SPEAR_START_POS);
+    } else if (n == 3) {
+      spear3(SPEAR3_MAKE_SPEAR_START_POS);
+    } else if (n == 4) {
+      spear4(SPEAR4_MAKE_SPEAR_START_POS);
+    }
+    step++;
+  } else if (step == 4) {
+    if (n == 1) {
+      spear1(SPEAR1_MAKE_SPEAR_END_POS);
+    } else if (n == 2) {
+      spear2(SPEAR2_MAKE_SPEAR_END_POS);
+    } else if (n == 3) {
+      spear3(SPEAR3_MAKE_SPEAR_END_POS);
+    } else if (n == 4) {
+      spear4(SPEAR4_MAKE_SPEAR_END_POS);
+    }
+    step++;
+  } else if (step == 5) {
+    spear1(SPEAR1_NORMAL_POS);
+    spear2(SPEAR2_NORMAL_POS);
+    spear3(SPEAR3_NORMAL_POS);
+    spear4(SPEAR4_NORMAL_POS);
+    step++;
+  } else if (step == 6) {
+    spear_roll(SPEAR_ROLL_NORMAL_ANGLE);
+    step++;
+  } else if (step == 7) {
+    spear_y(SPEAR_Y_NORMAL_POS);
+    RCLCPP_INFO(this->get_logger(), "make spear task completed");
+    step = 1;
+  }
 }
 
 void R1MainNode::manual_mode3_spear(void)
 {
-  // int & brake_valve_step = manual_mode3_brake_valve_step_;
-  // int & spear_hand_valve1_step = manual_mode3_spear_hand_valve1_step_;
-  // int & spear_hand_valve2_step = manual_mode3_spear_hand_valve2_step_;
+  if (ps4_->is_pushed_up()) {
+    spear_roll(spear_roll_position_ref_ + 0.1);
+  }
 
-  // if (ps4_->is_pushed_up()) {
-  //   manual_mode3_make_spear_task(1);
-  // }
+  if (ps4_->is_pushed_right()) {
+    spear2(spear2_position_ref_ + 0.01);
+  }
 
-  // if (ps4_->is_pushed_right()) {
-  //   spear_rotate(spear_rotate_position_ref_ + 0.1);
-  // }
+  if (ps4_->is_pushed_down()) {
+    spear_roll(spear_roll_position_ref_ - 0.1);
+  }
 
-  // if (ps4_->is_pushed_down()) {
-  //   spear_move(spear_move_position_ref_ - 0.01);
-  // }
+  if (ps4_->is_pushed_left()) {
+    spear2(spear2_position_ref_ - 0.01);
+  }
 
-  // if (ps4_->is_pushed_left()) {
-  //   spear_rotate(spear_rotate_position_ref_ - 0.1);
-  // }
+  if (ps4_->is_pushed_triangle()) {
+    // やり組み立て
+    manual_mode3_make_spear_task(1);
+  }
 
-  // if (ps4_->is_pushed_triangle()) {
-  //   if (brake_valve_step == 1) {
-  //     brake_valve(true);
-  //     brake_valve_step = 2;
-  //   } else {
-  //     brake_valve(false);
-  //     brake_valve_step = 1;
-  //   }
-  // }
+  if (ps4_->is_pushed_circle()) {
+    spear1(spear1_position_ref_ + 0.01);
+  }
 
-  // if (ps4_->is_pushed_circle()) {
-  //   // if (spear_hand_valve2_step == 1) {
-  //   //   spear_hand_valve2(true);
-  //   //   spear_hand_valve2_step = 2;
-  //   // } else {
-  //   //   spear_hand_valve2(false);
-  //   //   spear_hand_valve2_step = 1;
-  //   // }
-  //   pole_y(pole_y_position_ref_ + 0.01);
-  // }
+  if (ps4_->is_pushed_cross()) {
+  }
 
-  // if (ps4_->is_pushed_cross()) {
-  //   spear_move(spear_move_position_ref_ + 0.01);
-  // }
+  if (ps4_->is_pushed_square()) {
+    spear1(spear1_position_ref_ - 0.01);
+  }
 
-  // if (ps4_->is_pushed_square()) {
-  //   // if (spear_hand_valve1_step == 1) {
-  //   //   spear_hand_valve1(true);
-  //   //   spear_hand_valve1_step = 2;
-  //   // } else {
-  //   //   spear_hand_valve1(false);
-  //   //   spear_hand_valve1_step = 1;
-  //   // }
-  //   pole_y(pole_y_position_ref_ - 0.01);
-  // }
+  if (ps4_->is_pushed_l1()) {
+    spear_pitch1(spear_pitch1_position_ref_ - 0.1);
+  }
 
-  // if (ps4_->is_pushed_l1()) {
-  //   spear_roger1(spear_roger1_position_ref_ - 0.01);
-  // }
+  if (ps4_->is_pushed_r1()) {
+    spear_pitch1(spear_pitch1_position_ref_ + 0.1);
+  }
 
-  // if (ps4_->is_pushed_r1()) {
-  //   spear_roger1(spear_roger1_position_ref_ + 0.01);
-  // }
+  if (ps4_->is_pushed_l2()) {
+    spear_pitch2(spear_pitch2_position_ref_ - 0.1);
+  }
 
-  // if (ps4_->is_pushed_l2()) {
-  //   spear_roger2(spear_roger2_position_ref_ - 0.01);
-  // }
-
-  // if (ps4_->is_pushed_r2()) {
-  //   spear_roger2(spear_roger2_position_ref_ + 0.01);
-  // }
+  if (ps4_->is_pushed_r2()) {
+    spear_pitch2(spear_pitch2_position_ref_ + 0.1);
+  }
 }
 
 void R1MainNode::manual_mode4_fkfs(void)

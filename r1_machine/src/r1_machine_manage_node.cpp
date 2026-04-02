@@ -521,11 +521,8 @@ static DriveMotorChannel make_drive_motor_channel(
   MotorControllerType controller_type = MotorControllerType::Robomas)
 {
   return DriveMotorChannel{
-    info,
-    make_topic(name, "_motor_ref"),
-    make_topic(name, "_motor_status"),
-    make_debug_motor_status_topic(name),
-    controller_type};
+    info, make_topic(name, "_motor_ref"), make_topic(name, "_motor_status"),
+    make_debug_motor_status_topic(name), controller_type};
 }
 
 /**
@@ -1670,8 +1667,7 @@ private:
       return;
     }
 
-    RCLCPP_INFO(
-      this->get_logger(), "post-reset initialize delay completed");
+    RCLCPP_INFO(this->get_logger(), "post-reset initialize delay completed");
   }
 
   /**
@@ -2400,11 +2396,13 @@ private:
     make_velocity_control_channel({4, 3}, "r2_rlift"),
   };
   std::vector<LinearMotionChannel> linear_motion_channels_{
-    make_linear_motion_channel({3, 0}, "kfs_fx"),  make_linear_motion_channel({3, 1}, "kfs_fz"),
-    make_linear_motion_channel({4, 0}, "kfs_rx"),  make_linear_motion_channel({4, 1}, "kfs_rz"),
-    make_linear_motion_channel({5, 0}, "spear1"),  make_linear_motion_channel({5, 1}, "spear2"),
-    make_linear_motion_channel({5, 2}, "spear3"),  make_linear_motion_channel({5, 3}, "spear4"),
-    make_linear_motion_channel({6, 0}, "spear_x"), make_linear_motion_channel({6, 1}, "spear_y")};
+    make_linear_motion_channel({3, 0}, "kfs_fx"), make_linear_motion_channel({3, 1}, "kfs_fz"),
+    make_linear_motion_channel({4, 0}, "kfs_rx"), make_linear_motion_channel({4, 1}, "kfs_rz"),
+    make_linear_motion_channel({5, 0}, "spear1"), make_linear_motion_channel({5, 1}, "spear2"),
+    // NOTE: 一旦spear3,4は使わない構成
+    // make_linear_motion_channel({5, 2}, "spear3"),  make_linear_motion_channel({5, 3}, "spear4"),
+    // make_linear_motion_channel({6, 0}, "spear_x"),
+    make_linear_motion_channel({5, 2}, "spear_x"), make_linear_motion_channel({6, 1}, "spear_y")};
   std::vector<AngleMotionChannel> angle_motion_channels_{
     make_angle_motion_channel({3, 2}, "kfs_fyaw"), make_angle_motion_channel({4, 2}, "kfs_ryaw"),
     make_angle_motion_channel({6, 2}, "spear_pitch1"),

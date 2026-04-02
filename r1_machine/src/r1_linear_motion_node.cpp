@@ -317,9 +317,13 @@ public:
   {
     mode_ = MODE_POSITON;
     speed_mode_reason_ = SPEED_MODE_NONE;
+    pos_offset_ = radius_ * current_pos_;
     publish_active_torque_limit();
     publish_hold_current_position();
-    RCLCPP_INFO(this->get_logger(), "Received initialize signal. Switched to position hold mode.");
+    RCLCPP_INFO(
+      this->get_logger(),
+      "Received initialize signal. Updated position offset to %.6f so current position becomes zero.",
+      pos_offset_);
   }
 
   double active_torque_limit() const

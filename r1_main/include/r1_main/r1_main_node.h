@@ -179,6 +179,10 @@ public:
   double kfs_rear_pump_ref_ = 0.0;
   bool kfs_front_valve_ref_ = false;
   bool kfs_rear_valve_ref_ = false;
+  bool spear_u1_valve_ref_ = false;
+  bool spear_d1_valve_ref_ = false;
+  bool spear_u2_valve_ref_ = false;
+  bool spear_d2_valve_ref_ = false;
 
   // sabacan
   bool sabacan_is_ems_ = false;
@@ -229,22 +233,43 @@ public:
 
   // ========== やり ==========
   // spear1
-
+  double SPEAR1_NORMAL_POS = 0.0;
+  double SPEAR1_COLLECT_POS = 0.0;
+  double SPEAR1_MAKE_SPEAR_START_POS = 0.0;
+  double SPEAR1_MAKE_SPEAR_END_POS = 0.0;
   // spear2
-
+  double SPEAR2_NORMAL_POS = 0.0;
+  double SPEAR2_COLLECT_POS = 0.0;
+  double SPEAR2_MAKE_SPEAR_START_POS = 0.0;
+  double SPEAR2_MAKE_SPEAR_END_POS = 0.0;
   // spear3
-
+  double SPEAR3_NORMAL_POS = 0.0;
+  double SPEAR3_COLLECT_POS = 0.0;
+  double SPEAR3_MAKE_SPEAR_START_POS = 0.0;
+  double SPEAR3_MAKE_SPEAR_END_POS = 0.0;
   // spear4
-
+  double SPEAR4_NORMAL_POS = 0.0;
+  double SPEAR4_COLLECT_POS = 0.0;
+  double SPEAR4_MAKE_SPEAR_START_POS = 0.0;
+  double SPEAR4_MAKE_SPEAR_END_POS = 0.0;
   // spear_x
-
+  double SPEAR_X_NORMAL_POS = 0.0;
+  double SPEAR_X_MAKE_SPEAR1_POS = 0.0;
+  double SPEAR_X_MAKE_SPEAR2_POS = 0.0;
+  double SPEAR_X_MAKE_SPEAR3_POS = 0.0;
+  double SPEAR_X_MAKE_SPEAR4_POS = 0.0;
   // spear_y
-
+  double SPEAR_Y_NORMAL_POS = 0.0;
+  double SPEAR_Y_EXPAND_POS = 0.0;
   // spear_roll
-
+  double SPEAR_ROLL_NORMAL_ANGLE = 0.0;
+  double SPEAR_ROLL_VERTICAL_ANGLE = 0.0;
   // spear_pitch1
-
+  double SPEAR_PITCH1_NORMAL_ANGLE = 0.0;
+  double SPEAR_PITCH1_VERTICAL_ANGLE = 0.0;
   // spear_pitch2
+  double SPEAR_PITCH2_NORMAL_ANGLE = 0.0;
+  double SPEAR_PITCH2_VERTICAL_ANGLE = 0.0;
 
   // KFS回収の森林の順番
   std::vector<int> KFS_FOREST_NUMBER;
@@ -333,6 +358,12 @@ public:
   void kfs_rear_pump(double pwm);
   void kfs_front_valve(bool on);
   void kfs_rear_valve(bool on);
+  // やり電磁弁
+  void spear_u1_valve(bool on);
+  void spear_d1_valve(bool on);
+  void spear_u2_valve(bool on);
+  void spear_d2_valve(bool on);
+
   // 動いていたら危険なアクチュエータは停止する
   // 位置制御は止められないので、そのまま
   // TODO: 位置制御系も止められるようにする
