@@ -159,11 +159,11 @@ r1_main_node:
     # spear_pitch1
     # デフォルトで少しだけ位置を上げる
     spear_pitch1_normal_angle: 0.1
-    spear_pitch1_vertical_angle: 1.0
+    spear_pitch1_vertical_angle: 0.1
     # spear_pitch2
     # デフォルトで少しだけ位置を上げる
     spear_pitch2_normal_angle: 0.1
-    spear_pitch2_vertical_angle: 1.0
+    spear_pitch2_vertical_angle: 0.1
     # ========== KFS回収の移動関連 ==========
     # KFSが置かれている場所
     kfs_forest_number: [12, 11]

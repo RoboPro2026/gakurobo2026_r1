@@ -909,7 +909,7 @@ void R1MainNode::manual_mode2_collect_pole_task(void)
 void R1MainNode::manual_mode2_pole(void)
 {
   if (ps4_->is_pushed_up()) {
-    spear_roll(spear_roll_position_ref_ + 0.1);
+    spear_roll(spear_roll_position_ref_ + 0.05);
   }
 
   if (ps4_->is_pushed_right()) {
@@ -917,7 +917,7 @@ void R1MainNode::manual_mode2_pole(void)
   }
 
   if (ps4_->is_pushed_down()) {
-    spear_roll(spear_roll_position_ref_ - 0.1);
+    spear_roll(spear_roll_position_ref_ - 0.05);
   }
 
   if (ps4_->is_pushed_left()) {
@@ -941,19 +941,19 @@ void R1MainNode::manual_mode2_pole(void)
   }
 
   if (ps4_->is_pushed_l1()) {
-    spear_pitch1(spear_pitch1_position_ref_ - 0.1);
+    spear_pitch1(spear_pitch1_position_ref_ - 0.05);
   }
 
   if (ps4_->is_pushed_r1()) {
-    spear_pitch1(spear_pitch1_position_ref_ + 0.1);
+    spear_pitch1(spear_pitch1_position_ref_ + 0.05);
   }
 
   if (ps4_->is_pushed_l2()) {
-    spear_pitch2(spear_pitch2_position_ref_ - 0.1);
+    spear_pitch2(spear_pitch2_position_ref_ - 0.05);
   }
 
   if (ps4_->is_pushed_r2()) {
-    spear_pitch2(spear_pitch2_position_ref_ + 0.1);
+    spear_pitch2(spear_pitch2_position_ref_ + 0.05);
   }
 }
 
@@ -1011,7 +1011,7 @@ void R1MainNode::manual_mode3_make_spear_task(int n)
 void R1MainNode::manual_mode3_spear(void)
 {
   if (ps4_->is_pushed_up()) {
-    spear_roll(spear_roll_position_ref_ + 0.1);
+    spear_roll(spear_roll_position_ref_ + 0.05);
   }
 
   if (ps4_->is_pushed_right()) {
@@ -1019,7 +1019,7 @@ void R1MainNode::manual_mode3_spear(void)
   }
 
   if (ps4_->is_pushed_down()) {
-    spear_roll(spear_roll_position_ref_ - 0.1);
+    spear_roll(spear_roll_position_ref_ - 0.05);
   }
 
   if (ps4_->is_pushed_left()) {
@@ -1043,19 +1043,19 @@ void R1MainNode::manual_mode3_spear(void)
   }
 
   if (ps4_->is_pushed_l1()) {
-    spear_pitch1(spear_pitch1_position_ref_ - 0.1);
+    spear_pitch1(spear_pitch1_position_ref_ - 0.05);
   }
 
   if (ps4_->is_pushed_r1()) {
-    spear_pitch1(spear_pitch1_position_ref_ + 0.1);
+    spear_pitch1(spear_pitch1_position_ref_ + 0.05);
   }
 
   if (ps4_->is_pushed_l2()) {
-    spear_pitch2(spear_pitch2_position_ref_ - 0.1);
+    spear_pitch2(spear_pitch2_position_ref_ - 0.05);
   }
 
   if (ps4_->is_pushed_r2()) {
-    spear_pitch2(spear_pitch2_position_ref_ + 0.1);
+    spear_pitch2(spear_pitch2_position_ref_ + 0.05);
   }
 }
 
@@ -1168,7 +1168,7 @@ void R1MainNode::manual_mode4_fkfs(void)
 
   if (ps4_->is_pushed_square()) {
     // kfs_fyawを微調整（指令値を減少）
-    kfs_fyaw(kfs_fyaw_position_ref_ - 0.1);
+    kfs_fyaw(kfs_fyaw_position_ref_ - 0.05);
   }
 
   if (ps4_->is_pushed_l1()) {
