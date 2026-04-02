@@ -512,8 +512,8 @@ R1MainNode::R1MainNode() : Node("r1_main_node")
   ps4_->set_connection_timeout(ps4_connection_timeout_);
 
   state_machine_ = std::make_shared<StateMachine>();
-  // state_machine_->set_next_state({MainState::MANUAL, ManualSubState::MODE1_DETECT_ORIGIN});
-  state_machine_->set_next_state({MainState::AUTO, AutoSubState::ACT0});
+  state_machine_->set_next_state({MainState::MANUAL, ManualSubState::MODE1_DETECT_ORIGIN});
+  // state_machine_->set_next_state({MainState::AUTO, AutoSubState::ACT0});
   // アクチュエータを初期化
   // init_actuator();
 }
