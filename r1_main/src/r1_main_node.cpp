@@ -1506,7 +1506,7 @@ void R1MainNode::auto_collect_kfs_task(void)
     }
   } else {
     // LEDを設定、白色
-    sabacan_led_ref(50, 50, 50);
+    // sabacan_led_ref(50, 50, 50);
   }
 }
 
@@ -1684,23 +1684,32 @@ void R1MainNode::manual_task(void)
     if (ps4_->is_pushed_ps()) {
       reset_robot();
       publish_r1_machine_initialize();
+      // 最初のLEDは緑にする
+      sabacan_led_ref(0, 0, 50);
     }
     // shareボタンが押されたときはモードを切り替える
     if (ps4_->is_pushed_share()) {
       if (const auto * manual_sub = std::get_if<ManualSubState>(&current_state.sub)) {
         if (*manual_sub == ManualSubState::MODE1_DETECT_ORIGIN) {
           state_machine_->set_next_state({MainState::MANUAL, ManualSubState::MODE2_POLE});
+          sabacan_led_ref(0, 50, 0);
         } else if (*manual_sub == ManualSubState::MODE2_POLE) {
           state_machine_->set_next_state({MainState::MANUAL, ManualSubState::MODE3_SPEAR});
+          sabacan_led_ref(0, 50, 50);
         } else if (*manual_sub == ManualSubState::MODE3_SPEAR) {
+          sabacan_led_ref(50, 0, 0);
           state_machine_->set_next_state({MainState::MANUAL, ManualSubState::MODE4_FKFS});
         } else if (*manual_sub == ManualSubState::MODE4_FKFS) {
+          sabacan_led_ref(50, 0, 50);
           state_machine_->set_next_state({MainState::MANUAL, ManualSubState::MODE5_RKFS});
         } else if (*manual_sub == ManualSubState::MODE5_RKFS) {
+          sabacan_led_ref(50, 50, 0);
           state_machine_->set_next_state({MainState::MANUAL, ManualSubState::MODE6_R2_LIFT});
         } else if (*manual_sub == ManualSubState::MODE6_R2_LIFT) {
+          sabacan_led_ref(50, 50, 50);
           state_machine_->set_next_state({MainState::MANUAL, ManualSubState::MODE7_SPEAR_ATTACK});
         } else if (*manual_sub == ManualSubState::MODE7_SPEAR_ATTACK) {
+          sabacan_led_ref(0, 0, 50);
           state_machine_->set_next_state({MainState::MANUAL, ManualSubState::MODE1_DETECT_ORIGIN});
         }
       }
