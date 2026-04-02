@@ -444,7 +444,6 @@ r1_spear2_node:
     pos_max: 1.0
     # モータが1回転すると100mm進むので、半径は15.9mm
     radius: 0.015915494309189534
-    radius: 0.015
     inverse_motor: false
     use_low_switch: false
     use_high_switch: false
