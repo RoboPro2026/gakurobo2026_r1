@@ -887,15 +887,15 @@ void R1MainNode::manual_mode2_collect_pole_task(void)
     spear_pitch2(SPEAR_PITCH2_VERTICAL_ANGLE);
     step++;
   } else if (step == 3) {
+    spear_y(SPEAR_Y_EXPAND_POS);
+    step++;
+  } else if (step == 4) {
     spear_u1_valve(true);
     spear_d1_valve(true);
     spear_u2_valve(true);
     spear_d2_valve(true);
     spear1(SPEAR1_COLLECT1_POS);
     spear2(SPEAR2_COLLECT1_POS);
-    step++;
-  } else if (step == 4) {
-    spear_y(SPEAR_Y_EXPAND_POS);
     step++;
   } else if (step == 5) {
     spear_d1_valve(false);
@@ -914,6 +914,8 @@ void R1MainNode::manual_mode2_collect_pole_task(void)
     spear_u2_valve(false);
     step++;
   } else if (step == 9) {
+    spear1(SPEAR1_NORMAL_POS);
+    spear2(SPEAR2_NORMAL_POS);
     spear_pitch1(SPEAR_PITCH1_NORMAL_ANGLE);
     spear_pitch2(SPEAR_PITCH2_NORMAL_ANGLE);
     step++;
