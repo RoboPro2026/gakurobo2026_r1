@@ -417,12 +417,16 @@ R1MainNode::R1MainNode() : Node("r1_main_node")
   // ========== やり ==========
   // spear1
   declare_and_get_parameter("spear1_normal_pos", SPEAR1_NORMAL_POS);
-  declare_and_get_parameter("spear1_collect_pos", SPEAR1_COLLECT_POS);
+  declare_and_get_parameter("spear1_collect1_pos", SPEAR1_COLLECT1_POS);
+  declare_and_get_parameter("spear1_collect2_pos", SPEAR1_COLLECT2_POS);
+  declare_and_get_parameter("spear1_collect3_pos", SPEAR1_COLLECT3_POS);
   declare_and_get_parameter("spear1_make_spear_start_pos", SPEAR1_MAKE_SPEAR_START_POS);
   declare_and_get_parameter("spear1_make_spear_end_pos", SPEAR1_MAKE_SPEAR_END_POS);
   // spear2
   declare_and_get_parameter("spear2_normal_pos", SPEAR2_NORMAL_POS);
-  declare_and_get_parameter("spear2_collect_pos", SPEAR2_COLLECT_POS);
+  declare_and_get_parameter("spear2_collect1_pos", SPEAR2_COLLECT1_POS);
+  declare_and_get_parameter("spear2_collect2_pos", SPEAR2_COLLECT2_POS);
+  declare_and_get_parameter("spear2_collect3_pos", SPEAR2_COLLECT3_POS);
   declare_and_get_parameter("spear2_make_spear_start_pos", SPEAR2_MAKE_SPEAR_START_POS);
   declare_and_get_parameter("spear2_make_spear_end_pos", SPEAR2_MAKE_SPEAR_END_POS);
   // spear3
@@ -887,19 +891,33 @@ void R1MainNode::manual_mode2_collect_pole_task(void)
     spear_d1_valve(true);
     spear_u2_valve(true);
     spear_d2_valve(true);
-    spear1(SPEAR1_COLLECT_POS);
-    spear2(SPEAR2_COLLECT_POS);
+    spear1(SPEAR1_COLLECT1_POS);
+    spear2(SPEAR2_COLLECT1_POS);
     step++;
   } else if (step == 4) {
     spear_y(SPEAR_Y_EXPAND_POS);
     step++;
   } else if (step == 5) {
-    spear_u1_valve(false);
     spear_d1_valve(false);
-    spear_u2_valve(false);
     spear_d2_valve(false);
     step++;
   } else if (step == 6) {
+    spear1(SPEAR1_COLLECT2_POS);
+    spear2(SPEAR2_COLLECT2_POS);
+    step++;
+  } else if (step == 6) {
+    spear1(SPEAR1_COLLECT3_POS);
+    spear2(SPEAR2_COLLECT3_POS);
+    step++;
+  } else if (step == 7) {
+    spear_u1_valve(false);
+    spear_u2_valve(false);
+    step++;
+  } else if (step == 8) {
+    spear_pitch1(SPEAR_PITCH1_NORMAL_ANGLE);
+    spear_pitch2(SPEAR_PITCH2_NORMAL_ANGLE);
+    step++;
+  } else if (step == 9) {
     spear_y(SPEAR_Y_NORMAL_POS);
     RCLCPP_INFO(this->get_logger(), "pole collect task completed");
     step = 1;

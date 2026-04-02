@@ -228,12 +228,16 @@ public:
   // ========== やり ==========
   // spear1
   double SPEAR1_NORMAL_POS = 0.0;
-  double SPEAR1_COLLECT_POS = 0.0;
+  double SPEAR1_COLLECT1_POS = 0.0;
+  double SPEAR1_COLLECT2_POS = 0.0;
+  double SPEAR1_COLLECT3_POS = 0.0;
   double SPEAR1_MAKE_SPEAR_START_POS = 0.0;
   double SPEAR1_MAKE_SPEAR_END_POS = 0.0;
   // spear2
   double SPEAR2_NORMAL_POS = 0.0;
-  double SPEAR2_COLLECT_POS = 0.0;
+  double SPEAR2_COLLECT1_POS = 0.0;
+  double SPEAR2_COLLECT2_POS = 0.0;
+  double SPEAR2_COLLECT3_POS = 0.0;
   double SPEAR2_MAKE_SPEAR_START_POS = 0.0;
   double SPEAR2_MAKE_SPEAR_END_POS = 0.0;
   // spear3
