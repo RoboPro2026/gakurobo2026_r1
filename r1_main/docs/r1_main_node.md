@@ -18,7 +18,7 @@
 - 状態遷移を `StateMachine` で管理する。
 - `/cmd_vel` を publish して足回りへ速度指令を送る。
 - 各機構へ位置指令、速度指令、GPIO 指令、原点検出指令を publish する。
-- `/set_mecanum_yaw`、`/set_odometry`、`/initialpose` を publish して姿勢・自己位置を初期化する。
+- `/set_mecanum_yaw`、`/set_swerve_drive_yaw`、`/set_odometry`、`/initialpose` を publish して姿勢・自己位置を初期化する。
 - `PS` ボタン押下時に `/r1_machine_initialize` を publish して、`r1_machine_manage_node` 側の復帰処理を開始する。
 - 自動回収中は `map -> base_link` TF を用いて KFS 回収範囲への進入判定を行う。
 
@@ -93,6 +93,7 @@
 
 - `/cmd_vel` (`geometry_msgs/msg/Twist`)
 - `/set_mecanum_yaw` (`std_msgs/msg/Float64`)
+- `/set_swerve_drive_yaw` (`std_msgs/msg/Float64`)
 - `/set_odometry` (`std_msgs/msg/Float64MultiArray`)
 - `/initialpose` (`geometry_msgs/msg/PoseWithCovarianceStamped`)
 - `/chassis_act_ref` (`std_msgs/msg/Int32`)
@@ -291,6 +292,7 @@
 
 - 各 step カウンタを初期化
 - `/set_mecanum_yaw` に `0.0` を送信
+- `/set_swerve_drive_yaw` に `0.0` を送信
 - `/set_odometry` に `(0.0, 0.0, 0.0)` を送信
 - 速度制御系とポンプ・バルブを停止
 - `is_initialized_ = true`

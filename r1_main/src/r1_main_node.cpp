@@ -340,6 +340,9 @@ R1MainNode::R1MainNode() : Node("r1_main_node")
   // set_mecanum_yawのPublisher
   set_mecanum_yaw_publisher_ =
     this->create_publisher<std_msgs::msg::Float64>("/set_mecanum_yaw", 10);
+  // set_swerve_drive_yawのPublisher
+  set_swerve_drive_yaw_publisher_ =
+    this->create_publisher<std_msgs::msg::Float64>("/set_swerve_drive_yaw", 10);
 
   // set_odometryのPublisher
   set_odometry_publisher_ =
@@ -615,6 +618,14 @@ void R1MainNode::set_mecanum_yaw(double yaw)
   msg.data = yaw;
   set_mecanum_yaw_publisher_->publish(msg);
   RCLCPP_INFO(this->get_logger(), "set mecanum yaw: %f", yaw);
+}
+
+void R1MainNode::set_swerve_drive_yaw(double yaw)
+{
+  std_msgs::msg::Float64 msg;
+  msg.data = yaw;
+  set_swerve_drive_yaw_publisher_->publish(msg);
+  RCLCPP_INFO(this->get_logger(), "set swerve drive yaw: %f", yaw);
 }
 
 void R1MainNode::set_odometry(double x, double y, double yaw)
@@ -1685,6 +1696,7 @@ void R1MainNode::reset_robot(void)
   reset_step();
   // 現在の角度が0度となるようなオフセットを設定する。
   set_mecanum_yaw(0.0);
+  set_swerve_drive_yaw(0.0);
   // 位置は適当
   set_odometry(0.0, 0.0, 0.0);
   stop_actuator();

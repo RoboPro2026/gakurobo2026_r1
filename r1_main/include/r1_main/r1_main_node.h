@@ -116,6 +116,8 @@ public:
   double roll_ = 0.0;
   // set_mecanum_yawのPublisher
   rclcpp::Publisher<std_msgs::msg::Float64>::SharedPtr set_mecanum_yaw_publisher_;
+  // set_swerve_drive_yawのPublisher
+  rclcpp::Publisher<std_msgs::msg::Float64>::SharedPtr set_swerve_drive_yaw_publisher_;
   // set_odometryのPublisher
   rclcpp::Publisher<std_msgs::msg::Float64MultiArray>::SharedPtr set_odometry_publisher_;
   // オドメトリのSubscription
@@ -317,6 +319,7 @@ public:
   // IMU
   void imu_callback(const sensor_msgs::msg::Imu::SharedPtr msg);
   void set_mecanum_yaw(double yaw);
+  void set_swerve_drive_yaw(double yaw);
   // オドメトリ
   void odometry_callback(const nav_msgs::msg::Odometry::SharedPtr msg);
   void set_odometry(double x, double y, double yaw);
