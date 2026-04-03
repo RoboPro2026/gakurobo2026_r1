@@ -358,15 +358,15 @@ public:
       for (int i = 0; i < 4; i++) {
         wheel_v[i] *= scale;
       }
-      RCLCPP_ERROR(
+      RCLCPP_INFO(
         this->get_logger(), "Wheel omega limit exceeded. Scaling down by factor %.3f", scale);
     }
 
     // 計算したステアリング角度がlimitより高いかを確認
-    // ステアリングの角度制限を超えたらクランプしてしまうと、それはそれで危ないので、ERRORを出すだけにする。
+    // ステアリングの角度制限を超えたらクランプしてしまうと、それはそれで危ないので、INFOを出すだけにする。
     for (int i = 0; i < 4; i++) {
       if (std::abs(steer_theta[i]) > steer_angle_limit_) {
-        RCLCPP_ERROR(
+        RCLCPP_INFO(
           this->get_logger(), "steer angle limit exceeded for wheel %d: %.3f rad", i,
           steer_theta[i]);
       }
