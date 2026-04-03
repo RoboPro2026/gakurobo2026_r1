@@ -1993,9 +1993,10 @@ private:
     const BoardInfo & receive, const sabacan_msgs::msg::SabacanRobomasStatus & msg,
     const r1_msgs::msg::Motor & motor_status)
   {
+    update_odometry_feedback(receive, msg);
+
     if (drive_mode_ == DriveMode::Mecanum) {
       update_mecanum_feedback(receive, msg, motor_status);
-      update_odometry_feedback(receive, msg);
       return;
     }
 
@@ -2033,10 +2034,6 @@ private:
   void update_odometry_feedback(
     const BoardInfo & receive, const sabacan_msgs::msg::SabacanRobomasStatus & msg)
   {
-    if (drive_mode_ != DriveMode::Mecanum) {
-      return;
-    }
-
     for (std::size_t i = 0; i < odometry_encoder_channels_.size(); ++i) {
       if (!(receive == odometry_encoder_channels_[i])) {
         continue;
@@ -2281,10 +2278,6 @@ private:
    */
   void publish_odometry_encoder()
   {
-    if (drive_mode_ != DriveMode::Mecanum) {
-      return;
-    }
-
     r1_msgs::msg::OdometryEncoder odom_msg;
     odom_msg.encoder_pos_x = odometry_encoder_pos_values_[X];
     odom_msg.encoder_pos_y = odometry_encoder_pos_values_[Y];

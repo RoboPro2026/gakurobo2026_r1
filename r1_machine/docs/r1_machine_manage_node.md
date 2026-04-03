@@ -22,7 +22,8 @@
 - `MotorRef` / `GpioPwmRef` / `GpioServoRef` を Sabacan 単軸制御 topic へ変換する。
 - 各 motion node から受けた torque limit 指令を、対応する Robomas 基板の `SetRobomasGains` service へ転送する。
 - `sabacan_single_control_node` が単軸の `control_type` を切り替えるときも、同じ `SetRobomasGains` service を利用して Robomas 基板内で原子的に更新する。
-- `mecanum` モードでは足回りの速度指令とオドメトリエンコーダを扱う。
+- `mecanum` モードでは足回りの速度指令を扱う。
+- オドメトリエンコーダは drive mode に関係なく扱う。
 - `swerve` モードでは `/swerve_drive_ref` を 4 輪の wheel / steer 指令へ分解する。
 - 足回り以外の機構チャネルは drive mode に関係なく有効で、Robomas と Robstride の両方を扱える。
 - `SabacanPowerStatus` による非常停止中は、全モータ指令を open-loop 停止へ上書きする。
@@ -85,7 +86,6 @@
 
 - `/mecanum_wheel_speeds_ref` を Sabacan の足回り 4 軸へ変換します。
 - Sabacan の足回り status から `/mecanum_wheel_speeds_feedback` を生成します。
-- Sabacan のエンコーダ status から `/odometry_encoder` を生成します。
 - KFS、展開、ポール、やり、GPIO の既存機構もこのモードで有効です。
 
 ### `swerve`
@@ -97,7 +97,8 @@
 
 補足:
 
-- `swerve` モード時は mecanum のフィードバック publish とオドメトリエンコーダ publish は停止します。
+- `/odometry_encoder` は `mecanum` / `swerve` のどちらでも publish します。
+- `swerve` モード時は mecanum のフィードバック publish だけ停止します。
 - `spear_roll` は Robstride (`/sabacan_robstride_ref2`, `/sabacan_robstride_status2`) 経由で扱います。
 - `MotorRef.control_type = "POSITION"` を Robstride へ流すときは、Robstride の `PP` 位置指令へ変換します。
 
@@ -116,6 +117,7 @@
 
 - `/sabacan_gpio_ref_int0` ... `/sabacan_gpio_ref_int7` (`sabacan_msgs/msg/SabacanGPIORefInt`)
 - `/sabacan_gpio_ref_float0` ... `/sabacan_gpio_ref_float7` (`sabacan_msgs/msg/SabacanGPIORefFloat`)
+- `/odometry_encoder` (`r1_msgs/msg/OdometryEncoder`)
 - `/set_robomas_gains_id0` ... `/set_robomas_gains_id7` (`sabacan_msgs/srv/SetRobomasGains`)
   - `torque_lim` 更新に加えて、単軸 `control_type` 更新にも使用します。
 - `/sabacan_power_reset` (`sabacan_msgs/srv/SabacanReset`)
@@ -129,7 +131,6 @@
   - `/mecanum_wheel_speeds_ref` (`r1_msgs/msg/Mecanum`)
 - **Publish**
   - `/mecanum_wheel_speeds_feedback` (`r1_msgs/msg/Mecanum`)
-  - `/odometry_encoder` (`r1_msgs/msg/OdometryEncoder`)
   - `/debug_mecanum_fl_motor_status`
   - `/debug_mecanum_fr_motor_status`
   - `/debug_mecanum_rl_motor_status`
