@@ -1077,6 +1077,7 @@ void R1MainNode::manual_mode3_spear(void)
   }
 
   if (ps4_->is_pushed_cross()) {
+    spear1(spear1_position_ref_ + 0.4);
   }
 
   if (ps4_->is_pushed_square()) {
