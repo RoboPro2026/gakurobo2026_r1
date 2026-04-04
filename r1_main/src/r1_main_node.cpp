@@ -1021,17 +1021,15 @@ void R1MainNode::manual_mode3_make_spear_task(int n)
     }
     step++;
   } else if (step == 4) {
-    // 一旦人間が手動で押し込むのでコメントアウト
-
-    // if (n == 1) {
-    //   spear1(SPEAR1_MAKE_SPEAR_END_POS);
-    // } else if (n == 2) {
-    //   spear2(SPEAR2_MAKE_SPEAR_END_POS);
-    // } else if (n == 3) {
-    //   spear3(SPEAR3_MAKE_SPEAR_END_POS);
-    // } else if (n == 4) {
-    //   spear4(SPEAR4_MAKE_SPEAR_END_POS);
-    // }
+    if (n == 1) {
+      spear1(SPEAR1_MAKE_SPEAR_END_POS);
+    } else if (n == 2) {
+      spear2(SPEAR2_MAKE_SPEAR_END_POS);
+    } else if (n == 3) {
+      spear3(SPEAR3_MAKE_SPEAR_END_POS);
+    } else if (n == 4) {
+      spear4(SPEAR4_MAKE_SPEAR_END_POS);
+    }
     step++;
   } else if (step == 5) {
     spear1(SPEAR1_NORMAL_POS);
