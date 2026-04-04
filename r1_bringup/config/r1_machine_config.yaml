@@ -881,6 +881,7 @@ sabacan_led_node_id1:
   ros__parameters:
     board_id: 1
     enable_initialize: false
+    emg_blink_period: 1000 # ms
 
 # can1
 sabacan_robstride_node_id1:
