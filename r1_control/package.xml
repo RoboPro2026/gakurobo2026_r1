@@ -13,6 +13,7 @@
   <depend>geometry_msgs</depend>
   <depend>magic_enum</depend>
   <depend>nav_msgs</depend>
+  <depend>rcl_interfaces</depend>
   <depend>r1_msgs</depend>
   <depend>r1_util</depend>
   <depend>rclcpp</depend>

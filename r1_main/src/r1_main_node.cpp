@@ -70,6 +70,19 @@ void R1MainNode::declare_and_get_parameter(const std::string & name, int & value
 }
 
 /**
+ * @brief std::string 型パラメータを declare して取得する。
+ * @param name パラメータ名。
+ * @param value 取得結果の格納先。
+ * @param default_value declare 時の初期値。
+ */
+void R1MainNode::declare_and_get_parameter(
+  const std::string & name, std::string & value, const std::string & default_value)
+{
+  this->declare_parameter<std::string>(name, default_value);
+  this->get_parameter(name, value);
+}
+
+/**
  * @brief mode_status 受信時に PositionAxisInterface の状態を更新する callback を生成する。
  * @param axis 状態を更新する位置制御軸インターフェース。
  * @param actuator_name ログ出力に使用する軸名。
@@ -309,8 +322,9 @@ void R1MainNode::publish_gpio_servo_output(const std::string & name, int ref)
 
 R1MainNode::R1MainNode() : Node("r1_main_node")
 {
+  declare_and_get_parameter("cmd_vel_topic", cmd_vel_topic_, "/cmd_vel");
   // 足回りの速度指令
-  cmd_vel_publisher_ = this->create_publisher<geometry_msgs::msg::Twist>("/cmd_vel", 10);
+  cmd_vel_publisher_ = this->create_publisher<geometry_msgs::msg::Twist>(cmd_vel_topic_, 10);
   // joy
   joy_subscription_ = this->create_subscription<sensor_msgs::msg::Joy>(
     "/joy", 10, std::bind(&R1MainNode::joy_callback, this, std::placeholders::_1));

@@ -14,6 +14,7 @@
 
 - [trajectory_planner](./docs/trajectory_planner.md)
 - [r1_chassis_control_node](./docs/r1_chassis_control_node.md)
+- [r1_chassis_velocity_control_node](./docs/r1_chassis_velocity_control_node.md)
 - [r1_dummy_map_node](./docs/r1_dummy_map_node.md)
 - [r1_dummy_odometry_node](./docs/r1_dummy_odometry_node.md)
 - [r1_laser_filter_node](./docs/r1_laser_filter_node.md)

@@ -92,10 +92,11 @@ public:
 
     declare_and_get_parameter("timer_rate", timer_rate_, 100.0);
     declare_and_get_parameter("visualize_timer_rate", visualize_timer_rate_, 10.0);
+    declare_and_get_parameter("cmd_vel_topic", cmd_vel_topic_, "/cmd_vel");
     control_dt_ = 1.0 / timer_rate_;
 
     // 足回り速度指令値
-    cmd_vel_publisher_ = this->create_publisher<geometry_msgs::msg::Twist>("/cmd_vel", 10);
+    cmd_vel_publisher_ = this->create_publisher<geometry_msgs::msg::Twist>(cmd_vel_topic_, 10);
     // 自己位置
     odometry_subscription_ = this->create_subscription<nav_msgs::msg::Odometry>(
       "/odometry", 10,
@@ -977,6 +978,7 @@ public:
   nav_msgs::msg::Odometry odometry_;
   geometry_msgs::msg::PoseStamped latest_target_pose_;
   geometry_msgs::msg::Twist cmd_vel_;
+  std::string cmd_vel_topic_;
   bool has_target_pose_ = false;
   ChassisAct act_step_ = ChassisAct::NONE;
   ChassisAct prev_act_step_ = ChassisAct::NONE;
