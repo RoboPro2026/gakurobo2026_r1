@@ -189,6 +189,7 @@ public:
   r1_msgs::msg::RobotMove current_robot_move_;
 
   bool is_initialized_ = false;
+  RobotState initial_state_{MainState::MANUAL, ManualSubState::MODE1_DETECT_ORIGIN};
 
   // 指令値関係
   // ========== 足回り ==========

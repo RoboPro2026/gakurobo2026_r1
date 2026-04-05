@@ -41,10 +41,7 @@ std::optional<RobotState> parse_robot_control_mode_parameter(std::string_view va
   return std::nullopt;
 }
 
-std::string robot_control_mode_parameter_help()
-{
-  return "Accepted values: manual, auto.";
-}
+std::string robot_control_mode_parameter_help() { return "Accepted values: manual, auto."; }
 }  // namespace
 
 /**
@@ -531,14 +528,15 @@ R1MainNode::R1MainNode() : Node("r1_main_node")
   std::string robot_control_mode_parameter;
   this->declare_parameter<std::string>("robot_control_mode", "manual");
   this->get_parameter("robot_control_mode", robot_control_mode_parameter);
-  const auto initial_state = parse_robot_control_mode_parameter(robot_control_mode_parameter);
-  if (!initial_state) {
+  const auto resolved_initial_state = parse_robot_control_mode_parameter(robot_control_mode_parameter);
+  if (!resolved_initial_state) {
     RCLCPP_FATAL(
       this->get_logger(), "Invalid robot_control_mode parameter: %s. %s",
       robot_control_mode_parameter.c_str(), robot_control_mode_parameter_help().c_str());
     rclcpp::shutdown();
     return;
   }
+  initial_state_ = *resolved_initial_state;
 
   if (timer_rate_ <= 0.0) {
     RCLCPP_WARN(this->get_logger(), "timer_rate must be positive. Fallback to 100.0 Hz.");
@@ -558,8 +556,8 @@ R1MainNode::R1MainNode() : Node("r1_main_node")
   ps4_->set_connection_timeout(ps4_connection_timeout_);
 
   state_machine_ = std::make_shared<StateMachine>();
-  state_machine_->set_next_state(*initial_state);
-  state_machine_->print_state(*initial_state, "Configured initial state: ");
+  state_machine_->set_next_state(initial_state_);
+  state_machine_->print_state(initial_state_, "Configured initial state: ");
   // アクチュエータを初期化
   // init_actuator();
 }
@@ -1738,6 +1736,9 @@ void R1MainNode::reset_robot(void)
   // 位置は適当
   set_odometry(0.0, 0.0, 0.0);
   stop_actuator();
+  // initial_stateにする
+  state_machine_->set_next_state(initial_state_);
+  state_machine_->print_state(initial_state_, "Reset to initial state: ");
   is_initialized_ = true;
 }
 
