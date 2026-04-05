@@ -542,7 +542,8 @@ R1MainNode::R1MainNode() : Node("r1_main_node")
   std::string robot_control_mode_parameter;
   this->declare_parameter<std::string>("robot_control_mode", "manual");
   this->get_parameter("robot_control_mode", robot_control_mode_parameter);
-  const auto resolved_initial_state = parse_robot_control_mode_parameter(robot_control_mode_parameter);
+  const auto resolved_initial_state =
+    parse_robot_control_mode_parameter(robot_control_mode_parameter);
   if (!resolved_initial_state) {
     RCLCPP_FATAL(
       this->get_logger(), "Invalid robot_control_mode parameter: %s. %s",
@@ -1441,6 +1442,26 @@ void R1MainNode::manual_mode6_r2_lift(void)
       RCLCPP_INFO(this->get_logger(), "r2 lift stop");
       r2_lift_step = 1;
     }
+  }
+
+  if (ps4_->is_pushed_l1()) {
+    // kfs_fxの微調整（指令値を減少）
+    kfs_fx(kfs_fx_position_ref_ - 0.01);
+  }
+
+  if (ps4_->is_pushed_r1()) {
+    // kfs_fxの微調整（指令値を増加）
+    kfs_fx(kfs_fx_position_ref_ + 0.01);
+  }
+
+  if (ps4_->is_pushed_l2()) {
+    // kfs_rxの微調整（指令値を減少）
+    kfs_rx(kfs_rx_position_ref_ - 0.01);
+  }
+
+  if (ps4_->is_pushed_r2()) {
+    // kfs_rxの微調整（指令値を増加）
+    kfs_rx(kfs_rx_position_ref_ + 0.01);
   }
 }
 
