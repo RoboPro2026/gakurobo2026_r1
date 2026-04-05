@@ -11,7 +11,9 @@
 
 #include "r1_main/r1_main_node.h"
 
+#include <cctype>
 #include <chrono>
+#include <optional>
 
 #include "tf2/LinearMath/Matrix3x3.h"
 #include "tf2/LinearMath/Quaternion.h"
@@ -19,6 +21,31 @@
 #include "tf2_geometry_msgs/tf2_geometry_msgs.hpp"
 
 using namespace std::chrono_literals;
+
+namespace
+{
+std::optional<RobotState> parse_robot_control_mode_parameter(std::string_view value)
+{
+  std::string normalized(value);
+  for (auto & c : normalized) {
+    c = static_cast<char>(std::tolower(static_cast<unsigned char>(c)));
+  }
+
+  if (normalized == "manual") {
+    return RobotState{MainState::MANUAL, ManualSubState::MODE1_DETECT_ORIGIN};
+  }
+  if (normalized == "auto") {
+    return RobotState{MainState::AUTO, AutoSubState::ACT0};
+  }
+
+  return std::nullopt;
+}
+
+std::string robot_control_mode_parameter_help()
+{
+  return "Accepted values: manual, auto.";
+}
+}  // namespace
 
 /**
  * @brief double 型パラメータを declare して取得する。
@@ -501,6 +528,18 @@ R1MainNode::R1MainNode() : Node("r1_main_node")
   declare_and_get_parameter("collect_kfs_width", COLLECT_KFS_WIDTH);
   declare_and_get_parameter("collect_kfs_offset", COLLECT_KFS_OFFSET);
 
+  std::string robot_control_mode_parameter;
+  this->declare_parameter<std::string>("robot_control_mode", "manual");
+  this->get_parameter("robot_control_mode", robot_control_mode_parameter);
+  const auto initial_state = parse_robot_control_mode_parameter(robot_control_mode_parameter);
+  if (!initial_state) {
+    RCLCPP_FATAL(
+      this->get_logger(), "Invalid robot_control_mode parameter: %s. %s",
+      robot_control_mode_parameter.c_str(), robot_control_mode_parameter_help().c_str());
+    rclcpp::shutdown();
+    return;
+  }
+
   if (timer_rate_ <= 0.0) {
     RCLCPP_WARN(this->get_logger(), "timer_rate must be positive. Fallback to 100.0 Hz.");
     timer_rate_ = 100.0;
@@ -519,8 +558,8 @@ R1MainNode::R1MainNode() : Node("r1_main_node")
   ps4_->set_connection_timeout(ps4_connection_timeout_);
 
   state_machine_ = std::make_shared<StateMachine>();
-  state_machine_->set_next_state({MainState::MANUAL, ManualSubState::MODE1_DETECT_ORIGIN});
-  // state_machine_->set_next_state({MainState::AUTO, AutoSubState::ACT0});
+  state_machine_->set_next_state(*initial_state);
+  state_machine_->print_state(*initial_state, "Configured initial state: ");
   // アクチュエータを初期化
   // init_actuator();
 }
@@ -1733,7 +1772,7 @@ void R1MainNode::manual_task(void)
     if (ps4_->is_pushed_ps()) {
       reset_robot();
       publish_r1_machine_initialize();
-      // 最初のLEDは緑にする
+      // 最初のLEDは青にする
       sabacan_led_ref(0, 0, 50);
     }
     // shareボタンが押されたときはモードを切り替える

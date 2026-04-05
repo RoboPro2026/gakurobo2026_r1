@@ -83,6 +83,9 @@ r1_chassis_control_node:
     decel_speed: 0.5
 r1_main_node:
   ros__parameters:
+    # 起動モード。manual のとき MANUAL/MODE1_DETECT_ORIGIN、
+    # auto のとき AUTO/ACT0 で開始する
+    robot_control_mode: "manual"
     timer_rate: 25.0
     ps4_connection_timeout: 1.0
     # ========== 足回り ==========

@@ -160,6 +160,7 @@ x,y,theta,v_trans
 ## 起動
 
 bringup では [`r1_bringup.launch.py`](/home/user/ros2_ws/src/gakurobo2026_r1/r1_bringup/launch/r1_bringup.launch.py) から起動されます。
+`robot_control_mode` は `r1_main_node` の起動モードを切り替える引数で、既定値は `manual` です。
 
 実機モード:
 

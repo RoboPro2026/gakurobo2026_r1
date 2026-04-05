@@ -6,9 +6,12 @@
 
 ## 現在の実装で重要な点
 
-- 起動時の next state は `MANUAL / MODE1_DETECT_ORIGIN` です。
+- 起動時の next state はパラメータ `robot_control_mode` で決まります。
+  - 既定値は `manual`
+  - `robot_control_mode:=manual` のとき `MANUAL / MODE1_DETECT_ORIGIN`
+  - `robot_control_mode:=auto` のとき `AUTO / ACT0`
 - `MainState` には `IDLE` / `EMERGENCY` / `MANUAL` / `AUTO` がありますが、現在のコードには main state を切り替える入力がありません。
-- そのため通常起動では `MANUAL` しか入りません。`AUTO` を使うにはコンストラクタの `set_next_state()` を変更する必要があります。
+- そのため通常運用では `MANUAL` しか入りません。`AUTO` を使う場合は `robot_control_mode:=auto` を指定して起動します。
 - `PS` ボタンで `reset_robot()` と `/r1_machine_initialize` publish を行うまで、`is_initialized_ == false` のため各 mode の実動作は走りません。
 - `MODE2_POLE` / `MODE3_SPEAR` / `MODE4_FKFS` / `MODE7_SPEAR_ATTACK` は、現状ほとんどの処理がコメントアウトされています。
 
@@ -48,7 +51,9 @@
 
 ### 現在の実行上の挙動
 
-- 起動時は `MANUAL / MODE1_DETECT_ORIGIN`
+- 起動時は `robot_control_mode` パラメータに応じた初期状態を使用
+- `robot_control_mode:=manual` なら `MANUAL / MODE1_DETECT_ORIGIN`
+- `robot_control_mode:=auto` なら `AUTO / ACT0`
 - `share` ボタンで `MANUAL` 内の sub state を次の順で巡回
   - `MODE1_DETECT_ORIGIN`
   - `MODE2_POLE`
@@ -58,8 +63,6 @@
   - `MODE6_R2_LIFT`
   - `MODE7_SPEAR_ATTACK`
   - `MODE1_DETECT_ORIGIN`
-- `AUTO` 用コードはありますが、通常の起動経路では main state が `AUTO` へ遷移しません。
-
 ## 主なトピック
 
 ### Subscribe
@@ -302,6 +305,7 @@
 ## パラメータ
 
 実際の bringup 設定は [`r1_machine_config.yaml`](/home/user/ros2_ws/src/gakurobo2026_r1/r1_bringup/config/r1_machine_config.yaml) の `r1_main_node` セクションにあります。
+bringup 起動時は [`r1_bringup.launch.py`](/home/user/ros2_ws/src/gakurobo2026_r1/r1_bringup/launch/r1_bringup.launch.py) の `robot_control_mode` 引数を `r1_main_node` に渡します。
 
 ### 基本
 
@@ -366,12 +370,29 @@
 
 - 通常の bringup では [`r1_bringup.launch.py`](/home/user/ros2_ws/src/gakurobo2026_r1/r1_bringup/launch/r1_bringup.launch.py) から起動します。
 - パラメータは [`r1_machine_config.yaml`](/home/user/ros2_ws/src/gakurobo2026_r1/r1_bringup/config/r1_machine_config.yaml) から読み込みます。
+- `robot_control_mode:=manual` なら `MANUAL / MODE1_DETECT_ORIGIN`、`robot_control_mode:=auto` なら `AUTO / ACT0` で起動します。
 
 ## 起動例
 
+bringup から手動機で起動:
+
 ```bash
 source ~/ros2_ws/install/setup.bash
-ros2 run r1_main r1_main_node --ros-args -p zone:=blue
+ros2 launch r1_bringup r1_bringup.launch.py robot_control_mode:=manual
+```
+
+bringup から自動機で起動:
+
+```bash
+source ~/ros2_ws/install/setup.bash
+ros2 launch r1_bringup r1_bringup.launch.py robot_control_mode:=auto
+```
+
+単体起動:
+
+```bash
+source ~/ros2_ws/install/setup.bash
+ros2 run r1_main r1_main_node --ros-args -p zone:=blue -p robot_control_mode:=manual
 ```
 
 ## デバッグ例

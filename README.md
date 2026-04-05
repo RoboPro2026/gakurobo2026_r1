@@ -46,6 +46,8 @@ ROS 2 の launch ファイルとパラメータファイルを管理する packa
   - 実機用の通常起動
 - [`r1_machine_config.yaml`](/home/user/ros2_ws/src/gakurobo2026_r1/r1_bringup/config/r1_machine_config.yaml)
   - R1 全体で使う主要パラメータ
+- [`r1_bringup/README.md`](/home/user/ros2_ws/src/gakurobo2026_r1/r1_bringup/README.md)
+  - launch ファイル群のドキュメント一覧
 
 ### `r1_main`
 
@@ -199,6 +201,8 @@ rosdep install -i --from-paths urg_node2
 ## ROS 2 の起動
 
 `r1_bringup.launch.py` は `use_sim` 引数で、実機モードとシミュレーションモードを切り替えられます。  
+`robot_control_mode` 引数で `r1_main_node` の起動モードを切り替えられ、既定値は `manual` です。  
+`robot_control_mode:=manual` のとき `MANUAL/MODE1_DETECT_ORIGIN`、`robot_control_mode:=auto` のとき `AUTO/ACT0` で起動します。  
 実機モードではさらに `use_lidar` 引数で、LiDAR を使う構成と使わない構成を切り替えられます。  
 `zone` は現在 [`r1_bringup.launch.py`](/home/user/ros2_ws/src/gakurobo2026_r1/r1_bringup/launch/r1_bringup.launch.py) 内で設定しています。
 
@@ -232,7 +236,15 @@ source install/setup.bash
 ros2 launch r1_bringup r1_bringup.launch.py use_sim:=false use_lidar:=false
 ```
 
-`use_sim:=false` と `use_lidar:=true` はデフォルトなので、LiDAR を使う通常の実機起動は以下でも同じです。
+自動機として起動したい場合は `robot_control_mode:=auto` を付けます。
+
+```bash
+cd ~/ros2_ws
+source install/setup.bash
+ros2 launch r1_bringup r1_bringup.launch.py use_sim:=false use_lidar:=true robot_control_mode:=auto
+```
+
+`use_sim:=false` と `use_lidar:=true` と `robot_control_mode:=manual` はデフォルトなので、LiDAR を使う通常の手動機起動は以下でも同じです。
 
 ```bash
 ros2 launch r1_bringup r1_bringup.launch.py
@@ -250,6 +262,8 @@ cd ~/ros2_ws
 source install/setup.bash
 ros2 launch r1_bringup r1_bringup.launch.py use_sim:=true
 ```
+
+シミュレーションでも自動機として起動する場合は `robot_control_mode:=auto` を追加します。
 
 ## foxgloveを使うときは
 foxgloveとはROS 2のトピックを可視化できる便利なツールです。  
@@ -274,6 +288,7 @@ python src/gakurobo2026_r1/src/trajectory_planner_gui.py
 
 主なドキュメント:
 
+- [`r1_bringup/README.md`](/home/user/ros2_ws/src/gakurobo2026_r1/r1_bringup/README.md)
 - [`r1_main_node.md`](/home/user/ros2_ws/src/gakurobo2026_r1/r1_main/docs/r1_main_node.md)
 - [`r1_machine/README.md`](/home/user/ros2_ws/src/gakurobo2026_r1/r1_machine/README.md)
 - [`r1_control/README.md`](/home/user/ros2_ws/src/gakurobo2026_r1/r1_control/README.md)

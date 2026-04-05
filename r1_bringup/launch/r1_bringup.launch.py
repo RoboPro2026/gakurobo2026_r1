@@ -26,10 +26,12 @@ def generate_launch_description():
     pkg_dir = get_package_share_directory("r1_bringup")
     use_sim = LaunchConfiguration("use_sim")
     use_lidar = LaunchConfiguration("use_lidar")
+    robot_control_mode = LaunchConfiguration("robot_control_mode")
 
     # パラメータファイルのフルパスを作成
     param_file = os.path.join(pkg_dir, "config", "r1_machine_config.yaml")
     zone_parameter = {"zone": "blue"}
+    robot_control_mode_parameter = {"robot_control_mode": robot_control_mode}
 
     ps4_node = Node(
         package="joy",
@@ -50,7 +52,7 @@ def generate_launch_description():
         package="r1_main",
         executable="r1_main_node",
         name="r1_main_node",
-        parameters=[param_file, zone_parameter],
+        parameters=[param_file, zone_parameter, robot_control_mode_parameter],
         arguments=["--ros-args", "--log-level", "info"],
     )
 
@@ -559,6 +561,11 @@ def generate_launch_description():
         [
             DeclareLaunchArgument("use_sim", default_value="false"),
             DeclareLaunchArgument("use_lidar", default_value="true"),
+            DeclareLaunchArgument(
+                "robot_control_mode",
+                default_value="manual",
+                description="Initial mode for r1_main_node: manual or auto",
+            ),
             # TimerAction(period=0.0, actions=[foxglove_node]),
             TimerAction(period=0.0, actions=common_nodes),
             TimerAction(
