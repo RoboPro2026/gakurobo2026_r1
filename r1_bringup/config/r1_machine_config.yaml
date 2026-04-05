@@ -4,6 +4,7 @@ r1_chassis_control_node:
     act_filebase: "src/gakurobo2026_r1/data/"
     timer_rate: 100.0
     visualize_timer_rate: 10.0
+    cmd_vel_topic: "/cmd_vel_target"
     # ========== 足回りの軌道追従に関するパラメータ ==========
     # trueのときはmap座標系を使用してtf変換を行う。falseのときはodom座標系を使用する
     # trueのときはLidarを使用し、falseのときはLidarは使用せずに制御する
@@ -81,15 +82,40 @@ r1_chassis_control_node:
     collect_kfs_offset: 0.6
     # 減速時の速度
     decel_speed: 0.5
+r1_chassis_velocity_control_node:
+  ros__parameters:
+    # true のとき input_cmd_vel_topic と /odometry から PID 補正した output_cmd_vel_topic を出す
+
+    # ステアが安定しなかったので、一旦falseにする
+    enable_velocity_pid: false
+    control_rate: 100.0
+    input_cmd_vel_topic: "/cmd_vel_target"
+    output_cmd_vel_topic: "/cmd_vel"
+    kp_vx: 0.35
+    ki_vx: 0.015
+    kd_vx: 0.0
+    integral_limit_vx: 0.2
+    output_limit_vx: 1.0
+    kp_vy: 0.35
+    ki_vy: 0.015
+    kd_vy: 0.0
+    integral_limit_vy: 0.2
+    output_limit_vy: 1.0
+    kp_omega: 0.35
+    ki_omega: 0.015
+    kd_omega: 0.0
+    integral_limit_omega: 0.2
+    output_limit_omega: 1.0
 r1_main_node:
   ros__parameters:
     # 起動モード。manual のとき MANUAL/MODE1_DETECT_ORIGIN、
     # auto のとき AUTO/ACT0 で開始する
     robot_control_mode: "manual"
+    cmd_vel_topic: "/cmd_vel_target"
     timer_rate: 25.0
     ps4_connection_timeout: 1.0
     # ========== 足回り ==========
-    chassis_max_velocity: 0.4
+    chassis_max_velocity: 0.6
     chassis_max_omega: 0.5
     # ========== KFS回収 ==========
     # fx

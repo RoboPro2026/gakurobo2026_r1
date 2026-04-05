@@ -143,6 +143,7 @@ public:
   std::shared_ptr<tf2_ros::TransformListener> tf_listener_;
   // 速度指令値
   geometry_msgs::msg::Twist target_vel_;
+  std::string cmd_vel_topic_ = "/cmd_vel";
   // オドメトリ
   nav_msgs::msg::Odometry odometry_;
   // chassis_act
@@ -311,6 +312,8 @@ public:
   void declare_and_get_parameter(
     const std::string & name, double & value, double default_value = 0.0);
   void declare_and_get_parameter(const std::string & name, int & value, int default_value = 0);
+  void declare_and_get_parameter(
+    const std::string & name, std::string & value, const std::string & default_value = "");
   // sabacan
   void sabacan_power_ref(bool is_ems);
   void sabacan_led_ref(uint8_t r, uint8_t g, uint8_t b);

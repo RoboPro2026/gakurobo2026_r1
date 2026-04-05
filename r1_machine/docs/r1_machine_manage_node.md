@@ -29,7 +29,7 @@
 - `SabacanPowerStatus` による非常停止中は、全モータ指令を open-loop 停止へ上書きする。
 - 非常停止解除後は `/r1_machine_initialize` 受信まで open-loop 停止を継続する。
 - `/r1_machine_initialize` を受けると、open-loop 中に一度 initialize を送り、その後 Sabacan reset を順番に実行する。
-- reset 完了後は linear / angle motion node へ initialize 信号を再度中継し、`swerve` モードでは `/swerve_drive_initialize` も再度 publish する。
+- reset 完了後は linear / angle motion node へ initialize 信号を再度中継し、`swerve` モードでは `/swerve_drive_initialize`、速度補正用には `/chassis_velocity_control_initialize` も再度 publish する。
 - post-reset initialize の送信後は一定時間だけ open-loop 停止を維持し、その後に通常制御へ戻す。
 
 ## 初期化と非常停止
@@ -38,10 +38,11 @@
 
 - `/r1_machine_initialize` を受けると、`r1_machine_manage_node` は Sabacan reset シーケンスを開始します。
 - reset シーケンス中は通常指令を通さず、全モータ指令を open-loop 停止へ強制します。
-- reset 開始直前に、open-loop 停止のまま linear motion node、angle motion node、`swerve` モード用 initialize を先に 1 回 publish します。
+- reset 開始直前に、open-loop 停止のまま linear motion node、angle motion node、`swerve` モード用 initialize、`/chassis_velocity_control_initialize` を先に 1 回 publish します。
 - reset service は `power -> robomas -> gpio -> led` の順に呼び出します。
 - reset 完了後、linear motion node と angle motion node へ initialize をもう一度中継します。
 - `swerve` モードでは、そのとき `/swerve_drive_initialize` ももう一度 1 回 publish します。
+- あわせて `/chassis_velocity_control_initialize` ももう一度 1 回 publish し、`r1_chassis_velocity_control_node` の PID 内部状態をリセットします。
 - 2 回目の initialize 後は `post_reset_initialize_delay_sec` のあいだ open-loop 停止を維持し、その後に通常制御へ戻します。
 - 非常停止由来ではない通常の initialize でも、Sabacan reset と motion node initialize は実行されます。
 
@@ -69,6 +70,7 @@
 - reset シーケンス中も open-loop 停止は維持されます。
 - reset 完了後に、linear motion node と angle motion node へ initialize をもう一度中継します。
 - `swerve` モードでは、あわせて `/swerve_drive_initialize` をもう一度 publish し、`r1_swerve_drive_node` の steer 角キャッシュを現在の motor status に同期させます。
+- `/chassis_velocity_control_initialize` も再送し、`r1_chassis_velocity_control_node` の PID 内部状態をリセットします。
 - その後、`post_reset_initialize_delay_sec` だけ待ってから `emergency_reinit_required_` を解除し、通常の motor routing を再開します。
 
 ### 状態遷移の要点
@@ -150,6 +152,7 @@
   - `/swerve_rr_steer_motor_ref` (`r1_msgs/msg/MotorRef`)
 - **Publish**
   - `/swerve_drive_initialize` (`std_msgs/msg/Empty`)
+  - `/chassis_velocity_control_initialize` (`std_msgs/msg/Empty`)
   - `/swerve_fr_wheel_motor_status` (`r1_msgs/msg/Motor`)
   - `/swerve_fl_wheel_motor_status` (`r1_msgs/msg/Motor`)
   - `/swerve_rl_wheel_motor_status` (`r1_msgs/msg/Motor`)

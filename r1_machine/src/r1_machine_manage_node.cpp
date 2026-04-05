@@ -907,6 +907,8 @@ private:
     initialize_swerve_channels();
     swerve_drive_initialize_publisher_ =
       this->create_publisher<std_msgs::msg::Empty>("/swerve_drive_initialize", 10);
+    chassis_velocity_control_initialize_publisher_ =
+      this->create_publisher<std_msgs::msg::Empty>("/chassis_velocity_control_initialize", 10);
 
     mecanum_wheel_speeds_ref_subscription_ = this->create_subscription<r1_msgs::msg::Mecanum>(
       "/mecanum_wheel_speeds_ref", 10,
@@ -1126,6 +1128,10 @@ private:
     if (swerve_drive_initialize_publisher_) {
       std_msgs::msg::Empty msg;
       swerve_drive_initialize_publisher_->publish(msg);
+    }
+    if (chassis_velocity_control_initialize_publisher_) {
+      std_msgs::msg::Empty msg;
+      chassis_velocity_control_initialize_publisher_->publish(msg);
     }
     publish_initialize_channels(linear_motion_channels_);
     publish_initialize_channels(angle_motion_channels_);
@@ -2431,6 +2437,7 @@ private:
   PublisherPtr<r1_msgs::msg::Mecanum> mecanum_wheel_speeds_feedback_publisher_;
   PublisherPtr<r1_msgs::msg::OdometryEncoder> odometry_encoder_publisher_;
   PublisherPtr<std_msgs::msg::Empty> swerve_drive_initialize_publisher_;
+  PublisherPtr<std_msgs::msg::Empty> chassis_velocity_control_initialize_publisher_;
 
   // 一定周期 publish のために保持する最新値キャッシュ。
   std::vector<double> mecanum_wheel_speeds_feedback_{0.0, 0.0, 0.0, 0.0};

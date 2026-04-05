@@ -19,7 +19,7 @@
 
 - `/joy` を受けて PS4 入力状態を更新する。
 - 状態遷移を `StateMachine` で管理する。
-- `/cmd_vel` を publish して足回りへ速度指令を送る。
+- `cmd_vel_topic` で指定した topic に速度指令を publish して足回りへ送る。
 - 各機構へ位置指令、速度指令、GPIO 指令、原点検出指令を publish する。
 - `/set_mecanum_yaw`、`/set_swerve_drive_yaw`、`/set_odometry`、`/initialpose` を publish して姿勢・自己位置を初期化する。
 - `PS` ボタン押下時に `/r1_machine_initialize` を publish して、`r1_machine_manage_node` 側の復帰処理を開始する。
@@ -94,7 +94,7 @@
 
 ### Publish
 
-- `/cmd_vel` (`geometry_msgs/msg/Twist`)
+- `cmd_vel_topic` (`geometry_msgs/msg/Twist`)
 - `/set_mecanum_yaw` (`std_msgs/msg/Float64`)
 - `/set_swerve_drive_yaw` (`std_msgs/msg/Float64`)
 - `/set_odometry` (`std_msgs/msg/Float64MultiArray`)
@@ -191,7 +191,7 @@
 ### 共通操作
 
 - 左スティック / 右スティック
-  - `MANUAL` 中はそのまま `/cmd_vel` へ反映します。
+  - `MANUAL` 中はそのまま `cmd_vel_topic` へ反映します。
   - `AUTO` 中も `chassis_act_status_ == NONE` の間は手動速度指令を送れます。
 - `options`
   - `sabacan_power_ref(!sabacan_is_ems_)` を送り、電源基板の EMS をトグルします。
@@ -311,6 +311,7 @@ bringup 起動時は [`r1_bringup.launch.py`](/home/user/ros2_ws/src/gakurobo202
 
 - `zone`
   - `blue` または `red`
+- `cmd_vel_topic`
 - `timer_rate`
 - `ps4_connection_timeout`
 
@@ -370,6 +371,7 @@ bringup 起動時は [`r1_bringup.launch.py`](/home/user/ros2_ws/src/gakurobo202
 
 - 通常の bringup では [`r1_bringup.launch.py`](/home/user/ros2_ws/src/gakurobo2026_r1/r1_bringup/launch/r1_bringup.launch.py) から起動します。
 - パラメータは [`r1_machine_config.yaml`](/home/user/ros2_ws/src/gakurobo2026_r1/r1_bringup/config/r1_machine_config.yaml) から読み込みます。
+- bringup では `cmd_vel_topic` を `/cmd_vel_target` に設定し、[`r1_chassis_velocity_control_node`](/home/user/ros2_ws/src/gakurobo2026_r1/r1_control/docs/r1_chassis_velocity_control_node.md) を経由して最終的な `/cmd_vel` に変換されます。
 - `robot_control_mode:=manual` なら `MANUAL / MODE1_DETECT_ORIGIN`、`robot_control_mode:=auto` なら `AUTO / ACT0` で起動します。
 
 ## 起動例

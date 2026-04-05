@@ -136,6 +136,8 @@ Hokuyo LiDAR 用の package です。
   - ロボット全体の進行管理
 - `r1_chassis_control_node`
   - 移動制御
+- `r1_chassis_velocity_control_node`
+  - 車体速度のフィードバック補正
 - `r1_swerve_drive_node`
   - 独ステ計算
 - `r1_odometry_node`

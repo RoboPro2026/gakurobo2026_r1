@@ -30,6 +30,7 @@ find_package(tf2 REQUIRED)
 find_package(tf2_geometry_msgs REQUIRED)
 find_package(tf2_ros REQUIRED)
 find_package(nav_msgs REQUIRED)
+find_package(rcl_interfaces REQUIRED)
 find_package(r1_msgs REQUIRED)
 find_package(r1_util REQUIRED)
 find_package(rclcpp REQUIRED)
@@ -45,6 +46,7 @@ set(COMMON_INCLUDE_DIRS
 )
 
 add_executable(r1_chassis_control_node src/r1_chassis_control_node.cpp)
+add_executable(r1_chassis_velocity_control_node src/r1_chassis_velocity_control_node.cpp)
 add_executable(r1_dummy_map_node src/r1_dummy_map_node.cpp)
 add_executable(r1_dummy_odometry_node src/r1_dummy_odometry_node.cpp)
 add_executable(r1_laser_filter_node src/r1_laser_filter_node.cpp)
@@ -65,6 +67,14 @@ ament_target_dependencies(r1_chassis_control_node
   tf2_geometry_msgs
   tf2_ros
   visualization_msgs
+)
+
+ament_target_dependencies(r1_chassis_velocity_control_node
+  geometry_msgs
+  nav_msgs
+  rcl_interfaces
+  rclcpp
+  std_msgs
 )
 
 ament_target_dependencies(r1_dummy_map_node
@@ -108,6 +118,7 @@ ament_target_dependencies(test_trapezoid_node
 )
 
 target_link_libraries(r1_chassis_control_node r1_util::r1_util magic_enum::magic_enum)
+target_link_libraries(r1_chassis_velocity_control_node r1_util::r1_util)
 target_link_libraries(r1_dummy_odometry_node r1_util::r1_util)
 target_link_libraries(r1_laser_filter_node r1_util::r1_util)
 target_link_libraries(test_minimum_jerk_node r1_util::r1_util)
@@ -122,6 +133,7 @@ target_link_libraries(trajectory_planner
 )
 
 target_include_directories(r1_chassis_control_node PUBLIC ${COMMON_INCLUDE_DIRS})
+target_include_directories(r1_chassis_velocity_control_node PUBLIC ${COMMON_INCLUDE_DIRS})
 target_include_directories(r1_dummy_map_node PUBLIC ${COMMON_INCLUDE_DIRS})
 target_include_directories(r1_dummy_odometry_node PUBLIC ${COMMON_INCLUDE_DIRS})
 target_include_directories(r1_laser_filter_node PUBLIC ${COMMON_INCLUDE_DIRS})
@@ -133,6 +145,7 @@ target_include_directories(trajectory_planner PUBLIC ${COMMON_INCLUDE_DIRS})
 
 install(TARGETS
   r1_chassis_control_node
+  r1_chassis_velocity_control_node
   r1_dummy_map_node
   r1_dummy_odometry_node
   r1_laser_filter_node
