@@ -86,25 +86,25 @@ r1_chassis_velocity_control_node:
   ros__parameters:
     # true のとき input_cmd_vel_topic と /odometry から PID 補正した output_cmd_vel_topic を出す
 
-    # ステアが安定しなかったので、一旦falseにする
-    enable_velocity_pid: false
+   # メカナムのときはtrue,ステアのときは安定しなかったのでfalse
+    enable_velocity_pid: true
     control_rate: 100.0
     input_cmd_vel_topic: "/cmd_vel_target"
     output_cmd_vel_topic: "/cmd_vel"
-    kp_vx: 0.35
-    ki_vx: 0.015
+    kp_vx: 0.6
+    ki_vx: 0.04
     kd_vx: 0.0
-    integral_limit_vx: 0.2
+    integral_limit_vx: 0.35
     output_limit_vx: 1.0
-    kp_vy: 0.35
-    ki_vy: 0.015
+    kp_vy: 0.6
+    ki_vy: 0.04
     kd_vy: 0.0
-    integral_limit_vy: 0.2
+    integral_limit_vy: 0.35
     output_limit_vy: 1.0
-    kp_omega: 0.35
-    ki_omega: 0.015
+    kp_omega: 0.6
+    ki_omega: 0.04
     kd_omega: 0.0
-    integral_limit_omega: 0.2
+    integral_limit_omega: 0.35
     output_limit_omega: 1.0
 r1_main_node:
   ros__parameters:
