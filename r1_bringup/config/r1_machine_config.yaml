@@ -85,25 +85,27 @@ r1_chassis_control_node:
 r1_chassis_velocity_control_node:
   ros__parameters:
     # true のとき input_cmd_vel_topic と /odometry から PID 補正した output_cmd_vel_topic を出す
+
+    # ステアが安定しなかったので、一旦falseにする
     enable_velocity_pid: false
     control_rate: 100.0
     input_cmd_vel_topic: "/cmd_vel_target"
     output_cmd_vel_topic: "/cmd_vel"
-    kp_vx: 0.3
-    ki_vx: 0.3
-    kd_vx: 0.3
-    integral_limit_vx: 0.5
+    kp_vx: 0.35
+    ki_vx: 0.015
+    kd_vx: 0.0
+    integral_limit_vx: 0.2
     output_limit_vx: 1.0
-    kp_vy: 0.3
-    ki_vy: 0.3
-    kd_vy: 0.3
-    integral_limit_vy: 0.5
+    kp_vy: 0.35
+    ki_vy: 0.015
+    kd_vy: 0.0
+    integral_limit_vy: 0.2
     output_limit_vy: 1.0
-    kp_omega: 0.1
-    ki_omega: 0.1
-    kd_omega: 0.1
-    integral_limit_omega: 0.5
-    output_limit_omega: 2.0
+    kp_omega: 0.35
+    ki_omega: 0.015
+    kd_omega: 0.0
+    integral_limit_omega: 0.2
+    output_limit_omega: 1.0
 r1_main_node:
   ros__parameters:
     # 起動モード。manual のとき MANUAL/MODE1_DETECT_ORIGIN、
@@ -113,7 +115,7 @@ r1_main_node:
     timer_rate: 25.0
     ps4_connection_timeout: 1.0
     # ========== 足回り ==========
-    chassis_max_velocity: 0.4
+    chassis_max_velocity: 0.6
     chassis_max_omega: 0.5
     # ========== KFS回収 ==========
     # fx
