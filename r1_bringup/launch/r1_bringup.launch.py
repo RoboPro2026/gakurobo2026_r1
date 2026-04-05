@@ -74,13 +74,13 @@ def generate_launch_description():
 
     # ========== 足回り ==========
     # メカナムホイールの指令値を知りたいときはinfoにする
-    # r1_mecanum_node = Node(
-    #     package="r1_machine",
-    #     executable="r1_mecanum_node",
-    #     name="r1_mecanum_node",  # YAMLファイル内のノード名と一致させる
-    #     parameters=[param_file],
-    #     arguments=["--ros-args", "--log-level", "warn"],
-    # )
+    r1_mecanum_node = Node(
+        package="r1_machine",
+        executable="r1_mecanum_node",
+        name="r1_mecanum_node",  # YAMLファイル内のノード名と一致させる
+        parameters=[param_file],
+        arguments=["--ros-args", "--log-level", "warn"],
+    )
 
     # サーボの指令値を知りたいときはinfoにする
     r1_swerve_drive_node = Node(
@@ -506,8 +506,8 @@ def generate_launch_description():
         # 次にsabacan_single_control以外のノードを起動
         r1_chassis_control_node,
         r1_chassis_velocity_control_node,
-        # r1_mecanum_node,
-        r1_swerve_drive_node,
+        r1_mecanum_node,
+        # r1_swerve_drive_node,
         ps4_node,
         r1_kfs_fx_node,
         r1_kfs_fz_node,

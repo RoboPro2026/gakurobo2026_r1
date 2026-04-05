@@ -245,21 +245,21 @@ r1_main_node:
 
 
 # -------- 足回り ----------
-# r1_mecanum_node:
-#   ros__parameters:
-#   #   # 50mm
-#     wheel_radius: 0.05
-#   #   # 470mm
-#     robot_length: 0.470
-#   #   # 484mm
-#     robot_width: 0.484
-#     speed_limit: 100.0
-#   # モーターの出力は歯数が32（モーター側）と歯数が64（ホイール側）で組みあわせているので
-#   #   # 減速比は32 / 64 = 0.5
-#   #   # ギア比で割った値がモーターの出力となる
-#     gear_ratio: 0.5
-#     motor_inverse: [true, false, false, true]
-#     use_imu: true
+r1_mecanum_node:
+  ros__parameters:
+  #   # 50mm
+    wheel_radius: 0.05
+  #   # 800mm
+    robot_length: 0.8
+  #   # 800mm
+    robot_width: 0.8
+    speed_limit: 100.0
+  # モーターの出力は歯数が32（モーター側）と歯数が64（ホイール側）で組みあわせているので
+  #   # 減速比は32 / 64 = 0.5
+  #   # ギア比で割った値がモーターの出力となる
+    gear_ratio: 0.5
+    motor_inverse: [true, false, false, true]
+    use_imu: true
 r1_swerve_drive_node:
   ros__parameters:
     robot_length: 0.8
@@ -658,7 +658,8 @@ r1_spear_pitch2_node:
 r1_machine_manage_node:
   ros__parameters:
     # 足回りの制御方式。"mecanum" または "swerve"
-    drive_mode: "swerve"
+    # drive_mode: "swerve"
+    drive_mode: "mecanum"
     # シャーシ系フィードバックの publish_rate
     chassis_timer_rate: 10.0
     odometry_encoder_timer_rate: 100.0
@@ -676,42 +677,43 @@ bno086_node:
     port: "/dev/serial/by-id/usb-FTDI_FT231X_USB_UART_D30FJEIM-if00-port0"
 
 # 足回り メカナム
-# sabacan_robomasv2_node_id1:
-#   ros__parameters:
-#     board_id: 1
-#     enable_initialize: false
-#     publish_timer_rate: 100.0
-#     motor_type: ["VESC", "VESC", "VESC", "VESC"]
-#     control_type: ["VELOCITY", "VELOCITY", "VELOCITY", "VELOCITY"]
-#     # モータ番号0と1はABS_SPD,ABS_POSをフィードバック
-#     # モータ番号2と3はフィードバックなし
-#     monitor_reg1: [0x0C00000000000000, 0x0C00000000000000, 0x0, 0x0]
-#     # モータ番号0と1はMOTOR_STATE,ABS_SPD,ABS_POSをフィードバック
-#     # モータ番号2と3はMOTOR_STATEのみフィードバック
-#     # monitor_reg1: [0x0C00000000000002, 0x0C00000000000002, 0x2, 0x2]
-#     # VESC_CURRENT + VESC_ERPMをフィードバック
-#     monitor_reg2: [0x18, 0x18, 0x18, 0x18]
-#     monitor_period: 10
-# 独ステホイール
 sabacan_robomasv2_node_id1:
   ros__parameters:
     board_id: 1
-    # 起動時に基板初期化シーケンスを流すかどうか。独ステは初期化を行わないとおかしくなるのでtrueにする。
-    # enable_initialize: true
     enable_initialize: false
-    # status publish 周期 [Hz]
     publish_timer_rate: 100.0
-    # 接続されているモータ種別
-    # board1: 0=右前タイヤ, 1=左前タイヤ, 2=左後タイヤ, 3=右後タイヤ
     motor_type: ["VESC", "VESC", "VESC", "VESC"]
-    # 制御モード。安全のため初期値はCURRENTにする
     control_type: ["CURRENT", "CURRENT", "CURRENT", "CURRENT"]
-    # VESCの極数
-    vesc_pole: [28, 28, 28, 28]
-    # VESCなので monitor_reg1は0。monitor_reg2はVESC_ERPMを有効。
-    monitor_reg1: [0x0, 0x0, 0x0,0x0]
-    monitor_reg2: [0x10, 0x10, 0x10, 0x10]
+    # モータ番号0,1,2,3はフィードバックなし
+    monitor_reg1: [0x0, 0x0, 0x0, 0x0]
+#     # VESCの極数
+    vesc_pole: [14, 14, 14, 14]
+    # モータ番号0と1はMOTOR_STATE,ABS_SPD,ABS_POSをフィードバック
+    # モータ番号2と3はMOTOR_STATEのみフィードバック
+    # monitor_reg1: [0x0C00000000000002, 0x0C00000000000002, 0x2, 0x2]
+    # VESC_CURRENT + VESC_ERPMをフィードバック
+    monitor_reg2: [0x18, 0x18, 0x18, 0x18]
     monitor_period: 100
+# 独ステホイール
+# sabacan_robomasv2_node_id1:
+#   ros__parameters:
+#     board_id: 1
+#     # 起動時に基板初期化シーケンスを流すかどうか。独ステは初期化を行わないとおかしくなるのでtrueにする。
+#     # enable_initialize: true
+#     enable_initialize: false
+#     # status publish 周期 [Hz]
+#     publish_timer_rate: 100.0
+#     # 接続されているモータ種別
+#     # board1: 0=右前タイヤ, 1=左前タイヤ, 2=左後タイヤ, 3=右後タイヤ
+#     motor_type: ["VESC", "VESC", "VESC", "VESC"]
+#     # 制御モード。安全のため初期値はCURRENTにする
+#     control_type: ["CURRENT", "CURRENT", "CURRENT", "CURRENT"]
+#     # VESCの極数
+#     vesc_pole: [28, 28, 28, 28]
+#     # VESCなので monitor_reg1は0。monitor_reg2はVESC_ERPMを有効。
+#     monitor_reg1: [0x0, 0x0, 0x0,0x0]
+#     monitor_reg2: [0x10, 0x10, 0x10, 0x10]
+#     monitor_period: 100
 # 独ステ旋回
 sabacan_robomasv2_node_id2:
   ros__parameters:
