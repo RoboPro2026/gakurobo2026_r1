@@ -437,6 +437,7 @@ R1MainNode::R1MainNode() : Node("r1_main_node")
   // ========== KFS回収 ==========
   // fx
   declare_and_get_parameter("kfs_fx_normal_pos", KFS_FX_NORMAL_POS);
+  declare_and_get_parameter("kfs_fx_start_pos", KFS_FX_START_POS);
   declare_and_get_parameter("kfs_fx_expand_pos", KFS_FX_EXPAND_POS);
   declare_and_get_parameter("kfs_fx_storage_pos", KFS_FX_STORAGE_POS);
   // fz
@@ -454,6 +455,7 @@ R1MainNode::R1MainNode() : Node("r1_main_node")
   declare_and_get_parameter("kfs_fyaw_rear_angle", KFS_FYAW_REAR_ANGLE);
   // rx
   declare_and_get_parameter("kfs_rx_normal_pos", KFS_RX_NORMAL_POS);
+  declare_and_get_parameter("kfs_rx_start_pos", KFS_RX_START_POS);
   declare_and_get_parameter("kfs_rx_expand_pos", KFS_RX_EXPAND_POS);
   declare_and_get_parameter("kfs_rx_storage_pos", KFS_RX_STORAGE_POS);
   // rz
@@ -1693,12 +1695,42 @@ void R1MainNode::manual_mode7_spear_attack(void)
       }
     }
     publish_robot_move(ChassisAct::ACT1_START, forest_order, collect_kfs_type);
-    // デバッグ用にKFS回収用アクチュエータを初期位置に移動
-    kfs_fx(KFS_FX_STORAGE_POS);
-    kfs_fz(KFS_FZ_STORAGE_POS);
+
+    // zの高さの指令値を計算
+    double fz_ref = KFS_FZ_NORMAL_POS;
+    double rz_ref = KFS_RZ_NORMAL_POS;
+    for (int i = 0; i < (int)current_robot_move_.forest_order.size(); i++) {
+      int forest_number = current_robot_move_.forest_order[i];
+      bool is_front_kfs = (current_robot_move_.kfs_mechanism_type[i] == "front_kfs");
+      if (forest_number == 2 || forest_number == 4 || forest_number == 10 || forest_number == 12) {
+        if (is_front_kfs) {
+          fz_ref = KFS_FZ_LOW_POS;
+        } else {
+          rz_ref = KFS_RZ_LOW_POS;
+        }
+      } else if (
+        forest_number == 1 || forest_number == 3 || forest_number == 7 || forest_number == 9 ||
+        forest_number == 11) {
+        if (is_front_kfs) {
+          fz_ref = KFS_FZ_MIDDLE_POS;
+        } else {
+          rz_ref = KFS_RZ_MIDDLE_POS;
+        }
+      } else if (forest_number == 6) {
+        if (is_front_kfs) {
+          fz_ref = KFS_FZ_HIGH_POS;
+        } else {
+          rz_ref = KFS_RZ_HIGH_POS;
+        }
+      }
+    }
+
+    // デバッグ用にKFS回収用アクチュエータを回収位置位置に移動
+    kfs_fx(KFS_FX_START_POS);
+    kfs_rx(KFS_RX_START_POS);
+    kfs_fz(fz_ref);
+    kfs_rz(rz_ref);
     kfs_fyaw(KFS_FYAW_REAR_ANGLE);
-    kfs_rx(KFS_RX_STORAGE_POS);
-    kfs_rz(KFS_RZ_STORAGE_POS);
     kfs_ryaw(KFS_RYAW_REAR_ANGLE);
     kfs_front_pump(0.0);
     kfs_rear_pump(0.0);

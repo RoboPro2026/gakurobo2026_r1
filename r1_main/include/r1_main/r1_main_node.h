@@ -231,6 +231,7 @@ public:
   // ========== KFS回収 ==========
   // fx
   double KFS_FX_NORMAL_POS = 0.0;
+  double KFS_FX_START_POS = 0.0;
   double KFS_FX_EXPAND_POS = 0.0;
   double KFS_FX_STORAGE_POS = 0.0;
   // fz
@@ -248,6 +249,7 @@ public:
   double KFS_FYAW_REAR_ANGLE = 0.0;
   // rx
   double KFS_RX_NORMAL_POS = 0.0;
+  double KFS_RX_START_POS = 0.0;
   double KFS_RX_EXPAND_POS = 0.0;
   double KFS_RX_STORAGE_POS = 0.0;
   // rz

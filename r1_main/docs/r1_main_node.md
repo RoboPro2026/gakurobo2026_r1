@@ -331,7 +331,7 @@ LED は timer callback の最後に 1 回だけ更新されます。
 
 ### 制約
 
-- `collect_kfs_type` の割り当ては実装上ほぼ青ゾーン前提です。
+- `kfs_mechanism_type` の割り当ては実装上ほぼ青ゾーン前提です。
 - 赤ゾーン側は TODO が残っており、未整備です。
 
 ## `reset_robot(bool is_start_zone)`

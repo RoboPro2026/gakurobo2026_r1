@@ -120,8 +120,9 @@ r1_main_node:
     # ========== KFS回収 ==========
     # fx
     kfs_fx_normal_pos: 0.05
+    kfs_fx_start_pos: 0.3
     kfs_fx_expand_pos: 0.65
-    kfs_fx_storage_pos: 0.2
+    kfs_fx_storage_pos: 0.1
     # fz
     kfs_fz_normal_pos: 0.005
     kfs_fz_low_pos: 0.02
@@ -136,8 +137,9 @@ r1_main_node:
     kfs_fyaw_rear_angle: 3.141592653589793
     # rx
     kfs_rx_normal_pos: 0.05
+    kfs_fx_start_pos: 0.3
     kfs_rx_expand_pos: 0.65
-    kfs_rx_storage_pos: 0.2
+    kfs_rx_storage_pos: 0.1
     # rz
     kfs_rz_normal_pos: 0.005
     kfs_rz_low_pos: 0.02
