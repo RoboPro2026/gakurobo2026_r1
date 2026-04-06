@@ -504,7 +504,8 @@ def generate_launch_description():
         # can1
         sabacan_robstride_node_id1,
         # 次にsabacan_single_control以外のノードを起動
-        r1_chassis_control_node,
+        # デバッグのためにコメントアウト
+        # r1_chassis_control_node,
         r1_chassis_velocity_control_node,
         r1_mecanum_node,
         # r1_swerve_drive_node,

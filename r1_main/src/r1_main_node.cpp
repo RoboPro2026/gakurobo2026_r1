@@ -1629,6 +1629,41 @@ void R1MainNode::manual_mode7_spear_attack_task(int n)
 
 void R1MainNode::manual_mode7_spear_attack(void)
 {
+  // 一旦デバッグ用に自動制御のデバッグモードに割り当てる
+  if (ps4_->is_pushed_triangle()) {
+    // 位置制御のプログラム実行
+    // publish_chassis_act_ref(ChassisAct::ACT1_START);
+    std::vector<int> forest_order;
+    std::vector<std::string> collect_kfs_type;
+    int j = 0;
+    for (int i = 0; i < (int)KFS_FOREST_NUMBER.size(); i++) {
+      int n = KFS_FOREST_NUMBER[i];
+      if (n == 1 || n == 2 || n == 4 || n == 7 || n == 10) {
+        forest_order.push_back(n);
+        if (j == 0) {
+          if (zone_ == "blue") {
+            collect_kfs_type.push_back("rear_kfs");
+          } else {
+            // 今は何もしない
+          }
+          j++;
+        } else if (j == 1) {
+          if (zone_ == "blue") {
+            collect_kfs_type.push_back("front_kfs");
+          } else {
+            // 今は何もしない
+          }
+        } else {
+          RCLCPP_ERROR(this->get_logger(), "collect_kfs_type size error");
+        }
+      }
+    }
+    publish_robot_move(ChassisAct::ACT1_START, forest_order, collect_kfs_type);
+  }
+
+  if (ps4_->is_pushed_circle()) {
+    reset_position(true);
+  }
   // int & spear_hand_valve1_step = manual_mode7_spear_hand_valve1_step_;
 
   // if (ps4_->is_pushed_up()) {
@@ -1948,7 +1983,7 @@ void R1MainNode::reset_step(void)
   publish_chassis_act_ref(ChassisAct::NONE);
 }
 
-void R1MainNode::reset_robot(bool is_start_zone)
+void R1MainNode::reset_position(bool is_start_zone)
 {
   if (zone_ != "blue" && zone_ != "red") {
     RCLCPP_WARN(
@@ -1971,14 +2006,20 @@ void R1MainNode::reset_robot(bool is_start_zone)
     // TODO: start zone 以外の初期位置が確定したらここで切り替える。
   }
 
-  // stepをリセットする
-  reset_step();
   // 現在の角度が start_yaw となるようなオフセットを設定する。
   set_mecanum_yaw(start_yaw);
   set_swerve_drive_yaw(start_yaw);
   set_odometry(start_x, start_y, start_yaw);
   set_initialpose(start_x, start_y, start_yaw);
+}
+
+void R1MainNode::reset_robot(bool is_start_zone)
+{
+  // stepをリセットする
+  reset_step();
   stop_actuator();
+  // 位置をリセットする
+  reset_position(is_start_zone);
   // initial_stateにする
   state_machine_->set_next_state(initial_state_);
   state_machine_->print_state(initial_state_, "Reset to initial state: ");

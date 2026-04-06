@@ -355,8 +355,7 @@ public:
   void sabacan_led_ref(uint8_t r, uint8_t g, uint8_t b);
   void set_led_status(uint8_t r, uint8_t g, uint8_t b, double blink_period_s = 0.0);
   void clear_led_status(void);
-  void set_led_event(
-    uint8_t r, uint8_t g, uint8_t b, double blink_period_s, double duration_sec);
+  void set_led_event(uint8_t r, uint8_t g, uint8_t b, double blink_period_s, double duration_sec);
   LedPattern resolve_base_led_pattern(void);
   LedColor resolve_led_output_color(const LedPattern & pattern, const rclcpp::Time & now) const;
   void publish_r1_machine_initialize(void);
@@ -490,4 +489,5 @@ public:
   // ========== リセット ==========
   void reset_step(void);
   void reset_robot(bool is_start_zone);
+  void reset_position(bool is_start_zone);
 };
