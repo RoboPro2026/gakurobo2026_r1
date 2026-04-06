@@ -250,6 +250,7 @@ r1_main_node:
       11: [3.0, 8.6, 0.0]
       12: [0.0, 7.4, 1.57]
     collect_kfs_offset: 0.838 # KFS回収時のオフセット（front_kfsかrear_kfsのうち、遠い方に適応する）
+    kfs_yaw_delay_time: 1.0 # 範囲外へ出たあとに収納用 yaw を送るまでの遅延時間 [s]
     # collect_kfs_offset: 0.419 # KFS回収時のオフセット（front_kfsかrear_kfsのうち、遠い方に適応する）
 
 # -------- 足回り ----------

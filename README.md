@@ -24,8 +24,133 @@
 
 1. コントローラからの入力や自動動作の状態遷移を `r1_main_node` が管理します。
 2. 移動に関する指令は `r1_chassis_control_node` などが受けて、足回り用の指令へ変換します。
-3. 機構の位置・速度・GPIO 指令は `r1_machine_manage_node` が Sabacan 向け topic に変換します。
+3. 機構の位置・速度・GPIO 指令は motion node 群と `r1_machine_manage_node` を経由して Sabacan 向け topic に変換されます。
 4. Sabacan 系ノードや各種センサノードが、実際のハードウェアと通信します。
+
+## ノード・トピック関係図
+
+以下は GitHub 上でもそのままプレビューできる Mermaid 図です。  
+矢印ラベルは主要 topic 名で、`use_sim` / `use_lidar` / `drive_mode` によって一部の経路が切り替わります。
+
+```mermaid
+flowchart LR
+  subgraph input["入力・センサ"]
+    joy["joy_node"]
+    imu["bno086_node"]
+  end
+
+  subgraph control["高レベル制御"]
+    main["r1_main_node"]
+    chassis["r1_chassis_control_node<br/>自律経路追従"]
+    vel["r1_chassis_velocity_control_node"]
+  end
+
+  subgraph drive["足回り"]
+    mecanum["r1_mecanum_node<br/>既定: mecanum"]
+    swerve["r1_swerve_drive_node<br/>任意: swerve"]
+    odom["r1_odometry_node"]
+  end
+
+  subgraph mechanism["機構制御"]
+    motion["r1_linear_motion_node 群<br/>r1_angle_motion_node 群"]
+    manage["r1_machine_manage_node"]
+  end
+
+  subgraph hardware["実機I/F"]
+    saba["sabacan_*_node"]
+    can["eth2can_node"]
+  end
+
+  joy -->|/joy| main
+  imu -->|/bno086/imu/data_raw| main
+  imu -->|/bno086/imu/data_raw| mecanum
+  imu -->|/bno086/imu/data_raw| swerve
+  imu -->|/bno086/imu/data_raw| odom
+
+  main -->|/cmd_vel_target| vel
+  main -->|/chassis_act_ref<br/>/robot_move| chassis
+  main -->|/set_odometry| odom
+  main -->|/set_mecanum_yaw| mecanum
+  main -->|/set_swerve_drive_yaw| swerve
+  main -->|/{axis}_position_ref<br/>/{axis}_detect_origin| motion
+  main -->|/r2_*_motor_ref<br/>/{gpio}_gpio_*_ref<br/>/r1_machine_initialize| manage
+
+  chassis -->|/cmd_vel_target| vel
+  odom -->|/odometry| main
+  odom -->|/odometry| chassis
+  odom -->|/odometry| vel
+
+  vel -->|/cmd_vel| mecanum
+  vel -->|/cmd_vel| swerve
+
+  mecanum -->|/mecanum_wheel_speeds_ref| manage
+  manage -->|/mecanum_wheel_speeds_feedback| mecanum
+
+  swerve -->|/swerve_drive_ref| manage
+  manage -->|/swerve_*_motor_status<br/>/swerve_drive_initialize| swerve
+
+  motion -->|/{axis}_motor_ref<br/>/{axis}_torque_limit_ref| manage
+  manage -->|/{axis}_*_motion_status<br/>/{axis}_initialize<br/>/{switch}_status| motion
+  motion -->|/{axis}_mode_status| main
+
+  manage -->|/odometry_encoder| odom
+  manage -->|sabacan_*_ref| saba
+  saba -->|sabacan_*_status| manage
+  can -->|from_can_bus* / to_can_bus*| saba
+```
+
+```mermaid
+flowchart TD
+  main["r1_main_node"]
+  vel["r1_chassis_velocity_control_node"]
+  chassis["r1_chassis_control_node"]
+
+  subgraph real["実機: use_sim=false"]
+    bno["bno086_node"]
+    odom["r1_odometry_node"]
+    urg["urg_node2_node<br/>use_lidar=true"]
+    scan_filter["scan_filter_chain"]
+    amcl["amcl"]
+    dummy_map_real["r1_dummy_map_node<br/>use_lidar=false"]
+  end
+
+  subgraph sim["シミュレーション: use_sim=true"]
+    map_server["map_server"]
+    dummy_map_sim["r1_dummy_map_node"]
+    dummy_odom["r1_dummy_odometry_node"]
+  end
+
+  main -->|/initialpose| amcl
+  main -->|/initialpose| dummy_map_real
+  main -->|/initialpose| dummy_map_sim
+  main -->|/set_odometry| odom
+  main -->|/set_odometry| dummy_odom
+
+  bno -->|/bno086/imu/data_raw| odom
+  odom -->|/odometry| main
+  odom -->|/odometry| chassis
+  odom -->|/odometry| vel
+
+  urg -->|/scan| scan_filter
+  scan_filter -->|scan filtered| amcl
+  amcl -->|TF map->odom| main
+  dummy_map_real -->|TF map->odom| main
+
+  map_server -->|/map| dummy_map_sim
+  dummy_map_sim -->|TF map->odom| main
+  vel -->|/cmd_vel| dummy_odom
+  chassis -->|/waypoints<br/>/target_pose| dummy_odom
+  dummy_odom -->|/odometry<br/>TF odom->base_link| main
+  dummy_odom -->|/odometry| chassis
+  dummy_odom -->|/odometry| vel
+```
+
+補足:
+
+- [`r1_machine_config.yaml`](/home/user/ros2_ws/src/gakurobo2026_r1/r1_bringup/config/r1_machine_config.yaml) の既定値は `drive_mode: "mecanum"` です。
+- `use_sim:=true` のとき、`/odometry` は [`r1_dummy_odometry_node`](./r1_control/docs/r1_dummy_odometry_node.md) が生成します。
+- `use_lidar:=true` のときは `amcl` が `map -> odom` を担当し、`use_lidar:=false` のときは [`r1_dummy_map_node`](./r1_control/docs/r1_dummy_map_node.md) が担当します。
+- [`r1_bringup.launch.py`](/home/user/ros2_ws/src/gakurobo2026_r1/r1_bringup/launch/r1_bringup.launch.py) には `r1_chassis_control_node` と `r1_swerve_drive_node` の定義がありますが、現行の通常起動リストではコメントアウトされています。
 
 ## リポジトリ構成
 
