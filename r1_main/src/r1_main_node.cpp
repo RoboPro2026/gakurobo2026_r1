@@ -1767,7 +1767,7 @@ void R1MainNode::auto_collect_kfs_task(void)
         if (within_index == FKFS) {
           kfs_fx(KFS_FX_STORAGE_POS);
           kfs_fz(KFS_FZ_STORAGE_POS);
-          kfs_fyaw(KFS_FRAW_SIDE_ANGLE);
+          kfs_fyaw(KFS_FYAW_SIDE_ANGLE);
         } else {
           kfs_rx(KFS_RX_STORAGE_POS);
           kfs_rz(KFS_RZ_STORAGE_POS);
