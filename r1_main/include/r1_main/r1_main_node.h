@@ -36,6 +36,7 @@
 #include "r1_msgs/msg/motor_ref.hpp"
 #include "r1_msgs/msg/robot_move.hpp"
 #include "r1_util/r1_util.h"
+#include "rcl_interfaces/msg/set_parameters_result.hpp"
 #include "rclcpp/rclcpp.hpp"
 #include "sabacan_msgs/msg/sabacan_led_ref.hpp"
 #include "sabacan_msgs/msg/sabacan_power_ref.hpp"
@@ -161,6 +162,7 @@ public:
   rclcpp::Publisher<std_msgs::msg::Empty>::SharedPtr r1_machine_initialize_publisher_;
   // タイマー
   rclcpp::TimerBase::SharedPtr timer_publisher_;
+  rclcpp::node_interfaces::OnSetParametersCallbackHandle::SharedPtr parameter_callback_handle_;
   double timer_rate_ = 100.0;
   // tf関連
   std::shared_ptr<tf2_ros::Buffer> tf_buffer_;
@@ -323,6 +325,8 @@ public:
   double COLLECT_KFS_OFFSET = 0.0;
   // 範囲外へ出た後、収納用 yaw を送るまでの遅延時間 [s]
   double KFS_YAW_DELAY_TIME = 1.0;
+  // auto_collect_kfs_task 内で実際にアクチュエータ指令を出すか
+  bool ENABLE_AUTO_COLLECT_KFS_ACTUATOR = true;
   // コンストラクタ
   R1MainNode();
 
@@ -349,6 +353,8 @@ public:
   void timer_callback(void);
   void declare_and_get_parameter(
     const std::string & name, double & value, double default_value = 0.0);
+  void declare_and_get_parameter(
+    const std::string & name, bool & value, bool default_value = false);
   void declare_and_get_parameter(const std::string & name, int & value, int default_value = 0);
   void declare_and_get_parameter(
     const std::string & name, std::string & value, const std::string & default_value = "");

@@ -322,6 +322,8 @@ LED は timer callback の最後に 1 回だけ更新されます。
 - `zone == blue` のときは `x` と `yaw` を反転して使用します。
 - `collect_kfs_offset` を、使用する KFS 機構に応じて中心座標へ加えます。
 - `kfs_yaw_delay_time` 秒だけ遅らせて、範囲外へ出た後の収納用 yaw 指令を送ります。
+- `enable_auto_collect_kfs_actuator == false` のときは、範囲判定と LED 更新は続けますが、KFS の位置・yaw・ポンプ・バルブ指令は publish しません。
+  - このパラメータは実行中の `ros2 param set` でも切り替えできます。
 - `AUTO` 中は判定結果を LED `status` として反映します。
   - 範囲内なら緑
   - 範囲外なら赤
@@ -405,6 +407,7 @@ bringup 起動時は [`r1_bringup.launch.py`](/home/user/ros2_ws/src/gakurobo202
 - `collect_kfs_height`
 - `collect_kfs_width`
 - `collect_kfs_offset`
+- `enable_auto_collect_kfs_actuator`
 - `kfs_yaw_delay_time`
   - 範囲外へ出たあとに収納用 yaw を送るまでの遅延時間 [s]
   - 既定値は `1.0`

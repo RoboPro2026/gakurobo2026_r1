@@ -58,6 +58,19 @@ void R1MainNode::declare_and_get_parameter(
 }
 
 /**
+ * @brief bool 型パラメータを declare して取得する。
+ * @param name パラメータ名。
+ * @param value 取得結果の格納先。
+ * @param default_value declare 時の初期値。
+ */
+void R1MainNode::declare_and_get_parameter(
+  const std::string & name, bool & value, bool default_value)
+{
+  this->declare_parameter<bool>(name, default_value);
+  this->get_parameter(name, value);
+}
+
+/**
  * @brief int 型パラメータを declare して取得する。
  * @param name パラメータ名。
  * @param value 取得結果の格納先。
@@ -545,6 +558,26 @@ R1MainNode::R1MainNode() : Node("r1_main_node")
   declare_and_get_parameter("collect_kfs_width", COLLECT_KFS_WIDTH);
   declare_and_get_parameter("collect_kfs_offset", COLLECT_KFS_OFFSET);
   declare_and_get_parameter("kfs_yaw_delay_time", KFS_YAW_DELAY_TIME, 1.0);
+  declare_and_get_parameter(
+    "enable_auto_collect_kfs_actuator", ENABLE_AUTO_COLLECT_KFS_ACTUATOR, true);
+  parameter_callback_handle_ = this->add_on_set_parameters_callback(
+    [this](const std::vector<rclcpp::Parameter> & parameters) {
+      rcl_interfaces::msg::SetParametersResult result;
+      result.successful = true;
+
+      for (const auto & parameter : parameters) {
+        if (parameter.get_name() != "enable_auto_collect_kfs_actuator") {
+          continue;
+        }
+        if (parameter.get_type() != rclcpp::ParameterType::PARAMETER_BOOL) {
+          result.successful = false;
+          result.reason = "enable_auto_collect_kfs_actuator must be bool";
+          return result;
+        }
+        ENABLE_AUTO_COLLECT_KFS_ACTUATOR = parameter.as_bool();
+      }
+      return result;
+    });
 
   std::string robot_control_mode_parameter;
   this->declare_parameter<std::string>("robot_control_mode", "manual");
@@ -1820,79 +1853,97 @@ void R1MainNode::auto_collect_kfs_task(void)
 
       // trueからfalseに変わったら、収納動作を行う。
       if (prev_within == true) {
-        // 収納位置に移動
-        if (within_index == FKFS) {
-          kfs_fx(KFS_FX_STORAGE_POS);
-          kfs_fz(KFS_FZ_STORAGE_POS);
-          if (auto_collect_front_storage_yaw_timer_) {
-            auto_collect_front_storage_yaw_timer_->cancel();
-          }
-          auto_collect_front_storage_yaw_timer_ =
-            this->create_wall_timer(std::chrono::duration<double>(KFS_YAW_DELAY_TIME), [this]() {
-              kfs_fyaw(KFS_FYAW_SIDE_ANGLE);
+        if (ENABLE_AUTO_COLLECT_KFS_ACTUATOR) {
+          // 収納位置に移動
+          if (within_index == FKFS) {
+            kfs_fx(KFS_FX_STORAGE_POS);
+            kfs_fz(KFS_FZ_STORAGE_POS);
+            if (auto_collect_front_storage_yaw_timer_) {
               auto_collect_front_storage_yaw_timer_->cancel();
-            });
-        } else {
-          kfs_rx(KFS_RX_STORAGE_POS);
-          kfs_rz(KFS_RZ_STORAGE_POS);
-          if (auto_collect_rear_storage_yaw_timer_) {
-            auto_collect_rear_storage_yaw_timer_->cancel();
-          }
-          auto_collect_rear_storage_yaw_timer_ =
-            this->create_wall_timer(std::chrono::duration<double>(KFS_YAW_DELAY_TIME), [this]() {
-              kfs_ryaw(KFS_RYAW_SIDE_ANGLE);
+            }
+            auto_collect_front_storage_yaw_timer_ =
+              this->create_wall_timer(std::chrono::duration<double>(KFS_YAW_DELAY_TIME), [this]() {
+                kfs_fyaw(KFS_FYAW_SIDE_ANGLE);
+                auto_collect_front_storage_yaw_timer_->cancel();
+              });
+          } else {
+            kfs_rx(KFS_RX_STORAGE_POS);
+            kfs_rz(KFS_RZ_STORAGE_POS);
+            if (auto_collect_rear_storage_yaw_timer_) {
               auto_collect_rear_storage_yaw_timer_->cancel();
-            });
+            }
+            auto_collect_rear_storage_yaw_timer_ =
+              this->create_wall_timer(std::chrono::duration<double>(KFS_YAW_DELAY_TIME), [this]() {
+                kfs_ryaw(KFS_RYAW_SIDE_ANGLE);
+                auto_collect_rear_storage_yaw_timer_->cancel();
+              });
+          }
+        } else {
+          RCLCPP_INFO(
+            this->get_logger(),
+            "%d forest %s kfs storage skipped because enable_auto_collect_kfs_actuator=false",
+            target_forest_number, current_robot_move_.kfs_mechanism_type[i].c_str());
         }
-        // ログを出力
-        RCLCPP_INFO(
-          this->get_logger(), "%d forest %s kfs storage", target_forest_number,
-          current_robot_move_.kfs_mechanism_type[i].c_str());
+        if (ENABLE_AUTO_COLLECT_KFS_ACTUATOR) {
+          RCLCPP_INFO(
+            this->get_logger(), "%d forest %s kfs storage", target_forest_number,
+            current_robot_move_.kfs_mechanism_type[i].c_str());
+        }
       }
     } else {
       set_led_event(0, 0, 0, 0.2, 0.2);
       // falseからtrueに変わったら、回収動作を行う。
       if (prev_within == false) {
-        // 回収位置に移動
-        if (within_index == FKFS) {
-          // 回収機構を動かす
-          kfs_fx(KFS_FX_EXPAND_POS);
-          kfs_fyaw(KFS_FYAW_REAR_ANGLE);
-          kfs_front_pump(1.0);
-          kfs_front_valve(false);
-          if (
-            target_forest_number == 2 || target_forest_number == 4 || target_forest_number == 10 ||
-            target_forest_number == 12) {
-            kfs_fz(KFS_FZ_LOW_POS);
-          } else if (
-            target_forest_number == 1 || target_forest_number == 3 || target_forest_number == 7 ||
-            target_forest_number == 9 || target_forest_number == 11) {
-            kfs_fz(KFS_FZ_MIDDLE_POS);
-          } else if (target_forest_number == 6) {
-            kfs_fz(KFS_FZ_HIGH_POS);
+        if (ENABLE_AUTO_COLLECT_KFS_ACTUATOR) {
+          // 回収位置に移動
+          if (within_index == FKFS) {
+            // 回収機構を動かす
+            kfs_fx(KFS_FX_EXPAND_POS);
+            kfs_fyaw(KFS_FYAW_REAR_ANGLE);
+            kfs_front_pump(1.0);
+            kfs_front_valve(false);
+            if (
+              target_forest_number == 2 || target_forest_number == 4 ||
+              target_forest_number == 10 || target_forest_number == 12) {
+              kfs_fz(KFS_FZ_LOW_POS);
+            } else if (
+              target_forest_number == 1 || target_forest_number == 3 ||
+              target_forest_number == 7 || target_forest_number == 9 ||
+              target_forest_number == 11) {
+              kfs_fz(KFS_FZ_MIDDLE_POS);
+            } else if (target_forest_number == 6) {
+              kfs_fz(KFS_FZ_HIGH_POS);
+            }
+          } else {
+            // 回収機構を動かす
+            kfs_rx(KFS_RX_EXPAND_POS);
+            kfs_ryaw(KFS_RYAW_REAR_ANGLE);
+            kfs_rear_pump(1.0);
+            kfs_rear_valve(false);
+            if (
+              target_forest_number == 2 || target_forest_number == 4 ||
+              target_forest_number == 10 || target_forest_number == 12) {
+              kfs_rz(KFS_RZ_LOW_POS);
+            } else if (
+              target_forest_number == 1 || target_forest_number == 3 ||
+              target_forest_number == 7 || target_forest_number == 9 ||
+              target_forest_number == 11) {
+              kfs_rz(KFS_RZ_MIDDLE_POS);
+            } else if (target_forest_number == 6) {
+              kfs_fz(KFS_FZ_HIGH_POS);
+            }
           }
         } else {
-          // 回収機構を動かす
-          kfs_rx(KFS_RX_EXPAND_POS);
-          kfs_ryaw(KFS_RYAW_REAR_ANGLE);
-          kfs_rear_pump(1.0);
-          kfs_rear_valve(false);
-          if (
-            target_forest_number == 2 || target_forest_number == 4 || target_forest_number == 10 ||
-            target_forest_number == 12) {
-            kfs_rz(KFS_RZ_LOW_POS);
-          } else if (
-            target_forest_number == 1 || target_forest_number == 3 || target_forest_number == 7 ||
-            target_forest_number == 9 || target_forest_number == 11) {
-            kfs_rz(KFS_RZ_MIDDLE_POS);
-          } else if (target_forest_number == 6) {
-            kfs_fz(KFS_FZ_HIGH_POS);
-          }
+          RCLCPP_INFO(
+            this->get_logger(),
+            "%d forest %s kfs collect skipped because enable_auto_collect_kfs_actuator=false",
+            target_forest_number, current_robot_move_.kfs_mechanism_type[i].c_str());
         }
-        // ログを出力
-        RCLCPP_INFO(
-          this->get_logger(), "%d forest %s kfs collect", target_forest_number,
-          current_robot_move_.kfs_mechanism_type[i].c_str());
+        if (ENABLE_AUTO_COLLECT_KFS_ACTUATOR) {
+          RCLCPP_INFO(
+            this->get_logger(), "%d forest %s kfs collect", target_forest_number,
+            current_robot_move_.kfs_mechanism_type[i].c_str());
+        }
       }
     }
     // 最後に前回値を更新する
