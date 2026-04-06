@@ -127,8 +127,8 @@ r1_main_node:
     kfs_fz_low_pos: 0.02
     kfs_fz_middle_pos: 0.22
     kfs_fz_high_pos: 0.42
-    kfs_fz_book_pos: 0.65
-    kfs_fz_storage_pos: 0.6
+    kfs_fz_book_pos: 0.5
+    kfs_fz_storage_pos: 0.5
     # fyaw
     kfs_fyaw_normal_angle: 0.0
     kfs_fyaw_front_angle: 0.0
@@ -143,8 +143,8 @@ r1_main_node:
     kfs_rz_low_pos: 0.02
     kfs_rz_middle_pos: 0.22
     kfs_rz_high_pos: 0.42
-    kfs_rz_book_pos: 0.65
-    kfs_rz_storage_pos: 0.6
+    kfs_rz_book_pos: 0.5
+    kfs_rz_storage_pos: 0.5
     # ryaw
     kfs_ryaw_normal_angle: 0.0
     kfs_ryaw_front_angle: 0.0
@@ -225,7 +225,7 @@ r1_main_node:
       2: [3.0, 2.6, 0.0]
       3: [100.0, 100.0, 0.0] # ここは通らない
       # 4: [5.4, 5.0, 1.57]
-      4: [5.5, 4.2, 1.57]
+      4: [5.5, 4.1, 1.57]
       5: [100.0, 100.0, 0.0] # ここにはKFSは置かれない
       6: [100.0, 100.0, 0.0] # ここは通らない
       # 7: [5.4, 6.2, 1.57]
@@ -340,7 +340,7 @@ r1_kfs_fz_node:
   ros__parameters:
     timer_rate: 10.0
     # トルク検出時のしきい値
-    torque_threshold: 0.5 # Nm
+    torque_threshold: 0.6 # Nm
     # 通常位置モード時に Robomas の torque_lim として使う値
     normal_torque_limit: 1.0 # Nm
     # 原点検出・メカロック移動中に Robomas の torque_lim として使う値
@@ -409,7 +409,7 @@ r1_kfs_rz_node:
   ros__parameters:
     timer_rate: 10.0
     # トルク検出時のしきい値
-    torque_threshold: 0.5 # Nm
+    torque_threshold: 0.6 # Nm
     # 通常位置モード時に Robomas の torque_lim として使う値
     normal_torque_limit: 1.0 # Nm
     # 原点検出・メカロック移動中に Robomas の torque_lim として使う値
