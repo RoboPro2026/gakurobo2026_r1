@@ -1819,12 +1819,32 @@ void R1MainNode::auto_collect_kfs_task(void)
         // 回収位置に移動
         if (within_index == FKFS) {
           kfs_fx(KFS_FX_EXPAND_POS);
-          kfs_fz(KFS_FZ_EXPAND_POS);
           kfs_fyaw(KFS_FYAW_FRONT_ANGLE);
+          if (
+            target_forest_number == 2 || target_forest_number == 4 || target_forest_number == 10 ||
+            target_forest_number == 12) {
+            kfs_fz(KFS_FZ_LOW_POS);
+          } else if (
+            target_forest_number == 1 || target_forest_number == 3 || target_forest_number == 7 ||
+            target_forest_number == 9 || target_forest_number == 11) {
+            kfs_fz(KFS_FZ_MIDDLE_POS);
+          } else if (target_forest_number == 6) {
+            kfs_fz(KFS_FZ_HIGH_POS);
+          }
         } else {
           kfs_rx(KFS_RX_EXPAND_POS);
-          kfs_rz(KFS_RZ_EXPAND_POS);
           kfs_ryaw(KFS_RYAW_FRONT_ANGLE);
+          if (
+            target_forest_number == 2 || target_forest_number == 4 || target_forest_number == 10 ||
+            target_forest_number == 12) {
+            kfs_rz(KFS_RZ_LOW_POS);
+          } else if (
+            target_forest_number == 1 || target_forest_number == 3 || target_forest_number == 7 ||
+            target_forest_number == 9 || target_forest_number == 11) {
+            kfs_rz(KFS_RZ_MIDDLE_POS);
+          } else if (target_forest_number == 6) {
+            kfs_fz(KFS_FZ_HIGH_POS);
+          }
         }
         // ログを出力
         RCLCPP_INFO(

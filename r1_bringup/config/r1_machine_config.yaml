@@ -210,12 +210,12 @@ r1_main_node:
     spear_pitch2_vertical_angle: 0.1
     # ========== KFS回収の移動関連 ==========
     # KFSが置かれている場所
-    kfs_forest_number: [4, 7]
+    kfs_forest_number: [4]
     # KFS回収範囲の長方形サイズ [m]
     # yaw=0 のとき width は map の x 方向、height は map の y 方向の長さになる
     # yaw を与えた場合は、その yaw だけ回転した長方形ローカル座標系での幅と高さになる
-    collect_kfs_height: 0.25
-    collect_kfs_width: 0.4
+    collect_kfs_height: 0.4
+    collect_kfs_width: 0.6
     # 内回り/外回りのKFS回収範囲の中心座標 [x, y, yaw]
     # # 内回りのときは2,1,4,7,10を通る
     inner_collect_kfs_center_pos:
