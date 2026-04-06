@@ -1795,6 +1795,8 @@ void R1MainNode::auto_collect_kfs_task(void)
     }
     // witinがfalseのときはLEDを赤色にする
     if (within == false) {
+      set_led_event(100, 0, 0, 0.2, 0.2);
+
       // trueからfalseに変わったら、収納動作を行う。
       if (prev_within == true) {
         // 収納位置に移動
@@ -1814,10 +1816,10 @@ void R1MainNode::auto_collect_kfs_task(void)
           current_robot_move_.kfs_mechanism_type[i].c_str());
       }
     } else {
+      set_led_event(0, 0, 0, 0.2, 0.2);
       // falseからtrueに変わったら、回収動作を行う。
       if (prev_within == false) {
         // 回収位置に移動
-        set_led_event(0, 0, 0, 0.2, 0.2);
         if (within_index == FKFS) {
           // 回収機構を動かす
           // kfs_fx(KFS_FX_EXPAND_POS);
@@ -1837,7 +1839,6 @@ void R1MainNode::auto_collect_kfs_task(void)
           }
         } else {
           // 回収機構を動かす
-          set_led_event(100, 0, 0, 0.2, 0.2);
           // kfs_rx(KFS_RX_EXPAND_POS);
           // kfs_ryaw(KFS_RYAW_REAR_ANGLE);
           // kfs_rear_pump(1.0);
@@ -1862,14 +1863,6 @@ void R1MainNode::auto_collect_kfs_task(void)
     }
     // 最後に前回値を更新する
     prev_within = within;
-  }
-
-  if (enable_led_status && has_target) {
-    if (any_within) {
-      // set_led_status(0, 50, 0);
-    } else {
-      // set_led_status(50, 0, 0);
-    }
   }
 }
 
