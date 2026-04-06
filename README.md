@@ -41,18 +41,18 @@ flowchart LR
 
   subgraph control["高レベル制御"]
     main["r1_main_node"]
-    chassis["r1_chassis_control_node<br/>自律経路追従"]
+    chassis["r1_chassis_control_node (自律経路追従)"]
     vel["r1_chassis_velocity_control_node"]
   end
 
   subgraph drive["足回り"]
-    mecanum["r1_mecanum_node<br/>既定: mecanum"]
-    swerve["r1_swerve_drive_node<br/>任意: swerve"]
+    mecanum["r1_mecanum_node (既定: mecanum)"]
+    swerve["r1_swerve_drive_node (任意: swerve)"]
     odom["r1_odometry_node"]
   end
 
   subgraph mechanism["機構制御"]
-    motion["r1_linear_motion_node 群<br/>r1_angle_motion_node 群"]
+    motion["r1_linear_motion_node 群 / r1_angle_motion_node 群"]
     manage["r1_machine_manage_node"]
   end
 
@@ -68,12 +68,12 @@ flowchart LR
   imu -->|/bno086/imu/data_raw| odom
 
   main -->|/cmd_vel_target| vel
-  main -->|/chassis_act_ref<br/>/robot_move| chassis
+  main -->|/chassis_act_ref, /robot_move| chassis
   main -->|/set_odometry| odom
   main -->|/set_mecanum_yaw| mecanum
   main -->|/set_swerve_drive_yaw| swerve
-  main -->|/{axis}_position_ref<br/>/{axis}_detect_origin| motion
-  main -->|/r2_*_motor_ref<br/>/{gpio}_gpio_*_ref<br/>/r1_machine_initialize| manage
+  main -->|/axis_position_ref, /axis_detect_origin| motion
+  main -->|/r2_*_motor_ref, /gpio_*_ref, /r1_machine_initialize| manage
 
   chassis -->|/cmd_vel_target| vel
   odom -->|/odometry| main
@@ -87,16 +87,16 @@ flowchart LR
   manage -->|/mecanum_wheel_speeds_feedback| mecanum
 
   swerve -->|/swerve_drive_ref| manage
-  manage -->|/swerve_*_motor_status<br/>/swerve_drive_initialize| swerve
+  manage -->|/swerve_*_motor_status, /swerve_drive_initialize| swerve
 
-  motion -->|/{axis}_motor_ref<br/>/{axis}_torque_limit_ref| manage
-  manage -->|/{axis}_*_motion_status<br/>/{axis}_initialize<br/>/{switch}_status| motion
-  motion -->|/{axis}_mode_status| main
+  motion -->|/axis_motor_ref, /axis_torque_limit_ref| manage
+  manage -->|/axis_motion_status, /axis_initialize, /switch_status| motion
+  motion -->|/axis_mode_status| main
 
   manage -->|/odometry_encoder| odom
   manage -->|sabacan_*_ref| saba
   saba -->|sabacan_*_status| manage
-  can -->|from_can_bus* / to_can_bus*| saba
+  can -->|CAN bridge| saba
 ```
 
 ```mermaid
@@ -108,10 +108,10 @@ flowchart TD
   subgraph real["実機: use_sim=false"]
     bno["bno086_node"]
     odom["r1_odometry_node"]
-    urg["urg_node2_node<br/>use_lidar=true"]
+    urg["urg_node2_node (use_lidar=true)"]
     scan_filter["scan_filter_chain"]
     amcl["amcl"]
-    dummy_map_real["r1_dummy_map_node<br/>use_lidar=false"]
+    dummy_map_real["r1_dummy_map_node (use_lidar=false)"]
   end
 
   subgraph sim["シミュレーション: use_sim=true"]
@@ -133,14 +133,14 @@ flowchart TD
 
   urg -->|/scan| scan_filter
   scan_filter -->|scan filtered| amcl
-  amcl -->|TF map->odom| main
-  dummy_map_real -->|TF map->odom| main
+  amcl -->|TF map to odom| main
+  dummy_map_real -->|TF map to odom| main
 
   map_server -->|/map| dummy_map_sim
-  dummy_map_sim -->|TF map->odom| main
+  dummy_map_sim -->|TF map to odom| main
   vel -->|/cmd_vel| dummy_odom
-  chassis -->|/waypoints<br/>/target_pose| dummy_odom
-  dummy_odom -->|/odometry<br/>TF odom->base_link| main
+  chassis -->|/waypoints, /target_pose| dummy_odom
+  dummy_odom -->|/odometry, TF odom to base_link| main
   dummy_odom -->|/odometry| chassis
   dummy_odom -->|/odometry| vel
 ```
