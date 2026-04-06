@@ -14,6 +14,7 @@
 - そのため通常運用では `MANUAL` しか入りません。`AUTO` を使う場合は `robot_control_mode:=auto` を指定して起動します。
 - `PS` ボタンで `reset_robot(true)` と `/r1_machine_initialize` publish を行うまで、`is_initialized_ == false` のため各 mode の実動作は走りません。
 - `MODE2_POLE` / `MODE3_SPEAR` / `MODE4_FKFS` / `MODE7_SPEAR_ATTACK` は、現状ほとんどの処理がコメントアウトされています。
+- LED 指令は timer 周期ごとに `sabacan_led_update()` で 1 回だけ publish します。各処理は直接 publish せず、LED の要求状態を更新します。
 
 ## 役割
 
@@ -116,6 +117,45 @@
 
 - `/sabacan_power_ref0` (`sabacan_msgs/msg/SabacanPowerRef`)
 - `/sabacan_led_ref1` (`sabacan_msgs/msg/SabacanLEDRef`)
+
+## LED の挙動
+
+LED は timer callback の最後に 1 回だけ更新されます。
+
+- `base` 表示
+  - 現在の `next_state` から決まる通常表示です。
+  - `MANUAL` では sub state ごとに色が決まります。
+  - `AUTO` では黄色です。
+  - `EMERGENCY` では赤点滅です。
+- `status` 表示
+  - その周期だけ有効な状態表示です。
+  - 現在は `AUTO` の KFS 回収範囲判定に使っており、範囲内なら緑、範囲外なら赤です。
+- `event` 表示
+  - 一定時間だけ `base` / `status` より優先されます。
+  - 現在は `reset_robot(true)` 実行後に 1 秒間の青点滅を出します。
+
+優先順位は `event > status > base` です。
+
+点滅は `r1_main_node` 側で timer 位相から ON/OFF を計算して実現しています。周期指定は秒単位の `blink_period_s` を使い、`SabacanLEDRef` 自体には点滅情報は持たせていません。
+
+### `MANUAL` の base 色
+
+- `MODE1_DETECT_ORIGIN`
+  - 青
+- `MODE2_POLE`
+  - 緑
+- `MODE3_SPEAR`
+  - シアン
+- `MODE4_FKFS`
+  - 赤
+- `MODE5_RKFS`
+  - マゼンタ
+- `MODE6_R2_LIFT`
+  - 黄
+- `MODE7_SPEAR_ATTACK`
+  - 白
+- `TEST`
+  - 白点滅
 
 ## 登録している機構
 
@@ -281,13 +321,15 @@
 - 判定対象の中心座標は `inner_collect_kfs_center_pos.*` / `outer_collect_kfs_center_pos.*` です。
 - `zone == blue` のときは `x` と `yaw` を反転して使用します。
 - `collect_kfs_offset` を、使用する KFS 機構に応じて中心座標へ加えます。
-- 範囲内なら LED を緑、範囲外なら赤にします。
+- `AUTO` 中は判定結果を LED `status` として反映します。
+  - 範囲内なら緑
+  - 範囲外なら赤
+  - どちらも無ければ `AUTO` の base 色である黄色
 
 ### 制約
 
 - `collect_kfs_type` の割り当ては実装上ほぼ青ゾーン前提です。
 - 赤ゾーン側は TODO が残っており、未整備です。
-- `sabacan_led_update()` は空実装です。
 
 ## `reset_robot(bool is_start_zone)`
 
@@ -301,6 +343,7 @@
 - `/set_odometry` と `/initialpose` に開始姿勢を送信します
 - 速度制御系とポンプ・バルブを停止
 - 初期 state に戻します
+- LED に 1 秒間の青点滅イベントを設定します
 - `is_initialized_ = true`
 
 `is_start_zone == false` の分岐は現状まだ TODO で、今は start zone と同じ開始姿勢を使います。

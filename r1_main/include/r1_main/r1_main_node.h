@@ -11,6 +11,7 @@
 
 #pragma once
 
+#include <cstdint>
 #include <functional>
 #include <map>
 #include <memory>
@@ -86,6 +87,28 @@ public:
   struct GpioInputInterface
   {
     rclcpp::Subscription<r1_msgs::msg::GpioInput>::SharedPtr subscription;
+  };
+
+  struct LedColor
+  {
+    uint8_t r = 0;
+    uint8_t g = 0;
+    uint8_t b = 0;
+
+    bool operator==(const LedColor & other) const
+    {
+      return r == other.r && g == other.g && b == other.b;
+    }
+
+    bool operator!=(const LedColor & other) const { return !(*this == other); }
+  };
+
+  struct LedPattern
+  {
+    bool enabled = false;
+    LedColor color{};
+    // 0.0 のときは常時点灯、正の値のときはその周期[s]で点滅する。
+    double blink_period_s = 0.0;
   };
 
   std::shared_ptr<StateMachine> state_machine_;
@@ -184,6 +207,12 @@ public:
 
   // sabacan
   bool sabacan_is_ems_ = false;
+  // status はその周期だけ有効な上書き表示、event は一定時間だけ優先される一時表示。
+  LedPattern led_status_pattern_;
+  LedPattern led_event_pattern_;
+  rclcpp::Time led_event_expire_time_;
+  LedColor last_led_color_{};
+  bool has_last_led_color_ = false;
 
   double ps4_connection_timeout_ = 0.3;
 
@@ -324,6 +353,12 @@ public:
   // sabacan
   void sabacan_power_ref(bool is_ems);
   void sabacan_led_ref(uint8_t r, uint8_t g, uint8_t b);
+  void set_led_status(uint8_t r, uint8_t g, uint8_t b, double blink_period_s = 0.0);
+  void clear_led_status(void);
+  void set_led_event(
+    uint8_t r, uint8_t g, uint8_t b, double blink_period_s, double duration_sec);
+  LedPattern resolve_base_led_pattern(void);
+  LedColor resolve_led_output_color(const LedPattern & pattern, const rclcpp::Time & now) const;
   void publish_r1_machine_initialize(void);
   // 現在の状態に応じて、LEDを光らせる。
   void sabacan_led_update(void);

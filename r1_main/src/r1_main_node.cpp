@@ -658,6 +658,103 @@ void R1MainNode::sabacan_led_ref(uint8_t r, uint8_t g, uint8_t b)
   // RCLCPP_INFO(this->get_logger(), "sabacan led ref r: %d, g: %d, b: %d", r, g, b);
 }
 
+void R1MainNode::set_led_status(uint8_t r, uint8_t g, uint8_t b, double blink_period_s)
+{
+  // status は AUTO 中の範囲判定のような、その周期だけ使う上書き表示。
+  led_status_pattern_.enabled = true;
+  led_status_pattern_.color = {r, g, b};
+  led_status_pattern_.blink_period_s = (blink_period_s > 0.0) ? blink_period_s : 0.0;
+}
+
+void R1MainNode::clear_led_status(void)
+{
+  led_status_pattern_.enabled = false;
+  led_status_pattern_.color = {};
+  led_status_pattern_.blink_period_s = 0.0;
+}
+
+void R1MainNode::set_led_event(
+  uint8_t r, uint8_t g, uint8_t b, double blink_period_s, double duration_sec)
+{
+  // event は reset 直後の通知のような、一時的に最優先で見せたい表示。
+  led_event_pattern_.enabled = true;
+  led_event_pattern_.color = {r, g, b};
+  led_event_pattern_.blink_period_s = (blink_period_s > 0.0) ? blink_period_s : 0.0;
+  led_event_expire_time_ = this->get_clock()->now() + rclcpp::Duration::from_seconds(
+                                                        (duration_sec > 0.0) ? duration_sec : 0.0);
+}
+
+R1MainNode::LedPattern R1MainNode::resolve_base_led_pattern(void)
+{
+  // base は通常時の表示。状態遷移先に合わせて色を決める。
+  const auto state = state_machine_->get_next_state();
+
+  if (state.main == MainState::IDLE) {
+    return LedPattern{};
+  }
+  if (state.main == MainState::EMERGENCY) {
+    return LedPattern{true, {50, 0, 0}, 0.25};
+  }
+  if (state.main == MainState::AUTO) {
+    return LedPattern{true, {50, 50, 0}, 0};
+  }
+  if (state.main != MainState::MANUAL) {
+    return LedPattern{};
+  }
+
+  if (const auto * manual_sub = std::get_if<ManualSubState>(&state.sub)) {
+    if (*manual_sub == ManualSubState::MODE1_DETECT_ORIGIN) {
+      return LedPattern{true, {0, 0, 50}, 0};
+    }
+    if (*manual_sub == ManualSubState::MODE2_POLE) {
+      return LedPattern{true, {0, 50, 0}, 0};
+    }
+    if (*manual_sub == ManualSubState::MODE3_SPEAR) {
+      return LedPattern{true, {0, 50, 50}, 0};
+    }
+    if (*manual_sub == ManualSubState::MODE4_FKFS) {
+      return LedPattern{true, {50, 0, 0}, 0};
+    }
+    if (*manual_sub == ManualSubState::MODE5_RKFS) {
+      return LedPattern{true, {50, 0, 50}, 0};
+    }
+    if (*manual_sub == ManualSubState::MODE6_R2_LIFT) {
+      return LedPattern{true, {50, 50, 0}, 0};
+    }
+    if (*manual_sub == ManualSubState::MODE7_SPEAR_ATTACK) {
+      return LedPattern{true, {50, 50, 50}, 0};
+    }
+    if (*manual_sub == ManualSubState::TEST) {
+      return LedPattern{true, {50, 50, 50}, 0.25};
+    }
+  }
+
+  return LedPattern{};
+}
+
+R1MainNode::LedColor R1MainNode::resolve_led_output_color(
+  const LedPattern & pattern, const rclcpp::Time & now) const
+{
+  if (!pattern.enabled) {
+    return {};
+  }
+  if (pattern.blink_period_s <= 0.0) {
+    return pattern.color;
+  }
+
+  const int64_t period_ns = static_cast<int64_t>(pattern.blink_period_s * 1.0e9);
+  if (period_ns <= 0) {
+    return pattern.color;
+  }
+
+  // 周期の前半だけ点灯させる 50% デューティの単純な点滅。
+  const int64_t phase_ns = now.nanoseconds() % period_ns;
+  if (phase_ns < (period_ns / 2)) {
+    return pattern.color;
+  }
+  return {};
+}
+
 void R1MainNode::publish_r1_machine_initialize(void)
 {
   std_msgs::msg::Empty msg;
@@ -667,7 +764,26 @@ void R1MainNode::publish_r1_machine_initialize(void)
 
 void R1MainNode::sabacan_led_update(void)
 {
-  // TODO: 暇なときに実装する
+  const auto now = this->get_clock()->now();
+  if (led_event_pattern_.enabled && now >= led_event_expire_time_) {
+    led_event_pattern_.enabled = false;
+  }
+
+  // 優先順位は event > status > base。
+  LedPattern pattern = resolve_base_led_pattern();
+  if (led_status_pattern_.enabled) {
+    pattern = led_status_pattern_;
+  }
+  if (led_event_pattern_.enabled) {
+    pattern = led_event_pattern_;
+  }
+
+  const LedColor color = resolve_led_output_color(pattern, now);
+  if (!has_last_led_color_ || color != last_led_color_) {
+    sabacan_led_ref(color.r, color.g, color.b);
+    last_led_color_ = color;
+    has_last_led_color_ = true;
+  }
 }
 
 void R1MainNode::set_mecanum_yaw(double yaw)
@@ -778,12 +894,13 @@ geometry_msgs::msg::PoseStamped R1MainNode::get_map_pos()
 void R1MainNode::timer_callback(void)
 {
   ps4_->update();
-  sabacan_led_update();
+  clear_led_status();
   // 状態を更新
   state_machine_->update();
   // タスクを実行
   // ps4_->print_data();
   main_task();
+  sabacan_led_update();
 }
 
 void R1MainNode::chassis_move_vel(double vx, double vy, double omega)
@@ -1574,13 +1691,20 @@ void R1MainNode::auto_collect_kfs_task(void)
   ChassisAct & step = chassis_act_status_;
   constexpr int FKFS = 0;
   constexpr int RKFS = 1;
+  // AUTO のときだけ、範囲判定結果を LED status に反映する。
+  const bool enable_led_status = (state_machine_->get_next_state().main == MainState::AUTO);
+  bool has_target = false;
+  bool any_within = false;
 
   // 一旦各種stepのif文は無効化する
   // if (step == ChassisAct::ACT1 || step == ChassisAct::ACT2) {
+  // NOTE: デバッグのため、chassisactを書き換え
+  step = ChassisAct::ACT1;
   // TODO: 進行方向と使用する回収機構の順番に応じて、OFFSETをいい感じに適応する
   geometry_msgs::msg::PoseStamped map_pos = get_map_pos();
   int n = current_robot_move_.forest_order.size();
   for (int i = 0; i < n; i++) {
+    has_target = true;
     int target_forest_number = current_robot_move_.forest_order[i];
     double map_x = map_pos.pose.position.x;
     double map_y = map_pos.pose.position.y;
@@ -1591,6 +1715,8 @@ void R1MainNode::auto_collect_kfs_task(void)
     std::vector<bool>::reference within = auto_act0_within_[target_forest_number - 1][within_index];
     std::vector<bool>::reference prev_within =
       auto_act0_prev_within_[target_forest_number - 1][within_index];
+    // within はこの周期の判定結果なので、毎周期いったん false に戻して再評価する。
+    within = false;
 
     if (step == ChassisAct::ACT1) {
       center_x = INNER_COLLECT_KFS_CENTER_POS[target_forest_number - 1][0];
@@ -1630,9 +1756,7 @@ void R1MainNode::auto_collect_kfs_task(void)
       is_within_rotated_rectangle(
         map_x, map_y, center_x, center_y, rect_yaw, COLLECT_KFS_WIDTH, COLLECT_KFS_HEIGHT)) {
       within = true;
-      // LEDを設定、緑色
-      sabacan_led_ref(0, 50, 0);
-      break;
+      any_within = true;
     }
     // witinがfalseのときはLEDを赤色にする
     if (within == false) {
@@ -1643,9 +1767,11 @@ void R1MainNode::auto_collect_kfs_task(void)
         if (within_index == FKFS) {
           kfs_fx(KFS_FX_STORAGE_POS);
           kfs_fz(KFS_FZ_STORAGE_POS);
+          kfs_fyaw(KFS_FRAW_SIDE_ANGLE);
         } else {
           kfs_rx(KFS_RX_STORAGE_POS);
           kfs_rz(KFS_RZ_STORAGE_POS);
+          kfs_ryaw(KFS_RYAW_SIDE_ANGLE);
         }
         // ログを出力
         RCLCPP_INFO(
@@ -1674,6 +1800,14 @@ void R1MainNode::auto_collect_kfs_task(void)
     // 最後に前回値を更新する
     prev_within = within;
   }
+
+  if (enable_led_status && has_target) {
+    if (any_within) {
+      // set_led_status(0, 50, 0);
+    } else {
+      // set_led_status(50, 0, 0);
+    }
+  }
 }
 
 void R1MainNode::auto_act0(void)
@@ -1683,7 +1817,6 @@ void R1MainNode::auto_act0(void)
   if (step == ChassisAct::NONE) {
     // NOTE: 実験のために一度ChassisAct::NONEのときにも回収動作を行えるようにする
     auto_collect_kfs_task();
-    sabacan_led_ref(50, 50, 0);
     if (ps4_->is_pushed_triangle()) {
       // 位置制御のプログラム実行
       // publish_chassis_act_ref(ChassisAct::ACT0_START);
@@ -1850,6 +1983,7 @@ void R1MainNode::reset_robot(bool is_start_zone)
   state_machine_->set_next_state(initial_state_);
   state_machine_->print_state(initial_state_, "Reset to initial state: ");
   is_initialized_ = true;
+  set_led_event(0, 0, 50, 0.2, 1.0);
 }
 
 void R1MainNode::manual_task(void)
@@ -1883,32 +2017,23 @@ void R1MainNode::manual_task(void)
     if (ps4_->is_pushed_ps()) {
       reset_robot(true);
       publish_r1_machine_initialize();
-      // 最初のLEDは青にする
-      sabacan_led_ref(0, 0, 50);
     }
     // shareボタンが押されたときはモードを切り替える
     if (ps4_->is_pushed_share()) {
       if (const auto * manual_sub = std::get_if<ManualSubState>(&current_state.sub)) {
         if (*manual_sub == ManualSubState::MODE1_DETECT_ORIGIN) {
           state_machine_->set_next_state({MainState::MANUAL, ManualSubState::MODE2_POLE});
-          sabacan_led_ref(0, 50, 0);
         } else if (*manual_sub == ManualSubState::MODE2_POLE) {
           state_machine_->set_next_state({MainState::MANUAL, ManualSubState::MODE3_SPEAR});
-          sabacan_led_ref(0, 50, 50);
         } else if (*manual_sub == ManualSubState::MODE3_SPEAR) {
-          sabacan_led_ref(50, 0, 0);
           state_machine_->set_next_state({MainState::MANUAL, ManualSubState::MODE4_FKFS});
         } else if (*manual_sub == ManualSubState::MODE4_FKFS) {
-          sabacan_led_ref(50, 0, 50);
           state_machine_->set_next_state({MainState::MANUAL, ManualSubState::MODE5_RKFS});
         } else if (*manual_sub == ManualSubState::MODE5_RKFS) {
-          sabacan_led_ref(50, 50, 0);
           state_machine_->set_next_state({MainState::MANUAL, ManualSubState::MODE6_R2_LIFT});
         } else if (*manual_sub == ManualSubState::MODE6_R2_LIFT) {
-          sabacan_led_ref(50, 50, 50);
           state_machine_->set_next_state({MainState::MANUAL, ManualSubState::MODE7_SPEAR_ATTACK});
         } else if (*manual_sub == ManualSubState::MODE7_SPEAR_ATTACK) {
-          sabacan_led_ref(0, 0, 50);
           state_machine_->set_next_state({MainState::MANUAL, ManualSubState::MODE1_DETECT_ORIGIN});
         }
       }
