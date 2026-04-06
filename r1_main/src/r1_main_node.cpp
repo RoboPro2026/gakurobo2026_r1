@@ -1820,7 +1820,7 @@ void R1MainNode::auto_collect_kfs_task(void)
         if (within_index == FKFS) {
           // 回収機構を動かす
           kfs_fx(KFS_FX_EXPAND_POS);
-          kfs_fyaw(KFS_FYAW_FRONT_ANGLE);
+          kfs_fyaw(KFS_FYAW_REAR_ANGLE);
           kfs_front_pump(1.0);
           kfs_front_valve(false);
           if (
@@ -1837,7 +1837,7 @@ void R1MainNode::auto_collect_kfs_task(void)
         } else {
           // 回収機構を動かす
           kfs_rx(KFS_RX_EXPAND_POS);
-          kfs_ryaw(KFS_RYAW_FRONT_ANGLE);
+          kfs_ryaw(KFS_RYAW_REAR_ANGLE);
           kfs_rear_pump(1.0);
           kfs_rear_valve(false);
           if (
