@@ -480,6 +480,8 @@ public:
   int manual_mode7_spear_hand_valve1_step_ = DEFAULT_STEP;
   rclcpp::TimerBase::SharedPtr manual_mode4_front_valve_timer_;
   rclcpp::TimerBase::SharedPtr manual_mode5_rear_valve_timer_;
+  rclcpp::TimerBase::SharedPtr manual_mode7_front_valve_timer_;
+  rclcpp::TimerBase::SharedPtr manual_mode7_rear_valve_timer_;
   // ========== オートモード ==========
   void auto_collect_kfs_task(void);
   void auto_act0(void);

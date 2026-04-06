@@ -1674,6 +1674,23 @@ void R1MainNode::manual_mode7_spear_attack(void)
   if (ps4_->is_pushed_circle()) {
     reset_position(true);
   }
+
+  if (ps4_->is_pushed_left()) {
+    kfs_front_pump(0.0);
+    kfs_front_valve(true);
+    // setTimeout風で電磁弁をOFFにする。
+    manual_mode7_front_valve_timer_ = this->create_wall_timer(250ms, [this]() {
+      kfs_front_valve(false);
+      manual_mode7_front_valve_timer_->cancel();
+    });
+    kfs_rear_pump(0.0);
+    kfs_rear_valve(true);
+    // setTimeout風で電磁弁をOFFにする。
+    manual_mode7_rear_valve_timer_ = this->create_wall_timer(250ms, [this]() {
+      kfs_rear_valve(false);
+      manual_mode7_rear_valve_timer_->cancel();
+    });
+  }
   // int & spear_hand_valve1_step = manual_mode7_spear_hand_valve1_step_;
 
   // if (ps4_->is_pushed_up()) {
@@ -1810,8 +1827,8 @@ void R1MainNode::auto_collect_kfs_task(void)
           if (auto_collect_front_storage_yaw_timer_) {
             auto_collect_front_storage_yaw_timer_->cancel();
           }
-          auto_collect_front_storage_yaw_timer_ = this->create_wall_timer(
-            std::chrono::duration<double>(KFS_YAW_DELAY_TIME), [this]() {
+          auto_collect_front_storage_yaw_timer_ =
+            this->create_wall_timer(std::chrono::duration<double>(KFS_YAW_DELAY_TIME), [this]() {
               kfs_fyaw(KFS_FYAW_SIDE_ANGLE);
               auto_collect_front_storage_yaw_timer_->cancel();
             });
@@ -1821,8 +1838,8 @@ void R1MainNode::auto_collect_kfs_task(void)
           if (auto_collect_rear_storage_yaw_timer_) {
             auto_collect_rear_storage_yaw_timer_->cancel();
           }
-          auto_collect_rear_storage_yaw_timer_ = this->create_wall_timer(
-            std::chrono::duration<double>(KFS_YAW_DELAY_TIME), [this]() {
+          auto_collect_rear_storage_yaw_timer_ =
+            this->create_wall_timer(std::chrono::duration<double>(KFS_YAW_DELAY_TIME), [this]() {
               kfs_ryaw(KFS_RYAW_SIDE_ANGLE);
               auto_collect_rear_storage_yaw_timer_->cancel();
             });
