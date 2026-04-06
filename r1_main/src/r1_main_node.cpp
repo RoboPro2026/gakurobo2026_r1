@@ -1769,11 +1769,11 @@ void R1MainNode::auto_collect_kfs_task(void)
     }
     // TODO: ココらへんの処理はかなり怪しいので、赤ゾーンに対応するときに見直す。おそらく角度の扱いが怪しい
     // yは進行方向と同じ向きに対してオフセットを適用する
-    if (step == ChassisAct::ACT1 && current_robot_move_.kfs_mechanism_type[i] == "front_kfs") {
+    if (step == ChassisAct::ACT1 && current_robot_move_.kfs_mechanism_type[i] == "rear_kfs") {
       offset_x = COLLECT_KFS_OFFSET * std::cos(rect_yaw);
       offset_y = COLLECT_KFS_OFFSET * std::sin(rect_yaw);
     } else if (
-      step == ChassisAct::ACT2 && current_robot_move_.kfs_mechanism_type[i] == "rear_kfs") {
+      step == ChassisAct::ACT2 && current_robot_move_.kfs_mechanism_type[i] == "front_kfs") {
       offset_x = COLLECT_KFS_OFFSET * std::cos(rect_yaw);
       offset_y = COLLECT_KFS_OFFSET * std::sin(rect_yaw);
     }
