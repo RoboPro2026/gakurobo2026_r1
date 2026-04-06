@@ -341,7 +341,7 @@ r1_kfs_fz_node:
     # トルク検出時のしきい値
     torque_threshold: 0.5 # Nm
     # 通常位置モード時に Robomas の torque_lim として使う値
-    normal_torque_limit: 0.7 # Nm
+    normal_torque_limit: 1.0 # Nm
     # 原点検出・メカロック移動中に Robomas の torque_lim として使う値
     contact_torque_limit: 0.7 # Nm
     origin_detect_threshold_time: 0.5 # 秒
@@ -410,7 +410,7 @@ r1_kfs_rz_node:
     # トルク検出時のしきい値
     torque_threshold: 0.5 # Nm
     # 通常位置モード時に Robomas の torque_lim として使う値
-    normal_torque_limit: 0.7 # Nm
+    normal_torque_limit: 1.0 # Nm
     # 原点検出・メカロック移動中に Robomas の torque_lim として使う値
     contact_torque_limit: 0.7 # Nm
     origin_detect_threshold_time: 0.5 # 秒
