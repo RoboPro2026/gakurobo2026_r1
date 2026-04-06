@@ -1692,6 +1692,24 @@ void R1MainNode::manual_mode7_spear_attack(void)
         } else {
           RCLCPP_ERROR(this->get_logger(), "collect_kfs_type size error");
         }
+      } else if (n == 3 || n == 6 || n == 9 || n == 12 || n == 11 || n == 10) {
+        forest_order.push_back(n);
+        if (j == 0) {
+          if (zone_ == "blue") {
+            collect_kfs_type.push_back("front_kfs");
+          } else {
+            // 今は何もしない
+          }
+          j++;
+        } else if (j == 1) {
+          if (zone_ == "blue") {
+            collect_kfs_type.push_back("rear_kfs");
+          } else {
+            // 今は何もしない
+          }
+        } else {
+          RCLCPP_ERROR(this->get_logger(), "collect_kfs_type size error");
+        }
       }
     }
     publish_robot_move(ChassisAct::ACT1_START, forest_order, collect_kfs_type);
