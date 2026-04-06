@@ -367,10 +367,10 @@ public:
       }
       // TODO: ココらへんの処理はかなり怪しいので、赤ゾーンに対応するときに見直す。おそらく角度の扱いが怪しい
       // yは進行方向と同じ向きに対してオフセットを適用する
-      if (is_inner && msg->kfs_mechanism_type[i] == "front_kfs") {
+      if (is_inner && msg->kfs_mechanism_type[i] == "rear_kfs") {
         offset_x = collect_kfs_offset_ * std::cos(rect_yaw);
         offset_y = collect_kfs_offset_ * std::sin(rect_yaw);
-      } else if (is_outer && msg->kfs_mechanism_type[i] == "rear_kfs") {
+      } else if (is_outer && msg->kfs_mechanism_type[i] == "front_kfs") {
         offset_x = collect_kfs_offset_ * std::cos(rect_yaw);
         offset_y = collect_kfs_offset_ * std::sin(rect_yaw);
       }
@@ -391,8 +391,9 @@ public:
       for (int j = 0; j < (int)v_trans_wp.size(); j++) {
         // 範囲内かどうか判定
         // 範囲内だった場合は減速する
-        if (is_within_rotated_rectangle(
-              x_wp[j], y_wp[j], center_x, center_y, rect_yaw, decel_width_, decel_height_)) {
+        if (
+          is_within_rotated_rectangle(
+            x_wp[j], y_wp[j], center_x, center_y, rect_yaw, decel_width_, decel_height_)) {
           if (std::isfinite(v_trans_wp[j])) {
             v_trans_wp[j] = std::min(v_trans_wp[j], decel_speed_);
           } else {
