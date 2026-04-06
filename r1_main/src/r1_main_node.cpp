@@ -1848,6 +1848,8 @@ void R1MainNode::auto_collect_kfs_task(void)
   // TODO: 進行方向と使用する回収機構の順番に応じて、OFFSETをいい感じに適応する
   geometry_msgs::msg::PoseStamped map_pos = get_map_pos();
   int n = current_robot_move_.forest_order.size();
+  bool has_within_true = false;
+  bool has_within_false = false;
   for (int i = 0; i < n; i++) {
     int target_forest_number = current_robot_move_.forest_order[i];
     double map_x = map_pos.pose.position.x;
@@ -1901,10 +1903,10 @@ void R1MainNode::auto_collect_kfs_task(void)
         map_x, map_y, center_x, center_y, rect_yaw, COLLECT_KFS_WIDTH, COLLECT_KFS_HEIGHT)) {
       within = true;
     }
-    // witinがfalseのときはLEDを赤色にする
-    if (within == false) {
-      set_led_event(100, 0, 0, 0.2, 0.2);
+    has_within_true = has_within_true || within;
+    has_within_false = has_within_false || !within;
 
+    if (within == false) {
       // trueからfalseに変わったら、収納動作を行う。
       if (prev_within == true) {
         if (ENABLE_AUTO_COLLECT_KFS_ACTUATOR) {
@@ -1945,7 +1947,6 @@ void R1MainNode::auto_collect_kfs_task(void)
         }
       }
     } else {
-      set_led_event(0, 0, 0, 0.2, 0.2);
       // falseからtrueに変わったら、回収動作を行う。
       if (prev_within == false) {
         if (ENABLE_AUTO_COLLECT_KFS_ACTUATOR) {
@@ -2000,6 +2001,12 @@ void R1MainNode::auto_collect_kfs_task(void)
     }
     // 最後に前回値を更新する
     prev_within = within;
+  }
+
+  if (has_within_true) {
+    set_led_status(0, 50, 0, 0.0);
+  } else if (has_within_false) {
+    set_led_status(50, 0, 0, 0.0);
   }
 }
 

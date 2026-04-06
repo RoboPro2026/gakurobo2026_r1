@@ -325,7 +325,7 @@ LED は timer callback の最後に 1 回だけ更新されます。
 - `enable_auto_collect_kfs_actuator == false` のときは、範囲判定と LED 更新は続けますが、KFS の位置・yaw・ポンプ・バルブ指令は publish しません。
   - このパラメータは実行中の `ros2 param set` でも切り替えできます。
 - `AUTO` 中は判定結果を LED `status` として反映します。
-  - 範囲内なら緑
+  - 複数の対象を見ている場合でも、どれか 1 つでも範囲内なら緑を優先
   - 範囲外なら赤
   - どちらも無ければ `AUTO` の base 色である黄色
 
