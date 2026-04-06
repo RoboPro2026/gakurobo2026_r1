@@ -214,8 +214,8 @@ r1_main_node:
     # KFS回収範囲の長方形サイズ [m]
     # yaw=0 のとき width は map の x 方向、height は map の y 方向の長さになる
     # yaw を与えた場合は、その yaw だけ回転した長方形ローカル座標系での幅と高さになる
-    collect_kfs_height: 0.4
-    collect_kfs_width: 0.6
+    collect_kfs_height: 0.2
+    collect_kfs_width: 0.4
     # 内回り/外回りのKFS回収範囲の中心座標 [x, y, yaw]
     # # 内回りのときは2,1,4,7,10を通る
     inner_collect_kfs_center_pos:
@@ -245,7 +245,7 @@ r1_main_node:
       10: [4.2, 8.6, 0.0]
       11: [3.0, 8.6, 0.0]
       12: [0.0, 7.4, 1.57]
-    collect_kfs_offset: 0.6 # KFS回収時のオフセット（front_kfsかrear_kfsのうち、遠い方に適応する）
+    collect_kfs_offset: 0.838 # KFS回収時のオフセット（front_kfsかrear_kfsのうち、遠い方に適応する）
 
 
 # -------- 足回り ----------
