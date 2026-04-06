@@ -91,18 +91,18 @@ r1_chassis_velocity_control_node:
     control_rate: 100.0
     input_cmd_vel_topic: "/cmd_vel_target"
     output_cmd_vel_topic: "/cmd_vel"
-    kp_vx: 0.6
-    ki_vx: 0.04
+    kp_vx: 0.4
+    ki_vx: 0.02
     kd_vx: 0.0
     integral_limit_vx: 0.35
     output_limit_vx: 1.0
-    kp_vy: 0.6
-    ki_vy: 0.04
+    kp_vy: 0.4
+    ki_vy: 0.02
     kd_vy: 0.0
     integral_limit_vy: 0.35
     output_limit_vy: 1.0
-    kp_omega: 0.6
-    ki_omega: 0.04
+    kp_omega: 0.4
+    ki_omega: 0.02
     kd_omega: 0.0
     integral_limit_omega: 0.35
     output_limit_omega: 1.0
