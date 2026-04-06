@@ -16,6 +16,7 @@
 #include <memory>
 #include <string>
 #include <variant>
+#include <vector>
 
 #include "geometry_msgs/msg/pose_stamped.hpp"
 #include "geometry_msgs/msg/pose_with_covariance_stamped.hpp"
@@ -200,12 +201,15 @@ public:
   // fx
   double KFS_FX_NORMAL_POS = 0.0;
   double KFS_FX_EXPAND_POS = 0.0;
+  double KFS_FX_STORAGE_POS = 0.0;
   // fz
   double KFS_FZ_NORMAL_POS = 0.0;
+  double KFS_FZ_EXPAND_POS = 0.0;
   double KFS_FZ_LOW_POS = 0.0;
   double KFS_FZ_MIDDLE_POS = 0.0;
   double KFS_FZ_HIGH_POS = 0.0;
   double KFS_FZ_BOOK_POS = 0.0;
+  double KFS_FZ_STORAGE_POS = 0.0;
   // fyaw
   double KFS_FYAW_NORMAL_ANGLE = 0.0;
   double KFS_FYAW_FRONT_ANGLE = 0.0;
@@ -214,12 +218,15 @@ public:
   // rx
   double KFS_RX_NORMAL_POS = 0.0;
   double KFS_RX_EXPAND_POS = 0.0;
+  double KFS_RX_STORAGE_POS = 0.0;
   // rz
   double KFS_RZ_NORMAL_POS = 0.0;
+  double KFS_RZ_EXPAND_POS = 0.0;
   double KFS_RZ_LOW_POS = 0.0;
   double KFS_RZ_MIDDLE_POS = 0.0;
   double KFS_RZ_HIGH_POS = 0.0;
   double KFS_RZ_BOOK_POS = 0.0;
+  double KFS_RZ_STORAGE_POS = 0.0;
   // ryaw
   double KFS_RYAW_NORMAL_ANGLE = 0.0;
   double KFS_RYAW_FRONT_ANGLE = 0.0;
@@ -435,11 +442,17 @@ public:
   int manual_mode6_r2_lift_step_ = DEFAULT_STEP;
   int manual_mode7_spear_attack_task_step_ = DEFAULT_STEP;
   int manual_mode7_spear_hand_valve1_step_ = DEFAULT_STEP;
-  void reset_step(void);
-  void reset_robot(void);
   rclcpp::TimerBase::SharedPtr manual_mode4_front_valve_timer_;
   rclcpp::TimerBase::SharedPtr manual_mode5_rear_valve_timer_;
   // ========== オートモード ==========
   void auto_collect_kfs_task(void);
   void auto_act0(void);
+  // [12][2]の2次元配列
+  std::vector<std::vector<bool>> auto_act0_within_ =
+    std::vector<std::vector<bool>>(12, std::vector<bool>(2, false));
+  std::vector<std::vector<bool>> auto_act0_prev_within_ =
+    std::vector<std::vector<bool>>(12, std::vector<bool>(2, false));
+  // ========== リセット ==========
+  void reset_step(void);
+  void reset_robot(bool is_start_zone);
 };

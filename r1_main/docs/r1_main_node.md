@@ -12,7 +12,7 @@
   - `robot_control_mode:=auto` のとき `AUTO / ACT0`
 - `MainState` には `IDLE` / `EMERGENCY` / `MANUAL` / `AUTO` がありますが、現在のコードには main state を切り替える入力がありません。
 - そのため通常運用では `MANUAL` しか入りません。`AUTO` を使う場合は `robot_control_mode:=auto` を指定して起動します。
-- `PS` ボタンで `reset_robot()` と `/r1_machine_initialize` publish を行うまで、`is_initialized_ == false` のため各 mode の実動作は走りません。
+- `PS` ボタンで `reset_robot(true)` と `/r1_machine_initialize` publish を行うまで、`is_initialized_ == false` のため各 mode の実動作は走りません。
 - `MODE2_POLE` / `MODE3_SPEAR` / `MODE4_FKFS` / `MODE7_SPEAR_ATTACK` は、現状ほとんどの処理がコメントアウトされています。
 
 ## 役割
@@ -196,7 +196,7 @@
 - `options`
   - `sabacan_power_ref(!sabacan_is_ems_)` を送り、電源基板の EMS をトグルします。
 - `ps`
-  - `reset_robot()` を実行します。
+  - `reset_robot(true)` を実行します。
   - `/r1_machine_initialize` を publish します。
 - `share`
   - `MANUAL` 中は manual sub state を順送りします。
@@ -289,16 +289,21 @@
 - 赤ゾーン側は TODO が残っており、未整備です。
 - `sabacan_led_update()` は空実装です。
 
-## `reset_robot()`
+## `reset_robot(bool is_start_zone)`
 
-`reset_robot()` では次を行います。
+`reset_robot(is_start_zone)` では次を行います。
 
 - 各 step カウンタを初期化
-- `/set_mecanum_yaw` に `0.0` を送信
-- `/set_swerve_drive_yaw` に `0.0` を送信
-- `/set_odometry` に `(0.0, 0.0, 0.0)` を送信
+- メンバー変数 `zone_` を `blue` / `red` として検証します
+- `zone_ == blue` なら開始姿勢を `(-5.5, 0.5, 0.0)` に設定します
+- `zone_ == red` なら開始姿勢を `(5.5, 0.5, 0.0)` に設定します
+- `/set_mecanum_yaw` と `/set_swerve_drive_yaw` に開始 yaw を送信します
+- `/set_odometry` と `/initialpose` に開始姿勢を送信します
 - 速度制御系とポンプ・バルブを停止
+- 初期 state に戻します
 - `is_initialized_ = true`
+
+`is_start_zone == false` の分岐は現状まだ TODO で、今は start zone と同じ開始姿勢を使います。
 
 `/r1_machine_initialize` publish 自体は `reset_robot()` の外で行っており、`PS` ボタン押下時にセットで実行されます。
 

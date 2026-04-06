@@ -425,12 +425,15 @@ R1MainNode::R1MainNode() : Node("r1_main_node")
   // fx
   declare_and_get_parameter("kfs_fx_normal_pos", KFS_FX_NORMAL_POS);
   declare_and_get_parameter("kfs_fx_expand_pos", KFS_FX_EXPAND_POS);
+  declare_and_get_parameter("kfs_fx_storage_pos", KFS_FX_STORAGE_POS);
   // fz
   declare_and_get_parameter("kfs_fz_normal_pos", KFS_FZ_NORMAL_POS);
   declare_and_get_parameter("kfs_fz_low_pos", KFS_FZ_LOW_POS);
   declare_and_get_parameter("kfs_fz_middle_pos", KFS_FZ_MIDDLE_POS);
   declare_and_get_parameter("kfs_fz_high_pos", KFS_FZ_HIGH_POS);
   declare_and_get_parameter("kfs_fz_book_pos", KFS_FZ_BOOK_POS);
+  declare_and_get_parameter("kfs_fz_expand_pos", KFS_FZ_EXPAND_POS, KFS_FZ_LOW_POS);
+  declare_and_get_parameter("kfs_fz_storage_pos", KFS_FZ_STORAGE_POS, KFS_FZ_BOOK_POS);
   // fyaw
   declare_and_get_parameter("kfs_fyaw_normal_angle", KFS_FYAW_NORMAL_ANGLE);
   declare_and_get_parameter("kfs_fyaw_front_angle", KFS_FYAW_FRONT_ANGLE);
@@ -439,12 +442,15 @@ R1MainNode::R1MainNode() : Node("r1_main_node")
   // rx
   declare_and_get_parameter("kfs_rx_normal_pos", KFS_RX_NORMAL_POS);
   declare_and_get_parameter("kfs_rx_expand_pos", KFS_RX_EXPAND_POS);
+  declare_and_get_parameter("kfs_rx_storage_pos", KFS_RX_STORAGE_POS);
   // rz
   declare_and_get_parameter("kfs_rz_normal_pos", KFS_RZ_NORMAL_POS);
   declare_and_get_parameter("kfs_rz_low_pos", KFS_RZ_LOW_POS);
   declare_and_get_parameter("kfs_rz_middle_pos", KFS_RZ_MIDDLE_POS);
   declare_and_get_parameter("kfs_rz_high_pos", KFS_RZ_HIGH_POS);
   declare_and_get_parameter("kfs_rz_book_pos", KFS_RZ_BOOK_POS);
+  declare_and_get_parameter("kfs_rz_expand_pos", KFS_RZ_EXPAND_POS, KFS_RZ_LOW_POS);
+  declare_and_get_parameter("kfs_rz_storage_pos", KFS_RZ_STORAGE_POS, KFS_RZ_BOOK_POS);
   // ryaw
   declare_and_get_parameter("kfs_ryaw_normal_angle", KFS_RYAW_NORMAL_ANGLE);
   declare_and_get_parameter("kfs_ryaw_front_angle", KFS_RYAW_FRONT_ANGLE);
@@ -1566,67 +1572,107 @@ void R1MainNode::manual_mode7_spear_attack(void)
 void R1MainNode::auto_collect_kfs_task(void)
 {
   ChassisAct & step = chassis_act_status_;
+  constexpr int FKFS = 0;
+  constexpr int RKFS = 1;
 
-  if (step == ChassisAct::ACT1 || step == ChassisAct::ACT2) {
-    // TODO: 進行方向と使用する回収機構の順番に応じて、OFFSETをいい感じに適応する
-    geometry_msgs::msg::PoseStamped map_pos = get_map_pos();
-    int n = current_robot_move_.forest_order.size();
-    bool within = false;
-    for (int i = 0; i < n; i++) {
-      int target_forest_number = current_robot_move_.forest_order[i];
-      double map_x = map_pos.pose.position.x;
-      double map_y = map_pos.pose.position.y;
-      double center_x = 0.0, center_y = 0.0, rect_yaw = 0.0, offset_x = 0.0, offset_y = 0.0;
-      if (step == ChassisAct::ACT1) {
-        center_x = INNER_COLLECT_KFS_CENTER_POS[target_forest_number - 1][0];
-        center_y = INNER_COLLECT_KFS_CENTER_POS[target_forest_number - 1][1];
-        rect_yaw = INNER_COLLECT_KFS_CENTER_POS[target_forest_number - 1][2];
-      } else if (step == ChassisAct::ACT2) {
-        center_x = OUTER_COLLECT_KFS_CENTER_POS[target_forest_number - 1][0];
-        center_y = OUTER_COLLECT_KFS_CENTER_POS[target_forest_number - 1][1];
-        rect_yaw = OUTER_COLLECT_KFS_CENTER_POS[target_forest_number - 1][2];
-      }
-      // 青ゾーンのときは角度を反転させる
-      if (zone_ == "blue") {
-        center_x *= -1.0;
-        rect_yaw = angle_normalize(M_PI - rect_yaw);
-      }
-      // TODO: ココらへんの処理はかなり怪しいので、赤ゾーンに対応するときに見直す。おそらく角度の扱いが怪しい
-      // yは進行方向と同じ向きに対してオフセットを適用する
-      if (step == ChassisAct::ACT1 && current_robot_move_.kfs_mechanism_type[i] == "front_kfs") {
-        offset_x = COLLECT_KFS_OFFSET * std::cos(rect_yaw);
-        offset_y = COLLECT_KFS_OFFSET * std::sin(rect_yaw);
-      } else if (
-        step == ChassisAct::ACT2 && current_robot_move_.kfs_mechanism_type[i] == "rear_kfs") {
-        offset_x = COLLECT_KFS_OFFSET * std::cos(rect_yaw);
-        offset_y = COLLECT_KFS_OFFSET * std::sin(rect_yaw);
-      }
+  // 一旦各種stepのif文は無効化する
+  // if (step == ChassisAct::ACT1 || step == ChassisAct::ACT2) {
+  // TODO: 進行方向と使用する回収機構の順番に応じて、OFFSETをいい感じに適応する
+  geometry_msgs::msg::PoseStamped map_pos = get_map_pos();
+  int n = current_robot_move_.forest_order.size();
+  for (int i = 0; i < n; i++) {
+    int target_forest_number = current_robot_move_.forest_order[i];
+    double map_x = map_pos.pose.position.x;
+    double map_y = map_pos.pose.position.y;
+    double center_x = 0.0, center_y = 0.0, rect_yaw = 0.0, offset_x = 0.0, offset_y = 0.0;
 
-      // center_xとcenter_yにオフセットを適用する
-      if (zone_ == "red") {
-        center_x += offset_x;
-        center_y += offset_y;
-      } else {
-        // 本当はcenter_xはプラスではなくマイナスのはずだが、何故か動かないので一旦プラス
-        center_x += offset_x;
-        center_y += offset_y;
-      }
-      if (
-        is_within_rotated_rectangle(
-          map_x, map_y, center_x, center_y, rect_yaw, COLLECT_KFS_WIDTH, COLLECT_KFS_HEIGHT)) {
-        within = true;
-        // LEDを設定、緑色
-        sabacan_led_ref(0, 50, 0);
-        break;
-      }
+    // within関連はメンバー変数。名前が長いので、参照として短い名前で扱う。
+    int within_index = (current_robot_move_.kfs_mechanism_type[i] == "front_kfs") ? FKFS : RKFS;
+    std::vector<bool>::reference within = auto_act0_within_[target_forest_number - 1][within_index];
+    std::vector<bool>::reference prev_within =
+      auto_act0_prev_within_[target_forest_number - 1][within_index];
+
+    if (step == ChassisAct::ACT1) {
+      center_x = INNER_COLLECT_KFS_CENTER_POS[target_forest_number - 1][0];
+      center_y = INNER_COLLECT_KFS_CENTER_POS[target_forest_number - 1][1];
+      rect_yaw = INNER_COLLECT_KFS_CENTER_POS[target_forest_number - 1][2];
+    } else if (step == ChassisAct::ACT2) {
+      center_x = OUTER_COLLECT_KFS_CENTER_POS[target_forest_number - 1][0];
+      center_y = OUTER_COLLECT_KFS_CENTER_POS[target_forest_number - 1][1];
+      rect_yaw = OUTER_COLLECT_KFS_CENTER_POS[target_forest_number - 1][2];
+    }
+    // 青ゾーンのときは角度を反転させる
+    if (zone_ == "blue") {
+      center_x *= -1.0;
+      rect_yaw = angle_normalize(M_PI - rect_yaw);
+    }
+    // TODO: ココらへんの処理はかなり怪しいので、赤ゾーンに対応するときに見直す。おそらく角度の扱いが怪しい
+    // yは進行方向と同じ向きに対してオフセットを適用する
+    if (step == ChassisAct::ACT1 && current_robot_move_.kfs_mechanism_type[i] == "front_kfs") {
+      offset_x = COLLECT_KFS_OFFSET * std::cos(rect_yaw);
+      offset_y = COLLECT_KFS_OFFSET * std::sin(rect_yaw);
+    } else if (
+      step == ChassisAct::ACT2 && current_robot_move_.kfs_mechanism_type[i] == "rear_kfs") {
+      offset_x = COLLECT_KFS_OFFSET * std::cos(rect_yaw);
+      offset_y = COLLECT_KFS_OFFSET * std::sin(rect_yaw);
+    }
+
+    // center_xとcenter_yにオフセットを適用する
+    if (zone_ == "red") {
+      center_x += offset_x;
+      center_y += offset_y;
+    } else {
+      // 本当はcenter_xはプラスではなくマイナスのはずだが、何故か動かないので一旦プラス
+      center_x += offset_x;
+      center_y += offset_y;
+    }
+    if (
+      is_within_rotated_rectangle(
+        map_x, map_y, center_x, center_y, rect_yaw, COLLECT_KFS_WIDTH, COLLECT_KFS_HEIGHT)) {
+      within = true;
+      // LEDを設定、緑色
+      sabacan_led_ref(0, 50, 0);
+      break;
     }
     // witinがfalseのときはLEDを赤色にする
     if (within == false) {
-      sabacan_led_ref(50, 0, 0);
+      // trueからfalseに変わったら、収納動作を行う。
+      if (prev_within == true) {
+        // 収納位置に移動
+        // ここではyawは動かさない
+        if (within_index == FKFS) {
+          kfs_fx(KFS_FX_STORAGE_POS);
+          kfs_fz(KFS_FZ_STORAGE_POS);
+        } else {
+          kfs_rx(KFS_RX_STORAGE_POS);
+          kfs_rz(KFS_RZ_STORAGE_POS);
+        }
+        // ログを出力
+        RCLCPP_INFO(
+          this->get_logger(), "%d forest %s kfs storage", target_forest_number,
+          current_robot_move_.kfs_mechanism_type[i].c_str());
+      }
+    } else {
+      // falseからtrueに変わったら、回収動作を行う。
+      if (prev_within == false) {
+        // 回収位置に移動
+        if (within_index == FKFS) {
+          kfs_fx(KFS_FX_EXPAND_POS);
+          kfs_fz(KFS_FZ_EXPAND_POS);
+          kfs_fyaw(KFS_FYAW_FRONT_ANGLE);
+        } else {
+          kfs_rx(KFS_RX_EXPAND_POS);
+          kfs_rz(KFS_RZ_EXPAND_POS);
+          kfs_ryaw(KFS_RYAW_FRONT_ANGLE);
+        }
+        // ログを出力
+        RCLCPP_INFO(
+          this->get_logger(), "%d forest %s kfs collect", target_forest_number,
+          current_robot_move_.kfs_mechanism_type[i].c_str());
+      }
     }
-  } else {
-    // LEDを設定、白色
-    // sabacan_led_ref(50, 50, 50);
+    // 最後に前回値を更新する
+    prev_within = within;
   }
 }
 
@@ -1635,6 +1681,8 @@ void R1MainNode::auto_act0(void)
   ChassisAct & step = chassis_act_status_;
 
   if (step == ChassisAct::NONE) {
+    // NOTE: 実験のために一度ChassisAct::NONEのときにも回収動作を行えるようにする
+    auto_collect_kfs_task();
     sabacan_led_ref(50, 50, 0);
     if (ps4_->is_pushed_triangle()) {
       // 位置制御のプログラム実行
@@ -1758,18 +1806,45 @@ void R1MainNode::reset_step(void)
   manual_mode6_r2_lift_step_ = DEFAULT_STEP;
   manual_mode7_spear_attack_task_step_ = DEFAULT_STEP;
   manual_mode7_spear_hand_valve1_step_ = DEFAULT_STEP;
+  for (int i = 0; i < 12; i++) {
+    for (int j = 0; j < 2; j++) {
+      auto_act0_within_[i][j] = false;
+      auto_act0_prev_within_[i][j] = false;
+    }
+  }
   publish_chassis_act_ref(ChassisAct::NONE);
 }
 
-void R1MainNode::reset_robot(void)
+void R1MainNode::reset_robot(bool is_start_zone)
 {
+  if (zone_ != "blue" && zone_ != "red") {
+    RCLCPP_WARN(
+      this->get_logger(), "Invalid reset zone: %s. Fallback to current zone: %s", zone_.c_str(),
+      zone_.c_str());
+    return;
+  }
+
+  double start_x = 0.0;
+  double start_y = 0.5;
+  double start_yaw = 0.0;
+  if (zone_ == "blue") {
+    start_x = -5.5;
+    start_yaw = 0.0;
+  } else {
+    start_x = 5.5;
+    start_yaw = 0.0;
+  }
+  if (!is_start_zone) {
+    // TODO: start zone 以外の初期位置が確定したらここで切り替える。
+  }
+
   // stepをリセットする
   reset_step();
-  // 現在の角度が0度となるようなオフセットを設定する。
-  set_mecanum_yaw(0.0);
-  set_swerve_drive_yaw(0.0);
-  // 位置は適当
-  set_odometry(0.0, 0.0, 0.0);
+  // 現在の角度が start_yaw となるようなオフセットを設定する。
+  set_mecanum_yaw(start_yaw);
+  set_swerve_drive_yaw(start_yaw);
+  set_odometry(start_x, start_y, start_yaw);
+  set_initialpose(start_x, start_y, start_yaw);
   stop_actuator();
   // initial_stateにする
   state_machine_->set_next_state(initial_state_);
@@ -1806,7 +1881,7 @@ void R1MainNode::manual_task(void)
     }
     // psボタンが押されたときはsabacan resetを行う
     if (ps4_->is_pushed_ps()) {
-      reset_robot();
+      reset_robot(true);
       publish_r1_machine_initialize();
       // 最初のLEDは青にする
       sabacan_led_ref(0, 0, 50);
@@ -1863,6 +1938,9 @@ void R1MainNode::manual_task(void)
         manual_mode7_spear_attack();
       }
     }
+
+    // NOTE: 実験のために一度手動操縦のときにも回収動作を行えるようにする
+    auto_collect_kfs_task();
   }
 }
 
@@ -1887,7 +1965,7 @@ void R1MainNode::auto_task(void)
     }
     // psボタンが押されたときはsabacan resetを行う
     if (ps4_->is_pushed_ps()) {
-      reset_robot();
+      reset_robot(true);
       publish_r1_machine_initialize();
     }
     // shareボタンが押されたときはモードを切り替える
