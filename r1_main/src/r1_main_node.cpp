@@ -1697,39 +1697,41 @@ void R1MainNode::manual_mode7_spear_attack(void)
     publish_robot_move(ChassisAct::ACT1_START, forest_order, collect_kfs_type);
 
     // zの高さの指令値を計算
-    double fz_ref = KFS_FZ_NORMAL_POS;
-    double rz_ref = KFS_RZ_NORMAL_POS;
-    for (int i = 0; i < (int)current_robot_move_.forest_order.size(); i++) {
-      int forest_number = current_robot_move_.forest_order[i];
-      bool is_front_kfs = (current_robot_move_.kfs_mechanism_type[i] == "front_kfs");
-      if (forest_number == 2 || forest_number == 4 || forest_number == 10 || forest_number == 12) {
-        if (is_front_kfs) {
-          fz_ref = KFS_FZ_LOW_POS;
-        } else {
-          rz_ref = KFS_RZ_LOW_POS;
-        }
-      } else if (
-        forest_number == 1 || forest_number == 3 || forest_number == 7 || forest_number == 9 ||
-        forest_number == 11) {
-        if (is_front_kfs) {
-          fz_ref = KFS_FZ_MIDDLE_POS;
-        } else {
-          rz_ref = KFS_RZ_MIDDLE_POS;
-        }
-      } else if (forest_number == 6) {
-        if (is_front_kfs) {
-          fz_ref = KFS_FZ_HIGH_POS;
-        } else {
-          rz_ref = KFS_RZ_HIGH_POS;
-        }
-      }
-    }
+    // double fz_ref = KFS_FZ_NORMAL_POS;
+    // double rz_ref = KFS_RZ_NORMAL_POS;
+    // // for (int i = 0; i < (int)current_robot_move_.forest_order.size(); i++) {
+    // //   int forest_number = current_robot_move_.forest_order[i];
+    // //   bool is_front_kfs = (current_robot_move_.kfs_mechanism_type[i] == "front_kfs");
+    // //   if (forest_number == 2 || forest_number == 4 || forest_number == 10 || forest_number == 12) {
+    // //     if (is_front_kfs) {
+    // //       fz_ref = KFS_FZ_LOW_POS;
+    // //     } else {
+    // //       rz_ref = KFS_RZ_LOW_POS;
+    // //     }
+    // //   } else if (
+    // //     forest_number == 1 || forest_number == 3 || forest_number == 7 || forest_number == 9 ||
+    // //     forest_number == 11) {
+    // //     if (is_front_kfs) {
+    // //       fz_ref = KFS_FZ_MIDDLE_POS;
+    // //     } else {
+    // //       rz_ref = KFS_RZ_MIDDLE_POS;
+    // //     }
+    // //   } else if (forest_number == 6) {
+    // //     if (is_front_kfs) {
+    // //       fz_ref = KFS_FZ_HIGH_POS;
+    // //     } else {
+    // //       rz_ref = KFS_RZ_HIGH_POS;
+    // //     }
+    // //   }
+    // // }
 
     // デバッグ用にKFS回収用アクチュエータを回収位置位置に移動
     kfs_fx(KFS_FX_START_POS);
     kfs_rx(KFS_RX_START_POS);
-    kfs_fz(fz_ref);
-    kfs_rz(rz_ref);
+    // kfs_fz(fz_ref);
+    // kfs_rz(rz_ref);
+    kfs_fz(KFS_FZ_STORAGE_POS);
+    kfs_rz(KFS_RZ_STORAGE_POS);
     kfs_fyaw(KFS_FYAW_REAR_ANGLE);
     kfs_ryaw(KFS_RYAW_REAR_ANGLE);
     kfs_front_pump(0.0);
