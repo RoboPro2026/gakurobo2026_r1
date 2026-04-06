@@ -560,8 +560,8 @@ R1MainNode::R1MainNode() : Node("r1_main_node")
   declare_and_get_parameter("kfs_yaw_delay_time", KFS_YAW_DELAY_TIME, 1.0);
   declare_and_get_parameter(
     "enable_auto_collect_kfs_actuator", ENABLE_AUTO_COLLECT_KFS_ACTUATOR, true);
-  parameter_callback_handle_ = this->add_on_set_parameters_callback(
-    [this](const std::vector<rclcpp::Parameter> & parameters) {
+  parameter_callback_handle_ =
+    this->add_on_set_parameters_callback([this](const std::vector<rclcpp::Parameter> & parameters) {
       rcl_interfaces::msg::SetParametersResult result;
       result.successful = true;
 
@@ -1723,6 +1723,26 @@ void R1MainNode::manual_mode7_spear_attack(void)
       kfs_rear_valve(false);
       manual_mode7_rear_valve_timer_->cancel();
     });
+
+    if (ps4_->is_pushed_l1()) {
+      // kfs_fxの微調整（指令値を減少）
+      kfs_fx(kfs_fx_position_ref_ - 0.01);
+    }
+
+    if (ps4_->is_pushed_r1()) {
+      // kfs_fxの微調整（指令値を増加）
+      kfs_fx(kfs_fx_position_ref_ + 0.01);
+    }
+
+    if (ps4_->is_pushed_l2()) {
+      // kfs_fzの微調整（指令値を減少）
+      kfs_fz(kfs_fz_position_ref_ - 0.01);
+    }
+
+    if (ps4_->is_pushed_r2()) {
+      // kfs_fzの微調整（指令値を増加）
+      kfs_fz(kfs_fz_position_ref_ + 0.01);
+    }
   }
   // int & spear_hand_valve1_step = manual_mode7_spear_hand_valve1_step_;
 
@@ -1907,9 +1927,8 @@ void R1MainNode::auto_collect_kfs_task(void)
               target_forest_number == 10 || target_forest_number == 12) {
               kfs_fz(KFS_FZ_LOW_POS);
             } else if (
-              target_forest_number == 1 || target_forest_number == 3 ||
-              target_forest_number == 7 || target_forest_number == 9 ||
-              target_forest_number == 11) {
+              target_forest_number == 1 || target_forest_number == 3 || target_forest_number == 7 ||
+              target_forest_number == 9 || target_forest_number == 11) {
               kfs_fz(KFS_FZ_MIDDLE_POS);
             } else if (target_forest_number == 6) {
               kfs_fz(KFS_FZ_HIGH_POS);
@@ -1925,9 +1944,8 @@ void R1MainNode::auto_collect_kfs_task(void)
               target_forest_number == 10 || target_forest_number == 12) {
               kfs_rz(KFS_RZ_LOW_POS);
             } else if (
-              target_forest_number == 1 || target_forest_number == 3 ||
-              target_forest_number == 7 || target_forest_number == 9 ||
-              target_forest_number == 11) {
+              target_forest_number == 1 || target_forest_number == 3 || target_forest_number == 7 ||
+              target_forest_number == 9 || target_forest_number == 11) {
               kfs_rz(KFS_RZ_MIDDLE_POS);
             } else if (target_forest_number == 6) {
               kfs_fz(KFS_FZ_HIGH_POS);
