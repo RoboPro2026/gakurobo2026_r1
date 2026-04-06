@@ -1723,26 +1723,26 @@ void R1MainNode::manual_mode7_spear_attack(void)
       kfs_rear_valve(false);
       manual_mode7_rear_valve_timer_->cancel();
     });
+  }
 
-    if (ps4_->is_pushed_l1()) {
-      // kfs_fxの微調整（指令値を減少）
-      kfs_fx(kfs_fx_position_ref_ - 0.01);
-    }
+  if (ps4_->is_pushed_l1()) {
+    // kfs_fxの微調整（指令値を減少）
+    kfs_fx(kfs_fx_position_ref_ - 0.01);
+  }
 
-    if (ps4_->is_pushed_r1()) {
-      // kfs_fxの微調整（指令値を増加）
-      kfs_fx(kfs_fx_position_ref_ + 0.01);
-    }
+  if (ps4_->is_pushed_r1()) {
+    // kfs_fxの微調整（指令値を増加）
+    kfs_fx(kfs_fx_position_ref_ + 0.01);
+  }
 
-    if (ps4_->is_pushed_l2()) {
-      // kfs_fzの微調整（指令値を減少）
-      kfs_fz(kfs_fz_position_ref_ - 0.01);
-    }
+  if (ps4_->is_pushed_l2()) {
+    // kfs_fzの微調整（指令値を減少）
+    kfs_fz(kfs_fz_position_ref_ - 0.01);
+  }
 
-    if (ps4_->is_pushed_r2()) {
-      // kfs_fzの微調整（指令値を増加）
-      kfs_fz(kfs_fz_position_ref_ + 0.01);
-    }
+  if (ps4_->is_pushed_r2()) {
+    // kfs_fzの微調整（指令値を増加）
+    kfs_fz(kfs_fz_position_ref_ + 0.01);
   }
   // int & spear_hand_valve1_step = manual_mode7_spear_hand_valve1_step_;
 
