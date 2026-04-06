@@ -150,6 +150,8 @@ r1_main_node:
     kfs_ryaw_front_angle: 0.0
     kfs_ryaw_side_angle: 1.5707963267948966
     kfs_ryaw_rear_angle: 3.141592653589793
+    # 回収するときの遅延時間
+    kfs_yaw_delay_time: 1.0
 
     # ========== 展開 ==========
     # R2昇降
@@ -781,7 +783,7 @@ sabacan_robomasv2_node_id3:
     pos_gain_p: [5.0, 5.0, 5.0, 5.0]
     pos_gain_i: [0.0, 0.0, 0.0, 0.0]
     pos_gain_d: [0.0, 0.0, 0.0, 0.0]
-    speed_lim: [30.0, 30.0, 30.0, 30.0]
+    speed_lim: [100.0, 100.0, 30.0, 30.0]
     # TRQ+SPD+POSをフィードバック
     monitor_reg1: [0x0001000100010000, 0x0001000100010000, 0x0001000100010000, 0x0001000100010000]
     # TRQ+SPD+POS+MOTOR_STATEをフィードバック
@@ -806,7 +808,7 @@ sabacan_robomasv2_node_id4:
     pos_gain_p: [5.0, 5.0, 5.0, 5.0]
     pos_gain_i: [0.0, 0.0, 0.0, 0.0]
     pos_gain_d: [0.0, 0.0, 0.0, 0.0]
-    speed_lim: [30.0, 30.0, 30.0, 30.0]
+    speed_lim: [100.0, 100.0, 30.0, 30.0]
     # TRQ+SPD+POSをフィードバック
     monitor_reg1: [0x0001000100010000, 0x0001000100010000, 0x0001000100010000, 0x0001000100010000]
     # TRQ+SPD+POS+MOTOR_STATEをフィードバック

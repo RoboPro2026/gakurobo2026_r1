@@ -544,6 +544,7 @@ R1MainNode::R1MainNode() : Node("r1_main_node")
   declare_and_get_parameter("collect_kfs_height", COLLECT_KFS_HEIGHT);
   declare_and_get_parameter("collect_kfs_width", COLLECT_KFS_WIDTH);
   declare_and_get_parameter("collect_kfs_offset", COLLECT_KFS_OFFSET);
+  declare_and_get_parameter("kfs_yaw_delay_time", KFS_YAW_DELAY_TIME, 1.0);
 
   std::string robot_control_mode_parameter;
   this->declare_parameter<std::string>("robot_control_mode", "manual");
@@ -1659,6 +1660,15 @@ void R1MainNode::manual_mode7_spear_attack(void)
       }
     }
     publish_robot_move(ChassisAct::ACT1_START, forest_order, collect_kfs_type);
+    // デバッグ用にKFS回収用アクチュエータを初期位置に移動
+    kfs_fx(KFS_FX_STORAGE_POS);
+    kfs_fz(KFS_FZ_STORAGE_POS);
+    kfs_fyaw(KFS_FYAW_REAR_ANGLE);
+    kfs_rx(KFS_RX_STORAGE_POS);
+    kfs_rz(KFS_RZ_STORAGE_POS);
+    kfs_ryaw(KFS_RYAW_REAR_ANGLE);
+    kfs_front_pump(0.0);
+    kfs_rear_pump(0.0);
   }
 
   if (ps4_->is_pushed_circle()) {
@@ -1726,10 +1736,6 @@ void R1MainNode::auto_collect_kfs_task(void)
   ChassisAct & step = chassis_act_status_;
   constexpr int FKFS = 0;
   constexpr int RKFS = 1;
-  // AUTO のときだけ、範囲判定結果を LED status に反映する。
-  const bool enable_led_status = (state_machine_->get_next_state().main == MainState::AUTO);
-  bool has_target = false;
-  bool any_within = false;
 
   // 一旦各種stepのif文は無効化する
   // if (step == ChassisAct::ACT1 || step == ChassisAct::ACT2) {
@@ -1739,7 +1745,6 @@ void R1MainNode::auto_collect_kfs_task(void)
   geometry_msgs::msg::PoseStamped map_pos = get_map_pos();
   int n = current_robot_move_.forest_order.size();
   for (int i = 0; i < n; i++) {
-    has_target = true;
     int target_forest_number = current_robot_move_.forest_order[i];
     double map_x = map_pos.pose.position.x;
     double map_y = map_pos.pose.position.y;
@@ -1791,7 +1796,6 @@ void R1MainNode::auto_collect_kfs_task(void)
       is_within_rotated_rectangle(
         map_x, map_y, center_x, center_y, rect_yaw, COLLECT_KFS_WIDTH, COLLECT_KFS_HEIGHT)) {
       within = true;
-      any_within = true;
     }
     // witinがfalseのときはLEDを赤色にする
     if (within == false) {
@@ -1800,15 +1804,28 @@ void R1MainNode::auto_collect_kfs_task(void)
       // trueからfalseに変わったら、収納動作を行う。
       if (prev_within == true) {
         // 収納位置に移動
-        // ここではyawは動かさない
         if (within_index == FKFS) {
           kfs_fx(KFS_FX_STORAGE_POS);
           kfs_fz(KFS_FZ_STORAGE_POS);
-          kfs_fyaw(KFS_FYAW_SIDE_ANGLE);
+          if (auto_collect_front_storage_yaw_timer_) {
+            auto_collect_front_storage_yaw_timer_->cancel();
+          }
+          auto_collect_front_storage_yaw_timer_ = this->create_wall_timer(
+            std::chrono::duration<double>(KFS_YAW_DELAY_TIME), [this]() {
+              kfs_fyaw(KFS_FYAW_SIDE_ANGLE);
+              auto_collect_front_storage_yaw_timer_->cancel();
+            });
         } else {
           kfs_rx(KFS_RX_STORAGE_POS);
           kfs_rz(KFS_RZ_STORAGE_POS);
-          kfs_ryaw(KFS_RYAW_SIDE_ANGLE);
+          if (auto_collect_rear_storage_yaw_timer_) {
+            auto_collect_rear_storage_yaw_timer_->cancel();
+          }
+          auto_collect_rear_storage_yaw_timer_ = this->create_wall_timer(
+            std::chrono::duration<double>(KFS_YAW_DELAY_TIME), [this]() {
+              kfs_ryaw(KFS_RYAW_SIDE_ANGLE);
+              auto_collect_rear_storage_yaw_timer_->cancel();
+            });
         }
         // ログを出力
         RCLCPP_INFO(
@@ -1995,6 +2012,12 @@ void R1MainNode::reset_step(void)
   manual_mode6_r2_lift_step_ = DEFAULT_STEP;
   manual_mode7_spear_attack_task_step_ = DEFAULT_STEP;
   manual_mode7_spear_hand_valve1_step_ = DEFAULT_STEP;
+  if (auto_collect_front_storage_yaw_timer_) {
+    auto_collect_front_storage_yaw_timer_->cancel();
+  }
+  if (auto_collect_rear_storage_yaw_timer_) {
+    auto_collect_rear_storage_yaw_timer_->cancel();
+  }
   for (int i = 0; i < 12; i++) {
     for (int j = 0; j < 2; j++) {
       auto_act0_within_[i][j] = false;

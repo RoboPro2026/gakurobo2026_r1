@@ -321,6 +321,8 @@ public:
   double COLLECT_KFS_WIDTH = 1.2;
   // KFS回収時のオフセット（front_kfsかrear_kfsのうち、遠い方に適応する）
   double COLLECT_KFS_OFFSET = 0.0;
+  // 範囲外へ出た後、収納用 yaw を送るまでの遅延時間 [s]
+  double KFS_YAW_DELAY_TIME = 1.0;
   // コンストラクタ
   R1MainNode();
 
@@ -481,6 +483,8 @@ public:
   // ========== オートモード ==========
   void auto_collect_kfs_task(void);
   void auto_act0(void);
+  rclcpp::TimerBase::SharedPtr auto_collect_front_storage_yaw_timer_;
+  rclcpp::TimerBase::SharedPtr auto_collect_rear_storage_yaw_timer_;
   // [12][2]の2次元配列
   std::vector<std::vector<bool>> auto_act0_within_ =
     std::vector<std::vector<bool>>(12, std::vector<bool>(2, false));

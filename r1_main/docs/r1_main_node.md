@@ -321,6 +321,7 @@ LED は timer callback の最後に 1 回だけ更新されます。
 - 判定対象の中心座標は `inner_collect_kfs_center_pos.*` / `outer_collect_kfs_center_pos.*` です。
 - `zone == blue` のときは `x` と `yaw` を反転して使用します。
 - `collect_kfs_offset` を、使用する KFS 機構に応じて中心座標へ加えます。
+- `kfs_yaw_delay_time` 秒だけ遅らせて、範囲外へ出た後の収納用 yaw 指令を送ります。
 - `AUTO` 中は判定結果を LED `status` として反映します。
   - 範囲内なら緑
   - 範囲外なら赤
@@ -401,6 +402,12 @@ bringup 起動時は [`r1_bringup.launch.py`](/home/user/ros2_ws/src/gakurobo202
 ### KFS 回収経路
 
 - `kfs_forest_number`
+- `collect_kfs_height`
+- `collect_kfs_width`
+- `collect_kfs_offset`
+- `kfs_yaw_delay_time`
+  - 範囲外へ出たあとに収納用 yaw を送るまでの遅延時間 [s]
+  - 既定値は `1.0`
 - `inner_collect_kfs_center_pos.<1..12>`
 - `outer_collect_kfs_center_pos.<1..12>`
 - `collect_kfs_height`
