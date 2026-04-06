@@ -1818,8 +1818,11 @@ void R1MainNode::auto_collect_kfs_task(void)
       if (prev_within == false) {
         // 回収位置に移動
         if (within_index == FKFS) {
+          // 回収機構を動かす
           kfs_fx(KFS_FX_EXPAND_POS);
           kfs_fyaw(KFS_FYAW_FRONT_ANGLE);
+          kfs_front_pump(1.0);
+          kfs_front_valve(false);
           if (
             target_forest_number == 2 || target_forest_number == 4 || target_forest_number == 10 ||
             target_forest_number == 12) {
@@ -1832,8 +1835,11 @@ void R1MainNode::auto_collect_kfs_task(void)
             kfs_fz(KFS_FZ_HIGH_POS);
           }
         } else {
+          // 回収機構を動かす
           kfs_rx(KFS_RX_EXPAND_POS);
           kfs_ryaw(KFS_RYAW_FRONT_ANGLE);
+          kfs_rear_pump(1.0);
+          kfs_rear_valve(false);
           if (
             target_forest_number == 2 || target_forest_number == 4 || target_forest_number == 10 ||
             target_forest_number == 12) {
