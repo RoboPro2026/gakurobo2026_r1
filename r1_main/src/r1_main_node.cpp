@@ -1817,9 +1817,9 @@ void R1MainNode::auto_collect_kfs_task(void)
       // falseからtrueに変わったら、回収動作を行う。
       if (prev_within == false) {
         // 回収位置に移動
+        set_led_event(0, 0, 0, 0.2, 0.2);
         if (within_index == FKFS) {
           // 回収機構を動かす
-          set_led_event(0, 0, 0, 0.2, 0.2);
           // kfs_fx(KFS_FX_EXPAND_POS);
           // kfs_fyaw(KFS_FYAW_REAR_ANGLE);
           // kfs_front_pump(1.0);
