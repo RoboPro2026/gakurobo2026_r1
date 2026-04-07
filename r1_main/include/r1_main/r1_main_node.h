@@ -213,6 +213,11 @@ public:
 
   // sabacan
   bool sabacan_is_ems_ = false;
+
+  static constexpr int LED_FKFS = 0;
+  static constexpr int LED_RKFS = 1;
+  static constexpr int LED_SYSTEM = 2;
+
   // status はその周期だけ有効な上書き表示、event は一定時間だけ優先される一時表示。
   LedPattern led_status_pattern_;
   LedPattern led_event_pattern_;
@@ -370,7 +375,7 @@ public:
     const std::string & name, std::string & value, const std::string & default_value = "");
   // sabacan
   void sabacan_power_ref(bool is_ems);
-  void sabacan_led_ref(uint8_t r, uint8_t g, uint8_t b);
+  void sabacan_led_ref(int pin_number, uint8_t r, uint8_t g, uint8_t b);
   void set_led_status(uint8_t r, uint8_t g, uint8_t b, double blink_period_s = 0.0);
   void clear_led_status(void);
   void set_led_event(uint8_t r, uint8_t g, uint8_t b, double blink_period_s, double duration_sec);

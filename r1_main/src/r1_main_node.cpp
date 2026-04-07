@@ -730,10 +730,10 @@ void R1MainNode::sabacan_power_ref(bool is_ems)
   RCLCPP_INFO(this->get_logger(), "sabacan power ref is_ems: %d", is_ems);
 }
 
-void R1MainNode::sabacan_led_ref(uint8_t r, uint8_t g, uint8_t b)
+void R1MainNode::sabacan_led_ref(int pin_number, uint8_t r, uint8_t g, uint8_t b)
 {
   sabacan_msgs::msg::SabacanLEDRef msg;
-  msg.pin_number = 0;
+  msg.pin_number = pin_number;
   msg.start = 0;
   msg.length = 255;
   msg.r = r;
@@ -882,7 +882,7 @@ void R1MainNode::sabacan_led_update(void)
 
   const LedColor color = resolve_led_output_color(pattern, now);
   if (!has_last_led_color_ || color != last_led_color_) {
-    sabacan_led_ref(color.r, color.g, color.b);
+    sabacan_led_ref(LED_SYSTEM, color.r, color.g, color.b);
     last_led_color_ = color;
     has_last_led_color_ = true;
   }
