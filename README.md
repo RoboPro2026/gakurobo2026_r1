@@ -76,7 +76,7 @@ flowchart LR
   main -->|/set_odometry| odom
   main -->|/set_mecanum_yaw| mecanum
   main -->|/set_swerve_drive_yaw| swerve
-  main -->|/axis_position_ref, /axis_detect_origin| motion
+  main -->|/axis_position_ref, /axis_speed_ref, /axis_speed_mode_stop, /axis_detect_origin| motion
   main -->|/r2_*_motor_ref, /gpio_*_ref, /r1_machine_initialize| manage
 
   chassis -->|/cmd_vel_target| vel
@@ -219,9 +219,9 @@ ROS 2 の launch ファイルとパラメータファイルを管理する packa
   - `r1_msgs` の機構用 topic と Sabacan 用 topic の変換を行います。
   - 非常停止の監視や、`/r1_machine_initialize` による復帰処理も行います。
 - `r1_linear_motion_node`
-  - 直動機構の位置制御と原点検出
+  - 直動機構の位置制御、速度モード、原点検出
 - `r1_angle_motion_node`
-  - 回転機構の位置制御と原点検出
+  - 回転機構の位置制御、速度モード、原点検出
 - `r1_swerve_drive_node`
   - 独立ステアの目標値計算
 - `r1_mecanum_node`

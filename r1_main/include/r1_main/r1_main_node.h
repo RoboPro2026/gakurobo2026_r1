@@ -56,11 +56,15 @@ public:
   struct PositionAxisInterface
   {
     rclcpp::Publisher<std_msgs::msg::Float64>::SharedPtr position_ref_publisher;
+    rclcpp::Publisher<std_msgs::msg::Float64>::SharedPtr speed_ref_publisher;
     rclcpp::Publisher<std_msgs::msg::Bool>::SharedPtr detect_origin_publisher;
+    rclcpp::Publisher<std_msgs::msg::Empty>::SharedPtr speed_mode_stop_publisher;
     rclcpp::Subscription<std_msgs::msg::Int32>::SharedPtr mode_status_subscription;
     bool is_pos_mode = false;
     double position_ref = 0.0;
+    double speed_ref = 0.0;
     double * position_ref_alias = nullptr;
+    double * speed_ref_alias = nullptr;
   };
 
   struct VelocityAxisInterface
@@ -276,24 +280,24 @@ public:
   double SPEAR1_COLLECT2_POS = 0.0;
   double SPEAR1_COLLECT3_POS = 0.0;
   double SPEAR1_MAKE_SPEAR_START_POS = 0.0;
-  double SPEAR1_MAKE_SPEAR_END_POS = 0.0;
+  double SPEAR1_PUSH_VEL = 0.0;
   // spear2
   double SPEAR2_NORMAL_POS = 0.0;
   double SPEAR2_COLLECT1_POS = 0.0;
   double SPEAR2_COLLECT2_POS = 0.0;
   double SPEAR2_COLLECT3_POS = 0.0;
   double SPEAR2_MAKE_SPEAR_START_POS = 0.0;
-  double SPEAR2_MAKE_SPEAR_END_POS = 0.0;
+  double SPEAR2_PUSH_VEL = 0.0;
   // spear3
   double SPEAR3_NORMAL_POS = 0.0;
   double SPEAR3_COLLECT_POS = 0.0;
   double SPEAR3_MAKE_SPEAR_START_POS = 0.0;
-  double SPEAR3_MAKE_SPEAR_END_POS = 0.0;
+  double SPEAR3_PUSH_VEL = 0.0;
   // spear4
   double SPEAR4_NORMAL_POS = 0.0;
   double SPEAR4_COLLECT_POS = 0.0;
   double SPEAR4_MAKE_SPEAR_START_POS = 0.0;
-  double SPEAR4_MAKE_SPEAR_END_POS = 0.0;
+  double SPEAR4_PUSH_VEL = 0.0;
   // spear_x
   double SPEAR_X_NORMAL_POS = 0.0;
   double SPEAR_X_MAKE_SPEAR1_POS = 0.0;
@@ -337,7 +341,9 @@ public:
     PositionAxisInterface * axis, const std::string & actuator_name);
   std::function<void(const r1_msgs::msg::GpioInput::SharedPtr)> create_switch_status_callback(
     bool * switch_status);
-  void register_position_axis(const std::string & name, double * position_ref_alias = nullptr);
+  void register_position_axis(
+    const std::string & name, double * position_ref_alias = nullptr,
+    double * speed_ref_alias = nullptr);
   void register_velocity_axis(
     const std::string & name, const std::string & topic_name,
     double * velocity_ref_alias = nullptr);
@@ -346,7 +352,9 @@ public:
   void register_gpio_servo_output(const std::string & name, int * ref_alias = nullptr);
   void register_gpio_input(const std::string & name, bool * switch_status);
   void publish_position_axis(const std::string & name, double pos);
+  void publish_position_axis_speed_ref(const std::string & name, double speed);
   void detect_origin_position_axis(const std::string & name);
+  void stop_position_axis_speed_mode(const std::string & name);
   void publish_velocity_axis(const std::string & name, double vel);
   void publish_gpio_pwm_output(const std::string & name, double ref);
   void publish_gpio_servo_output(const std::string & name, int ref);
@@ -390,25 +398,61 @@ public:
   // 足回り
   void chassis_move_vel(double vx, double vy, double omega);
   // KFS回収
-  void kfs_fx(double pos);
-  void kfs_fz(double pos);
-  void kfs_fyaw(double pos);
-  void kfs_rx(double pos);
-  void kfs_rz(double pos);
-  void kfs_ryaw(double pos);
+  // 位置指令
+  void kfs_fx_pos_ref(double pos);
+  void kfs_fz_pos_ref(double pos);
+  void kfs_fyaw_pos_ref(double pos);
+  void kfs_rx_pos_ref(double pos);
+  void kfs_rz_pos_ref(double pos);
+  void kfs_ryaw_pos_ref(double pos);
+  // 速度指令
+  void kfs_fx_speed_ref(double speed);
+  void kfs_fz_speed_ref(double speed);
+  void kfs_fyaw_speed_ref(double speed);
+  void kfs_rx_speed_ref(double speed);
+  void kfs_rz_speed_ref(double speed);
+  void kfs_ryaw_speed_ref(double speed);
+  // 速度指令停止
+  void kfs_fx_speed_mode_stop(void);
+  void kfs_fz_speed_mode_stop(void);
+  void kfs_fyaw_speed_mode_stop(void);
+  void kfs_rx_speed_mode_stop(void);
+  void kfs_rz_speed_mode_stop(void);
+  void kfs_ryaw_speed_mode_stop(void);
   // R2昇降
   void r2_flift(double vel);
   void r2_rlift(double vel);
   // やり
-  void spear1(double pos);
-  void spear2(double pos);
-  void spear3(double pos);
-  void spear4(double pos);
-  void spear_x(double pos);
-  void spear_y(double pos);
-  void spear_roll(double angle);
-  void spear_pitch1(double angle);
-  void spear_pitch2(double angle);
+  // 位置指令
+  void spear1_pos_ref(double pos);
+  void spear2_pos_ref(double pos);
+  void spear3_pos_ref(double pos);
+  void spear4_pos_ref(double pos);
+  void spear_x_pos_ref(double pos);
+  void spear_y_pos_ref(double pos);
+  void spear_roll_pos_ref(double angle);
+  void spear_pitch1_pos_ref(double angle);
+  void spear_pitch2_pos_ref(double angle);
+  // 速度指令
+  void spear1_speed_ref(double speed);
+  void spear2_speed_ref(double speed);
+  void spear3_speed_ref(double speed);
+  void spear4_speed_ref(double speed);
+  void spear_x_speed_ref(double speed);
+  void spear_y_speed_ref(double speed);
+  void spear_roll_speed_ref(double speed);
+  void spear_pitch1_speed_ref(double speed);
+  void spear_pitch2_speed_ref(double speed);
+  // 速度指令停止
+  void spear1_speed_mode_stop(void);
+  void spear2_speed_mode_stop(void);
+  void spear3_speed_mode_stop(void);
+  void spear4_speed_mode_stop(void);
+  void spear_x_speed_mode_stop(void);
+  void spear_y_speed_mode_stop(void);
+  void spear_roll_speed_mode_stop(void);
+  void spear_pitch1_speed_mode_stop(void);
+  void spear_pitch2_speed_mode_stop(void);
   // KFS真空ポンプ・電磁弁
   void kfs_front_pump(double pwm);
   void kfs_rear_pump(double pwm);
@@ -452,10 +496,7 @@ public:
   void auto_task(void);
   void main_task(void);
   // ========== テスト関数 ==========
-  void test_front_kfs(void);
-  void test_rear_kfs(void);
-  void test_spear(void);
-  void test_r2_lift(void);
+  // テスト関数はここに追加する
   // ========== マニュアルモード ==========
   void manual_mode1_detect_origin(void);
   void manual_mode2_pole(void);

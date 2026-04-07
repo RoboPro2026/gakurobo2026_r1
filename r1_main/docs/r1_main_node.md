@@ -199,25 +199,25 @@ LED は timer callback の最後に 1 回だけ更新されます。
 - 足回り
   - `chassis_move_vel(vx, vy, omega)`
 - KFS
-  - `kfs_fx()`
-  - `kfs_fz()`
-  - `kfs_fyaw()`
-  - `kfs_rx()`
-  - `kfs_rz()`
-  - `kfs_ryaw()`
+  - `kfs_fx_pos_ref()`
+  - `kfs_fz_pos_ref()`
+  - `kfs_fyaw_pos_ref()`
+  - `kfs_rx_pos_ref()`
+  - `kfs_rz_pos_ref()`
+  - `kfs_ryaw_pos_ref()`
 - R2 昇降
   - `r2_flift()`
   - `r2_rlift()`
 - やり
-  - `spear1()`
-  - `spear2()`
-  - `spear3()`
-  - `spear4()`
-  - `spear_x()`
-  - `spear_y()`
-  - `spear_roll()`
-  - `spear_pitch1()`
-  - `spear_pitch2()`
+  - `spear1_pos_ref()`
+  - `spear2_pos_ref()`
+  - `spear3_pos_ref()`
+  - `spear4_pos_ref()`
+  - `spear_x_pos_ref()`
+  - `spear_y_pos_ref()`
+  - `spear_roll_pos_ref()`
+  - `spear_pitch1_pos_ref()`
+  - `spear_pitch2_pos_ref()`
 - 原点検出
   - `*_detect_origin()`
 - GPIO
@@ -267,7 +267,7 @@ LED は timer callback の最後に 1 回だけ更新されます。
   - `kfs_ryaw` を `FRONT -> SIDE -> REAR` へ進める
 - `cross`
   - `kfs_ryaw` を 1 段戻す意図の処理
-  - ただし現実装では `kfs_fyaw(...)` を呼んでおり、意図通り動かない可能性があります
+  - ただし現実装では `kfs_fyaw_pos_ref(...)` を呼んでおり、意図通り動かない可能性があります
 - `circle`
   - `kfs_ryaw` を `+0.1` rad 微調整
 - `square`
