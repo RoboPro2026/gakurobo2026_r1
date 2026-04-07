@@ -3,6 +3,9 @@
 `gakurobo2026_r1` は、学生ロボコン 2026 R1の ROS 2 ワークスペース用リポジトリです。  
 このリポジトリには、ロボット全体の状態管理、足回り制御、機構制御、起動設定、独自メッセージ定義が入っています。
 
+このプロジェクトでは、主に `C++20` と `Python 3.10` を使用します。
+Python は基本的に `venv` 環境を使用します。
+
 パッケージの役割は次のとおりです。  
 
 - `r1_bringup`
@@ -310,7 +313,7 @@ sudo apt install -y pybind11-dev
 pip install numpy matplotlib pyqt6
 ```
 
-### venv
+### venv構築
 
 ```bash
 python -m venv .venv
@@ -415,6 +418,7 @@ python src/gakurobo2026_r1/src/trajectory_planner_gui.py
 
 主なドキュメント:
 
+- [`CONTRIBUTING.md`](./CONTRIBUTING.md)
 - [`r1_bringup/README.md`](./r1_bringup/README.md)
 - [`r1_main_node.md`](./r1_main/docs/r1_main_node.md)
 - [`r1_machine/README.md`](./r1_machine/README.md)
