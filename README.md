@@ -368,6 +368,7 @@ rosdep install -i --from-paths urg_node2
 `robot_control_mode` 引数で `r1_main_node` の起動モードを切り替えられ、既定値は `manual` です。  
 `robot_control_mode:=manual` のとき `MANUAL/MODE1_DETECT_ORIGIN`、`robot_control_mode:=auto` のとき `AUTO/ACT0` で起動します。  
 実機モードではさらに `use_lidar` 引数で、LiDAR を使う構成と使わない構成を切り替えられます。  
+`use_aruco_display` 引数で、`r1_ui` の `r1_aruco_display_node` を起動するかを切り替えられます。既定値は `false` です。  
 `zone` は現在 [`r1_bringup.launch.py`](./r1_bringup/launch/r1_bringup.launch.py) 内で設定しています。
 
 ### 実機モード
@@ -413,6 +414,16 @@ ros2 launch r1_bringup r1_bringup.launch.py use_sim:=false use_lidar:=true robot
 ```bash
 ros2 launch r1_bringup r1_bringup.launch.py
 ```
+
+ArUco 表示ノードも同時に起動したい場合は、`use_aruco_display:=true` を付けます。
+
+```bash
+cd ~/ros2_ws
+source install/setup.bash
+ros2 launch r1_bringup r1_bringup.launch.py use_aruco_display:=true
+```
+
+この引数は既定では `false` なので、従来の起動コマンドには影響しません。
 
 LiDAR を使わない場合は、`r1_dummy_map_node` が `map -> odom` TF を publish します。`/initialpose` を送ると、その内容に合わせて `map -> odom` が更新されます。
 

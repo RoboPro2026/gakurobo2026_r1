@@ -689,6 +689,11 @@ r1_machine_manage_node:
     sabacan_reset_send_interval_sec: 0.0
     # reset 完了後に各 initialize を再送してから通常制御へ戻すまでの待ち時間 [s]
     post_reset_initialize_delay_sec: 1.0
+
+r1_aruco_display_node:
+  ros__parameters:
+    spin_rate_hz: 25.0
+
 # IMU
 bno086_node:
   ros__parameters:

@@ -26,6 +26,7 @@ def generate_launch_description():
     pkg_dir = get_package_share_directory("r1_bringup")
     use_sim = LaunchConfiguration("use_sim")
     use_lidar = LaunchConfiguration("use_lidar")
+    use_aruco_display = LaunchConfiguration("use_aruco_display")
     robot_control_mode = LaunchConfiguration("robot_control_mode")
 
     # パラメータファイルのフルパスを作成
@@ -489,6 +490,15 @@ def generate_launch_description():
         arguments=["--ros-args", "--log-level", "error"],
     )
 
+    r1_aruco_display_node = Node(
+        package="r1_ui",
+        executable="r1_aruco_display_node",
+        name="r1_aruco_display_node",
+        parameters=[param_file],
+        arguments=["--ros-args", "--log-level", "info"],
+        condition=IfCondition(use_aruco_display),
+    )
+
     # r1_mainのノードの起動を遅延させる
     common_nodes = [
         # 最初にsabacanを起動
@@ -514,6 +524,7 @@ def generate_launch_description():
         r1_mecanum_node,
         # r1_swerve_drive_node,
         ps4_node,
+        r1_aruco_display_node,
         r1_kfs_fx_node,
         r1_kfs_fz_node,
         r1_kfs_fyaw_node,
@@ -575,6 +586,7 @@ def generate_launch_description():
         [
             DeclareLaunchArgument("use_sim", default_value="false"),
             DeclareLaunchArgument("use_lidar", default_value="true"),
+            DeclareLaunchArgument("use_aruco_display", default_value="false"),
             DeclareLaunchArgument(
                 "robot_control_mode",
                 default_value="manual",
