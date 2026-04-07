@@ -34,7 +34,7 @@ ArUco マーカの生成には OpenCV の `cv2.aruco` を使用します。
 
 ## 依存
 
-Python 依存は [`../../requirements.txt`](/home/user/ros2_ws/src/gakurobo2026_r1/requirements.txt) に定義しています。
+Python 依存は [`../../requirements.txt`](../../requirements.txt) に定義しています。
 
 - `PyQt6`
 - `opencv-contrib-python`
