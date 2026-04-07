@@ -7,6 +7,40 @@
 Python は基本的に `venv` 環境を使用します。
 開発環境は `Ubuntu 22.04`、ROS 2 のバージョンは `Humble` です。
 
+Python 依存は [`requirements.txt`](./requirements.txt) にまとめています。  
+既存 GUI、可視化スクリプト、`r1_ui` の ArUco 表示ノードを使う場合は、先に venv へインストールしてください。
+
+## Python 環境
+
+このリポジトリでは、ROS 2 の環境と自前の `.venv` を併用できます。  
+ただし、Python ノードを `ros2 run` や `ros2 launch` で起動する場合は、依存を入れた Python で build しておく必要があります。
+
+理由:
+
+- `source install/setup.bash` は ROS パッケージ探索用の環境変数を設定します。
+- `.venv` の有効化は、`python` と `pip` の向き先を切り替えます。
+- `ament_python` パッケージの実行スクリプトは、build 時の Python interpreter を shebang に埋め込みます。
+- そのため、system Python で build したノードは、後から `.venv` を有効化しても system Python で起動されることがあります。
+
+特に GUI ノードや Python 依存を持つノードでは、次の順序を推奨します。
+
+```bash
+source /opt/ros/humble/setup.bash
+source ~/ros2_ws/.venv/bin/activate
+python -m pip install -r ~/ros2_ws/src/gakurobo2026_r1/requirements.txt
+cd ~/ros2_ws
+colcon build --packages-select r1_ui
+source ~/ros2_ws/install/setup.bash
+```
+
+この順序にしておくと、`.venv` に入れた `PyQt6` や `opencv-contrib-python` を Python ノード側から使いやすくなります。
+
+注意:
+
+- launch ファイル自身が `PyQt6` や `cv2` を直接 import すると、起動時の Python 依存と衝突しやすくなります。
+- launch ファイルは ROS 標準ライブラリ中心に保ち、GUI 依存は各ノード側に閉じ込める構成を推奨します。
+- `.venv` に依存を追加したあとに Python ノードが起動できない場合は、`.venv` を有効化した状態で再度 `colcon build` してください。
+
 パッケージの役割は次のとおりです。  
 
 - `r1_bringup`
@@ -308,17 +342,16 @@ sudo apt install -y libeigen3-dev
 sudo apt install -y pybind11-dev
 ```
 
-### pip
-
-```bash
-pip install numpy matplotlib pyqt6
-```
-
 ### venv構築
 
 ```bash
 python -m venv .venv
 source .venv/bin/activate
+```
+
+### pipで依存関係をインストール
+```bash
+pip install -r src/gakurobo2026_r1/requirements.txt
 ```
 
 ## `urg_node2` の依存解決
