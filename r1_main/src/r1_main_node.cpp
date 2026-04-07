@@ -775,45 +775,62 @@ R1MainNode::LedPattern R1MainNode::resolve_base_led_pattern(void)
   const auto state = state_machine_->get_next_state();
 
   if (state.main == MainState::IDLE) {
+    // 消灯
     return LedPattern{};
   }
   if (state.main == MainState::EMERGENCY) {
+    // 赤点滅
     return LedPattern{true, {50, 0, 0}, 0.25};
   }
   if (state.main == MainState::AUTO) {
+    // 黄固定
     return LedPattern{true, {50, 50, 0}, 0};
   }
   if (state.main != MainState::MANUAL) {
+    // 想定外状態は消灯
     return LedPattern{};
   }
 
   if (const auto * manual_sub = std::get_if<ManualSubState>(&state.sub)) {
     if (*manual_sub == ManualSubState::MODE1_DETECT_ORIGIN) {
+      // 青固定
       return LedPattern{true, {0, 0, 50}, 0};
     }
     if (*manual_sub == ManualSubState::MODE2_POLE) {
+      // 緑固定
       return LedPattern{true, {0, 50, 0}, 0};
     }
     if (*manual_sub == ManualSubState::MODE3_SPEAR) {
+      // 水色固定
       return LedPattern{true, {0, 50, 50}, 0};
     }
     if (*manual_sub == ManualSubState::MODE4_FKFS) {
+      // 赤固定
       return LedPattern{true, {50, 0, 0}, 0};
     }
     if (*manual_sub == ManualSubState::MODE5_RKFS) {
+      // 紫固定
       return LedPattern{true, {50, 0, 50}, 0};
     }
     if (*manual_sub == ManualSubState::MODE6_R2_LIFT) {
+      // 黄固定
       return LedPattern{true, {50, 50, 0}, 0};
     }
     if (*manual_sub == ManualSubState::MODE7_SPEAR_ATTACK) {
+      // 白固定
       return LedPattern{true, {50, 50, 50}, 0};
     }
+    if (*manual_sub == ManualSubState::MODE8_AUTO_COLLECT_KFS) {
+      // オレンジ固定
+      return LedPattern{true, {50, 25, 0}, 0};
+    }
     if (*manual_sub == ManualSubState::TEST) {
+      // 白点滅
       return LedPattern{true, {50, 50, 50}, 0.25};
     }
   }
 
+  // manual substate が未定義なら消灯
   return LedPattern{};
 }
 
@@ -2213,6 +2230,112 @@ void R1MainNode::auto_collect_kfs_task(void)
   }
 }
 
+void R1MainNode::manual_mode8_auto_collect_kfs(void)
+{
+  // 一旦デバッグ用に自動制御のデバッグモードに割り当てる
+  if (ps4_->is_pushed_triangle()) {
+    // 位置制御のプログラム実行
+    // publish_chassis_act_ref(ChassisAct::ACT1_START);
+    std::vector<int> forest_order;
+    std::vector<std::string> collect_kfs_type;
+    int j = 0;
+    for (int i = 0; i < (int)KFS_FOREST_NUMBER.size(); i++) {
+      int n = KFS_FOREST_NUMBER[i];
+      if (n == 1 || n == 2 || n == 4 || n == 7 || n == 10) {
+        forest_order.push_back(n);
+        if (j == 0) {
+          if (zone_ == "blue") {
+            collect_kfs_type.push_back("rear_kfs");
+          } else {
+            // 今は何もしない
+          }
+          j++;
+        } else if (j == 1) {
+          if (zone_ == "blue") {
+            collect_kfs_type.push_back("front_kfs");
+          } else {
+            // 今は何もしない
+          }
+        } else {
+          RCLCPP_ERROR(this->get_logger(), "collect_kfs_type size error");
+        }
+      } else if (n == 3 || n == 6 || n == 9 || n == 12 || n == 11 || n == 10) {
+        forest_order.push_back(n);
+        if (j == 0) {
+          if (zone_ == "blue") {
+            collect_kfs_type.push_back("front_kfs");
+          } else {
+            // 今は何もしない
+          }
+          j++;
+        } else if (j == 1) {
+          if (zone_ == "blue") {
+            collect_kfs_type.push_back("rear_kfs");
+          } else {
+            // 今は何もしない
+          }
+        } else {
+          RCLCPP_ERROR(this->get_logger(), "collect_kfs_type size error");
+        }
+      }
+    }
+    publish_robot_move(ChassisAct::ACT1_START, forest_order, collect_kfs_type);
+
+    // デバッグ用にKFS回収用アクチュエータを回収位置位置に移動
+    kfs_fx_pos_ref(KFS_FX_START_POS);
+    kfs_rx_pos_ref(KFS_RX_START_POS);
+    // kfs_fz_pos_ref(fz_ref);
+    // kfs_rz_pos_ref(rz_ref);
+    kfs_fz_pos_ref(KFS_FZ_STORAGE_POS);
+    kfs_rz_pos_ref(KFS_RZ_STORAGE_POS);
+    kfs_fyaw_pos_ref(KFS_FYAW_REAR_ANGLE);
+    kfs_ryaw_pos_ref(KFS_RYAW_REAR_ANGLE);
+    kfs_front_pump(0.0);
+    kfs_rear_pump(0.0);
+  }
+
+  if (ps4_->is_pushed_circle()) {
+    reset_position(true);
+  }
+
+  if (ps4_->is_pushed_left()) {
+    kfs_front_pump(0.0);
+    kfs_front_valve(true);
+    // setTimeout風で電磁弁をOFFにする。
+    manual_mode7_front_valve_timer_ = this->create_wall_timer(250ms, [this]() {
+      kfs_front_valve(false);
+      manual_mode7_front_valve_timer_->cancel();
+    });
+    kfs_rear_pump(0.0);
+    kfs_rear_valve(true);
+    // setTimeout風で電磁弁をOFFにする。
+    manual_mode7_rear_valve_timer_ = this->create_wall_timer(250ms, [this]() {
+      kfs_rear_valve(false);
+      manual_mode7_rear_valve_timer_->cancel();
+    });
+  }
+
+  if (ps4_->is_pushed_l1()) {
+    // kfs_fxの微調整（指令値を減少）
+    kfs_fx_pos_ref(kfs_fx_position_ref_ - 0.01);
+  }
+
+  if (ps4_->is_pushed_r1()) {
+    // kfs_fxの微調整（指令値を増加）
+    kfs_fx_pos_ref(kfs_fx_position_ref_ + 0.01);
+  }
+
+  if (ps4_->is_pushed_l2()) {
+    // kfs_fzの微調整（指令値を減少）
+    kfs_fz_pos_ref(kfs_fz_position_ref_ - 0.01);
+  }
+
+  if (ps4_->is_pushed_r2()) {
+    // kfs_fzの微調整（指令値を増加）
+    kfs_fz_pos_ref(kfs_fz_position_ref_ + 0.01);
+  }
+}
+
 void R1MainNode::auto_act0(void)
 {
   ChassisAct & step = chassis_act_status_;
@@ -2449,6 +2572,8 @@ void R1MainNode::manual_task(void)
         } else if (*manual_sub == ManualSubState::MODE6_R2_LIFT) {
           state_machine_->set_next_state({MainState::MANUAL, ManualSubState::MODE7_SPEAR_ATTACK});
         } else if (*manual_sub == ManualSubState::MODE7_SPEAR_ATTACK) {
+          state_machine_->set_next_state({MainState::MANUAL, ManualSubState::MODE8_AUTO_COLLECT_KFS});
+        } else if (*manual_sub == ManualSubState::MODE8_AUTO_COLLECT_KFS) {
           state_machine_->set_next_state({MainState::MANUAL, ManualSubState::MODE1_DETECT_ORIGIN});
         }
       }
@@ -2476,6 +2601,8 @@ void R1MainNode::manual_task(void)
         manual_mode6_r2_lift();
       } else if (*manual_sub == ManualSubState::MODE7_SPEAR_ATTACK) {
         manual_mode7_spear_attack();
+      } else if (*manual_sub == ManualSubState::MODE8_AUTO_COLLECT_KFS) {
+        manual_mode8_auto_collect_kfs();
       }
     }
 

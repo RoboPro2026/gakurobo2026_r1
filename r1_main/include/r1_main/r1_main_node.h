@@ -508,6 +508,7 @@ public:
   void manual_mode6_r2_lift(void);
   void manual_mode7_spear_attack(void);
   void manual_mode7_spear_attack_task(int n);
+  void manual_mode8_auto_collect_kfs(void);
   static constexpr int DEFAULT_STEP = 1;
   int manual_mode2_collect_pole_task_step_ = DEFAULT_STEP;
   int manual_mode3_make_spear_task_step_ = DEFAULT_STEP;
