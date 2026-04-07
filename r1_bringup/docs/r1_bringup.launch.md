@@ -8,7 +8,7 @@
 - `use_sim` に応じて実機系ノードまたはシミュレーション系ノードを起動する
 - `robot_control_mode` を `r1_main_node` に渡す
 - `r1_main_node` と `r1_chassis_control_node` の `cmd_vel_topic` を `/cmd_vel_target` に設定し、`r1_chassis_velocity_control_node` の `input_cmd_vel_topic` / `output_cmd_vel_topic` で補正経路を構成する
-- LiDAR を使う実機構成では [`r1_slam.launch.py`](/home/user/ros2_ws/src/gakurobo2026_r1/r1_bringup/launch/r1_slam.launch.py) を include する
+- LiDAR を使う実機構成では [`r1_slam.launch.py`](../launch/r1_slam.launch.py) を include する
 
 ## 引数
 
@@ -36,7 +36,7 @@
   - `r1_odometry_node`
   - `r1_slam.launch.py` 内の localization 関連ノード
 - シミュレーションモード時
-  - [`r1_sim.launch.py`](/home/user/ros2_ws/src/gakurobo2026_r1/r1_bringup/launch/r1_sim.launch.py) 内のダミーノード群
+  - [`r1_sim.launch.py`](../launch/r1_sim.launch.py) 内のダミーノード群
 
 ## 起動例
 

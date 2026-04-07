@@ -22,7 +22,7 @@
 ## 補足
 
 - `lifecycle_node`、event handler、LiDAR TF のコードは残っていますがコメントアウトされています。
-- 実運用の自己位置推定系は通常 [`r1_slam.launch.py`](/home/user/ros2_ws/src/gakurobo2026_r1/r1_bringup/launch/r1_slam.launch.py) を使います。
+- 実運用の自己位置推定系は通常 [`r1_slam.launch.py`](../launch/r1_slam.launch.py) を使います。
 
 ## 起動例
 

@@ -355,8 +355,8 @@ LED は timer callback の最後に 1 回だけ更新されます。
 
 ## パラメータ
 
-実際の bringup 設定は [`r1_machine_config.yaml`](/home/user/ros2_ws/src/gakurobo2026_r1/r1_bringup/config/r1_machine_config.yaml) の `r1_main_node` セクションにあります。
-bringup 起動時は [`r1_bringup.launch.py`](/home/user/ros2_ws/src/gakurobo2026_r1/r1_bringup/launch/r1_bringup.launch.py) の `robot_control_mode` 引数を `r1_main_node` に渡します。
+実際の bringup 設定は [`r1_machine_config.yaml`](../../r1_bringup/config/r1_machine_config.yaml) の `r1_main_node` セクションにあります。
+bringup 起動時は [`r1_bringup.launch.py`](../../r1_bringup/launch/r1_bringup.launch.py) の `robot_control_mode` 引数を `r1_main_node` に渡します。
 
 ### 基本
 
@@ -427,9 +427,9 @@ bringup 起動時は [`r1_bringup.launch.py`](/home/user/ros2_ws/src/gakurobo202
 
 ## Launch
 
-- 通常の bringup では [`r1_bringup.launch.py`](/home/user/ros2_ws/src/gakurobo2026_r1/r1_bringup/launch/r1_bringup.launch.py) から起動します。
-- パラメータは [`r1_machine_config.yaml`](/home/user/ros2_ws/src/gakurobo2026_r1/r1_bringup/config/r1_machine_config.yaml) から読み込みます。
-- bringup では `cmd_vel_topic` を `/cmd_vel_target` に設定し、[`r1_chassis_velocity_control_node`](/home/user/ros2_ws/src/gakurobo2026_r1/r1_control/docs/r1_chassis_velocity_control_node.md) を経由して最終的な `/cmd_vel` に変換されます。
+- 通常の bringup では [`r1_bringup.launch.py`](../../r1_bringup/launch/r1_bringup.launch.py) から起動します。
+- パラメータは [`r1_machine_config.yaml`](../../r1_bringup/config/r1_machine_config.yaml) から読み込みます。
+- bringup では `cmd_vel_topic` を `/cmd_vel_target` に設定し、[`r1_chassis_velocity_control_node`](../../r1_control/docs/r1_chassis_velocity_control_node.md) を経由して最終的な `/cmd_vel` に変換されます。
 - `robot_control_mode:=manual` なら `MANUAL / MODE1_DETECT_ORIGIN`、`robot_control_mode:=auto` なら `AUTO / ACT0` で起動します。
 
 ## 起動例

@@ -147,10 +147,10 @@ flowchart TD
 
 補足:
 
-- [`r1_machine_config.yaml`](/home/user/ros2_ws/src/gakurobo2026_r1/r1_bringup/config/r1_machine_config.yaml) の既定値は `drive_mode: "mecanum"` です。
+- [`r1_machine_config.yaml`](./r1_bringup/config/r1_machine_config.yaml) の既定値は `drive_mode: "mecanum"` です。
 - `use_sim:=true` のとき、`/odometry` は [`r1_dummy_odometry_node`](./r1_control/docs/r1_dummy_odometry_node.md) が生成します。
 - `use_lidar:=true` のときは `amcl` が `map -> odom` を担当し、`use_lidar:=false` のときは [`r1_dummy_map_node`](./r1_control/docs/r1_dummy_map_node.md) が担当します。
-- [`r1_bringup.launch.py`](/home/user/ros2_ws/src/gakurobo2026_r1/r1_bringup/launch/r1_bringup.launch.py) には `r1_chassis_control_node` と `r1_swerve_drive_node` の定義がありますが、現行の通常起動リストではコメントアウトされています。
+- [`r1_bringup.launch.py`](./r1_bringup/launch/r1_bringup.launch.py) には `r1_chassis_control_node` と `r1_swerve_drive_node` の定義がありますが、現行の通常起動リストではコメントアウトされています。
 
 ## リポジトリ構成
 
@@ -167,11 +167,11 @@ ROS 2 の launch ファイルとパラメータファイルを管理する packa
 
 主なファイル:
 
-- [`r1_bringup.launch.py`](/home/user/ros2_ws/src/gakurobo2026_r1/r1_bringup/launch/r1_bringup.launch.py)
+- [`r1_bringup.launch.py`](./r1_bringup/launch/r1_bringup.launch.py)
   - 実機用の通常起動
-- [`r1_machine_config.yaml`](/home/user/ros2_ws/src/gakurobo2026_r1/r1_bringup/config/r1_machine_config.yaml)
+- [`r1_machine_config.yaml`](./r1_bringup/config/r1_machine_config.yaml)
   - R1 全体で使う主要パラメータ
-- [`r1_bringup/README.md`](/home/user/ros2_ws/src/gakurobo2026_r1/r1_bringup/README.md)
+- [`r1_bringup/README.md`](./r1_bringup/README.md)
   - launch ファイル群のドキュメント一覧
 
 ### `r1_main`
@@ -331,7 +331,7 @@ rosdep install -i --from-paths urg_node2
 `robot_control_mode` 引数で `r1_main_node` の起動モードを切り替えられ、既定値は `manual` です。  
 `robot_control_mode:=manual` のとき `MANUAL/MODE1_DETECT_ORIGIN`、`robot_control_mode:=auto` のとき `AUTO/ACT0` で起動します。  
 実機モードではさらに `use_lidar` 引数で、LiDAR を使う構成と使わない構成を切り替えられます。  
-`zone` は現在 [`r1_bringup.launch.py`](/home/user/ros2_ws/src/gakurobo2026_r1/r1_bringup/launch/r1_bringup.launch.py) 内で設定しています。
+`zone` は現在 [`r1_bringup.launch.py`](./r1_bringup/launch/r1_bringup.launch.py) 内で設定しています。
 
 ### 実機モード
 
@@ -415,10 +415,10 @@ python src/gakurobo2026_r1/src/trajectory_planner_gui.py
 
 主なドキュメント:
 
-- [`r1_bringup/README.md`](/home/user/ros2_ws/src/gakurobo2026_r1/r1_bringup/README.md)
-- [`r1_main_node.md`](/home/user/ros2_ws/src/gakurobo2026_r1/r1_main/docs/r1_main_node.md)
-- [`r1_machine/README.md`](/home/user/ros2_ws/src/gakurobo2026_r1/r1_machine/README.md)
-- [`r1_control/README.md`](/home/user/ros2_ws/src/gakurobo2026_r1/r1_control/README.md)
+- [`r1_bringup/README.md`](./r1_bringup/README.md)
+- [`r1_main_node.md`](./r1_main/docs/r1_main_node.md)
+- [`r1_machine/README.md`](./r1_machine/README.md)
+- [`r1_control/README.md`](./r1_control/README.md)
 
 補足:
 

@@ -244,8 +244,8 @@
 
 ## 設定ファイルと Launch
 
-- bringup 用パラメータは [`r1_machine_config.yaml`](/home/user/ros2_ws/src/gakurobo2026_r1/r1_bringup/config/r1_machine_config.yaml) の `r1_machine_manage_node` セクションで設定します。
-- 通常の bringup では [`r1_bringup.launch.py`](/home/user/ros2_ws/src/gakurobo2026_r1/r1_bringup/launch/r1_bringup.launch.py) から `r1_machine_manage_node` が起動されます。
+- bringup 用パラメータは [`r1_machine_config.yaml`](../../r1_bringup/config/r1_machine_config.yaml) の `r1_machine_manage_node` セクションで設定します。
+- 通常の bringup では [`r1_bringup.launch.py`](../../r1_bringup/launch/r1_bringup.launch.py) から `r1_machine_manage_node` が起動されます。
 
 ## 起動例
 
