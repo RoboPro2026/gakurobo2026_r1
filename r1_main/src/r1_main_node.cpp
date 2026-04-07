@@ -751,11 +751,31 @@ void R1MainNode::set_led_status(uint8_t r, uint8_t g, uint8_t b, double blink_pe
   led_status_pattern_.blink_period_s = (blink_period_s > 0.0) ? blink_period_s : 0.0;
 }
 
+void R1MainNode::set_fkfs_led_status(uint8_t r, uint8_t g, uint8_t b, double blink_period_s)
+{
+  led_fkfs_status_pattern_.enabled = true;
+  led_fkfs_status_pattern_.color = {r, g, b};
+  led_fkfs_status_pattern_.blink_period_s = (blink_period_s > 0.0) ? blink_period_s : 0.0;
+}
+
+void R1MainNode::set_rkfs_led_status(uint8_t r, uint8_t g, uint8_t b, double blink_period_s)
+{
+  led_rkfs_status_pattern_.enabled = true;
+  led_rkfs_status_pattern_.color = {r, g, b};
+  led_rkfs_status_pattern_.blink_period_s = (blink_period_s > 0.0) ? blink_period_s : 0.0;
+}
+
 void R1MainNode::clear_led_status(void)
 {
   led_status_pattern_.enabled = false;
   led_status_pattern_.color = {};
   led_status_pattern_.blink_period_s = 0.0;
+  led_fkfs_status_pattern_.enabled = false;
+  led_fkfs_status_pattern_.color = {};
+  led_fkfs_status_pattern_.blink_period_s = 0.0;
+  led_rkfs_status_pattern_.enabled = false;
+  led_rkfs_status_pattern_.color = {};
+  led_rkfs_status_pattern_.blink_period_s = 0.0;
 }
 
 void R1MainNode::set_led_event(
@@ -885,6 +905,20 @@ void R1MainNode::sabacan_led_update(void)
     sabacan_led_ref(LED_SYSTEM, color.r, color.g, color.b);
     last_led_color_ = color;
     has_last_led_color_ = true;
+  }
+
+  const LedColor fkfs_color = resolve_led_output_color(led_fkfs_status_pattern_, now);
+  if (!has_last_led_fkfs_color_ || fkfs_color != last_led_fkfs_color_) {
+    sabacan_led_ref(LED_FKFS, fkfs_color.r, fkfs_color.g, fkfs_color.b);
+    last_led_fkfs_color_ = fkfs_color;
+    has_last_led_fkfs_color_ = true;
+  }
+
+  const LedColor rkfs_color = resolve_led_output_color(led_rkfs_status_pattern_, now);
+  if (!has_last_led_rkfs_color_ || rkfs_color != last_led_rkfs_color_) {
+    sabacan_led_ref(LED_RKFS, rkfs_color.r, rkfs_color.g, rkfs_color.b);
+    last_led_rkfs_color_ = rkfs_color;
+    has_last_led_rkfs_color_ = true;
   }
 }
 
@@ -2070,6 +2104,10 @@ void R1MainNode::auto_collect_kfs_task(void)
   int n = current_robot_move_.forest_order.size();
   bool has_within_true = false;
   bool has_within_false = false;
+  bool front_kfs_assigned = false;
+  bool rear_kfs_assigned = false;
+  bool front_kfs_within = false;
+  bool rear_kfs_within = false;
   for (int i = 0; i < n; i++) {
     int target_forest_number = current_robot_move_.forest_order[i];
     double map_x = map_pos.pose.position.x;
@@ -2078,6 +2116,8 @@ void R1MainNode::auto_collect_kfs_task(void)
 
     // within関連はメンバー変数。名前が長いので、参照として短い名前で扱う。
     int within_index = (current_robot_move_.kfs_mechanism_type[i] == "front_kfs") ? FKFS : RKFS;
+    front_kfs_assigned = front_kfs_assigned || (within_index == FKFS);
+    rear_kfs_assigned = rear_kfs_assigned || (within_index == RKFS);
     std::vector<bool>::reference within = auto_act0_within_[target_forest_number - 1][within_index];
     std::vector<bool>::reference prev_within =
       auto_act0_prev_within_[target_forest_number - 1][within_index];
@@ -2125,6 +2165,11 @@ void R1MainNode::auto_collect_kfs_task(void)
     }
     has_within_true = has_within_true || within;
     has_within_false = has_within_false || !within;
+    if (within_index == FKFS) {
+      front_kfs_within = front_kfs_within || within;
+    } else {
+      rear_kfs_within = rear_kfs_within || within;
+    }
 
     if (within == false) {
       // trueからfalseに変わったら、収納動作を行う。
@@ -2227,6 +2272,26 @@ void R1MainNode::auto_collect_kfs_task(void)
     set_led_status(0, 50, 0, 0.0);
   } else if (has_within_false) {
     set_led_status(50, 0, 0, 0.0);
+  }
+
+  if (front_kfs_assigned) {
+    if (front_kfs_within) {
+      // FKFS が担当範囲内に入ったら緑固定
+      set_fkfs_led_status(0, 50, 0, 0.0);
+    } else {
+      // FKFS が担当中だが範囲外なら赤固定
+      set_fkfs_led_status(50, 0, 0, 0.0);
+    }
+  }
+
+  if (rear_kfs_assigned) {
+    if (rear_kfs_within) {
+      // RKFS が担当範囲内に入ったら緑固定
+      set_rkfs_led_status(0, 50, 0, 0.0);
+    } else {
+      // RKFS が担当中だが範囲外なら赤固定
+      set_rkfs_led_status(50, 0, 0, 0.0);
+    }
   }
 }
 

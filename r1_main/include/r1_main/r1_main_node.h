@@ -220,10 +220,16 @@ public:
 
   // status はその周期だけ有効な上書き表示、event は一定時間だけ優先される一時表示。
   LedPattern led_status_pattern_;
+  LedPattern led_fkfs_status_pattern_;
+  LedPattern led_rkfs_status_pattern_;
   LedPattern led_event_pattern_;
   rclcpp::Time led_event_expire_time_;
   LedColor last_led_color_{};
   bool has_last_led_color_ = false;
+  LedColor last_led_fkfs_color_{};
+  LedColor last_led_rkfs_color_{};
+  bool has_last_led_fkfs_color_ = false;
+  bool has_last_led_rkfs_color_ = false;
 
   double ps4_connection_timeout_ = 0.3;
 
@@ -377,6 +383,8 @@ public:
   void sabacan_power_ref(bool is_ems);
   void sabacan_led_ref(int pin_number, uint8_t r, uint8_t g, uint8_t b);
   void set_led_status(uint8_t r, uint8_t g, uint8_t b, double blink_period_s = 0.0);
+  void set_fkfs_led_status(uint8_t r, uint8_t g, uint8_t b, double blink_period_s = 0.0);
+  void set_rkfs_led_status(uint8_t r, uint8_t g, uint8_t b, double blink_period_s = 0.0);
   void clear_led_status(void);
   void set_led_event(uint8_t r, uint8_t g, uint8_t b, double blink_period_s, double duration_sec);
   LedPattern resolve_base_led_pattern(void);
