@@ -313,7 +313,7 @@ public:
   double SPEAR4_PUSH_VEL = 0.0;
   // spear_x
   double SPEAR_X_NORMAL_POS = 0.0;
-  double SPEAR_X_MIDDOLE_POS = 0.0;
+  double SPEAR_X_MIDDLE_POS = 0.0;
   double SPEAR_X_MAKE_SPEAR1_POS = 0.0;
   double SPEAR_X_MAKE_SPEAR2_POS = 0.0;
   double SPEAR_X_MAKE_SPEAR3_POS = 0.0;
