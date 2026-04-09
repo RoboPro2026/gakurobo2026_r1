@@ -2207,7 +2207,7 @@ void R1MainNode::manual_mode8_auto_collect_kfs(void)
     publish_robot_move(ChassisAct::ACT1_START, forest_order, collect_kfs_type);
 
     // spear_xを動かす
-    spear_x_pos_ref(SPEAR_X_NORMAL_POS);
+    spear_x_pos_ref(SPEAR_X_MIDDLE_POS);
     // まずrollを動かす
     spear_roll_pos_ref(SPEAR_ROLL_VERTICAL_ANGLE);
     RCLCPP_INFO(this->get_logger(), "spear roll vertical");
