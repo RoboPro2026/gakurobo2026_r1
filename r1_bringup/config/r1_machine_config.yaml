@@ -362,7 +362,7 @@ r1_kfs_fz_node:
     # ギアが一周すると2*pi*14.325mm進むので、半径は14.325mm
     radius: 0.014325
     inverse_motor: true
-    use_low_switch: true
+    use_low_switch: false
     use_high_switch: false
     inverse_low_switch_logic: false
     inverse_high_switch_logic: false
@@ -431,7 +431,7 @@ r1_kfs_rz_node:
     # ギアが一周すると2*pi*14.325mm進むので、半径は14.325mm
     radius: 0.014325
     inverse_motor: false
-    use_low_switch: true
+    use_low_switch: false
     use_high_switch: false
     inverse_low_switch_logic: false
     inverse_high_switch_logic: false
