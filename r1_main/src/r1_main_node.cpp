@@ -2232,6 +2232,14 @@ void R1MainNode::manual_mode8_auto_collect_kfs(void)
     reset_position(true);
   }
 
+  if (ps4_->is_pushed_up()) {
+    spear_x_pos_ref(spear_x_position_ref_ + 0.01);
+  }
+
+  if (ps4_->is_pushed_down()) {
+    spear_x_pos_ref(spear_x_position_ref_ - 0.01);
+  }
+
   if (ps4_->is_pushed_left()) {
     kfs_front_pump(0.0);
     kfs_front_valve(true);
