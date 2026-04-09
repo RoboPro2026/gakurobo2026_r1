@@ -49,6 +49,14 @@ public:
       "/linear_motion_position_ref", 10,
       std::bind(&MyNode::positon_ref_callback, this, std::placeholders::_1));
 
+    speed_ref_subscription_ = this->create_subscription<std_msgs::msg::Float64>(
+      "/linear_motion_speed_ref", 10,
+      std::bind(&MyNode::speed_ref_callback, this, std::placeholders::_1));
+
+    stop_speed_mode_subscription_ = this->create_subscription<std_msgs::msg::Empty>(
+      "/linear_motion_speed_mode_stop", 10,
+      std::bind(&MyNode::stop_speed_mode_callback, this, std::placeholders::_1));
+
     detect_origin_subscription_ = this->create_subscription<std_msgs::msg::Bool>(
       "/linear_motion_detect_origin", 10,
       std::bind(&MyNode::detect_origin_callback, this, std::placeholders::_1));
@@ -286,20 +294,14 @@ public:
       publish_active_torque_limit();
       RCLCPP_INFO(this->get_logger(), "Switched to speed control mode.");
     } else {
-      mode_ = MODE_POSITON;
-      speed_mode_reason_ = SPEED_MODE_NONE;
-      publish_active_torque_limit();
-      RCLCPP_INFO(this->get_logger(), "Switched to position control mode.");
+      stop_and_hold_current_position("Origin detection canceled. Holding current position.");
     }
   }
 
   void move_mech_lock_callback(const std_msgs::msg::Int32::SharedPtr msg)
   {
     if (msg->data == 0) {
-      mode_ = MODE_POSITON;
-      speed_mode_reason_ = SPEED_MODE_NONE;
-      publish_active_torque_limit();
-      RCLCPP_INFO(this->get_logger(), "Stopped mech lock move and switched to position mode.");
+      stop_and_hold_current_position("Stopped mech lock move and holding current position.");
       return;
     }
 
@@ -311,6 +313,28 @@ public:
     RCLCPP_INFO(
       this->get_logger(), "Switched to speed control mode for mech lock move. direction = %.0f",
       mech_lock_direction_);
+  }
+
+  void speed_ref_callback(const std_msgs::msg::Float64::SharedPtr msg)
+  {
+    mode_ = MODE_SPEED;
+    speed_mode_reason_ = SPEED_MODE_USER_COMMAND;
+    user_speed_ref_ = msg->data;
+    reset_speed_mode_detection_timestamps();
+    publish_active_torque_limit();
+    RCLCPP_INFO(
+      this->get_logger(), "Switched to speed control mode for user command. speed = %.3f",
+      user_speed_ref_);
+  }
+
+  void stop_speed_mode_callback(const std_msgs::msg::Empty::SharedPtr)
+  {
+    if (mode_ != MODE_SPEED) {
+      RCLCPP_INFO(this->get_logger(), "Speed mode stop requested while already in position mode.");
+      return;
+    }
+
+    stop_and_hold_current_position("Stopped speed mode and holding current position.");
   }
 
   void initialize_callback(const std_msgs::msg::Empty::SharedPtr)
@@ -328,7 +352,8 @@ public:
 
   double active_torque_limit() const
   {
-    return mode_ == MODE_SPEED ? contact_torque_limit_ : normal_torque_limit_;
+    return speed_mode_reason_ == SPEED_MODE_ORIGIN_DETECTION ? contact_torque_limit_
+                                                             : normal_torque_limit_;
   }
 
   void publish_active_torque_limit()
@@ -353,35 +378,51 @@ public:
     linear_motion_ref_publisher_->publish(motor_ref_msg);
   }
 
+  void stop_and_hold_current_position(const char * log_message)
+  {
+    mode_ = MODE_POSITON;
+    speed_mode_reason_ = SPEED_MODE_NONE;
+    publish_active_torque_limit();
+    publish_hold_current_position();
+    RCLCPP_INFO(this->get_logger(), "%s", log_message);
+  }
+
+  bool is_contact_detection_enabled_in_speed_mode() const
+  {
+    return speed_mode_reason_ != SPEED_MODE_USER_COMMAND;
+  }
+
   void timer_callback()
   {
     if (mode_ == MODE_SPEED) {
       bool detect_stop = false;
-      // 現在のトルクがしきい値以下のとき
-      if (std::abs(current_torque_) <= torque_threshold_) {
-        // 最後に通常のトルクを検出した時刻を更新
-        last_normal_torque_time_ = this->now();
-      }
-      // リミットスイッチが反応していないとき
-      if (use_low_switch_ && low_switch_ == false) {
-        // 最後にリミットスイッチが反応していない時刻を更新
-        last_low_switch_not_detect_time_ = this->now();
-      }
-      if (use_high_switch_ && high_switch_ == false) {
-        // 最後にリミットスイッチが反応していない時刻を更新
-        last_high_switch_not_detect_time_ = this->now();
-      }
+      if (is_contact_detection_enabled_in_speed_mode()) {
+        // 現在のトルクがしきい値以下のとき
+        if (std::abs(current_torque_) <= torque_threshold_) {
+          // 最後に通常のトルクを検出した時刻を更新
+          last_normal_torque_time_ = this->now();
+        }
+        // リミットスイッチが反応していないとき
+        if (use_low_switch_ && low_switch_ == false) {
+          // 最後にリミットスイッチが反応していない時刻を更新
+          last_low_switch_not_detect_time_ = this->now();
+        }
+        if (use_high_switch_ && high_switch_ == false) {
+          // 最後にリミットスイッチが反応していない時刻を更新
+          last_high_switch_not_detect_time_ = this->now();
+        }
 
-      // 一定時間トルクのしきい値を超えた場合、原点検出とみなす
-      detect_stop |=
-        ((this->now() - last_normal_torque_time_).seconds() > origin_detect_threshold_time_);
-      // 一定時間リミットスイッチが反応した場合、原点検出とみなす
-      detect_stop |=
-        (use_low_switch_ && (this->now() - last_low_switch_not_detect_time_).seconds() >
-                              origin_detect_threshold_time_);
-      detect_stop |=
-        (use_high_switch_ && (this->now() - last_high_switch_not_detect_time_).seconds() >
-                               origin_detect_threshold_time_);
+        // 一定時間トルクのしきい値を超えた場合、原点検出とみなす
+        detect_stop |=
+          ((this->now() - last_normal_torque_time_).seconds() > origin_detect_threshold_time_);
+        // 一定時間リミットスイッチが反応した場合、原点検出とみなす
+        detect_stop |=
+          (use_low_switch_ && (this->now() - last_low_switch_not_detect_time_).seconds() >
+                                origin_detect_threshold_time_);
+        detect_stop |=
+          (use_high_switch_ && (this->now() - last_high_switch_not_detect_time_).seconds() >
+                                 origin_detect_threshold_time_);
+      }
 
       auto motor_ref_msg = r1_msgs::msg::MotorRef();
       if (detect_stop) {
@@ -395,9 +436,16 @@ public:
         } else {
           motor_ref_msg.control_type = "POSITION";
           motor_ref_msg.ref = current_pos_;
-          RCLCPP_INFO(
-            this->get_logger(), "Detected mechanical lock. Holding current position: %.3f",
-            motor_ref_msg.ref);
+          if (speed_mode_reason_ == SPEED_MODE_MECH_LOCK) {
+            RCLCPP_INFO(
+              this->get_logger(), "Detected mechanical lock. Holding current position: %.3f",
+              motor_ref_msg.ref);
+          } else {
+            RCLCPP_WARN(
+              this->get_logger(),
+              "User speed mode stopped by torque or limit switch detection. Holding current position: %.3f",
+              motor_ref_msg.ref);
+          }
         }
         speed_mode_reason_ = SPEED_MODE_NONE;
         publish_active_torque_limit();
@@ -405,8 +453,10 @@ public:
         motor_ref_msg.control_type = "VELOCITY";
         if (speed_mode_reason_ == SPEED_MODE_ORIGIN_DETECTION) {
           motor_ref_msg.ref = motor_dir_ * origin_detect_speed_;
-        } else {
+        } else if (speed_mode_reason_ == SPEED_MODE_MECH_LOCK) {
           motor_ref_msg.ref = motor_dir_ * mech_lock_direction_ * move_mech_lock_speed_;
+        } else {
+          motor_ref_msg.ref = motor_dir_ * user_speed_ref_;
         }
       }
       linear_motion_ref_publisher_->publish(motor_ref_msg);
@@ -426,6 +476,8 @@ private:
   rclcpp::Subscription<r1_msgs::msg::GpioInput>::SharedPtr high_switch_status_subscription_;
   rclcpp::Publisher<r1_msgs::msg::MotorRef>::SharedPtr linear_motion_ref_publisher_;
   rclcpp::Subscription<std_msgs::msg::Float64>::SharedPtr position_ref_subscription_;
+  rclcpp::Subscription<std_msgs::msg::Float64>::SharedPtr speed_ref_subscription_;
+  rclcpp::Subscription<std_msgs::msg::Empty>::SharedPtr stop_speed_mode_subscription_;
   rclcpp::Subscription<std_msgs::msg::Bool>::SharedPtr detect_origin_subscription_;
   rclcpp::Subscription<std_msgs::msg::Int32>::SharedPtr move_mech_lock_subscription_;
   rclcpp::Subscription<std_msgs::msg::Empty>::SharedPtr initialize_subscription_;
@@ -460,12 +512,14 @@ private:
   double current_torque_ = 0.0;
   double current_speed_ = 0.0;
   double current_pos_ = 0.0;
+  double user_speed_ref_ = 0.0;
   double radius_ = 0.05;  // m、値は適当
   static constexpr int MODE_POSITON = 0;
   static constexpr int MODE_SPEED = 1;
   static constexpr int SPEED_MODE_NONE = 0;
   static constexpr int SPEED_MODE_ORIGIN_DETECTION = 1;
   static constexpr int SPEED_MODE_MECH_LOCK = 2;
+  static constexpr int SPEED_MODE_USER_COMMAND = 3;
   int mode_ = MODE_POSITON;
   int speed_mode_reason_ = SPEED_MODE_NONE;
 };

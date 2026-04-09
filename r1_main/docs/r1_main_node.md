@@ -12,7 +12,7 @@
   - `robot_control_mode:=auto` のとき `AUTO / ACT0`
 - `MainState` には `IDLE` / `EMERGENCY` / `MANUAL` / `AUTO` がありますが、現在のコードには main state を切り替える入力がありません。
 - そのため通常運用では `MANUAL` しか入りません。`AUTO` を使う場合は `robot_control_mode:=auto` を指定して起動します。
-- `PS` ボタンで `reset_robot(true)` と `/r1_machine_initialize` publish を行うまで、`is_initialized_ == false` のため各 mode の実動作は走りません。
+- `PS` ボタンで `reset_robot(true)` と `/r1_machine_initialize` publish を行った後は、`/r1_machine_initialize_done` を受け取るまで `is_initialized_ == false` のため各 mode の実動作は走りません。
 - `MODE2_POLE` / `MODE3_SPEAR` / `MODE4_FKFS` / `MODE7_SPEAR_ATTACK` は、現状ほとんどの処理がコメントアウトされています。
 - LED 指令は timer 周期ごとに `sabacan_led_update()` で 1 回だけ publish します。各処理は直接 publish せず、LED の要求状態を更新します。
 
@@ -103,6 +103,7 @@
 - `/chassis_act_ref` (`std_msgs/msg/Int32`)
 - `/robot_move` (`r1_msgs/msg/RobotMove`)
 - `/r1_machine_initialize` (`std_msgs/msg/Empty`)
+- `/r1_machine_initialize_done` (`std_msgs/msg/Empty`) を subscribe
 - `/<axis>_position_ref` (`std_msgs/msg/Float64`)
 - `/<axis>_detect_origin` (`std_msgs/msg/Bool`)
 - `/r2_flift_motor_ref` (`r1_msgs/msg/MotorRef`)
@@ -199,25 +200,25 @@ LED は timer callback の最後に 1 回だけ更新されます。
 - 足回り
   - `chassis_move_vel(vx, vy, omega)`
 - KFS
-  - `kfs_fx()`
-  - `kfs_fz()`
-  - `kfs_fyaw()`
-  - `kfs_rx()`
-  - `kfs_rz()`
-  - `kfs_ryaw()`
+  - `kfs_fx_pos_ref()`
+  - `kfs_fz_pos_ref()`
+  - `kfs_fyaw_pos_ref()`
+  - `kfs_rx_pos_ref()`
+  - `kfs_rz_pos_ref()`
+  - `kfs_ryaw_pos_ref()`
 - R2 昇降
   - `r2_flift()`
   - `r2_rlift()`
 - やり
-  - `spear1()`
-  - `spear2()`
-  - `spear3()`
-  - `spear4()`
-  - `spear_x()`
-  - `spear_y()`
-  - `spear_roll()`
-  - `spear_pitch1()`
-  - `spear_pitch2()`
+  - `spear1_pos_ref()`
+  - `spear2_pos_ref()`
+  - `spear3_pos_ref()`
+  - `spear4_pos_ref()`
+  - `spear_x_pos_ref()`
+  - `spear_y_pos_ref()`
+  - `spear_roll_pos_ref()`
+  - `spear_pitch1_pos_ref()`
+  - `spear_pitch2_pos_ref()`
 - 原点検出
   - `*_detect_origin()`
 - GPIO
@@ -267,7 +268,7 @@ LED は timer callback の最後に 1 回だけ更新されます。
   - `kfs_ryaw` を `FRONT -> SIDE -> REAR` へ進める
 - `cross`
   - `kfs_ryaw` を 1 段戻す意図の処理
-  - ただし現実装では `kfs_fyaw(...)` を呼んでおり、意図通り動かない可能性があります
+  - ただし現実装では `kfs_fyaw_pos_ref(...)` を呼んでおり、意図通り動かない可能性があります
 - `circle`
   - `kfs_ryaw` を `+0.1` rad 微調整
 - `square`
@@ -352,6 +353,7 @@ LED は timer callback の最後に 1 回だけ更新されます。
 `is_start_zone == false` の分岐は現状まだ TODO で、今は start zone と同じ開始姿勢を使います。
 
 `/r1_machine_initialize` publish 自体は `reset_robot()` の外で行っており、`PS` ボタン押下時にセットで実行されます。
+`PS` ボタン押下時には別途 `is_initialized_ = false` に戻し、`/r1_machine_initialize_done` を受け取ったタイミングで `is_initialized_ = true` へ復帰します。この完了通知では LED の再送キャッシュも無効化し、sabacan 初期化後に現在状態の LED 指令を再送できるようにしています。
 
 ## パラメータ
 

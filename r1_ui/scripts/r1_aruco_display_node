@@ -1,0 +1,2 @@
+#!/usr/bin/env bash
+exec python3 -m r1_ui.r1_aruco_display_node "$@"

@@ -26,6 +26,7 @@ def generate_launch_description():
     pkg_dir = get_package_share_directory("r1_bringup")
     use_sim = LaunchConfiguration("use_sim")
     use_lidar = LaunchConfiguration("use_lidar")
+    use_aruco_display = LaunchConfiguration("use_aruco_display")
     robot_control_mode = LaunchConfiguration("robot_control_mode")
 
     # パラメータファイルのフルパスを作成
@@ -115,6 +116,8 @@ def generate_launch_description():
             ("linear_motion_status", f"{topic_prefix}_linear_motion_status"),
             ("linear_motion_motor_ref", f"{topic_prefix}_motor_ref"),
             ("linear_motion_position_ref", f"{topic_prefix}_position_ref"),
+            ("linear_motion_speed_ref", f"{topic_prefix}_speed_ref"),
+            ("linear_motion_speed_mode_stop", f"{topic_prefix}_speed_mode_stop"),
             ("linear_motion_detect_origin", f"{topic_prefix}_detect_origin"),
             ("linear_motion_initialize", f"{topic_prefix}_initialize"),
             ("linear_motion_mode_status", f"{topic_prefix}_mode_status"),
@@ -139,6 +142,8 @@ def generate_launch_description():
             ("angle_motion_status", f"{topic_prefix}_angle_motion_status"),
             ("angle_motion_motor_ref", f"{topic_prefix}_motor_ref"),
             ("angle_motion_position_ref", f"{topic_prefix}_position_ref"),
+            ("angle_motion_speed_ref", f"{topic_prefix}_speed_ref"),
+            ("angle_motion_speed_mode_stop", f"{topic_prefix}_speed_mode_stop"),
             ("angle_motion_detect_origin", f"{topic_prefix}_detect_origin"),
             ("angle_motion_initialize", f"{topic_prefix}_initialize"),
             ("angle_motion_mode_status", f"{topic_prefix}_mode_status"),
@@ -272,77 +277,77 @@ def generate_launch_description():
     # 足回りは100Hz
     # vescだけ初期値はCURRENT
     sabacan_single_control_id1_motor0 = create_sabacan_single_control_node(
-        1, 0, 100.0, "CURRENT"
+        1, 0, 100.0, "CURRENT", 0.0
     )
     sabacan_single_control_id1_motor1 = create_sabacan_single_control_node(
-        1, 1, 100.0, "CURRENT"
+        1, 1, 100.0, "CURRENT", 0.0
     )
     sabacan_single_control_id1_motor2 = create_sabacan_single_control_node(
-        1, 2, 100.0, "CURRENT"
+        1, 2, 100.0, "CURRENT", 0.0
     )
     sabacan_single_control_id1_motor3 = create_sabacan_single_control_node(
-        1, 3, 100.0, "CURRENT"
+        1, 3, 100.0, "CURRENT", 0.0
     )
     sabacan_single_control_id2_motor0 = create_sabacan_single_control_node(
-        2, 0, 100.0, "TORQUE"
+        2, 0, 100.0, "TORQUE", 0.0
     )
     sabacan_single_control_id2_motor1 = create_sabacan_single_control_node(
-        2, 1, 100.0, "TORQUE"
+        2, 1, 100.0, "TORQUE", 0.0
     )
     sabacan_single_control_id2_motor2 = create_sabacan_single_control_node(
-        2, 2, 100.0, "TORQUE"
+        2, 2, 100.0, "TORQUE", 0.0
     )
     sabacan_single_control_id2_motor3 = create_sabacan_single_control_node(
-        2, 3, 100.0, "TORQUE"
+        2, 3, 100.0, "TORQUE", 0.0
     )
     # それ以外は25Hz(仮)
     sabacan_single_control_id3_motor0 = create_sabacan_single_control_node(
-        3, 0, 25.0, "TORQUE"
+        3, 0, 25.0, "TORQUE", 0.0
     )
     sabacan_single_control_id3_motor1 = create_sabacan_single_control_node(
-        3, 1, 25.0, "TORQUE"
+        3, 1, 25.0, "TORQUE", 0.0
     )
     sabacan_single_control_id3_motor2 = create_sabacan_single_control_node(
-        3, 2, 25.0, "TORQUE"
+        3, 2, 25.0, "TORQUE", 0.0
     )
     sabacan_single_control_id3_motor3 = create_sabacan_single_control_node(
-        3, 3, 25.0, "TORQUE"
+        3, 3, 25.0, "TORQUE", 0.0
     )
     sabacan_single_control_id4_motor0 = create_sabacan_single_control_node(
-        4, 0, 25.0, "TORQUE"
+        4, 0, 25.0, "TORQUE", 0.0
     )
     sabacan_single_control_id4_motor1 = create_sabacan_single_control_node(
-        4, 1, 25.0, "TORQUE"
+        4, 1, 25.0, "TORQUE", 0.0
     )
     sabacan_single_control_id4_motor2 = create_sabacan_single_control_node(
-        4, 2, 25.0, "TORQUE"
+        4, 2, 25.0, "TORQUE", 0.0
     )
     sabacan_single_control_id4_motor3 = create_sabacan_single_control_node(
-        4, 3, 25.0, "TORQUE"
+        4, 3, 25.0, "TORQUE", 0.0
     )
     sabacan_single_control_id5_motor0 = create_sabacan_single_control_node(
-        5, 0, 25.0, "TORQUE"
+        5, 0, 25.0, "TORQUE", 0.0
     )
     sabacan_single_control_id5_motor1 = create_sabacan_single_control_node(
-        5, 1, 25.0, "TORQUE"
+        5, 1, 25.0, "TORQUE", 0.0
     )
     sabacan_single_control_id5_motor2 = create_sabacan_single_control_node(
-        5, 2, 25.0, "TORQUE"
+        5, 2, 25.0, "TORQUE", 0.0
     )
     sabacan_single_control_id5_motor3 = create_sabacan_single_control_node(
-        5, 3, 25.0, "TORQUE"
+        5, 3, 25.0, "TORQUE", 0.0
     )
     sabacan_single_control_id6_motor0 = create_sabacan_single_control_node(
-        6, 0, 25.0, "TORQUE"
+        6, 0, 25.0, "TORQUE", 0.0
     )
     sabacan_single_control_id6_motor1 = create_sabacan_single_control_node(
-        6, 1, 25.0, "TORQUE"
+        6, 1, 25.0, "TORQUE", 0.0
     )
     sabacan_single_control_id6_motor2 = create_sabacan_single_control_node(
-        6, 2, 25.0, "TORQUE"
+        6, 2, 25.0, "TORQUE", 0.0
     )
     sabacan_single_control_id6_motor3 = create_sabacan_single_control_node(
-        6, 3, 25.0, "TORQUE"
+        6, 3, 25.0, "TORQUE", 0.0
     )
     # id7は計測輪のみなので不要
 
@@ -485,6 +490,15 @@ def generate_launch_description():
         arguments=["--ros-args", "--log-level", "error"],
     )
 
+    r1_aruco_display_node = Node(
+        package="r1_ui",
+        executable="r1_aruco_display_node",
+        name="r1_aruco_display_node",
+        parameters=[param_file],
+        arguments=["--ros-args", "--log-level", "info"],
+        condition=IfCondition(use_aruco_display),
+    )
+
     # r1_mainのノードの起動を遅延させる
     common_nodes = [
         # 最初にsabacanを起動
@@ -510,6 +524,7 @@ def generate_launch_description():
         r1_mecanum_node,
         # r1_swerve_drive_node,
         ps4_node,
+        r1_aruco_display_node,
         r1_kfs_fx_node,
         r1_kfs_fz_node,
         r1_kfs_fyaw_node,
@@ -571,6 +586,7 @@ def generate_launch_description():
         [
             DeclareLaunchArgument("use_sim", default_value="false"),
             DeclareLaunchArgument("use_lidar", default_value="true"),
+            DeclareLaunchArgument("use_aruco_display", default_value="false"),
             DeclareLaunchArgument(
                 "robot_control_mode",
                 default_value="manual",

@@ -46,6 +46,7 @@ enum class ManualSubState
   MODE5_RKFS,
   MODE6_R2_LIFT,
   MODE7_SPEAR_ATTACK,
+  MODE8_AUTO_COLLECT_KFS,
   TEST
 };
 enum class AutoSubState

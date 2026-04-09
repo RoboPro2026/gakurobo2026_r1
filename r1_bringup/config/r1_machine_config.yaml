@@ -170,7 +170,8 @@ r1_main_node:
     # ポールを受け渡す位置
     spear1_collect3_pos: 0.80
     spear1_make_spear_start_pos: 0.35
-    spear1_make_spear_end_pos: 0.7
+    # スピアを押し込むときの速度[rad/s]
+    spear1_push_vel: 10.0
     # spear2
     spear2_normal_pos: 0.0
     # ポールを掴む位置
@@ -180,19 +181,23 @@ r1_main_node:
     # ポールを受け渡す位置
     spear2_collect3_pos: 0.80
     spear2_make_spear_start_pos: 0.35
-    spear2_make_spear_end_pos: 0.7
+    # スピアを押し込むときの速度[rad/s]
+    spear2_push_vel: 10.0
     # spear3
     spear3_normal_pos: 0.0
     spear3_collect_pos: 0.0
     spear3_make_spear_start_pos: 0.0
-    spear3_make_spear_end_pos: 0.5
+    # スピアを押し込むときの速度[rad/s]
+    spear3_push_vel: 10.0
     # spear4
     spear4_normal_pos: 0.0
     spear4_collect_pos: 0.0
     spear4_make_spear_start_pos: 0.0
-    spear4_make_spear_end_pos: 0.5
+    # スピアを押し込むときの速度[rad/s]
+    spear4_push_vel: 10.0
     # spear_x
     spear_x_normal_pos: 0.0
+    spear_x_middle_pos: 0.2
     spear_x_make_spear1_pos: 0.0
     spear_x_make_spear2_pos: 0.0
     spear_x_make_spear3_pos: 0.0
@@ -215,7 +220,7 @@ r1_main_node:
     # ========== KFS回収の移動関連 ==========
     # KFSが置かれている場所
     # kfs_forest_number: [4]
-    kfs_forest_number: [4, 2]
+    kfs_forest_number: [2, 4]
     # KFS回収範囲の長方形サイズ [m]
     # yaw=0 のとき width は map の x 方向、height は map の y 方向の長さになる
     # yaw を与えた場合は、その yaw だけ回転した長方形ローカル座標系での幅と高さになる
@@ -230,13 +235,13 @@ r1_main_node:
       1: [3.9, 2.725, 0.0]
       2: [2.7, 2.725, 0.0]
       3: [100.0, 100.0, 0.0] # ここは通らない
-      4: [5.4, 4.2, 1.57]
+      4: [5.4, 4.15, 1.57]
       5: [100.0, 100.0, 0.0] # ここにはKFSは置かれない
       6: [100.0, 100.0, 0.0] # ここは通らない
-      7: [5.4, 5.4, 1.57]
+      7: [5.4, 5.35, 1.57]
       8: [100.0, 100.0, 0.0] # ここにはKFSは置かれない
       9: [100.0, 100.0, 0.0] # ここは通らない
-      10: [5.4, 6.6, 1.57]
+      10: [5.4, 6.55, 1.57]
       11: [100.0, 100.0, 0.0] # ここは通らない
       12: [100.0, 100.0, 0.0] # ここは通らない
     # 外回りのときは3,6,9,12,10,11を通る
@@ -358,7 +363,7 @@ r1_kfs_fz_node:
     # ギアが一周すると2*pi*14.325mm進むので、半径は14.325mm
     radius: 0.014325
     inverse_motor: true
-    use_low_switch: true
+    use_low_switch: false
     use_high_switch: false
     inverse_low_switch_logic: false
     inverse_high_switch_logic: false
@@ -427,7 +432,7 @@ r1_kfs_rz_node:
     # ギアが一周すると2*pi*14.325mm進むので、半径は14.325mm
     radius: 0.014325
     inverse_motor: false
-    use_low_switch: true
+    use_low_switch: false
     use_high_switch: false
     inverse_low_switch_logic: false
     inverse_high_switch_logic: false
@@ -685,6 +690,11 @@ r1_machine_manage_node:
     sabacan_reset_send_interval_sec: 0.0
     # reset 完了後に各 initialize を再送してから通常制御へ戻すまでの待ち時間 [s]
     post_reset_initialize_delay_sec: 1.0
+
+r1_aruco_display_node:
+  ros__parameters:
+    spin_rate_hz: 25.0
+
 # IMU
 bno086_node:
   ros__parameters:
@@ -838,13 +848,14 @@ sabacan_robomasv2_node_id5:
     pos_gain_p: [5.0, 5.0, 5.0, 5.0]
     pos_gain_i: [0.0, 0.0, 0.0, 0.0]
     pos_gain_d: [0.0, 0.0, 0.0, 0.0]
-    speed_lim: [20.0, 20.0, 10.0, 10.0]
+    speed_lim: [10.0, 10.0, 10.0, 10.0]
     # TRQ+SPD+POSをフィードバック
     monitor_reg1: [0x0001000100010000, 0x0001000100010000, 0x0001000100010000, 0x0001000100010000]
     # TRQ+SPD+POS+MOTOR_STATEをフィードバック
     # monitor_reg1: [0x0001000100010002, 0x0001000100010002, 0x0001000100010002, 0x0001000100010002]
     # VESCのフィードバックは無効化
     monitor_reg2: [0, 0, 0, 0]
+    # やりだけちょっと早める
     monitor_period: 100
 # やり
 sabacan_robomasv2_node_id6:

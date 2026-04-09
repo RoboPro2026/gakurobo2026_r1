@@ -1,6 +1,9 @@
 echo "========== R1 setup start =========="
 
 cd "$HOME/ros2_ws"
+# 最初にvenvを有効にする
+source .venv/bin/activate
+# その後にinstall/setup.bashを実行
 source install/setup.bash
 
 sudo cpupower frequency-set -g performance

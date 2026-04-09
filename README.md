@@ -7,6 +7,40 @@
 Python は基本的に `venv` 環境を使用します。
 開発環境は `Ubuntu 22.04`、ROS 2 のバージョンは `Humble` です。
 
+Python 依存は [`requirements.txt`](./requirements.txt) にまとめています。  
+既存 GUI、可視化スクリプト、`r1_ui` の ArUco 表示ノードを使う場合は、先に venv へインストールしてください。
+
+## Python 環境
+
+このリポジトリでは、ROS 2 の環境と自前の `.venv` を併用できます。  
+ただし、Python ノードを `ros2 run` や `ros2 launch` で起動する場合は、依存を入れた Python で build しておく必要があります。
+
+理由:
+
+- `source install/setup.bash` は ROS パッケージ探索用の環境変数を設定します。
+- `.venv` の有効化は、`python` と `pip` の向き先を切り替えます。
+- `ament_python` パッケージの実行スクリプトは、build 時の Python interpreter を shebang に埋め込みます。
+- そのため、system Python で build したノードは、後から `.venv` を有効化しても system Python で起動されることがあります。
+
+特に GUI ノードや Python 依存を持つノードでは、次の順序を推奨します。
+
+```bash
+source /opt/ros/humble/setup.bash
+source ~/ros2_ws/.venv/bin/activate
+python -m pip install -r ~/ros2_ws/src/gakurobo2026_r1/requirements.txt
+cd ~/ros2_ws
+colcon build --packages-select r1_ui
+source ~/ros2_ws/install/setup.bash
+```
+
+この順序にしておくと、`.venv` に入れた `PyQt6` や `opencv-contrib-python` を Python ノード側から使いやすくなります。
+
+注意:
+
+- launch ファイル自身が `PyQt6` や `cv2` を直接 import すると、起動時の Python 依存と衝突しやすくなります。
+- launch ファイルは ROS 標準ライブラリ中心に保ち、GUI 依存は各ノード側に閉じ込める構成を推奨します。
+- `.venv` に依存を追加したあとに Python ノードが起動できない場合は、`.venv` を有効化した状態で再度 `colcon build` してください。
+
 パッケージの役割は次のとおりです。  
 
 - `r1_bringup`
@@ -76,7 +110,7 @@ flowchart LR
   main -->|/set_odometry| odom
   main -->|/set_mecanum_yaw| mecanum
   main -->|/set_swerve_drive_yaw| swerve
-  main -->|/axis_position_ref, /axis_detect_origin| motion
+  main -->|/axis_position_ref, /axis_speed_ref, /axis_speed_mode_stop, /axis_detect_origin| motion
   main -->|/r2_*_motor_ref, /gpio_*_ref, /r1_machine_initialize| manage
 
   chassis -->|/cmd_vel_target| vel
@@ -219,9 +253,9 @@ ROS 2 の launch ファイルとパラメータファイルを管理する packa
   - `r1_msgs` の機構用 topic と Sabacan 用 topic の変換を行います。
   - 非常停止の監視や、`/r1_machine_initialize` による復帰処理も行います。
 - `r1_linear_motion_node`
-  - 直動機構の位置制御と原点検出
+  - 直動機構の位置制御、速度モード、原点検出
 - `r1_angle_motion_node`
-  - 回転機構の位置制御と原点検出
+  - 回転機構の位置制御、速度モード、原点検出
 - `r1_swerve_drive_node`
   - 独立ステアの目標値計算
 - `r1_mecanum_node`
@@ -308,17 +342,16 @@ sudo apt install -y libeigen3-dev
 sudo apt install -y pybind11-dev
 ```
 
-### pip
-
-```bash
-pip install numpy matplotlib pyqt6
-```
-
 ### venv構築
 
 ```bash
 python -m venv .venv
 source .venv/bin/activate
+```
+
+### pipで依存関係をインストール
+```bash
+pip install -r src/gakurobo2026_r1/requirements.txt
 ```
 
 ## `urg_node2` の依存解決
@@ -335,6 +368,7 @@ rosdep install -i --from-paths urg_node2
 `robot_control_mode` 引数で `r1_main_node` の起動モードを切り替えられ、既定値は `manual` です。  
 `robot_control_mode:=manual` のとき `MANUAL/MODE1_DETECT_ORIGIN`、`robot_control_mode:=auto` のとき `AUTO/ACT0` で起動します。  
 実機モードではさらに `use_lidar` 引数で、LiDAR を使う構成と使わない構成を切り替えられます。  
+`use_aruco_display` 引数で、`r1_ui` の `r1_aruco_display_node` を起動するかを切り替えられます。既定値は `false` です。  
 `zone` は現在 [`r1_bringup.launch.py`](./r1_bringup/launch/r1_bringup.launch.py) 内で設定しています。
 
 ### 実機モード
@@ -380,6 +414,16 @@ ros2 launch r1_bringup r1_bringup.launch.py use_sim:=false use_lidar:=true robot
 ```bash
 ros2 launch r1_bringup r1_bringup.launch.py
 ```
+
+ArUco 表示ノードも同時に起動したい場合は、`use_aruco_display:=true` を付けます。
+
+```bash
+cd ~/ros2_ws
+source install/setup.bash
+ros2 launch r1_bringup r1_bringup.launch.py use_aruco_display:=true
+```
+
+この引数は既定では `false` なので、従来の起動コマンドには影響しません。
 
 LiDAR を使わない場合は、`r1_dummy_map_node` が `map -> odom` TF を publish します。`/initialpose` を送ると、その内容に合わせて `map -> odom` が更新されます。
 
