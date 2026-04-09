@@ -2349,8 +2349,6 @@ void R1MainNode::manual_mode8_auto_collect_kfs(void)
     // デバッグ用にKFS回収用アクチュエータを回収位置位置に移動
     kfs_fx_pos_ref(KFS_FX_START_POS);
     kfs_rx_pos_ref(KFS_RX_START_POS);
-    // kfs_fz_pos_ref(fz_ref);
-    // kfs_rz_pos_ref(rz_ref);
     kfs_fz_pos_ref(KFS_FZ_STORAGE_POS);
     kfs_rz_pos_ref(KFS_RZ_STORAGE_POS);
     kfs_fyaw_pos_ref(KFS_FYAW_REAR_ANGLE);
@@ -2637,7 +2635,8 @@ void R1MainNode::manual_task(void)
         } else if (*manual_sub == ManualSubState::MODE6_R2_LIFT) {
           state_machine_->set_next_state({MainState::MANUAL, ManualSubState::MODE7_SPEAR_ATTACK});
         } else if (*manual_sub == ManualSubState::MODE7_SPEAR_ATTACK) {
-          state_machine_->set_next_state({MainState::MANUAL, ManualSubState::MODE8_AUTO_COLLECT_KFS});
+          state_machine_->set_next_state(
+            {MainState::MANUAL, ManualSubState::MODE8_AUTO_COLLECT_KFS});
         } else if (*manual_sub == ManualSubState::MODE8_AUTO_COLLECT_KFS) {
           state_machine_->set_next_state({MainState::MANUAL, ManualSubState::MODE1_DETECT_ORIGIN});
         }
