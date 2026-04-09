@@ -1,3 +1,7 @@
 [submodule "urg_node2"]
 	path = urg_node2
 	url = git@github.com:Hokuyo-aut/urg_node2.git
+[submodule "dual_laser_merger"]
+	path = dual_laser_merger
+	url = https://github.com/pradyum/dual_laser_merger.git
+	branch = humble

@@ -354,13 +354,18 @@ source .venv/bin/activate
 pip install -r src/gakurobo2026_r1/requirements.txt
 ```
 
-## `urg_node2` の依存解決
+## rosdep で依存関係を解決
 
 ```bash
-cd ~/ros2_ws/src/gakurobo2026_r1
+cd ~/ros2_ws
 rosdep update
+rosdep install --from-paths src --ignore-src -r -y
 rosdep install -i --from-paths urg_node2
+colcon build --symlink-install
+source install/setup.bash
 ```
+
+`urg_node2` や `dual_laser_merger` を含めて、`src` 配下のパッケージ依存をまとめて解決します。
 
 ## ROS 2 の起動
 
