@@ -556,6 +556,7 @@ R1MainNode::R1MainNode() : Node("r1_main_node")
   declare_and_get_parameter("spear4_push_vel", SPEAR4_PUSH_VEL);
   // spear_x
   declare_and_get_parameter("spear_x_normal_pos", SPEAR_X_NORMAL_POS);
+  declare_and_get_parameter("spear_x_middle_pos", SPEAR_X_MIDDLE_POS);
   declare_and_get_parameter("spear_x_make_spear1_pos", SPEAR_X_MAKE_SPEAR1_POS);
   declare_and_get_parameter("spear_x_make_spear2_pos", SPEAR_X_MAKE_SPEAR2_POS);
   declare_and_get_parameter("spear_x_make_spear3_pos", SPEAR_X_MAKE_SPEAR3_POS);
@@ -2205,6 +2206,8 @@ void R1MainNode::manual_mode8_auto_collect_kfs(void)
     }
     publish_robot_move(ChassisAct::ACT1_START, forest_order, collect_kfs_type);
 
+    // spear_xを動かす
+    spear_x_pos_ref(SPEAR_X_NORMAL_POS);
     // まずrollを動かす
     spear_roll_pos_ref(SPEAR_ROLL_VERTICAL_ANGLE);
     RCLCPP_INFO(this->get_logger(), "spear roll vertical");
