@@ -545,6 +545,7 @@ public:
   rclcpp::TimerBase::SharedPtr manual_mode5_rear_valve_timer_;
   rclcpp::TimerBase::SharedPtr manual_mode7_front_valve_timer_;
   rclcpp::TimerBase::SharedPtr manual_mode7_rear_valve_timer_;
+  rclcpp::TimerBase::SharedPtr manual_mode8_roll_timer_;
   // ========== オートモード ==========
   void auto_collect_kfs_task(void);
   void auto_act0(void);

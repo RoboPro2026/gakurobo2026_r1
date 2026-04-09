@@ -2349,15 +2349,20 @@ void R1MainNode::manual_mode8_auto_collect_kfs(void)
     }
     publish_robot_move(ChassisAct::ACT1_START, forest_order, collect_kfs_type);
 
-    // デバッグ用にKFS回収用アクチュエータを回収位置位置に移動
-    kfs_fx_pos_ref(KFS_FX_START_POS);
-    kfs_rx_pos_ref(KFS_RX_START_POS);
-    kfs_fz_pos_ref(KFS_FZ_STORAGE_POS);
-    kfs_rz_pos_ref(KFS_RZ_STORAGE_POS);
-    kfs_fyaw_pos_ref(KFS_FYAW_REAR_ANGLE);
-    kfs_ryaw_pos_ref(KFS_RYAW_REAR_ANGLE);
-    kfs_front_pump(0.0);
-    kfs_rear_pump(0.0);
+    // まずrollを動かす
+    spear_roll_pos_ref(SPEAR_ROLL_VERTICAL_ANGLE);
+    manual_mode8_roll_timer_ = this->create_wall_timer(1500ms, [this]() {
+      // デバッグ用にKFS回収用アクチュエータを回収位置位置に移動
+      kfs_fx_pos_ref(KFS_FX_START_POS);
+      kfs_rx_pos_ref(KFS_RX_START_POS);
+      kfs_fz_pos_ref(KFS_FZ_STORAGE_POS);
+      kfs_rz_pos_ref(KFS_RZ_STORAGE_POS);
+      kfs_fyaw_pos_ref(KFS_FYAW_REAR_ANGLE);
+      kfs_ryaw_pos_ref(KFS_RYAW_REAR_ANGLE);
+      kfs_front_pump(0.0);
+      kfs_rear_pump(0.0);
+      manual_mode8_roll_timer_->cancel();
+    });
   }
 
   if (ps4_->is_pushed_circle()) {
