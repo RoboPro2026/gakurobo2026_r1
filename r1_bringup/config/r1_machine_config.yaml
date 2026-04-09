@@ -855,7 +855,7 @@ sabacan_robomasv2_node_id5:
     # VESCのフィードバックは無効化
     monitor_reg2: [0, 0, 0, 0]
     # やりだけちょっと早める
-    monitor_period: 25
+    monitor_period: 100
 # やり
 sabacan_robomasv2_node_id6:
   ros__parameters:

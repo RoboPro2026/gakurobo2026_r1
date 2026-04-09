@@ -894,6 +894,8 @@ private:
         std::bind(&MachineManageNode::sabacan_power_status_callback, this, std::placeholders::_1));
     sabacan_led_ref_publisher_ =
       this->create_publisher<sabacan_msgs::msg::SabacanLEDRef>("/sabacan_led_ref1", 10);
+    initialize_done_publisher_ =
+      this->create_publisher<std_msgs::msg::Empty>("/r1_machine_initialize_done", 10);
     initialize_signal_subscription_ = this->create_subscription<std_msgs::msg::Empty>(
       "/r1_machine_initialize", 10,
       std::bind(&MachineManageNode::initialize_signal_callback, this, std::placeholders::_1));
@@ -1158,6 +1160,16 @@ private:
     }
 
     RCLCPP_INFO(this->get_logger(), "Cleared sabacan LED pins 0-2 after initialize sequence");
+  }
+
+  void publish_initialize_done()
+  {
+    if (!initialize_done_publisher_) {
+      return;
+    }
+
+    std_msgs::msg::Empty msg;
+    initialize_done_publisher_->publish(msg);
   }
 
   /**
@@ -1689,6 +1701,9 @@ private:
     sabacan_reset_state_ = SabacanResetState::Idle;
     post_reset_initialize_sent_valid_ = false;
     clear_all_sabacan_leds_once();
+    // 将来的に原点検出や初期位置指令などの後処理を追加する場合も、この publish を
+    // sabacan 初期化完了の同期点として使えるようにしておく。
+    publish_initialize_done();
 
     if (was_reinit_required) {
       RCLCPP_INFO(
@@ -2462,6 +2477,7 @@ private:
   PublisherPtr<r1_msgs::msg::OdometryEncoder> odometry_encoder_publisher_;
   PublisherPtr<std_msgs::msg::Empty> swerve_drive_initialize_publisher_;
   PublisherPtr<std_msgs::msg::Empty> chassis_velocity_control_initialize_publisher_;
+  PublisherPtr<std_msgs::msg::Empty> initialize_done_publisher_;
   PublisherPtr<sabacan_msgs::msg::SabacanLEDRef> sabacan_led_ref_publisher_;
 
   // 一定周期 publish のために保持する最新値キャッシュ。

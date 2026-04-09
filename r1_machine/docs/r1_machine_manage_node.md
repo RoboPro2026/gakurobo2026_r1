@@ -31,6 +31,7 @@
 - `/r1_machine_initialize` を受けると、open-loop 中に一度 initialize を送り、その後 Sabacan reset を順番に実行する。
 - reset 完了後は linear / angle motion node へ initialize 信号を再度中継し、`swerve` モードでは `/swerve_drive_initialize`、速度補正用には `/chassis_velocity_control_initialize` も再度 publish する。
 - post-reset initialize 待機が完了したタイミングで、LED 基板 `/sabacan_led_ref1` の `pin_number=0..2` へ一度だけ `r=g=b=0` を送信し、Sabacan 側に残っていた LED 表示をクリアする。
+- post-reset initialize 待機が完了したタイミングで、`/r1_machine_initialize_done` (`std_msgs/msg/Empty`) を 1 回 publish し、上位ノードへ sabacan 初期化完了を通知する。
 - post-reset initialize の送信後は一定時間だけ open-loop 停止を維持し、その後に通常制御へ戻す。
 
 ## 初期化と非常停止
@@ -115,6 +116,7 @@
 - `/sabacan_gpio_status1` ... `/sabacan_gpio_status3` (`sabacan_msgs/msg/SabacanGPIOStatus`)
 - `/sabacan_power_status0` (`sabacan_msgs/msg/SabacanPowerStatus`)
 - `/r1_machine_initialize` (`std_msgs/msg/Empty`)
+- `/r1_machine_initialize_done` (`std_msgs/msg/Empty`)
 - `*_torque_limit_ref` (`std_msgs/msg/Float64`): Robomas の linear / angle motion 軸だけを対象に購読し、対応 board / motor の `torque_lim` へ反映します。
 
 ### Common Publish

@@ -464,6 +464,10 @@ R1MainNode::R1MainNode() : Node("r1_main_node")
   // r1_machine_manage_node の初期化要求
   r1_machine_initialize_publisher_ =
     this->create_publisher<std_msgs::msg::Empty>("/r1_machine_initialize", 10);
+  // r1_machine_manage_node の初期化完了通知
+  r1_machine_initialize_done_subscription_ = this->create_subscription<std_msgs::msg::Empty>(
+    "/r1_machine_initialize_done", 10,
+    std::bind(&R1MainNode::r1_machine_initialize_done_callback, this, std::placeholders::_1));
 
   // tf関連
   tf_buffer_ = std::make_shared<tf2_ros::Buffer>(this->get_clock());
@@ -882,6 +886,23 @@ void R1MainNode::publish_r1_machine_initialize(void)
   std_msgs::msg::Empty msg;
   r1_machine_initialize_publisher_->publish(msg);
   RCLCPP_INFO(this->get_logger(), "publish /r1_machine_initialize");
+}
+
+void R1MainNode::invalidate_led_cache(void)
+{
+  has_last_led_color_ = false;
+  has_last_led_fkfs_color_ = false;
+  has_last_led_rkfs_color_ = false;
+}
+
+void R1MainNode::r1_machine_initialize_done_callback(const std_msgs::msg::Empty::SharedPtr)
+{
+  is_initialized_ = true;
+  // initialize 完了直後に LED を再送できるよう、出力キャッシュを無効化する。
+  // 将来的にここへ原点検出後処理や初期姿勢への指令を追加する場合も、この callback を
+  // sabacan 初期化完了後の集約ポイントとして拡張する。
+  invalidate_led_cache();
+  RCLCPP_INFO(this->get_logger(), "received /r1_machine_initialize_done");
 }
 
 void R1MainNode::sabacan_led_update(void)
@@ -1906,190 +1927,25 @@ void R1MainNode::manual_mode7_spear_attack(void)
 {
   // 一旦デバッグ用に自動制御のデバッグモードに割り当てる
   if (ps4_->is_pushed_triangle()) {
-    // 位置制御のプログラム実行
-    // publish_chassis_act_ref(ChassisAct::ACT1_START);
-    std::vector<int> forest_order;
-    std::vector<std::string> collect_kfs_type;
-    int j = 0;
-    for (int i = 0; i < (int)KFS_FOREST_NUMBER.size(); i++) {
-      int n = KFS_FOREST_NUMBER[i];
-      if (n == 1 || n == 2 || n == 4 || n == 7 || n == 10) {
-        forest_order.push_back(n);
-        if (j == 0) {
-          if (zone_ == "blue") {
-            collect_kfs_type.push_back("rear_kfs");
-          } else {
-            // 今は何もしない
-          }
-          j++;
-        } else if (j == 1) {
-          if (zone_ == "blue") {
-            collect_kfs_type.push_back("front_kfs");
-          } else {
-            // 今は何もしない
-          }
-        } else {
-          RCLCPP_ERROR(this->get_logger(), "collect_kfs_type size error");
-        }
-      } else if (n == 3 || n == 6 || n == 9 || n == 12 || n == 11 || n == 10) {
-        forest_order.push_back(n);
-        if (j == 0) {
-          if (zone_ == "blue") {
-            collect_kfs_type.push_back("front_kfs");
-          } else {
-            // 今は何もしない
-          }
-          j++;
-        } else if (j == 1) {
-          if (zone_ == "blue") {
-            collect_kfs_type.push_back("rear_kfs");
-          } else {
-            // 今は何もしない
-          }
-        } else {
-          RCLCPP_ERROR(this->get_logger(), "collect_kfs_type size error");
-        }
-      }
-    }
-    publish_robot_move(ChassisAct::ACT1_START, forest_order, collect_kfs_type);
-
-    // zの高さの指令値を計算
-    // double fz_ref = KFS_FZ_NORMAL_POS;
-    // double rz_ref = KFS_RZ_NORMAL_POS;
-    // // for (int i = 0; i < (int)current_robot_move_.forest_order.size(); i++) {
-    // //   int forest_number = current_robot_move_.forest_order[i];
-    // //   bool is_front_kfs = (current_robot_move_.kfs_mechanism_type[i] == "front_kfs");
-    // //   if (forest_number == 2 || forest_number == 4 || forest_number == 10 || forest_number == 12) {
-    // //     if (is_front_kfs) {
-    // //       fz_ref = KFS_FZ_LOW_POS;
-    // //     } else {
-    // //       rz_ref = KFS_RZ_LOW_POS;
-    // //     }
-    // //   } else if (
-    // //     forest_number == 1 || forest_number == 3 || forest_number == 7 || forest_number == 9 ||
-    // //     forest_number == 11) {
-    // //     if (is_front_kfs) {
-    // //       fz_ref = KFS_FZ_MIDDLE_POS;
-    // //     } else {
-    // //       rz_ref = KFS_RZ_MIDDLE_POS;
-    // //     }
-    // //   } else if (forest_number == 6) {
-    // //     if (is_front_kfs) {
-    // //       fz_ref = KFS_FZ_HIGH_POS;
-    // //     } else {
-    // //       rz_ref = KFS_RZ_HIGH_POS;
-    // //     }
-    // //   }
-    // // }
-
-    // デバッグ用にKFS回収用アクチュエータを回収位置位置に移動
-    kfs_fx_pos_ref(KFS_FX_START_POS);
-    kfs_rx_pos_ref(KFS_RX_START_POS);
-    // kfs_fz_pos_ref(fz_ref);
-    // kfs_rz_pos_ref(rz_ref);
-    kfs_fz_pos_ref(KFS_FZ_STORAGE_POS);
-    kfs_rz_pos_ref(KFS_RZ_STORAGE_POS);
-    kfs_fyaw_pos_ref(KFS_FYAW_REAR_ANGLE);
-    kfs_ryaw_pos_ref(KFS_RYAW_REAR_ANGLE);
-    kfs_front_pump(0.0);
-    kfs_rear_pump(0.0);
   }
 
   if (ps4_->is_pushed_circle()) {
-    reset_position(true);
   }
 
   if (ps4_->is_pushed_left()) {
-    kfs_front_pump(0.0);
-    kfs_front_valve(true);
-    // setTimeout風で電磁弁をOFFにする。
-    manual_mode7_front_valve_timer_ = this->create_wall_timer(250ms, [this]() {
-      kfs_front_valve(false);
-      manual_mode7_front_valve_timer_->cancel();
-    });
-    kfs_rear_pump(0.0);
-    kfs_rear_valve(true);
-    // setTimeout風で電磁弁をOFFにする。
-    manual_mode7_rear_valve_timer_ = this->create_wall_timer(250ms, [this]() {
-      kfs_rear_valve(false);
-      manual_mode7_rear_valve_timer_->cancel();
-    });
   }
 
   if (ps4_->is_pushed_l1()) {
-    // kfs_fxの微調整（指令値を減少）
-    kfs_fx_pos_ref(kfs_fx_position_ref_ - 0.01);
   }
 
   if (ps4_->is_pushed_r1()) {
-    // kfs_fxの微調整（指令値を増加）
-    kfs_fx_pos_ref(kfs_fx_position_ref_ + 0.01);
   }
 
   if (ps4_->is_pushed_l2()) {
-    // kfs_fzの微調整（指令値を減少）
-    kfs_fz_pos_ref(kfs_fz_position_ref_ - 0.01);
   }
 
   if (ps4_->is_pushed_r2()) {
-    // kfs_fzの微調整（指令値を増加）
-    kfs_fz_pos_ref(kfs_fz_position_ref_ + 0.01);
   }
-  // int & spear_hand_valve1_step = manual_mode7_spear_hand_valve1_step_;
-
-  // if (ps4_->is_pushed_up()) {
-  //   if (spear_hand_valve1_step == 1) {
-  //     spear_hand_valve1(true);
-  //     spear_hand_valve1_step = 2;
-  //   } else {
-  //     spear_hand_valve1(false);
-  //     spear_hand_valve1_step = 1;
-  //   }
-  // }
-
-  // if (ps4_->is_pushed_right()) {
-  //   spear_rotate(spear_rotate_position_ref_ + 0.1);
-  // }
-
-  // if (ps4_->is_pushed_down()) {
-  //   spear_move(spear_move_position_ref_ - 0.01);
-  // }
-
-  // if (ps4_->is_pushed_left()) {
-  //   spear_rotate(spear_rotate_position_ref_ - 0.1);
-  // }
-
-  // if (ps4_->is_pushed_triangle()) {
-  //   manual_mode7_spear_attack_task(3);
-  // }
-
-  // if (ps4_->is_pushed_circle()) {
-  //   manual_mode7_spear_attack_task(2);
-  // }
-
-  // if (ps4_->is_pushed_cross()) {
-  //   spear_move(spear_move_position_ref_ + 0.01);
-  // }
-
-  // if (ps4_->is_pushed_square()) {
-  //   manual_mode7_spear_attack_task(1);
-  // }
-
-  // if (ps4_->is_pushed_l1()) {
-  //   spear_roger1(spear_roger1_position_ref_ - 0.01);
-  // }
-
-  // if (ps4_->is_pushed_r1()) {
-  //   spear_roger1(spear_roger1_position_ref_ + 0.01);
-  // }
-
-  // if (ps4_->is_pushed_l2()) {
-  //   spear_roger2(spear_roger2_position_ref_ - 0.01);
-  // }
-
-  // if (ps4_->is_pushed_r2()) {
-  //   spear_roger2(spear_roger2_position_ref_ + 0.01);
-  // }
 }
 
 void R1MainNode::auto_collect_kfs_task(void)
@@ -2628,6 +2484,7 @@ void R1MainNode::manual_task(void)
     }
     // psボタンが押されたときはsabacan resetを行う
     if (ps4_->is_pushed_ps()) {
+      is_initialized_ = false;
       reset_robot(true);
       publish_r1_machine_initialize();
     }
@@ -2708,6 +2565,7 @@ void R1MainNode::auto_task(void)
     }
     // psボタンが押されたときはsabacan resetを行う
     if (ps4_->is_pushed_ps()) {
+      is_initialized_ = false;
       reset_robot(true);
       publish_r1_machine_initialize();
     }

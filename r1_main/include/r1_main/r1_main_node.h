@@ -164,6 +164,8 @@ public:
   rclcpp::Publisher<r1_msgs::msg::RobotMove>::SharedPtr robot_move_publisher_;
   // r1_machine_manage_node の初期化要求
   rclcpp::Publisher<std_msgs::msg::Empty>::SharedPtr r1_machine_initialize_publisher_;
+  // r1_machine_manage_node の初期化完了通知
+  rclcpp::Subscription<std_msgs::msg::Empty>::SharedPtr r1_machine_initialize_done_subscription_;
   // タイマー
   rclcpp::TimerBase::SharedPtr timer_publisher_;
   rclcpp::node_interfaces::OnSetParametersCallbackHandle::SharedPtr parameter_callback_handle_;
@@ -390,6 +392,8 @@ public:
   LedPattern resolve_base_led_pattern(void);
   LedColor resolve_led_output_color(const LedPattern & pattern, const rclcpp::Time & now) const;
   void publish_r1_machine_initialize(void);
+  void r1_machine_initialize_done_callback(const std_msgs::msg::Empty::SharedPtr msg);
+  void invalidate_led_cache(void);
   // 現在の状態に応じて、LEDを光らせる。
   void sabacan_led_update(void);
   // IMU
