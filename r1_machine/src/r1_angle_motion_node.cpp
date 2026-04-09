@@ -353,7 +353,8 @@ private:
 
   double active_torque_limit() const
   {
-    return mode_ == MODE_SPEED ? contact_torque_limit_ : normal_torque_limit_;
+    return speed_mode_reason_ == SPEED_MODE_ORIGIN_DETECTION ? contact_torque_limit_
+                                                             : normal_torque_limit_;
   }
 
   void publish_active_torque_limit()
