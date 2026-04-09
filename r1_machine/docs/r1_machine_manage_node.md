@@ -30,6 +30,7 @@
 - 非常停止解除後は `/r1_machine_initialize` 受信まで open-loop 停止を継続する。
 - `/r1_machine_initialize` を受けると、open-loop 中に一度 initialize を送り、その後 Sabacan reset を順番に実行する。
 - reset 完了後は linear / angle motion node へ initialize 信号を再度中継し、`swerve` モードでは `/swerve_drive_initialize`、速度補正用には `/chassis_velocity_control_initialize` も再度 publish する。
+- post-reset initialize 待機が完了したタイミングで、LED 基板 `/sabacan_led_ref1` の `pin_number=0..2` へ一度だけ `r=g=b=0` を送信し、Sabacan 側に残っていた LED 表示をクリアする。
 - post-reset initialize の送信後は一定時間だけ open-loop 停止を維持し、その後に通常制御へ戻す。
 
 ## 初期化と非常停止
@@ -44,6 +45,7 @@
 - `swerve` モードでは、そのとき `/swerve_drive_initialize` ももう一度 1 回 publish します。
 - あわせて `/chassis_velocity_control_initialize` ももう一度 1 回 publish し、`r1_chassis_velocity_control_node` の PID 内部状態をリセットします。
 - 2 回目の initialize 後は `post_reset_initialize_delay_sec` のあいだ open-loop 停止を維持し、その後に通常制御へ戻します。
+- 通常制御へ戻す直前に、`/sabacan_led_ref1` の LED 0, 1, 2 を一度だけ全消灯します。
 - 非常停止由来ではない通常の initialize でも、Sabacan reset と motion node initialize は実行されます。
 
 ### 非常停止に入ったとき
@@ -71,7 +73,7 @@
 - reset 完了後に、linear motion node と angle motion node へ initialize をもう一度中継します。
 - `swerve` モードでは、あわせて `/swerve_drive_initialize` をもう一度 publish し、`r1_swerve_drive_node` の steer 角キャッシュを現在の motor status に同期させます。
 - `/chassis_velocity_control_initialize` も再送し、`r1_chassis_velocity_control_node` の PID 内部状態をリセットします。
-- その後、`post_reset_initialize_delay_sec` だけ待ってから `emergency_reinit_required_` を解除し、通常の motor routing を再開します。
+- その後、`post_reset_initialize_delay_sec` だけ待ってから LED 0, 1, 2 を全消灯し、`emergency_reinit_required_` を解除して通常の motor routing を再開します。
 
 ### 状態遷移の要点
 
@@ -80,7 +82,7 @@
 - `/r1_machine_initialize` 受信直後: pre-reset initialize を送るが、まだ open-loop 停止
 - `/r1_machine_initialize` 受信後の reset 中: まだ open-loop 停止
 - reset 完了直後: post-reset initialize を送るが、まだ open-loop 停止
-- initialize 待ち時間満了後: 通常制御へ復帰
+- initialize 待ち時間満了後: LED 0, 1, 2 を全消灯してから通常制御へ復帰
 
 ## Drive Mode
 
@@ -126,6 +128,7 @@
 - `/sabacan_robomas_reset_id1` ... `/sabacan_robomas_reset_id7`
 - `/sabacan_gpio_reset_id1` ... `/sabacan_gpio_reset_id3`
 - `/sabacan_led_reset`
+- `/sabacan_led_ref1` (`sabacan_msgs/msg/SabacanLEDRef`): post-reset initialize 完了後に LED 0, 1, 2 をクリアするための全消灯指令を 1 回だけ publish します。
 
 ### Mecanum Mode
 

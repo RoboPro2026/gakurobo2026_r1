@@ -387,36 +387,42 @@ private:
     RCLCPP_INFO(this->get_logger(), "%s", log_message);
   }
 
+  bool is_contact_detection_enabled_in_speed_mode() const
+  {
+    return speed_mode_reason_ != SPEED_MODE_USER_COMMAND;
+  }
+
   void timer_callback()
   {
     if (mode_ == MODE_SPEED) {
       bool detect_stop = false;
+      if (is_contact_detection_enabled_in_speed_mode()) {
+        // 現在のトルクがしきい値以下のとき
+        if (std::abs(current_torque_) <= torque_threshold_) {
+          // 最後に通常のトルクを検出した時刻を更新
+          last_normal_torque_time_ = this->now();
+        }
+        // リミットスイッチが反応していないとき
+        if (use_low_switch_ && low_switch_ == false) {
+          // 最後にリミットスイッチが反応していない時刻を更新
+          last_low_switch_not_detect_time_ = this->now();
+        }
+        if (use_high_switch_ && high_switch_ == false) {
+          // 最後にリミットスイッチが反応していない時刻を更新
+          last_high_switch_not_detect_time_ = this->now();
+        }
 
-      // 現在のトルクがしきい値以下のとき
-      if (std::abs(current_torque_) <= torque_threshold_) {
-        // 最後に通常のトルクを検出した時刻を更新
-        last_normal_torque_time_ = this->now();
+        // 一定時間トルクのしきい値を超えた場合、原点検出とみなす
+        detect_stop |=
+          ((this->now() - last_normal_torque_time_).seconds() > origin_detect_threshold_time_);
+        // 一定時間リミットスイッチが反応した場合、原点検出とみなす
+        detect_stop |=
+          (use_low_switch_ && (this->now() - last_low_switch_not_detect_time_).seconds() >
+                                origin_detect_threshold_time_);
+        detect_stop |=
+          (use_high_switch_ && (this->now() - last_high_switch_not_detect_time_).seconds() >
+                                 origin_detect_threshold_time_);
       }
-      // リミットスイッチが反応していないとき
-      if (use_low_switch_ && low_switch_ == false) {
-        // 最後にリミットスイッチが反応していない時刻を更新
-        last_low_switch_not_detect_time_ = this->now();
-      }
-      if (use_high_switch_ && high_switch_ == false) {
-        // 最後にリミットスイッチが反応していない時刻を更新
-        last_high_switch_not_detect_time_ = this->now();
-      }
-
-      // 一定時間トルクのしきい値を超えた場合、原点検出とみなす
-      detect_stop |=
-        ((this->now() - last_normal_torque_time_).seconds() > origin_detect_threshold_time_);
-      // 一定時間リミットスイッチが反応した場合、原点検出とみなす
-      detect_stop |=
-        (use_low_switch_ && (this->now() - last_low_switch_not_detect_time_).seconds() >
-                              origin_detect_threshold_time_);
-      detect_stop |=
-        (use_high_switch_ && (this->now() - last_high_switch_not_detect_time_).seconds() >
-                               origin_detect_threshold_time_);
 
       auto motor_ref_msg = r1_msgs::msg::MotorRef();
       if (detect_stop) {

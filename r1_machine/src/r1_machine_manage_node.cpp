@@ -36,6 +36,7 @@
 #include "rclcpp/rclcpp.hpp"
 #include "sabacan_msgs/msg/sabacan_gpio_ref_float.hpp"
 #include "sabacan_msgs/msg/sabacan_gpio_ref_int.hpp"
+#include "sabacan_msgs/msg/sabacan_led_ref.hpp"
 #include "sabacan_msgs/msg/sabacan_gpio_status.hpp"
 #include "sabacan_msgs/msg/sabacan_power_status.hpp"
 #include "sabacan_msgs/msg/sabacan_robomas_status.hpp"
@@ -891,6 +892,8 @@ private:
       this->create_subscription<sabacan_msgs::msg::SabacanPowerStatus>(
         "/sabacan_power_status0", 10,
         std::bind(&MachineManageNode::sabacan_power_status_callback, this, std::placeholders::_1));
+    sabacan_led_ref_publisher_ =
+      this->create_publisher<sabacan_msgs::msg::SabacanLEDRef>("/sabacan_led_ref1", 10);
     initialize_signal_subscription_ = this->create_subscription<std_msgs::msg::Empty>(
       "/r1_machine_initialize", 10,
       std::bind(&MachineManageNode::initialize_signal_callback, this, std::placeholders::_1));
@@ -1135,6 +1138,26 @@ private:
     }
     publish_initialize_channels(linear_motion_channels_);
     publish_initialize_channels(angle_motion_channels_);
+  }
+
+  void clear_all_sabacan_leds_once()
+  {
+    if (!sabacan_led_ref_publisher_) {
+      return;
+    }
+
+    for (uint8_t pin_number = 0; pin_number < 3; ++pin_number) {
+      sabacan_msgs::msg::SabacanLEDRef msg;
+      msg.pin_number = pin_number;
+      msg.start = 0;
+      msg.length = 255;
+      msg.r = 0;
+      msg.g = 0;
+      msg.b = 0;
+      sabacan_led_ref_publisher_->publish(msg);
+    }
+
+    RCLCPP_INFO(this->get_logger(), "Cleared sabacan LED pins 0-2 after initialize sequence");
   }
 
   /**
@@ -1665,6 +1688,7 @@ private:
     emergency_reinit_required_ = false;
     sabacan_reset_state_ = SabacanResetState::Idle;
     post_reset_initialize_sent_valid_ = false;
+    clear_all_sabacan_leds_once();
 
     if (was_reinit_required) {
       RCLCPP_INFO(
@@ -2438,6 +2462,7 @@ private:
   PublisherPtr<r1_msgs::msg::OdometryEncoder> odometry_encoder_publisher_;
   PublisherPtr<std_msgs::msg::Empty> swerve_drive_initialize_publisher_;
   PublisherPtr<std_msgs::msg::Empty> chassis_velocity_control_initialize_publisher_;
+  PublisherPtr<sabacan_msgs::msg::SabacanLEDRef> sabacan_led_ref_publisher_;
 
   // 一定周期 publish のために保持する最新値キャッシュ。
   std::vector<double> mecanum_wheel_speeds_feedback_{0.0, 0.0, 0.0, 0.0};

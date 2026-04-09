@@ -1,6 +1,6 @@
 # r1_linear_motion_node
 
-`r1_linear_motion_node` はリニア機構用モータを制御する ROS 2 ノードです。`/linear_motion_status` で得たトルク・速度・位置とリミットスイッチ入力を監視しながら、通常は位置指令を `/linear_motion_motor_ref` に出力します。原点検出要求が入った場合は一定速度で巻き取り/押し出しを行い、リミットスイッチまたはトルク上昇で停止して位置オフセットを更新します。`move_mech_lock` 要求や速度指令が入った場合も速度モードへ移行しますが、こちらはオフセットを更新せず、その場の機械位置を保持します。`initialize` を受けた場合も、現在のモータ位置が論理上の 0 m になるようにオフセットを更新してから、その場を保持します。加えて、通常時用と特殊動作用の 2 種類のトルク制限値を `/linear_motion_torque_limit_ref` へ publish し、`r1_machine_manage_node` 経由で Robomas 基板の `torque_lim` も切り替えます。目標位置はメートル単位で受け取り、ドラム半径 `radius` を用いてモータ角度へ換算します。周期処理の実行レートは `timer_rate` で変更できます。
+`r1_linear_motion_node` はリニア機構用モータを制御する ROS 2 ノードです。`/linear_motion_status` で得たトルク・速度・位置とリミットスイッチ入力を監視しながら、通常は位置指令を `/linear_motion_motor_ref` に出力します。原点検出要求が入った場合は一定速度で巻き取り/押し出しを行い、リミットスイッチまたはトルク上昇で停止して位置オフセットを更新します。`move_mech_lock` 要求や速度指令が入った場合も速度モードへ移行しますが、こちらはオフセットを更新せず、その場の機械位置を保持します。`speed_ref` によるユーザ速度モード中は原点検出を兼ねた自動停止判定を行わず、停止は `/linear_motion_speed_mode_stop`、`/linear_motion_initialize`、または別のモード切替でのみ行います。`initialize` を受けた場合も、現在のモータ位置が論理上の 0 m になるようにオフセットを更新してから、その場を保持します。加えて、通常時用と特殊動作用の 2 種類のトルク制限値を `/linear_motion_torque_limit_ref` へ publish し、`r1_machine_manage_node` 経由で Robomas 基板の `torque_lim` も切り替えます。目標位置はメートル単位で受け取り、ドラム半径 `radius` を用いてモータ角度へ換算します。周期処理の実行レートは `timer_rate` で変更できます。
 
 ## トピック
 
@@ -9,7 +9,7 @@
 - `/low_switch_status`(`r1_msgs/msg/GpioInput`): スイッチの値。 `inverse_*data` で XOR 反転されます。
 - `/high_switch_status`(`r1_msgs/msg/GpioInput`): スイッチの値。 `inverse_*data` で XOR 反転されます。
   - `/linear_motion_position_ref` (`std_msgs/msg/Float64`): 目標位置 [m]。原点検出中（速度モード）は無視されます。
-  - `/linear_motion_speed_ref` (`std_msgs/msg/Float64`): 目標角速度 [rad/s]。受信するとユーザ速度モードへ移行し、指定速度を流し続けます。
+  - `/linear_motion_speed_ref` (`std_msgs/msg/Float64`): 目標角速度 [rad/s]。受信するとユーザ速度モードへ移行し、指定速度を流し続けます。ユーザ速度モード中は原点検出用のトルク/リミットスイッチ判定を無効化します。
   - `/linear_motion_speed_mode_stop` (`std_msgs/msg/Empty`): ユーザ速度モードを停止します。現在位置を `POSITION` 指令へ切り替えて保持します。
   - `/linear_motion_detect_origin` (`std_msgs/msg/Bool`): `true` で原点検出モードに移行し、`false` で通常の位置モードに戻ります。
   - `/linear_motion_move_mech_lock` (`std_msgs/msg/Int32`): 機械端まで押し当てる移動要求。`data > 0` で正方向、`data < 0` で逆方向、`data == 0` で停止して位置モードに戻ります。
@@ -30,7 +30,7 @@
 | `use_high_switch` | bool | `true` | 高側リミットスイッチを原点検出判定に使うか。 |
 | `torque_threshold` | double | `1.0` | 許容トルク [Nm]。この絶対値を超え続けたら原点とみなします。 |
 | `normal_torque_limit` | double | `1.0` | 通常位置モードで Robomas 基板へ設定する `torque_lim` [Nm]。 |
-| `contact_torque_limit` | double | `1.0` | 原点検出中と `move_mech_lock` 中に Robomas 基板へ設定する `torque_lim` [Nm]。 |
+| `contact_torque_limit` | double | `1.0` | 原点検出中、`move_mech_lock` 中、ユーザ速度モード中に Robomas 基板へ設定する `torque_lim` [Nm]。 |
 | `origin_detect_threshold_time` | double | `0.1` | トルクしきい値超過を原点とみなすまでの継続時間 [s]。 |
 | `origin_detect_speed` | double | `-3.14` | 原点検出中に流す一定角速度 [rad/s]。負の符号でも可。  符号は `inverse_motor` に応じて反転します。 |
 | `move_mech_lock_speed` | double | `3.14` | `move_mech_lock` 中に流す角速度の大きさ [rad/s]。向きは topic の符号で指定します。 |
@@ -47,7 +47,7 @@
 1. `/linear_motion_status` を受信してトルク・速度・位置・リミットスイッチ状態を内部に保持します。スイッチ値は `inverse_*_logic` 設定で XOR 反転されます。
 2. 通常は位置モード（`MODE_POSITION`）。`/linear_motion_position_ref` で受けた目標位置 [m] を `pos_min`〜`pos_max` にクランプし、原点検出で決まる `pos_offset` を加算した後、`target_angle = (target_pos) / radius` として `"POSITION"` 指令を配信します (`inverse_motor` で符号反転)。速度モード中はこのトピックを無視します。
 3. `/linear_motion_speed_ref` に角速度 [rad/s] を送るとユーザ速度モードへ移行し、`timer_rate` 周期で `"VELOCITY"` 指令を流し続けます。`/linear_motion_speed_mode_stop` を受けると、現在のモータ位置を `"POSITION"` 指令へ切り替えて保持し、位置モードへ戻ります。
-4. ユーザ速度モード中も安全のため、リミットスイッチ反応またはトルク上昇が `origin_detect_threshold_time` を超えて継続した場合は自動停止し、その時点の位置を保持します。
+4. `/linear_motion_speed_ref` によるユーザ速度モード中は、原点検出用のトルク上昇判定とリミットスイッチ判定を行いません。停止は `/linear_motion_speed_mode_stop`、`/linear_motion_initialize`、または別モード要求で行います。
 5. `/linear_motion_detect_origin` に `true` を送ると速度モード（原点検出）へ移行し、`timer_rate` 周期のタイマで `"VELOCITY"` 指令 `-origin_detect_speed` を流し続けます。この切替と同時に `/linear_motion_torque_limit_ref` へ `contact_torque_limit` を publish します。検出条件は以下の OR です。  
    - `use_low_switch`/`use_high_switch` が有効で、対応するスイッチがオン。  
    - `|torque| > torque_threshold` の状態が `origin_detect_threshold_time` 秒以上続く。
