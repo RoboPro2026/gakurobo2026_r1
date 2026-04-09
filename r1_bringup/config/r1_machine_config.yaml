@@ -171,7 +171,7 @@ r1_main_node:
     spear1_collect3_pos: 0.80
     spear1_make_spear_start_pos: 0.35
     # スピアを押し込むときの速度[rad/s]
-    spear1_push_vel: 6.28
+    spear1_push_vel: 10.0
     # spear2
     spear2_normal_pos: 0.0
     # ポールを掴む位置
@@ -182,19 +182,19 @@ r1_main_node:
     spear2_collect3_pos: 0.80
     spear2_make_spear_start_pos: 0.35
     # スピアを押し込むときの速度[rad/s]
-    spear2_push_vel: 6.28
+    spear2_push_vel: 10.0
     # spear3
     spear3_normal_pos: 0.0
     spear3_collect_pos: 0.0
     spear3_make_spear_start_pos: 0.0
     # スピアを押し込むときの速度[rad/s]
-    spear3_push_vel: 6.28
+    spear3_push_vel: 10.0
     # spear4
     spear4_normal_pos: 0.0
     spear4_collect_pos: 0.0
     spear4_make_spear_start_pos: 0.0
     # スピアを押し込むときの速度[rad/s]
-    spear4_push_vel: 6.28
+    spear4_push_vel: 10.0
     # spear_x
     spear_x_normal_pos: 0.0
     spear_x_make_spear1_pos: 0.0
@@ -854,7 +854,8 @@ sabacan_robomasv2_node_id5:
     # monitor_reg1: [0x0001000100010002, 0x0001000100010002, 0x0001000100010002, 0x0001000100010002]
     # VESCのフィードバックは無効化
     monitor_reg2: [0, 0, 0, 0]
-    monitor_period: 100
+　　# やりだけちょっと早める
+    monitor_period: 25
 # やり
 sabacan_robomasv2_node_id6:
   ros__parameters:
