@@ -2351,8 +2351,12 @@ void R1MainNode::manual_mode8_auto_collect_kfs(void)
 
     // まずrollを動かす
     spear_roll_pos_ref(SPEAR_ROLL_VERTICAL_ANGLE);
+    RCLCPP_INFO(this->get_logger(), "spear roll vertical");
     manual_mode8_roll_timer_ = this->create_wall_timer(3000ms, [this]() {
       // デバッグ用にKFS回収用アクチュエータを回収位置位置に移動
+      RCLCPP_INFO(
+        this->get_logger(),
+        "manual_mode8_auto_collect_kfs: move kfs actuators to storage position");
       kfs_fx_pos_ref(KFS_FX_START_POS);
       kfs_rx_pos_ref(KFS_RX_START_POS);
       kfs_fz_pos_ref(KFS_FZ_STORAGE_POS);
