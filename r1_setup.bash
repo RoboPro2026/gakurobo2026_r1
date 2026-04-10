@@ -9,7 +9,8 @@ source install/setup.bash
 sudo cpupower frequency-set -g performance
 
 IMU_DEV="/dev/serial/by-id/usb-FTDI_FT231X_USB_UART_D30FJEIM-if00-port0"
-LIDAR_DEV="/dev/ttyACM0"
+LIDAR1_DEV="/dev/serial/by-path/pci-0000:00:14.0-usb-0:1.4:1.0"
+LIDAR2_DEV="/dev/serial/by-path/pci-0000:00:14.0-usb-0:1.1:1.0"
 
 # by-id -> 実体の ttyUSBx を取得
 IMU_TTY="$(basename "$(readlink -f "$IMU_DEV")")"
@@ -17,7 +18,8 @@ IMU_TTY="$(basename "$(readlink -f "$IMU_DEV")")"
 sudo chmod 666 "$IMU_DEV"
 echo 1 | sudo tee "/sys/bus/usb-serial/devices/$IMU_TTY/latency_timer"
 
-sudo chmod 666 "$LIDAR_DEV"
+sudo chmod 666 "$LIDAR1_DEV"
+sudo chmod 666 "$LIDAR2_DEV"
 
 echo "---------- IMU setup OK ----------"
 
