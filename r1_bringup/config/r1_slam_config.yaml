@@ -15,8 +15,8 @@ urg_node2_1:
     diagnostics_window_time : 5.0
     time_offset : 0.0
 # -120~120
-    angle_min : -2.07
-    angle_max : 2.07
+    angle_min : -0.58
+    angle_max : 0.63
     skip : 0
     cluster : 1
 urg_node2_2:
@@ -35,8 +35,8 @@ urg_node2_2:
     diagnostics_window_time : 5.0
     time_offset : 0.0
 # -120~120
-    angle_min : -2.07
-    angle_max : 2.07
+    angle_min : -1.40
+    angle_max : 1.15
     skip : 0
     cluster : 1
 # r1_laser_filter_node:
