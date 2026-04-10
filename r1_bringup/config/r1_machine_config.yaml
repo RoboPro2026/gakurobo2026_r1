@@ -169,6 +169,9 @@ r1_main_node:
     spear1_collect2_pos: 0.35
     # ポールを受け渡す位置
     spear1_collect3_pos: 0.80
+    spear1_low_attack_pos: 0.6
+    spear1_middle_attack_pos: 0.6
+    spear1_high_attack_pos: 0.8
     spear1_make_spear_start_pos: 0.35
     # スピアを押し込むときの速度[rad/s]
     spear1_push_vel: 10.0
@@ -208,7 +211,9 @@ r1_main_node:
     # spear_roll
     spear_roll_normal_angle: 0.0
     spear_roll_vertical_angle: 1.5707963267948966
-    # spear_roll_vertical_angle: 1.9
+    spear_roll_low_attack_angle: 0.0
+    spear_roll_middle_attack_angle: 0.7
+    spear_roll_high_attack_angle: 1.0
     # spear_pitch1
     # デフォルトで少しだけ位置を上げる
     spear_pitch1_normal_angle: 0.1

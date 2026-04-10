@@ -293,6 +293,9 @@ public:
   double SPEAR1_COLLECT2_POS = 0.0;
   double SPEAR1_COLLECT3_POS = 0.0;
   double SPEAR1_MAKE_SPEAR_START_POS = 0.0;
+  double SPEAR1_LOW_ATTACK_POS = 0.0;
+  double SPEAR1_MIDDLE_ATTACK_POS = 0.0;
+  double SPEAR1_HIGH_ATTACK_POS = 0.0;
   double SPEAR1_PUSH_VEL = 0.0;
   // spear2
   double SPEAR2_NORMAL_POS = 0.0;
@@ -324,6 +327,9 @@ public:
   // spear_roll
   double SPEAR_ROLL_NORMAL_ANGLE = 0.0;
   double SPEAR_ROLL_VERTICAL_ANGLE = 0.0;
+  double SPEAR_ROLL_LOW_ATTACK_ANGLE = 0.0;
+  double SPEAR_ROLL_MIDDLE_ATTACK_ANGLE = 0.0;
+  double SPEAR_ROLL_HIGH_ATTACK_ANGLE = 0.0;
   // spear_pitch1
   double SPEAR_PITCH1_NORMAL_ANGLE = 0.0;
   double SPEAR_PITCH1_VERTICAL_ANGLE = 0.0;
@@ -525,7 +531,7 @@ public:
   void manual_mode5_rkfs(void);
   void manual_mode6_r2_lift(void);
   void manual_mode7_spear_attack(void);
-  void manual_mode7_spear_attack_task(int n);
+  void manual_mode7_spear_attack_task(int n, int m);
   void manual_mode8_auto_collect_kfs(void);
   static constexpr int DEFAULT_STEP = 1;
   int manual_mode2_collect_pole_task_step_ = DEFAULT_STEP;

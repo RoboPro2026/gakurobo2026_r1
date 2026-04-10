@@ -536,6 +536,9 @@ R1MainNode::R1MainNode() : Node("r1_main_node")
   declare_and_get_parameter("spear1_collect2_pos", SPEAR1_COLLECT2_POS);
   declare_and_get_parameter("spear1_collect3_pos", SPEAR1_COLLECT3_POS);
   declare_and_get_parameter("spear1_make_spear_start_pos", SPEAR1_MAKE_SPEAR_START_POS);
+  declare_and_get_parameter("spear1_low_attack_pos", SPEAR1_LOW_ATTACK_POS);
+  declare_and_get_parameter("spear1_middle_attack_pos", SPEAR1_MIDDLE_ATTACK_POS);
+  declare_and_get_parameter("spear1_high_attack_pos", SPEAR1_HIGH_ATTACK_POS);
   declare_and_get_parameter("spear1_push_vel", SPEAR1_PUSH_VEL);
   // spear2
   declare_and_get_parameter("spear2_normal_pos", SPEAR2_NORMAL_POS);
@@ -567,6 +570,9 @@ R1MainNode::R1MainNode() : Node("r1_main_node")
   // spear_roll
   declare_and_get_parameter("spear_roll_normal_angle", SPEAR_ROLL_NORMAL_ANGLE);
   declare_and_get_parameter("spear_roll_vertical_angle", SPEAR_ROLL_VERTICAL_ANGLE);
+  declare_and_get_parameter("spear_roll_low_attack_angle", SPEAR_ROLL_LOW_ATTACK_ANGLE);
+  declare_and_get_parameter("spear_roll_middle_attack_angle", SPEAR_ROLL_MIDDLE_ATTACK_ANGLE);
+  declare_and_get_parameter("spear_roll_high_attack_angle", SPEAR_ROLL_HIGH_ATTACK_ANGLE);
   // spear_pitch1
   declare_and_get_parameter("spear_pitch1_normal_angle", SPEAR_PITCH1_NORMAL_ANGLE);
   declare_and_get_parameter("spear_pitch1_vertical_angle", SPEAR_PITCH1_VERTICAL_ANGLE);
@@ -1885,67 +1891,134 @@ void R1MainNode::manual_mode6_r2_lift(void)
   }
 }
 
-void R1MainNode::manual_mode7_spear_attack_task(int n)
+/**
+ * @brief 
+ * 
+ * @param n 何個目の機構を動かすか。
+ * @param m どの高さを狙うか。m==1で下段、m==2で中段、m==3で上段を狙う
+ */
+void R1MainNode::manual_mode7_spear_attack_task(int n, int m)
 {
   (void)n;
-  // int & step = manual_mode7_spear_attack_task_step_;
-  // RCLCPP_INFO(this->get_logger(), "manual_mode7_spear_attack_task step: %d", step);
+  int & step = manual_mode7_spear_attack_task_step_;
+  RCLCPP_INFO(this->get_logger(), "manual_mode7_spear_attack_task step: %d", step);
 
-  // if (step == 1) {
-  //   // spear_roger1とspear_roger2を攻撃の高さに合わせる。
-  //   // spear_moveとspear_rotateを初期位置に移動する。
-  //   if (n == 1) {
-  //     spear_roger1(SPEAR_ROGER1_LOW_ATTACK_POS);
-  //     spear_roger2(SPEAR_ROGER2_LOW_ATTACK_POS);
-  //   } else if (n == 2) {
-  //     spear_roger1(SPEAR_ROGER1_MIDDLE_ATTACK_POS);
-  //     spear_roger2(SPEAR_ROGER2_MIDDLE_ATTACK_POS);
-  //   } else if (n == 3) {
-  //     spear_roger1(SPEAR_ROGER1_HIGH_ATTACK_POS);
-  //     spear_roger2(SPEAR_ROGER2_HIGH_ATTACK_POS);
-  //   }
-  //   spear_move(SPEAR_MOVE_NORMAL_POS);
-  //   spear_rotate(SPEAR_ROTATE_NORMAL_POS);
-  //   step++;
-  // } else if (step == 2) {
-  //   // spear_moveを動かして、やりを押し出す。
-  //   spear_move(SPEAR_MOVE_ATTACK_POS);
-  //   step++;
-  // } else if (step == 3) {
-  //   // spear_moveを動かして、やりを戻す。
-  //   spear_move(SPEAR_MOVE_NORMAL_POS);
-  //   step++;
-  // } else if (step == 4) {
-  //   // spear_roger1とspear_roger2をもとの高さに戻す。
-  //   spear_roger1(SPEAR_ROGER1_NORMAL_POS);
-  //   spear_roger2(SPEAR_ROGER2_NORMAL_POS);
-  //   RCLCPP_INFO(this->get_logger(), "spear attack task completed");
-  //   step = 1;
-  // }
+  if (step == 1) {
+    spear_x_pos_ref(SPEAR_X_NORMAL_POS);
+    if (m == 1) {
+      // 下段を狙う
+      spear_roll_pos_ref(SPEAR_ROLL_LOW_ATTACK_ANGLE);
+    } else if (m == 2) {
+      // 中段を狙う
+      spear_roll_pos_ref(SPEAR_ROLL_MIDDLE_ATTACK_ANGLE);
+    } else if (m == 3) {
+      // 上段を狙う
+      spear_roll_pos_ref(SPEAR_ROLL_HIGH_ATTACK_ANGLE);
+    }
+    step++;
+  } else if (step == 2) {
+    if (n == 1) {
+      if (m == 1) {
+        // 下段を狙う
+        spear1_pos_ref(SPEAR1_LOW_ATTACK_POS);
+      } else if (m == 2) {
+        // 中段を狙う
+        spear1_pos_ref(SPEAR1_MIDDLE_ATTACK_POS);
+      } else if (m == 3) {
+        // 上段を狙う
+        spear1_pos_ref(SPEAR1_HIGH_ATTACK_POS);
+      }
+    } else if (n == 2) {
+    } else if (n == 3) {
+    } else if (n == 4) {
+    }
+    spear_roll_pos_ref(SPEAR_ROLL_NORMAL_ANGLE);
+    step++;
+  } else if (step == 3) {
+    if (n == 1) {
+      spear1_pos_ref(SPEAR1_NORMAL_POS);
+    } else if (n == 2) {
+      spear2_pos_ref(SPEAR2_NORMAL_POS);
+    } else if (n == 3) {
+      spear3_pos_ref(SPEAR3_NORMAL_POS);
+    } else if (n == 4) {
+      spear4_pos_ref(SPEAR4_NORMAL_POS);
+    }
+    step++;
+  } else if (step == 4) {
+    if (n == 1) {
+      spear_u1_valve(true);
+      spear_d1_valve(true);
+    } else if (n == 2) {
+      spear_u2_valve(true);
+      spear_d2_valve(true);
+    } else if (n == 3) {
+    } else if (n == 4) {
+    }
+    step++;
+  } else if (step == 5) {
+    if (n == 1) {
+      spear_u1_valve(false);
+      spear_d1_valve(false);
+    } else if (n == 2) {
+      spear_u2_valve(false);
+      spear_d2_valve(false);
+    } else if (n == 3) {
+    } else if (n == 4) {
+    }
+    spear_roll_pos_ref(SPEAR_ROLL_VERTICAL_ANGLE);
+    step = 1;
+    RCLCPP_INFO(this->get_logger(), "spear attack task completed");
+  }
 }
 
 void R1MainNode::manual_mode7_spear_attack(void)
 {
-  // 一旦デバッグ用に自動制御のデバッグモードに割り当てる
-  if (ps4_->is_pushed_triangle()) {
+  if (ps4_->is_pushed_up()) {
+    spear_roll_pos_ref(spear_roll_position_ref_ + 0.05);
   }
 
-  if (ps4_->is_pushed_circle()) {
+  if (ps4_->is_pushed_right()) {
+    manual_mode7_spear_attack_task(1, 2);
+  }
+
+  if (ps4_->is_pushed_down()) {
+    spear_roll_pos_ref(spear_roll_position_ref_ - 0.05);
   }
 
   if (ps4_->is_pushed_left()) {
+    manual_mode7_spear_attack_task(1, 3);
+  }
+
+  if (ps4_->is_pushed_triangle()) {
+    manual_mode7_spear_attack_task(1, 1);
+  }
+
+  if (ps4_->is_pushed_circle()) {
+    spear1_pos_ref(spear1_position_ref_ + 0.01);
+  }
+
+  if (ps4_->is_pushed_cross()) {
+  }
+
+  if (ps4_->is_pushed_square()) {
+    spear1_pos_ref(spear1_position_ref_ - 0.01);
   }
 
   if (ps4_->is_pushed_l1()) {
+    spear_pitch1_pos_ref(spear_pitch1_position_ref_ - 0.05);
   }
 
   if (ps4_->is_pushed_r1()) {
+    spear_pitch1_pos_ref(spear_pitch1_position_ref_ + 0.05);
   }
 
   if (ps4_->is_pushed_l2()) {
+    spear_pitch2_pos_ref(spear_pitch2_position_ref_ - 0.05);
   }
 
   if (ps4_->is_pushed_r2()) {
+    spear_pitch2_pos_ref(spear_pitch2_position_ref_ + 0.05);
   }
 }
 
