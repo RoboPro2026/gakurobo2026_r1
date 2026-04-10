@@ -2279,26 +2279,24 @@ void R1MainNode::manual_mode8_auto_collect_kfs(void)
     }
     publish_robot_move(ChassisAct::ACT1_START, forest_order, collect_kfs_type);
 
-    // spear_xを動かす
-    spear_x_pos_ref(SPEAR_X_MIDDLE_POS);
-    // まずrollを動かす
-    spear_roll_pos_ref(SPEAR_ROLL_VERTICAL_ANGLE);
-    RCLCPP_INFO(this->get_logger(), "spear roll vertical");
-    manual_mode8_roll_timer_ = this->create_wall_timer(3000ms, [this]() {
-      // デバッグ用にKFS回収用アクチュエータを回収位置位置に移動
-      RCLCPP_INFO(
-        this->get_logger(),
-        "manual_mode8_auto_collect_kfs: move kfs actuators to storage position");
-      kfs_fx_pos_ref(KFS_FX_START_POS);
-      kfs_rx_pos_ref(KFS_RX_START_POS);
-      kfs_fz_pos_ref(KFS_FZ_STORAGE_POS);
-      kfs_rz_pos_ref(KFS_RZ_STORAGE_POS);
-      kfs_fyaw_pos_ref(KFS_FYAW_REAR_ANGLE);
-      kfs_ryaw_pos_ref(KFS_RYAW_REAR_ANGLE);
-      kfs_front_pump(0.0);
-      kfs_rear_pump(0.0);
-      manual_mode8_roll_timer_->cancel();
-    });
+    if (ENABLE_AUTO_COLLECT_KFS_ACTUATOR) {
+      // spear_xを動かす
+      spear_x_pos_ref(SPEAR_X_MIDDLE_POS);
+      // まずrollを動かす
+      spear_roll_pos_ref(SPEAR_ROLL_VERTICAL_ANGLE);
+      manual_mode8_roll_timer_ = this->create_wall_timer(3000ms, [this]() {
+        // デバッグ用にKFS回収用アクチュエータを回収位置位置に移動
+        kfs_fx_pos_ref(KFS_FX_START_POS);
+        kfs_rx_pos_ref(KFS_RX_START_POS);
+        kfs_fz_pos_ref(KFS_FZ_STORAGE_POS);
+        kfs_rz_pos_ref(KFS_RZ_STORAGE_POS);
+        kfs_fyaw_pos_ref(KFS_FYAW_REAR_ANGLE);
+        kfs_ryaw_pos_ref(KFS_RYAW_REAR_ANGLE);
+        kfs_front_pump(0.0);
+        kfs_rear_pump(0.0);
+        manual_mode8_roll_timer_->cancel();
+      });
+    }
   }
 
   if (ps4_->is_pushed_circle()) {
