@@ -1932,7 +1932,6 @@ void R1MainNode::manual_mode7_spear_attack_task(int n, int m)
     } else if (n == 3) {
     } else if (n == 4) {
     }
-    spear_roll_pos_ref(SPEAR_ROLL_NORMAL_ANGLE);
     step++;
   } else if (step == 3) {
     if (n == 1) {
@@ -1944,6 +1943,7 @@ void R1MainNode::manual_mode7_spear_attack_task(int n, int m)
     } else if (n == 4) {
       spear4_pos_ref(SPEAR4_NORMAL_POS);
     }
+    spear_roll_pos_ref(SPEAR_ROLL_NORMAL_ANGLE);
     step++;
   } else if (step == 4) {
     if (n == 1) {
