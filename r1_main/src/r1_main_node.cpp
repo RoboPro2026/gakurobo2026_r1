@@ -2035,8 +2035,6 @@ void R1MainNode::auto_collect_kfs_task(void)
   // TODO: 進行方向と使用する回収機構の順番に応じて、OFFSETをいい感じに適応する
   geometry_msgs::msg::PoseStamped map_pos = get_map_pos();
   int n = current_robot_move_.forest_order.size();
-  bool has_within_true = false;
-  bool has_within_false = false;
   bool front_kfs_assigned = false;
   bool rear_kfs_assigned = false;
   bool front_kfs_within = false;
@@ -2096,8 +2094,6 @@ void R1MainNode::auto_collect_kfs_task(void)
         map_x, map_y, center_x, center_y, rect_yaw, COLLECT_KFS_WIDTH, COLLECT_KFS_HEIGHT)) {
       within = true;
     }
-    has_within_true = has_within_true || within;
-    has_within_false = has_within_false || !within;
     if (within_index == FKFS) {
       front_kfs_within = front_kfs_within || within;
     } else {
@@ -2199,12 +2195,6 @@ void R1MainNode::auto_collect_kfs_task(void)
     }
     // 最後に前回値を更新する
     prev_within = within;
-  }
-
-  if (has_within_true) {
-    set_led_status(0, 50, 0, 0.0);
-  } else if (has_within_false) {
-    set_led_status(50, 0, 0, 0.0);
   }
 
   if (front_kfs_assigned) {
