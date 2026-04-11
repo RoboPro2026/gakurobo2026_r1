@@ -122,7 +122,7 @@ r1_main_node:
     kfs_fx_normal_pos: 0.05
     kfs_fx_start_pos: 0.3
     kfs_fx_expand_pos: 0.67
-    kfs_fx_storage_pos: 0.1
+    kfs_fx_storage_pos: 0.2
     # fz
     kfs_fz_normal_pos: 0.005
     kfs_fz_low_pos: 0.02
@@ -139,7 +139,7 @@ r1_main_node:
     kfs_rx_normal_pos: 0.05
     kfs_rx_start_pos: 0.3
     kfs_rx_expand_pos: 0.67
-    kfs_rx_storage_pos: 0.1
+    kfs_rx_storage_pos: 0.2
     # rz
     kfs_rz_normal_pos: 0.005
     kfs_rz_low_pos: 0.02
@@ -153,7 +153,7 @@ r1_main_node:
     kfs_ryaw_side_angle: 1.5707963267948966
     kfs_ryaw_rear_angle: 3.141592653589793
     # 回収するときの遅延時間
-    kfs_yaw_delay_time: 1.0
+    kfs_yaw_delay_time: 0.4
 
     # ========== 展開 ==========
     # R2昇降
