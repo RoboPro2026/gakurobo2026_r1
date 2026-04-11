@@ -1,14 +1,11 @@
 import os
 
-import launch
-import yaml
 from ament_index_python.packages import get_package_share_directory
 from launch import LaunchDescription
-from launch.actions import DeclareLaunchArgument, EmitEvent, RegisterEventHandler
+from launch.actions import EmitEvent, RegisterEventHandler
 from launch.conditions import IfCondition
 from launch.event_handlers import OnProcessStart
 from launch.events import matches_action
-from launch.substitutions import LaunchConfiguration
 from launch_ros.actions import LifecycleNode, Node
 from launch_ros.event_handlers import OnStateTransition
 from launch_ros.events.lifecycle import ChangeState
@@ -24,70 +21,137 @@ def generate_launch_description():
     param_file = os.path.join(pkg_dir, "config", "r1_slam_config.yaml")
 
     # urg_node2をライフサイクルノードとして起動
-    lifecycle_node = LifecycleNode(
+    urg_node2_1 = LifecycleNode(
         package="urg_node2",
         executable="urg_node2_node",
-        name=LaunchConfiguration("node_name"),
-        remappings=[("scan", LaunchConfiguration("scan_topic_name"))],
+        name="urg_node2_1",
+        remappings=[("scan", "scan1")],
+        parameters=[param_file],
+        namespace="",
+        output="screen",
+    )
+
+    urg_node2_2 = LifecycleNode(
+        package="urg_node2",
+        executable="urg_node2_node",
+        name="urg_node2_2",
+        remappings=[("scan", "scan2")],
         parameters=[param_file],
         namespace="",
         output="screen",
     )
 
     # Unconfigure状態からInactive状態への遷移（auto_startがtrueのとき実施）
-    urg_node2_node_configure_event_handler = RegisterEventHandler(
+    urg_node2_1_configure_event_handler = RegisterEventHandler(
         event_handler=OnProcessStart(
-            target_action=lifecycle_node,
+            target_action=urg_node2_1,
             on_start=[
                 EmitEvent(
                     event=ChangeState(
-                        lifecycle_node_matcher=matches_action(lifecycle_node),
+                        lifecycle_node_matcher=matches_action(urg_node2_1),
                         transition_id=Transition.TRANSITION_CONFIGURE,
                     ),
                 ),
             ],
         ),
-        condition=IfCondition(LaunchConfiguration("auto_start")),
+        condition=IfCondition("true"),
+    )
+
+    urg_node2_2_configure_event_handler = RegisterEventHandler(
+        event_handler=OnProcessStart(
+            target_action=urg_node2_2,
+            on_start=[
+                EmitEvent(
+                    event=ChangeState(
+                        lifecycle_node_matcher=matches_action(urg_node2_2),
+                        transition_id=Transition.TRANSITION_CONFIGURE,
+                    ),
+                ),
+            ],
+        ),
+        condition=IfCondition("true"),
     )
 
     # Inactive状態からActive状態への遷移（auto_startがtrueのとき実施）
-    urg_node2_node_activate_event_handler = RegisterEventHandler(
+    urg_node2_1_activate_event_handler = RegisterEventHandler(
         event_handler=OnStateTransition(
-            target_lifecycle_node=lifecycle_node,
+            target_lifecycle_node=urg_node2_1,
             start_state="configuring",
             goal_state="inactive",
             entities=[
                 EmitEvent(
                     event=ChangeState(
-                        lifecycle_node_matcher=matches_action(lifecycle_node),
+                        lifecycle_node_matcher=matches_action(urg_node2_1),
                         transition_id=Transition.TRANSITION_ACTIVATE,
                     ),
                 ),
             ],
         ),
-        condition=IfCondition(LaunchConfiguration("auto_start")),
+        condition=IfCondition("true"),
     )
 
-    lidar_tf_node = Node(
+    urg_node2_2_activate_event_handler = RegisterEventHandler(
+        event_handler=OnStateTransition(
+            target_lifecycle_node=urg_node2_2,
+            start_state="configuring",
+            goal_state="inactive",
+            entities=[
+                EmitEvent(
+                    event=ChangeState(
+                        lifecycle_node_matcher=matches_action(urg_node2_2),
+                        transition_id=Transition.TRANSITION_ACTIVATE,
+                    ),
+                ),
+            ],
+        ),
+        condition=IfCondition("true"),
+    )
+
+    lidar1_tf_node = Node(
         package="tf2_ros",
         executable="static_transform_publisher",
         arguments=[
             "--x",
-            "0.3325",
+            "0.0575",
             "--y",
-            "-0.3245",
+            "-0.0",
             "--z",
             "0.05",
             "--roll",
-            "3.14159",
+            "3.1415926535",
             "--pitch",
             "0.0",
             "--yaw",
-            "-0.785398",
+            "3.1415926525",
             "--frame-id",
             "base_link",
             "--child-frame-id",
-            "laser",
+            "laser1",
+        ],
+    )
+
+    lidar2_tf_node = Node(
+        package="tf2_ros",
+        executable="static_transform_publisher",
+        arguments=[
+            "--x",
+            # xとyはうまく行かなくて実機で適当に合わせた
+            "-0.04125",
+            "--y",
+            # "-0.427169",
+            "-0.43",
+            "--z",
+            "0.05",
+            "--roll",
+            "3.1415926535",
+            "--pitch",
+            "0.0",
+            "--yaw",
+            "-1.5707963267948966",
+            "--frame-id",
+            "base_link",
+            "--child-frame-id",
+            "laser2",
         ],
     )
 
@@ -99,24 +163,27 @@ def generate_launch_description():
     #     parameters=[param_file],
     # )
 
-    r1_laser_filter_node = Node(
-        package="r1_control",
-        executable="r1_laser_filter_node",
-        name="r1_laser_filter_node",
+    dual_laser_merger = Node(
+        package="dual_laser_merger",
+        executable="dual_laser_merger_node",
+        name="dual_laser_merger",
         output="screen",
         parameters=[param_file],
     )
 
-    laser_filters = Node(
-        package="laser_filters",
-        executable="scan_to_scan_filter_chain",
-        name="scan_filter_chain",
-        parameters=["config/laser_filter.yaml"],
-        remappings=[
-            ("scan", "/scan"),
-            ("scan_filtered", "/scan_filtered"),
-        ],
-    )
+    # r1_laser_filter_node = Node(
+    #     package="r1_control",
+    #     executable="r1_laser_filter_node",
+    #     name="r1_laser_filter_node",
+    #     output="screen",
+    #     parameters=[
+    #         {
+    #             "scan_topic": "/scan",
+    #             "filtered_scan_topic": "/scan_filtered",
+    #             "threshold": 0.8,
+    #         }
+    #     ],
+    # )
 
     nav2_map_server = Node(
         package="nav2_map_server",
@@ -145,22 +212,19 @@ def generate_launch_description():
         ],
     )
 
-    # パラメータについて
-    # auto_start      : 起動時自動でActive状態まで遷移 (default)true
-    # node_name       : ノード名 (default)"urg_node2"
-    # scan_topic_name : トピック名 (default)"scan" *マルチエコー非対応*
     return LaunchDescription(
         [
-            DeclareLaunchArgument("auto_start", default_value="true"),
-            DeclareLaunchArgument("node_name", default_value="urg_node2"),
-            DeclareLaunchArgument("scan_topic_name", default_value="scan"),
-            lifecycle_node,
-            urg_node2_node_configure_event_handler,
-            urg_node2_node_activate_event_handler,
-            lidar_tf_node,
+            urg_node2_1,
+            urg_node2_2,
+            urg_node2_1_configure_event_handler,
+            urg_node2_2_configure_event_handler,
+            urg_node2_1_activate_event_handler,
+            urg_node2_2_activate_event_handler,
+            lidar1_tf_node,
+            lidar2_tf_node,
             # slam_toolbox,
+            dual_laser_merger,
             # r1_laser_filter_node,
-            laser_filters,
             nav2_map_server,
             nav2_amcl,
             nav2_lifecycle_manager,

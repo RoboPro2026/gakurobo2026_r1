@@ -121,7 +121,7 @@ r1_main_node:
     # fx
     kfs_fx_normal_pos: 0.05
     kfs_fx_start_pos: 0.3
-    kfs_fx_expand_pos: 0.65
+    kfs_fx_expand_pos: 0.67
     kfs_fx_storage_pos: 0.1
     # fz
     kfs_fz_normal_pos: 0.005
@@ -138,7 +138,7 @@ r1_main_node:
     # rx
     kfs_rx_normal_pos: 0.05
     kfs_rx_start_pos: 0.3
-    kfs_rx_expand_pos: 0.65
+    kfs_rx_expand_pos: 0.67
     kfs_rx_storage_pos: 0.1
     # rz
     kfs_rz_normal_pos: 0.005
@@ -169,6 +169,8 @@ r1_main_node:
     spear1_collect2_pos: 0.35
     # ポールを受け渡す位置
     spear1_collect3_pos: 0.80
+    # KFS回収中に機構が当たらないようにする位置
+    spear1_kfs_collect_pos: 0.6
     spear1_low_attack_pos: 0.6
     spear1_middle_attack_pos: 0.6
     spear1_high_attack_pos: 0.8
@@ -183,18 +185,24 @@ r1_main_node:
     spear2_collect2_pos: 0.35
     # ポールを受け渡す位置
     spear2_collect3_pos: 0.80
+    # KFS回収中に機構が当たらないようにする位置
+    spear2_kfs_collect_pos: 0.6
     spear2_make_spear_start_pos: 0.35
     # スピアを押し込むときの速度[rad/s]
     spear2_push_vel: 10.0
     # spear3
     spear3_normal_pos: 0.0
     spear3_collect_pos: 0.0
+    # KFS回収中に機構が当たらないようにする位置
+    spear3_kfs_collect_pos: 0.6
     spear3_make_spear_start_pos: 0.0
     # スピアを押し込むときの速度[rad/s]
     spear3_push_vel: 10.0
     # spear4
     spear4_normal_pos: 0.0
     spear4_collect_pos: 0.0
+    # KFS回収中に機構が当たらないようにする位置
+    spear4_kfs_collect_pos: 0.6
     spear4_make_spear_start_pos: 0.0
     # スピアを押し込むときの速度[rad/s]
     spear4_push_vel: 10.0
@@ -225,7 +233,8 @@ r1_main_node:
     # ========== KFS回収の移動関連 ==========
     # KFSが置かれている場所
     # kfs_forest_number: [4]
-    kfs_forest_number: [4, 2]
+    # kfs_forest_number: [4, 2]
+    kfs_forest_number: [12, 6]
     # KFS回収範囲の長方形サイズ [m]
     # yaw=0 のとき width は map の x 方向、height は map の y 方向の長さになる
     # yaw を与えた場合は、その yaw だけ回転した長方形ローカル座標系での幅と高さになる
@@ -233,12 +242,12 @@ r1_main_node:
     collect_kfs_width: 0.6
     # false にすると auto_collect_kfs_task は範囲判定と LED 更新だけ行い、
     # KFS の位置・yaw・ポンプ・バルブ指令は出さない
-    enable_auto_collect_kfs_actuator: false
+    enable_auto_collect_kfs_actuator: true
     # 内回り/外回りのKFS回収範囲の中心座標 [x, y, yaw]
     # # 内回りのときは2,1,4,7,10を通る
     inner_collect_kfs_center_pos:
-      1: [3.85, 2.725, 0.0]
-      2: [2.65, 2.725, 0.0]
+      1: [3.75, 2.725, 0.0]
+      2: [2.55, 2.725, 0.0]
       3: [100.0, 100.0, 0.0] # ここは通らない
       4: [5.4, 4.15, 1.57]
       5: [100.0, 100.0, 0.0] # ここにはKFSは置かれない
@@ -253,16 +262,16 @@ r1_main_node:
     outer_collect_kfs_center_pos:
       1: [100.0, 100.0, 0.0] # ここは通らない
       2: [100.0, 100.0, 0.0] # ここは通らない
-      3: [0.6, 3.8, 1.57]
+      3: [0.6, 2.95, 1.57]
       4: [100.0, 100.0, 0.0] # ここは通らない
       5: [100.0, 100.0, 0.0] # ここにはKFSは置かれない
-      6: [0.6, 5.0, 1.57]
+      6: [0.6, 4.15, 1.57]
       7: [100.0, 100.0, 0.0] # ここは通らない
       8: [100.0, 100.0, 0.0] # ここにはKFSは置かれない
-      9: [0.6, 6.2, 1.57]
-      10: [4.2, 8.6, 0.0]
-      11: [3.0, 8.6, 0.0]
-      12: [0.6, 7.4, 1.57]
+      9: [0.6, 5.35, 1.57]
+      10: [3.75, 8.55, 0.0]
+      11: [2.55, 8.55, 0.0]
+      12: [0.6, 6.55, 1.57]
     collect_kfs_offset: 0.838 # KFS回収時のオフセット（front_kfsかrear_kfsのうち、遠い方に適応する）
     kfs_yaw_delay_time: 1.0 # 範囲外へ出たあとに収納用 yaw を送るまでの遅延時間 [s]
     # collect_kfs_offset: 0.419 # KFS回収時のオフセット（front_kfsかrear_kfsのうち、遠い方に適応する）
@@ -579,7 +588,7 @@ r1_spear_x_node:
     normal_pos: 0.05
     # モータが1回転すると110mm進むので、半径は17.5mm
     radius: 0.01750704374010849
-    inverse_motor: false
+    inverse_motor: true
     use_low_switch: false
     use_high_switch: false
     inverse_low_switch_logic: false
