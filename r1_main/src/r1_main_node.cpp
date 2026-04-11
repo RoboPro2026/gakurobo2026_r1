@@ -2148,7 +2148,15 @@ void R1MainNode::auto_collect_kfs_task(void)
           if (within_index == FKFS) {
             // 回収機構を動かす
             kfs_fx_pos_ref(KFS_FX_EXPAND_POS);
-            kfs_fyaw_pos_ref(KFS_FYAW_REAR_ANGLE);
+            if (zone_ == "blue" && step == ChassisAct::ACT1) {
+              kfs_fyaw_pos_ref(KFS_FYAW_REAR_ANGLE);
+            } else if (zone_ == "blue" && step == ChassisAct::ACT2) {
+              kfs_fyaw_pos_ref(KFS_FYAW_FRONT_ANGLE);
+            } else if (zone_ == "red" && step == ChassisAct::ACT1) {
+              kfs_fyaw_pos_ref(KFS_FYAW_FRONT_ANGLE);
+            } else if (zone_ == "red" && step == ChassisAct::ACT2) {
+              kfs_fyaw_pos_ref(KFS_FYAW_REAR_ANGLE);
+            }
             kfs_front_pump(1.0);
             kfs_front_valve(false);
             if (
@@ -2165,7 +2173,15 @@ void R1MainNode::auto_collect_kfs_task(void)
           } else {
             // 回収機構を動かす
             kfs_rx_pos_ref(KFS_RX_EXPAND_POS);
-            kfs_ryaw_pos_ref(KFS_RYAW_REAR_ANGLE);
+            if (zone_ == "blue" && step == ChassisAct::ACT1) {
+              kfs_ryaw_pos_ref(KFS_RYAW_REAR_ANGLE);
+            } else if (zone_ == "blue" && step == ChassisAct::ACT2) {
+              kfs_ryaw_pos_ref(KFS_RYAW_FRONT_ANGLE);
+            } else if (zone_ == "red" && step == ChassisAct::ACT1) {
+              kfs_ryaw_pos_ref(KFS_RYAW_FRONT_ANGLE);
+            } else if (zone_ == "red" && step == ChassisAct::ACT2) {
+              kfs_ryaw_pos_ref(KFS_RYAW_REAR_ANGLE);
+            }
             kfs_rear_pump(1.0);
             kfs_rear_valve(false);
             if (
@@ -2289,8 +2305,19 @@ void R1MainNode::manual_mode8_auto_collect_kfs(void)
         kfs_rx_pos_ref(KFS_RX_START_POS);
         kfs_fz_pos_ref(KFS_FZ_STORAGE_POS);
         kfs_rz_pos_ref(KFS_RZ_STORAGE_POS);
-        kfs_fyaw_pos_ref(KFS_FYAW_REAR_ANGLE);
-        kfs_ryaw_pos_ref(KFS_RYAW_REAR_ANGLE);
+        if (zone_ == "blue" && chassis_act_status_ == ChassisAct::ACT1) {
+          kfs_fyaw_pos_ref(KFS_FYAW_REAR_ANGLE);
+          kfs_ryaw_pos_ref(KFS_RYAW_REAR_ANGLE);
+        } else if (zone_ == "blue" && chassis_act_status_ == ChassisAct::ACT2) {
+          kfs_fyaw_pos_ref(KFS_FYAW_FRONT_ANGLE);
+          kfs_ryaw_pos_ref(KFS_RYAW_FRONT_ANGLE);
+        } else if (zone_ == "red" && chassis_act_status_ == ChassisAct::ACT1) {
+          kfs_fyaw_pos_ref(KFS_FYAW_FRONT_ANGLE);
+          kfs_ryaw_pos_ref(KFS_RYAW_FRONT_ANGLE);
+        } else if (zone_ == "red" && chassis_act_status_ == ChassisAct::ACT2) {
+          kfs_fyaw_pos_ref(KFS_FYAW_REAR_ANGLE);
+          kfs_ryaw_pos_ref(KFS_RYAW_REAR_ANGLE);
+        }
         kfs_front_pump(0.0);
         kfs_rear_pump(0.0);
         manual_mode8_roll_timer_->cancel();
