@@ -2007,7 +2007,7 @@ void R1MainNode::manual_mode7_spear_attack(void)
   }
 
   if (ps4_->is_pushed_right()) {
-    manual_mode7_spear_attack_task(1, 2);
+    manual_mode7_spear_attack_task(2, 2);
   }
 
   if (ps4_->is_pushed_down()) {
@@ -2015,11 +2015,11 @@ void R1MainNode::manual_mode7_spear_attack(void)
   }
 
   if (ps4_->is_pushed_left()) {
-    manual_mode7_spear_attack_task(1, 3);
+    manual_mode7_spear_attack_task(2, 3);
   }
 
   if (ps4_->is_pushed_triangle()) {
-    manual_mode7_spear_attack_task(1, 1);
+    manual_mode7_spear_attack_task(2, 1);
   }
 
   if (ps4_->is_pushed_circle()) {
