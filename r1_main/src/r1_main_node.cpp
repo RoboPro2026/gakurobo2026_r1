@@ -2466,7 +2466,7 @@ void R1MainNode::auto_act0(void)
     }
 
     if (ps4_->is_pushed_left()) {
-      publish_robot_move(ChassisAct::ACT_NONE, std::vector<int>{}, std::vector<std::string>{});
+      publish_robot_move(ChassisAct::NONE, std::vector<int>{}, std::vector<std::string>{});
     }
     double vx_ref = CHASSIS_MAX_VELOCITY * (-1) * ps4_->data.left_stick_x;
     double vy_ref = CHASSIS_MAX_VELOCITY * ps4_->data.left_stick_y;
