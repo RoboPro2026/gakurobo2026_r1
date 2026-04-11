@@ -13,14 +13,14 @@ r1_chassis_control_node:
     lookahead_time: 0.3 # 速度に応じて先読み距離を伸ばす時間 [s]
     # 位置制御のゲイン
     # 接線方向は軌道に沿って進むためのゲイン
-    kp_pos_tangent_usual: 2.0
+    kp_pos_tangent_usual: 0.7
     ki_pos_tangent_usual: 0.0
     kd_pos_tangent_usual: 0.0
-    kp_pos_tangent_goal: 2.0
+    kp_pos_tangent_goal: 1.0
     ki_pos_tangent_goal: 0.0
     kd_pos_tangent_goal: 0.0
     # 法線方向は軌道への横ずれを戻すためのゲイン
-    kp_pos_normal_usual: 1.0
+    kp_pos_normal_usual: 0.7
     ki_pos_normal_usual: 0.0
     kd_pos_normal_usual: 0.0
     kp_pos_normal_goal: 1.0
@@ -32,7 +32,7 @@ r1_chassis_control_node:
     kp_angle_usual: 1.0
     ki_angle_usual: 0.0
     kd_angle_usual: 0.0
-    kp_angle_goal: 2.0
+    kp_angle_goal: 1.0
     ki_angle_goal: 0.0
     kd_angle_goal: 0.0
     omega_i_limit: 0.2
