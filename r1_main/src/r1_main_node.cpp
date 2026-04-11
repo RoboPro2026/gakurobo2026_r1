@@ -2032,10 +2032,7 @@ void R1MainNode::auto_collect_kfs_task(void)
   constexpr int FKFS = 0;
   constexpr int RKFS = 1;
 
-  // 一旦各種stepのif文は無効化する
-  // if (step == ChassisAct::ACT1 || step == ChassisAct::ACT2) {
-  // NOTE: デバッグのため、chassisactを書き換え
-  // step = ChassisAct::ACT1;
+  if (step != ChassisAct::ACT1 && step != ChassisAct::ACT2) return;
   // TODO: 進行方向と使用する回収機構の順番に応じて、OFFSETをいい感じに適応する
   geometry_msgs::msg::PoseStamped map_pos = get_map_pos();
   int n = current_robot_move_.forest_order.size();
