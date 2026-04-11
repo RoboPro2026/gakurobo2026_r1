@@ -305,6 +305,9 @@ public:
   double SPEAR2_COLLECT3_POS = 0.0;
   double SPEAR2_MAKE_SPEAR_START_POS = 0.0;
   double SPEAR2_KFS_COLLECT_POS = 0.0;
+  double SPEAR2_LOW_ATTACK_POS = 0.0;
+  double SPEAR2_MIDDLE_ATTACK_POS = 0.0;
+  double SPEAR2_HIGH_ATTACK_POS = 0.0;
   double SPEAR2_PUSH_VEL = 0.0;
   // spear3
   double SPEAR3_NORMAL_POS = 0.0;
@@ -330,6 +333,7 @@ public:
   double SPEAR_Y_EXPAND_POS = 0.0;
   // spear_roll
   double SPEAR_ROLL_NORMAL_ANGLE = 0.0;
+  double SPEAR_ROLL_INV_NORMAL_ANGLE = 0.0;
   double SPEAR_ROLL_VERTICAL_ANGLE = 0.0;
   double SPEAR_ROLL_LOW_ATTACK_ANGLE = 0.0;
   double SPEAR_ROLL_MIDDLE_ATTACK_ANGLE = 0.0;

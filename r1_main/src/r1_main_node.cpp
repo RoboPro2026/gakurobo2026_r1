@@ -548,6 +548,9 @@ R1MainNode::R1MainNode() : Node("r1_main_node")
   declare_and_get_parameter("spear2_collect3_pos", SPEAR2_COLLECT3_POS);
   declare_and_get_parameter("spear2_make_spear_start_pos", SPEAR2_MAKE_SPEAR_START_POS);
   declare_and_get_parameter("spear2_kfs_collect_pos", SPEAR2_KFS_COLLECT_POS);
+  declare_and_get_parameter("spear2_low_attack_pos", SPEAR2_LOW_ATTACK_POS);
+  declare_and_get_parameter("spear2_middle_attack_pos", SPEAR2_MIDDLE_ATTACK_POS);
+  declare_and_get_parameter("spear2_high_attack_pos", SPEAR2_HIGH_ATTACK_POS);
   declare_and_get_parameter("spear2_push_vel", SPEAR2_PUSH_VEL);
   // spear3
   declare_and_get_parameter("spear3_normal_pos", SPEAR3_NORMAL_POS);
@@ -573,6 +576,7 @@ R1MainNode::R1MainNode() : Node("r1_main_node")
   declare_and_get_parameter("spear_y_expand_pos", SPEAR_Y_EXPAND_POS);
   // spear_roll
   declare_and_get_parameter("spear_roll_normal_angle", SPEAR_ROLL_NORMAL_ANGLE);
+  declare_and_get_parameter("spear_roll_inv_normal_angle", SPEAR_ROLL_INV_NORMAL_ANGLE);
   declare_and_get_parameter("spear_roll_vertical_angle", SPEAR_ROLL_VERTICAL_ANGLE);
   declare_and_get_parameter("spear_roll_low_attack_angle", SPEAR_ROLL_LOW_ATTACK_ANGLE);
   declare_and_get_parameter("spear_roll_middle_attack_angle", SPEAR_ROLL_MIDDLE_ATTACK_ANGLE);
@@ -1432,14 +1436,14 @@ void R1MainNode::manual_mode2_pole(void)
   }
 
   if (ps4_->is_pushed_circle()) {
-    spear1_pos_ref(spear1_position_ref_ + 0.01);
+    spear2_pos_ref(spear2_position_ref_ + 0.01);
   }
 
   if (ps4_->is_pushed_cross()) {
   }
 
   if (ps4_->is_pushed_square()) {
-    spear1_pos_ref(spear1_position_ref_ - 0.01);
+    spear2_pos_ref(spear2_position_ref_ - 0.01);
   }
 
   if (ps4_->is_pushed_l1()) {
@@ -1473,8 +1477,10 @@ void R1MainNode::manual_mode3_make_spear_task(int n)
     } else if (n == 4) {
       spear4_pos_ref(SPEAR_X_MAKE_SPEAR4_POS);
     }
-    // rollを横向きにする
-    spear_roll_pos_ref(SPEAR_ROLL_NORMAL_ANGLE);
+    // rollを逆横向きにする
+    // TODO: ゾーンによって向きを変える
+    // spear_roll_pos_ref(SPEAR_ROLL_NORMAL_ANGLE);
+    spear_roll_pos_ref(SPEAR_ROLL_INV_NORMAL_ANGLE);
     step++;
   } else if (step == 2) {
     spear_pitch1_pos_ref(SPEAR_PITCH1_VERTICAL_ANGLE);
@@ -1557,19 +1563,19 @@ void R1MainNode::manual_mode3_spear(void)
 
   if (ps4_->is_pushed_triangle()) {
     // やり組み立て
-    manual_mode3_make_spear_task(1);
+    manual_mode3_make_spear_task(2);
   }
 
   if (ps4_->is_pushed_circle()) {
-    spear1_pos_ref(spear1_position_ref_ + 0.01);
+    spear2_pos_ref(spear2_position_ref_ + 0.01);
   }
 
   if (ps4_->is_pushed_cross()) {
-    spear1_pos_ref(spear1_position_ref_ + 0.4);
+    spear2_pos_ref(spear2_position_ref_ + 0.4);
   }
 
   if (ps4_->is_pushed_square()) {
-    spear1_pos_ref(spear1_position_ref_ - 0.01);
+    spear2_pos_ref(spear2_position_ref_ - 0.01);
   }
 
   if (ps4_->is_pushed_l1()) {
@@ -1941,6 +1947,16 @@ void R1MainNode::manual_mode7_spear_attack_task(int n, int m)
         spear1_pos_ref(SPEAR1_HIGH_ATTACK_POS);
       }
     } else if (n == 2) {
+      if (m == 1) {
+        // 下段を狙う
+        spear2_pos_ref(SPEAR2_LOW_ATTACK_POS);
+      } else if (m == 2) {
+        // 中段を狙う
+        spear2_pos_ref(SPEAR2_MIDDLE_ATTACK_POS);
+      } else if (m == 3) {
+        // 上段を狙う
+        spear2_pos_ref(SPEAR2_HIGH_ATTACK_POS);
+      }
     } else if (n == 3) {
     } else if (n == 4) {
     }
@@ -2007,14 +2023,14 @@ void R1MainNode::manual_mode7_spear_attack(void)
   }
 
   if (ps4_->is_pushed_circle()) {
-    spear1_pos_ref(spear1_position_ref_ + 0.01);
+    spear2_pos_ref(spear2_position_ref_ + 0.01);
   }
 
   if (ps4_->is_pushed_cross()) {
   }
 
   if (ps4_->is_pushed_square()) {
-    spear1_pos_ref(spear1_position_ref_ - 0.01);
+    spear2_pos_ref(spear2_position_ref_ - 0.01);
   }
 
   if (ps4_->is_pushed_l1()) {

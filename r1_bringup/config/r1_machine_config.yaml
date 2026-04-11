@@ -115,8 +115,8 @@ r1_main_node:
     timer_rate: 25.0
     ps4_connection_timeout: 1.0
     # ========== 足回り ==========
-    chassis_max_velocity: 0.3
-    chassis_max_omega: 0.25
+    chassis_max_velocity: 0.2
+    chassis_max_omega: 0.2
     # chassis_max_velocity: 0.6
     # chassis_max_omega: 0.5
     # ========== KFS回収 ==========
@@ -189,6 +189,9 @@ r1_main_node:
     spear2_collect3_pos: 0.80
     # KFS回収中に機構が当たらないようにする位置
     spear2_kfs_collect_pos: 0.6
+    spear2_low_attack_pos: 0.6
+    spear2_middle_attack_pos: 0.6
+    spear2_high_attack_pos: 0.8
     spear2_make_spear_start_pos: 0.35
     # スピアを押し込むときの速度[rad/s]
     spear2_push_vel: 10.0
@@ -211,7 +214,8 @@ r1_main_node:
     # spear_x
     spear_x_normal_pos: 0.0
     spear_x_middle_pos: 0.2
-    spear_x_make_spear1_pos: 0.15
+    spear_x_make_spear1_pos: 0.0
+    # spear_x_make_spear1_pos: 0.15
     spear_x_make_spear2_pos: 0.0
     spear_x_make_spear3_pos: 0.0
     spear_x_make_spear4_pos: 0.0
@@ -220,6 +224,7 @@ r1_main_node:
     spear_y_expand_pos: 0.1
     # spear_roll
     spear_roll_normal_angle: 0.0
+    spear_roll_inv_normal_angle: 3.14159265358979326
     spear_roll_vertical_angle: 1.5707963267948966
     spear_roll_low_attack_angle: 0.0
     spear_roll_middle_attack_angle: 0.5
