@@ -1536,7 +1536,7 @@ void R1MainNode::manual_mode3_spear(void)
   }
 
   if (ps4_->is_pushed_right()) {
-    spear_x_pos_ref(spear_x_position_ref_ + 0.01);
+    spear_x_pos_ref(spear_x_position_ref_ + 0.0025);
   }
 
   if (ps4_->is_pushed_down()) {
@@ -1544,7 +1544,7 @@ void R1MainNode::manual_mode3_spear(void)
   }
 
   if (ps4_->is_pushed_left()) {
-    spear_x_pos_ref(spear_x_position_ref_ - 0.01);
+    spear_x_pos_ref(spear_x_position_ref_ - 0.0025);
   }
 
   if (ps4_->is_pushed_triangle()) {
