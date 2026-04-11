@@ -91,7 +91,8 @@ amcl:
     odom_frame_id: "odom"        # オドメトリ座標系
     global_frame_id: "map"       # 地図座標系
 
-    scan_topic: /scan_filtered            # 購読する LaserScan トピック
+    # scan_topic: /scan_filtered            # 購読する LaserScan トピック
+    scan_topic: /scan            # 購読する LaserScan トピック
     tf_broadcast: true           # AMCL が map->odom の TF を publish するか
 
     robot_model_type: "nav2_amcl::OmniMotionModel"
@@ -101,8 +102,8 @@ amcl:
     # Nav2 AMCL は plugin 名で指定する形式 :contentReference[oaicite:1]{index=1}
 
     alpha1: 0.1   # 回転によって生じる回転誤差
-    alpha2: 0.05   # 並進によって生じる回転誤差
-    alpha3: 0.05   # 並進によって生じる並進誤差
+    alpha2: 0.1   # 並進によって生じる回転誤差
+    alpha3: 0.1   # 並進によって生じる並進誤差
     alpha4: 0.1   # 回転によって生じる並進誤差
     alpha5: 0.15   # Omni 専用の並進ノイズ
     # 値を大きくすると odom を信用しにくくなる
