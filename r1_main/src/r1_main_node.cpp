@@ -536,6 +536,7 @@ R1MainNode::R1MainNode() : Node("r1_main_node")
   declare_and_get_parameter("spear1_collect2_pos", SPEAR1_COLLECT2_POS);
   declare_and_get_parameter("spear1_collect3_pos", SPEAR1_COLLECT3_POS);
   declare_and_get_parameter("spear1_make_spear_start_pos", SPEAR1_MAKE_SPEAR_START_POS);
+  declare_and_get_parameter("spear1_kfs_collect_pos", SPEAR1_KFS_COLLECT_POS);
   declare_and_get_parameter("spear1_low_attack_pos", SPEAR1_LOW_ATTACK_POS);
   declare_and_get_parameter("spear1_middle_attack_pos", SPEAR1_MIDDLE_ATTACK_POS);
   declare_and_get_parameter("spear1_high_attack_pos", SPEAR1_HIGH_ATTACK_POS);
@@ -546,16 +547,19 @@ R1MainNode::R1MainNode() : Node("r1_main_node")
   declare_and_get_parameter("spear2_collect2_pos", SPEAR2_COLLECT2_POS);
   declare_and_get_parameter("spear2_collect3_pos", SPEAR2_COLLECT3_POS);
   declare_and_get_parameter("spear2_make_spear_start_pos", SPEAR2_MAKE_SPEAR_START_POS);
+  declare_and_get_parameter("spear2_kfs_collect_pos", SPEAR2_KFS_COLLECT_POS);
   declare_and_get_parameter("spear2_push_vel", SPEAR2_PUSH_VEL);
   // spear3
   declare_and_get_parameter("spear3_normal_pos", SPEAR3_NORMAL_POS);
   declare_and_get_parameter("spear3_collect_pos", SPEAR3_COLLECT_POS);
   declare_and_get_parameter("spear3_make_spear_start_pos", SPEAR3_MAKE_SPEAR_START_POS);
+  declare_and_get_parameter("spear3_kfs_collect_pos", SPEAR3_KFS_COLLECT_POS);
   declare_and_get_parameter("spear3_push_vel", SPEAR3_PUSH_VEL);
   // spear4
   declare_and_get_parameter("spear4_normal_pos", SPEAR4_NORMAL_POS);
   declare_and_get_parameter("spear4_collect_pos", SPEAR4_COLLECT_POS);
   declare_and_get_parameter("spear4_make_spear_start_pos", SPEAR4_MAKE_SPEAR_START_POS);
+  declare_and_get_parameter("spear4_kfs_collect_pos", SPEAR4_KFS_COLLECT_POS);
   declare_and_get_parameter("spear4_push_vel", SPEAR4_PUSH_VEL);
   // spear_x
   declare_and_get_parameter("spear_x_normal_pos", SPEAR_X_NORMAL_POS);
@@ -2295,10 +2299,14 @@ void R1MainNode::manual_mode8_auto_collect_kfs(void)
     }
 
     if (ENABLE_AUTO_COLLECT_KFS_ACTUATOR) {
+      // 最初にやり機構をKFS回収機構が干渉しないようにするために、動かす
       // spear_xを動かす
       spear_x_pos_ref(SPEAR_X_MIDDLE_POS);
       // まずrollを動かす
       spear_roll_pos_ref(SPEAR_ROLL_VERTICAL_ANGLE);
+      spear1_pos_ref(SPEAR1_KFS_COLLECT_POS);
+      spear2_pos_ref(SPEAR2_KFS_COLLECT_POS);
+      // 一定時間経過後にKFS回収機構を動かす
       manual_mode8_roll_timer_ = this->create_wall_timer(3000ms, [this]() {
         // デバッグ用にKFS回収用アクチュエータを回収位置位置に移動
         kfs_fx_pos_ref(KFS_FX_START_POS);

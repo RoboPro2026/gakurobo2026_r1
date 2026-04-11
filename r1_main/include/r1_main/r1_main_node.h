@@ -293,6 +293,7 @@ public:
   double SPEAR1_COLLECT2_POS = 0.0;
   double SPEAR1_COLLECT3_POS = 0.0;
   double SPEAR1_MAKE_SPEAR_START_POS = 0.0;
+  double SPEAR1_KFS_COLLECT_POS = 0.0;
   double SPEAR1_LOW_ATTACK_POS = 0.0;
   double SPEAR1_MIDDLE_ATTACK_POS = 0.0;
   double SPEAR1_HIGH_ATTACK_POS = 0.0;
@@ -303,16 +304,19 @@ public:
   double SPEAR2_COLLECT2_POS = 0.0;
   double SPEAR2_COLLECT3_POS = 0.0;
   double SPEAR2_MAKE_SPEAR_START_POS = 0.0;
+  double SPEAR2_KFS_COLLECT_POS = 0.0;
   double SPEAR2_PUSH_VEL = 0.0;
   // spear3
   double SPEAR3_NORMAL_POS = 0.0;
   double SPEAR3_COLLECT_POS = 0.0;
   double SPEAR3_MAKE_SPEAR_START_POS = 0.0;
+  double SPEAR3_KFS_COLLECT_POS = 0.0;
   double SPEAR3_PUSH_VEL = 0.0;
   // spear4
   double SPEAR4_NORMAL_POS = 0.0;
   double SPEAR4_COLLECT_POS = 0.0;
   double SPEAR4_MAKE_SPEAR_START_POS = 0.0;
+  double SPEAR4_KFS_COLLECT_POS = 0.0;
   double SPEAR4_PUSH_VEL = 0.0;
   // spear_x
   double SPEAR_X_NORMAL_POS = 0.0;
