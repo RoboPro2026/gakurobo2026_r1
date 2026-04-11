@@ -2397,6 +2397,8 @@ void R1MainNode::auto_act0(void)
       set_mecanum_yaw(0.0);
       set_odometry(-5.5, 0.5, 0.0);
       set_initialpose(-5.5, 0.5, 0.0);
+      // rollの指令値だけ0にする。理由は何もしないと動くから
+      spear_roll_pos_ref(SPEAR_ROLL_NORMAL_ANGLE);
     }
     if (ps4_->is_pushed_cross()) {
       // 位置制御のプログラム実行
