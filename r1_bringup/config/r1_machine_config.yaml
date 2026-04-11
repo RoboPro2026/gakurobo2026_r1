@@ -121,7 +121,7 @@ r1_main_node:
     # fx
     kfs_fx_normal_pos: 0.05
     kfs_fx_start_pos: 0.3
-    kfs_fx_expand_pos: 0.68
+    kfs_fx_expand_pos: 0.67
     kfs_fx_storage_pos: 0.1
     # fz
     kfs_fz_normal_pos: 0.005
@@ -138,7 +138,7 @@ r1_main_node:
     # rx
     kfs_rx_normal_pos: 0.05
     kfs_rx_start_pos: 0.3
-    kfs_rx_expand_pos: 0.68
+    kfs_rx_expand_pos: 0.67
     kfs_rx_storage_pos: 0.1
     # rz
     kfs_rz_normal_pos: 0.005
@@ -170,7 +170,7 @@ r1_main_node:
     # ポールを受け渡す位置
     spear1_collect3_pos: 0.80
     # KFS回収中に機構が当たらないようにする位置
-    spear1_kfs_collect_pos: 0.4
+    spear1_kfs_collect_pos: 0.6
     spear1_low_attack_pos: 0.6
     spear1_middle_attack_pos: 0.6
     spear1_high_attack_pos: 0.8
@@ -186,7 +186,7 @@ r1_main_node:
     # ポールを受け渡す位置
     spear2_collect3_pos: 0.80
     # KFS回収中に機構が当たらないようにする位置
-    spear2_kfs_collect_pos: 0.4
+    spear2_kfs_collect_pos: 0.6
     spear2_make_spear_start_pos: 0.35
     # スピアを押し込むときの速度[rad/s]
     spear2_push_vel: 10.0
@@ -194,7 +194,7 @@ r1_main_node:
     spear3_normal_pos: 0.0
     spear3_collect_pos: 0.0
     # KFS回収中に機構が当たらないようにする位置
-    spear3_kfs_collect_pos: 0.4
+    spear3_kfs_collect_pos: 0.6
     spear3_make_spear_start_pos: 0.0
     # スピアを押し込むときの速度[rad/s]
     spear3_push_vel: 10.0
@@ -202,7 +202,7 @@ r1_main_node:
     spear4_normal_pos: 0.0
     spear4_collect_pos: 0.0
     # KFS回収中に機構が当たらないようにする位置
-    spear4_kfs_collect_pos: 0.4
+    spear4_kfs_collect_pos: 0.6
     spear4_make_spear_start_pos: 0.0
     # スピアを押し込むときの速度[rad/s]
     spear4_push_vel: 10.0
@@ -234,7 +234,7 @@ r1_main_node:
     # KFSが置かれている場所
     # kfs_forest_number: [4]
     # kfs_forest_number: [4, 2]
-    kfs_forest_number: [6, 3]
+    kfs_forest_number: [12, 6]
     # KFS回収範囲の長方形サイズ [m]
     # yaw=0 のとき width は map の x 方向、height は map の y 方向の長さになる
     # yaw を与えた場合は、その yaw だけ回転した長方形ローカル座標系での幅と高さになる
@@ -268,10 +268,10 @@ r1_main_node:
       6: [0.6, 4.15, 1.57]
       7: [100.0, 100.0, 0.0] # ここは通らない
       8: [100.0, 100.0, 0.0] # ここにはKFSは置かれない
-      9: [0.6, 6.2, 1.57]
-      10: [4.2, 8.6, 0.0]
-      11: [3.0, 8.6, 0.0]
-      12: [0.6, 7.4, 1.57]
+      9: [0.6, 5.35, 1.57]
+      10: [3.75, 8.55, 0.0]
+      11: [2.55, 8.55, 0.0]
+      12: [0.6, 6.55, 1.57]
     collect_kfs_offset: 0.838 # KFS回収時のオフセット（front_kfsかrear_kfsのうち、遠い方に適応する）
     kfs_yaw_delay_time: 1.0 # 範囲外へ出たあとに収納用 yaw を送るまでの遅延時間 [s]
     # collect_kfs_offset: 0.419 # KFS回収時のオフセット（front_kfsかrear_kfsのうち、遠い方に適応する）
