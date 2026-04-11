@@ -1,14 +1,11 @@
 import os
 
-import launch
-import yaml
 from ament_index_python.packages import get_package_share_directory
 from launch import LaunchDescription
-from launch.actions import DeclareLaunchArgument, EmitEvent, RegisterEventHandler
+from launch.actions import EmitEvent, RegisterEventHandler
 from launch.conditions import IfCondition
 from launch.event_handlers import OnProcessStart
 from launch.events import matches_action
-from launch.substitutions import LaunchConfiguration
 from launch_ros.actions import LifecycleNode, Node
 from launch_ros.event_handlers import OnStateTransition
 from launch_ros.events.lifecycle import ChangeState
@@ -138,11 +135,11 @@ def generate_launch_description():
         executable="static_transform_publisher",
         arguments=[
             "--x",
-# xとyはうまく行かなくて実機で適当に合わせた
+            # xとyはうまく行かなくて実機で適当に合わせた
             "-0.04125",
             "--y",
             # "-0.427169",
-            "-0.43"
+            "-0.43",
             "--z",
             "0.05",
             "--roll",
@@ -166,24 +163,27 @@ def generate_launch_description():
     #     parameters=[param_file],
     # )
 
+    dual_laser_merger = Node(
+        package="dual_laser_merger",
+        executable="dual_laser_merger_node",
+        name="dual_laser_merger",
+        output="screen",
+        parameters=[param_file],
+    )
+
     # r1_laser_filter_node = Node(
     #     package="r1_control",
     #     executable="r1_laser_filter_node",
     #     name="r1_laser_filter_node",
     #     output="screen",
-    #     parameters=[param_file],
+    #     parameters=[
+    #         {
+    #             "scan_topic": "/scan",
+    #             "filtered_scan_topic": "/scan_filtered",
+    #             "threshold": 0.8,
+    #         }
+    #     ],
     # )
-
-    laser_filters = Node(
-        package="laser_filters",
-        executable="scan_to_scan_filter_chain",
-        name="scan_filter_chain",
-        parameters=["config/laser_filter.yaml"],
-        remappings=[
-            ("scan", "/scan"),
-            ("scan_filtered", "/scan_filtered"),
-        ],
-    )
 
     nav2_map_server = Node(
         package="nav2_map_server",
@@ -223,8 +223,8 @@ def generate_launch_description():
             lidar1_tf_node,
             lidar2_tf_node,
             # slam_toolbox,
+            dual_laser_merger,
             # r1_laser_filter_node,
-            laser_filters,
             nav2_map_server,
             nav2_amcl,
             nav2_lifecycle_manager,
