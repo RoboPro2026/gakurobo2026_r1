@@ -577,9 +577,9 @@ r1_spear_x_node:
     # トルク検出時のしきい値
     torque_threshold: 0.5 # Nm
     # 通常位置モード時に Robomas の torque_lim として使う値
-    normal_torque_limit: 1.0 # Nm
+    normal_torque_limit: 4.0 # Nm
     # 原点検出・メカロック移動中に Robomas の torque_lim として使う値
-    contact_torque_limit: 1.0 # Nm
+    contact_torque_limit: 4.0 # Nm
     origin_detect_threshold_time: 0.5 # 秒
     # 原点検出のときは、0の方向に戻るので、負の速度にする
     origin_detect_speed: -6.28 # rad/s
