@@ -2466,7 +2466,15 @@ void R1MainNode::auto_act0(void)
     }
 
     if (ps4_->is_pushed_left()) {
-      publish_robot_move(ChassisAct::NONE, std::vector<int>{}, std::vector<std::string>{});
+      if (step == ChassisAct::ACT0) {
+        publish_robot_move(ChassisAct::ACT0_FINISH, std::vector<int>{}, std::vector<std::string>{});
+      } else if (step == ChassisAct::ACT1) {
+        publish_robot_move(ChassisAct::ACT1_FINISH, std::vector<int>{}, std::vector<std::string>{});
+      } else if (step == ChassisAct::ACT2) {
+        publish_robot_move(ChassisAct::ACT2_FINISH, std::vector<int>{}, std::vector<std::string>{});
+      } else if (step == ChassisAct::ACT3) {
+        publish_robot_move(ChassisAct::ACT3_FINISH, std::vector<int>{}, std::vector<std::string>{});
+      }
     }
     double vx_ref = CHASSIS_MAX_VELOCITY * (-1) * ps4_->data.left_stick_x;
     double vy_ref = CHASSIS_MAX_VELOCITY * ps4_->data.left_stick_y;
