@@ -59,7 +59,7 @@ dual_laser_merger:
     angle_min: -3.141592653589793
     angle_max: 3.141592653589793
     allowed_radius: 1.0
-    enablecalibration: false
+    enable_calibration: false
     enable_shadow_filter: false
     enable_average_filter: false
 
