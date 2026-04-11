@@ -42,7 +42,7 @@ dual_laser_merger:
     laser_1_topic: /scan1
     laser_2_topic: /scan2
     merged_scan_topic: /scan
-    target_frame: laser
+    target_frame: base_link
     publish_rate: 100
     angle_increment: 0.001
     laser_1_x_offset: 0.0
