@@ -2464,18 +2464,6 @@ void R1MainNode::auto_act0(void)
       // 位置制御のプログラム実行
       // publish_chassis_act_ref(ChassisAct::ACT3_START);
     }
-
-    if (ps4_->is_pushed_left()) {
-      if (step == ChassisAct::ACT0) {
-        publish_robot_move(ChassisAct::ACT0_FINISH, std::vector<int>{}, std::vector<std::string>{});
-      } else if (step == ChassisAct::ACT1) {
-        publish_robot_move(ChassisAct::ACT1_FINISH, std::vector<int>{}, std::vector<std::string>{});
-      } else if (step == ChassisAct::ACT2) {
-        publish_robot_move(ChassisAct::ACT2_FINISH, std::vector<int>{}, std::vector<std::string>{});
-      } else if (step == ChassisAct::ACT3) {
-        publish_robot_move(ChassisAct::ACT3_FINISH, std::vector<int>{}, std::vector<std::string>{});
-      }
-    }
     double vx_ref = CHASSIS_MAX_VELOCITY * (-1) * ps4_->data.left_stick_x;
     double vy_ref = CHASSIS_MAX_VELOCITY * ps4_->data.left_stick_y;
     double vz_ref = CHASSIS_MAX_OMEGA * ps4_->data.right_stick_x;
@@ -2498,6 +2486,18 @@ void R1MainNode::auto_act0(void)
     // 何もしない
   } else if (step == ChassisAct::ACT3_FINISH) {
     publish_chassis_act_ref(ChassisAct::NONE);
+  }
+
+  if (ps4_->is_pushed_left()) {
+    if (step == ChassisAct::ACT0) {
+      publish_robot_move(ChassisAct::ACT0_FINISH, std::vector<int>{}, std::vector<std::string>{});
+    } else if (step == ChassisAct::ACT1) {
+      publish_robot_move(ChassisAct::ACT1_FINISH, std::vector<int>{}, std::vector<std::string>{});
+    } else if (step == ChassisAct::ACT2) {
+      publish_robot_move(ChassisAct::ACT2_FINISH, std::vector<int>{}, std::vector<std::string>{});
+    } else if (step == ChassisAct::ACT3) {
+      publish_robot_move(ChassisAct::ACT3_FINISH, std::vector<int>{}, std::vector<std::string>{});
+    }
   }
 }
 
