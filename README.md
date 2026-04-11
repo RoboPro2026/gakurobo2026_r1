@@ -188,7 +188,7 @@ flowchart TD
 - [`r1_machine_config.yaml`](./r1_bringup/config/r1_machine_config.yaml) の既定値は `drive_mode: "mecanum"` です。
 - `use_sim:=true` のとき、`/odometry` は [`r1_dummy_odometry_node`](./r1_control/docs/r1_dummy_odometry_node.md) が生成します。
 - `use_lidar:=true` のときは `amcl` が `map -> odom` を担当し、`use_lidar:=false` のときは [`r1_dummy_map_node`](./r1_control/docs/r1_dummy_map_node.md) が担当します。
-- [`r1_bringup.launch.py`](./r1_bringup/launch/r1_bringup.launch.py) には `r1_chassis_control_node` と `r1_swerve_drive_node` の定義がありますが、現行の通常起動リストではコメントアウトされています。
+- [`r1_bringup.launch.py`](./r1_bringup/launch/r1_bringup.launch.py) では `r1_chassis_control_node` は `robot_control_mode:=auto` のときだけ起動し、`r1_swerve_drive_node` は現行の通常起動リストではコメントアウトされています。
 
 ## リポジトリ構成
 

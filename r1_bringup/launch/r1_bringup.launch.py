@@ -10,7 +10,7 @@ from launch.actions import (
     SetEnvironmentVariable,
     TimerAction,
 )
-from launch.conditions import IfCondition, UnlessCondition
+from launch.conditions import IfCondition, LaunchConfigurationEquals, UnlessCondition
 from launch.launch_description_sources import (
     AnyLaunchDescriptionSource,
     PythonLaunchDescriptionSource,
@@ -63,6 +63,8 @@ def generate_launch_description():
         name="r1_chassis_control_node",
         parameters=[param_file, zone_parameter],
         arguments=["--ros-args", "--log-level", "info"],
+        # autoのときのみ起動
+        condition=LaunchConfigurationEquals("robot_control_mode", "auto"),
     )
 
     r1_chassis_velocity_control_node = Node(
@@ -518,8 +520,7 @@ def generate_launch_description():
         # can1
         sabacan_robstride_node_id1,
         # 次にsabacan_single_control以外のノードを起動
-        # デバッグのためにコメントアウト
-        # r1_chassis_control_node,
+        r1_chassis_control_node,
         r1_chassis_velocity_control_node,
         r1_mecanum_node,
         # r1_swerve_drive_node,
