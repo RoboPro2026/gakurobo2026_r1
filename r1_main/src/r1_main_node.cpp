@@ -2463,7 +2463,10 @@ void R1MainNode::auto_act0(void)
     if (ps4_->is_pushed_down()) {
       // 位置制御のプログラム実行
       // publish_chassis_act_ref(ChassisAct::ACT3_START);
-      publish_robot_move(ChassisAct::ACT3_START, std::vector<int>{}, std::vector<std::string>{});
+    }
+
+    if (ps4_->is_pushed_left()) {
+      publish_robot_move(ChassisAct::ACT_NONE, std::vector<int>{}, std::vector<std::string>{});
     }
     double vx_ref = CHASSIS_MAX_VELOCITY * (-1) * ps4_->data.left_stick_x;
     double vy_ref = CHASSIS_MAX_VELOCITY * ps4_->data.left_stick_y;
