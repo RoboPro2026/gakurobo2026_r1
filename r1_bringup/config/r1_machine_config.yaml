@@ -16,30 +16,30 @@ r1_chassis_control_node:
     kp_pos_tangent_usual: 2.0
     ki_pos_tangent_usual: 0.0
     kd_pos_tangent_usual: 0.0
-    kp_pos_tangent_goal: 3.0
+    kp_pos_tangent_goal: 2.0
     ki_pos_tangent_goal: 0.0
     kd_pos_tangent_goal: 0.0
     # 法線方向は軌道への横ずれを戻すためのゲイン
-    kp_pos_normal_usual: 2.0
+    kp_pos_normal_usual: 1.0
     ki_pos_normal_usual: 0.0
     kd_pos_normal_usual: 0.0
-    kp_pos_normal_goal: 3.0
+    kp_pos_normal_goal: 1.0
     ki_pos_normal_goal: 0.0
     kd_pos_normal_goal: 0.0
     vel_i_limit: 0.3
     vel_output_limit: 2.5
     # 角度制御のゲイン
-    kp_angle_usual: 1.7
+    kp_angle_usual: 1.0
     ki_angle_usual: 0.0
     kd_angle_usual: 0.0
-    kp_angle_goal: 1.7
+    kp_angle_goal: 2.0
     ki_angle_goal: 0.0
     kd_angle_goal: 0.0
     omega_i_limit: 0.2
     omega_output_limit: 2.5
     # 制御の終了判定閾値
-    goal_pos_range: 0.025
-    goal_angle_range: 0.025
+    goal_pos_range: 0.03
+    goal_angle_range: 0.03
     finish_time_threshold: 1.0
     enable_visualization: true
     arrow_scale: 3.0
