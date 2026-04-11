@@ -2031,7 +2031,7 @@ void R1MainNode::auto_collect_kfs_task(void)
   // 一旦各種stepのif文は無効化する
   // if (step == ChassisAct::ACT1 || step == ChassisAct::ACT2) {
   // NOTE: デバッグのため、chassisactを書き換え
-  step = ChassisAct::ACT1;
+  // step = ChassisAct::ACT1;
   // TODO: 進行方向と使用する回収機構の順番に応じて、OFFSETをいい感じに適応する
   geometry_msgs::msg::PoseStamped map_pos = get_map_pos();
   int n = current_robot_move_.forest_order.size();
@@ -2227,9 +2227,11 @@ void R1MainNode::manual_mode8_auto_collect_kfs(void)
     std::vector<int> forest_order;
     std::vector<std::string> collect_kfs_type;
     int j = 0;
+    bool is_inner = true;
     for (int i = 0; i < (int)KFS_FOREST_NUMBER.size(); i++) {
       int n = KFS_FOREST_NUMBER[i];
       if (n == 1 || n == 2 || n == 4 || n == 7 || n == 10) {
+        is_inner = true;
         forest_order.push_back(n);
         if (j == 0) {
           if (zone_ == "blue") {
@@ -2248,6 +2250,7 @@ void R1MainNode::manual_mode8_auto_collect_kfs(void)
           RCLCPP_ERROR(this->get_logger(), "collect_kfs_type size error");
         }
       } else if (n == 3 || n == 6 || n == 9 || n == 12 || n == 11 || n == 10) {
+        is_inner = false;
         forest_order.push_back(n);
         if (j == 0) {
           if (zone_ == "blue") {
@@ -2267,7 +2270,14 @@ void R1MainNode::manual_mode8_auto_collect_kfs(void)
         }
       }
     }
-    publish_robot_move(ChassisAct::ACT1_START, forest_order, collect_kfs_type);
+    // 手動でデバッグするときにACT1_START,ACT2_STARTではなく、ACT1,ACT2を直接publishする
+    if (is_inner) {
+      publish_robot_move(ChassisAct::ACT1, forest_order, collect_kfs_type);
+      // publish_robot_move(ChassisAct::ACT1_START, forest_order, collect_kfs_type);
+    } else {
+      publish_robot_move(ChassisAct::ACT2, forest_order, collect_kfs_type);
+      // publish_robot_move(ChassisAct::ACT2_START, forest_order, collect_kfs_type);
+    }
 
     if (ENABLE_AUTO_COLLECT_KFS_ACTUATOR) {
       // spear_xを動かす
