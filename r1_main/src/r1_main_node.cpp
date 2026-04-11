@@ -1464,7 +1464,15 @@ void R1MainNode::manual_mode3_make_spear_task(int n)
   int & step = manual_mode3_make_spear_task_step_;
   RCLCPP_INFO(this->get_logger(), "manual_mode3_make_spear_task step: %d", step);
   if (step == 1) {
-    spear_x_pos_ref(SPEAR_X_NORMAL_POS);
+    if (n == 1) {
+      spear1_pos_ref(SPEAR_X_MAKE_SPEAR1_POS);
+    } else if (n == 2) {
+      spear2_pos_ref(SPEAR_X_MAKE_SPEAR2_POS);
+    } else if (n == 3) {
+      spear3_pos_ref(SPEAR_X_MAKE_SPEAR3_POS);
+    } else if (n == 4) {
+      spear4_pos_ref(SPEAR_X_MAKE_SPEAR4_POS);
+    }
     // rollを横向きにする
     spear_roll_pos_ref(SPEAR_ROLL_NORMAL_ANGLE);
     step++;
@@ -1532,7 +1540,7 @@ void R1MainNode::manual_mode3_make_spear_task(int n)
 void R1MainNode::manual_mode3_spear(void)
 {
   if (ps4_->is_pushed_up()) {
-    spear_roll_pos_ref(spear_roll_position_ref_ + 0.05);
+    spear_roll_pos_ref(spear_roll_position_ref_ + 0.025);
   }
 
   if (ps4_->is_pushed_right()) {
@@ -1540,7 +1548,7 @@ void R1MainNode::manual_mode3_spear(void)
   }
 
   if (ps4_->is_pushed_down()) {
-    spear_roll_pos_ref(spear_roll_position_ref_ - 0.05);
+    spear_roll_pos_ref(spear_roll_position_ref_ - 0.025);
   }
 
   if (ps4_->is_pushed_left()) {
