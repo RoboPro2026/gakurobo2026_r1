@@ -851,14 +851,14 @@ sabacan_robomasv2_node_id5:
     board_id: 5
     enable_initialize: false
     publish_timer_rate: 10.0
-    # spear1, spear2, spear3, spear4
-    motor_type: ["C610", "C610", "C610", "C610"]
+    # spear1, spear2, ~spear3, spear4~, spear_x, none
+    motor_type: ["C610", "C610", "C620", "C610"]
     control_type: ["TORQUE", "TORQUE", "TORQUE", "TORQUE"]
     speed_gain_p: [0.5, 0.5, 0.5, 0.5]
     speed_gain_i: [0.1, 0.1, 0.1, 0.1]
     speed_gain_d: [0.0, 0.0, 0.0, 0.0]
     # 位置制御のときはここのトルクリミットは適応されない。r1_linear_motion_nodeかr1_angle_motion_nodeのtorque_limitが適応される。
-    torque_lim: [1.0, 1.0, 1.0, 1.0]
+    torque_lim: [1.0, 1.0, 4.0, 1.0]
     pos_gain_p: [5.0, 5.0, 5.0, 5.0]
     pos_gain_i: [0.0, 0.0, 0.0, 0.0]
     pos_gain_d: [0.0, 0.0, 0.0, 0.0]
