@@ -2270,13 +2270,12 @@ void R1MainNode::manual_mode8_auto_collect_kfs(void)
         }
       }
     }
-    // 手動でデバッグするときにACT1_START,ACT2_STARTではなく、ACT1,ACT2を直接publishする
     if (is_inner) {
-      publish_robot_move(ChassisAct::ACT1, forest_order, collect_kfs_type);
-      // publish_robot_move(ChassisAct::ACT1_START, forest_order, collect_kfs_type);
+      publish_robot_move(ChassisAct::ACT1_START, forest_order, collect_kfs_type);
+      chassis_act_status_ = ChassisAct::ACT1;
     } else {
-      publish_robot_move(ChassisAct::ACT2, forest_order, collect_kfs_type);
-      // publish_robot_move(ChassisAct::ACT2_START, forest_order, collect_kfs_type);
+      publish_robot_move(ChassisAct::ACT2_START, forest_order, collect_kfs_type);
+      chassis_act_status_ = ChassisAct::ACT2;
     }
 
     if (ENABLE_AUTO_COLLECT_KFS_ACTUATOR) {
