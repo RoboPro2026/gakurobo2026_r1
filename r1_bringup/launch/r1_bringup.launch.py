@@ -236,7 +236,7 @@ def generate_launch_description():
             ],
         )
 
-    sabacan_robomasv2_node_id1 = create_sabacan_robomasv2_node(1, "info")
+    sabacan_robomasv2_node_id1 = create_sabacan_robomasv2_node(1)
     sabacan_robomasv2_node_id2 = create_sabacan_robomasv2_node(2)
     sabacan_robomasv2_node_id3 = create_sabacan_robomasv2_node(3)
     sabacan_robomasv2_node_id4 = create_sabacan_robomasv2_node(4)
