@@ -121,7 +121,7 @@ r1_main_node:
     # fx
     kfs_fx_normal_pos: 0.05
     kfs_fx_start_pos: 0.3
-    kfs_fx_expand_pos: 0.65
+    kfs_fx_expand_pos: 0.68
     kfs_fx_storage_pos: 0.1
     # fz
     kfs_fz_normal_pos: 0.005
@@ -138,7 +138,7 @@ r1_main_node:
     # rx
     kfs_rx_normal_pos: 0.05
     kfs_rx_start_pos: 0.3
-    kfs_rx_expand_pos: 0.65
+    kfs_rx_expand_pos: 0.68
     kfs_rx_storage_pos: 0.1
     # rz
     kfs_rz_normal_pos: 0.005
@@ -242,7 +242,7 @@ r1_main_node:
     collect_kfs_width: 0.6
     # false にすると auto_collect_kfs_task は範囲判定と LED 更新だけ行い、
     # KFS の位置・yaw・ポンプ・バルブ指令は出さない
-    enable_auto_collect_kfs_actuator: false
+    enable_auto_collect_kfs_actuator: true
     # 内回り/外回りのKFS回収範囲の中心座標 [x, y, yaw]
     # # 内回りのときは2,1,4,7,10を通る
     inner_collect_kfs_center_pos:
