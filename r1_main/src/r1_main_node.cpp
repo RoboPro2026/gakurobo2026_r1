@@ -2478,11 +2478,6 @@ void R1MainNode::auto_act0(void)
       set_mecanum_yaw(0.0);
       set_odometry(-5.5, 0.5, 0.0);
       set_initialpose(-5.5, 0.5, 0.0);
-      // 最初にやり機構をKFS回収機構が干渉しないようにするために、動かす
-      // spear_xを動かす
-      spear_x_pos_ref(SPEAR_X_MIDDLE_POS);
-      // rollを動かす
-      spear_roll_pos_ref(SPEAR_ROLL_VERTICAL_ANGLE);
     }
     if (ps4_->is_pushed_cross()) {
       // 位置制御のプログラム実行
