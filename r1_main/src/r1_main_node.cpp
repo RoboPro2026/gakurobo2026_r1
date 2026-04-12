@@ -2470,8 +2470,37 @@ void R1MainNode::auto_act0(void)
       set_mecanum_yaw(0.0);
       set_odometry(-5.5, 0.5, 0.0);
       set_initialpose(-5.5, 0.5, 0.0);
-      // rollの指令値だけ0にする。理由は何もしないと動くから
-      spear_roll_pos_ref(SPEAR_ROLL_NORMAL_ANGLE);
+      // 最初にやり機構をKFS回収機構が干渉しないようにするために、動かす
+      // spear_xを動かす
+      spear_x_pos_ref(SPEAR_X_MIDDLE_POS);
+      // まずrollを動かす
+      spear_roll_pos_ref(SPEAR_ROLL_VERTICAL_ANGLE);
+      spear1_pos_ref(SPEAR1_KFS_COLLECT_POS);
+      spear2_pos_ref(SPEAR2_KFS_COLLECT_POS);
+      // 一定時間経過後にKFS回収機構を動かす
+      manual_mode8_roll_timer_ = this->create_wall_timer(3000ms, [this]() {
+        // デバッグ用にKFS回収用アクチュエータを回収位置位置に移動
+        kfs_fx_pos_ref(KFS_FX_START_POS);
+        kfs_rx_pos_ref(KFS_RX_START_POS);
+        kfs_fz_pos_ref(KFS_FZ_STORAGE_POS);
+        kfs_rz_pos_ref(KFS_RZ_STORAGE_POS);
+        if (zone_ == "blue" && chassis_act_status_ == ChassisAct::ACT2) {
+          kfs_fyaw_pos_ref(KFS_FYAW_REAR_ANGLE);
+          kfs_ryaw_pos_ref(KFS_RYAW_REAR_ANGLE);
+        } else if (zone_ == "blue" && chassis_act_status_ == ChassisAct::ACT3) {
+          kfs_fyaw_pos_ref(KFS_FYAW_FRONT_ANGLE);
+          kfs_ryaw_pos_ref(KFS_RYAW_FRONT_ANGLE);
+        } else if (zone_ == "red" && chassis_act_status_ == ChassisAct::ACT2) {
+          kfs_fyaw_pos_ref(KFS_FYAW_FRONT_ANGLE);
+          kfs_ryaw_pos_ref(KFS_RYAW_FRONT_ANGLE);
+        } else if (zone_ == "red" && chassis_act_status_ == ChassisAct::ACT3) {
+          kfs_fyaw_pos_ref(KFS_FYAW_REAR_ANGLE);
+          kfs_ryaw_pos_ref(KFS_RYAW_REAR_ANGLE);
+        }
+        kfs_front_pump(0.0);
+        kfs_rear_pump(0.0);
+        manual_mode8_roll_timer_->cancel();
+      });
     }
     if (ps4_->is_pushed_cross()) {
       // 位置制御のプログラム実行
@@ -2537,6 +2566,16 @@ void R1MainNode::auto_act0(void)
       // 位置制御のプログラム実行
       request_auto_robot_move(
         ChassisAct::ACT1_START, std::vector<int>{}, std::vector<std::string>{});
+    }
+
+    if (ps4_->is_pushed_right()) {
+      // 原点検出のプログラムを実行
+      kfs_fx_detect_origin();
+      kfs_fz_detect_origin();
+      kfs_fyaw_detect_origin();
+      kfs_rx_detect_origin();
+      kfs_rz_detect_origin();
+      kfs_ryaw_detect_origin();
     }
     double vx_ref = CHASSIS_MAX_VELOCITY * (-1) * ps4_->get_left_stick_x();
     double vy_ref = CHASSIS_MAX_VELOCITY * ps4_->get_left_stick_y();
