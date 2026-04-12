@@ -1573,7 +1573,7 @@ void R1MainNode::manual_mode3_spear(void)
   }
 
   if (ps4_->is_pushed_cross()) {
-    spear2_pos_ref(spear2_position_ref_ + 0.4);
+    // manual_task内で、速度トリガーとして使用
   }
 
   if (ps4_->is_pushed_square()) {
