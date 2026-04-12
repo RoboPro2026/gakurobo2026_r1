@@ -427,6 +427,10 @@ public:
   // robot_move
   void publish_robot_move(
     ChassisAct act, std::vector<int> forest_order, std::vector<std::string> kfs_mechanism_type);
+  bool is_localization_ready(void);
+  void request_auto_robot_move(
+    ChassisAct act, std::vector<int> forest_order, std::vector<std::string> kfs_mechanism_type);
+  void publish_pending_auto_robot_move_if_ready(void);
   geometry_msgs::msg::PoseStamped get_map_pos(void);
   // ========== 各動作の関数 ==========
   // 足回り
@@ -577,6 +581,8 @@ public:
     std::vector<std::vector<bool>>(12, std::vector<bool>(2, false));
   std::vector<std::vector<bool>> auto_act0_prev_within_ =
     std::vector<std::vector<bool>>(12, std::vector<bool>(2, false));
+  bool pending_auto_robot_move_valid_ = false;
+  r1_msgs::msg::RobotMove pending_auto_robot_move_;
   // ========== リセット ==========
   void reset_step(void);
   void reset_robot(bool is_start_zone);

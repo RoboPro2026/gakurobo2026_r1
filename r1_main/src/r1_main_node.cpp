@@ -1047,6 +1047,51 @@ void R1MainNode::publish_robot_move(
   current_robot_move_ = msg;
 }
 
+bool R1MainNode::is_localization_ready(void)
+{
+  return tf_buffer_->canTransform(
+    "map", "base_link", tf2::TimePointZero, tf2::durationFromSec(0.0));
+}
+
+void R1MainNode::request_auto_robot_move(
+  ChassisAct act, std::vector<int> forest_order, std::vector<std::string> kfs_mechanism_type)
+{
+  if (is_localization_ready()) {
+    publish_robot_move(act, forest_order, kfs_mechanism_type);
+    pending_auto_robot_move_valid_ = false;
+    return;
+  }
+
+  pending_auto_robot_move_.act = static_cast<int>(act);
+  pending_auto_robot_move_.forest_order = forest_order;
+  pending_auto_robot_move_.kfs_mechanism_type = kfs_mechanism_type;
+  pending_auto_robot_move_valid_ = true;
+
+  std::string act_name{magic_enum::enum_name(act)};
+  RCLCPP_WARN(
+    this->get_logger(),
+    "Localization is not ready yet. Queued %s until map->base_link becomes available.",
+    act_name.c_str());
+}
+
+void R1MainNode::publish_pending_auto_robot_move_if_ready(void)
+{
+  if (!pending_auto_robot_move_valid_) {
+    return;
+  }
+  if (!is_localization_ready()) {
+    RCLCPP_WARN_THROTTLE(
+      this->get_logger(), *this->get_clock(), 1000,
+      "Waiting for localization: map->base_link TF is not available yet.");
+    return;
+  }
+
+  publish_robot_move(
+    static_cast<ChassisAct>(pending_auto_robot_move_.act), pending_auto_robot_move_.forest_order,
+    pending_auto_robot_move_.kfs_mechanism_type);
+  pending_auto_robot_move_valid_ = false;
+}
+
 geometry_msgs::msg::PoseStamped R1MainNode::get_map_pos()
 {
   try {
@@ -2411,12 +2456,14 @@ void R1MainNode::auto_act0(void)
   ChassisAct & step = chassis_act_status_;
 
   if (step == ChassisAct::NONE) {
+    publish_pending_auto_robot_move_if_ready();
     // NOTE: 実験のために一度ChassisAct::NONEのときにも回収動作を行えるようにする
     auto_collect_kfs_task();
     if (ps4_->is_pushed_triangle()) {
       // 位置制御のプログラム実行
       // publish_chassis_act_ref(ChassisAct::ACT0_START);
-      publish_robot_move(ChassisAct::ACT0_START, std::vector<int>{}, std::vector<std::string>{});
+      request_auto_robot_move(
+        ChassisAct::ACT0_START, std::vector<int>{}, std::vector<std::string>{});
     }
     if (ps4_->is_pushed_circle()) {
       // 青のスタートゾーン
@@ -2454,7 +2501,7 @@ void R1MainNode::auto_act0(void)
           }
         }
       }
-      publish_robot_move(ChassisAct::ACT2_START, forest_order, collect_kfs_type);
+      request_auto_robot_move(ChassisAct::ACT2_START, forest_order, collect_kfs_type);
     }
     if (ps4_->is_pushed_square()) {
       // 位置制御のプログラム実行
@@ -2484,11 +2531,12 @@ void R1MainNode::auto_act0(void)
           }
         }
       }
-      publish_robot_move(ChassisAct::ACT3_START, forest_order, collect_kfs_type);
+      request_auto_robot_move(ChassisAct::ACT3_START, forest_order, collect_kfs_type);
     }
     if (ps4_->is_pushed_down()) {
       // 位置制御のプログラム実行
-      publish_robot_move(ChassisAct::ACT1_START, std::vector<int>{}, std::vector<std::string>{});
+      request_auto_robot_move(
+        ChassisAct::ACT1_START, std::vector<int>{}, std::vector<std::string>{});
     }
     double vx_ref = CHASSIS_MAX_VELOCITY * (-1) * ps4_->get_left_stick_x();
     double vy_ref = CHASSIS_MAX_VELOCITY * ps4_->get_left_stick_y();
@@ -2566,6 +2614,7 @@ void R1MainNode::reset_step(void)
       auto_act0_prev_within_[i][j] = false;
     }
   }
+  pending_auto_robot_move_valid_ = false;
   publish_chassis_act_ref(ChassisAct::NONE);
 }
 

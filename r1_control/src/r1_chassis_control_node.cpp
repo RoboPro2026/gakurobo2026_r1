@@ -511,11 +511,18 @@ public:
     pose_odom.pose = odometry_.pose.pose;
     try {
       pose_map = tf_buffer_->transform(pose_odom, "map", tf2::durationFromSec(0.01));
+      has_seen_map_transform_ = true;
       return true;
     } catch (const tf2::TransformException & ex) {
-      RCLCPP_WARN_THROTTLE(
-        this->get_logger(), *this->get_clock(), 1000, "Failed to transform odometry pose: %s",
-        ex.what());
+      if (has_seen_map_transform_) {
+        RCLCPP_WARN_THROTTLE(
+          this->get_logger(), *this->get_clock(), 1000,
+          "Failed to transform odometry pose after localization became available: %s", ex.what());
+      } else {
+        RCLCPP_INFO_THROTTLE(
+          this->get_logger(), *this->get_clock(), 1000,
+          "Waiting for localization: map->base_link TF is not available yet.");
+      }
       return false;
     }
   }
@@ -1017,6 +1024,7 @@ public:
   geometry_msgs::msg::Twist cmd_vel_;
   std::string cmd_vel_topic_;
   bool has_target_pose_ = false;
+  bool has_seen_map_transform_ = false;
   ChassisAct act_step_ = ChassisAct::NONE;
   ChassisAct prev_act_step_ = ChassisAct::NONE;
   // ロボットの軌道保管用
