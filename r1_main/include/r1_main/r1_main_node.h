@@ -432,7 +432,7 @@ public:
     ChassisAct act, std::vector<int> forest_order, std::vector<std::string> kfs_mechanism_type);
   void publish_pending_auto_robot_move_if_ready(void);
   geometry_msgs::msg::PoseStamped get_map_pos(void);
-  // ========== 各動作の関数 ==========
+  // ========== 各アクチュエータ単体の動作関数 ==========
   // 足回り
   void chassis_move_vel(double vx, double vy, double omega);
   // KFS回収
@@ -501,6 +501,11 @@ public:
   void spear_d1_valve(bool on);
   void spear_u2_valve(bool on);
   void spear_d2_valve(bool on);
+
+  // ========== 各動作の関数 ==========
+
+  rclcpp::TimerBase::SharedPtr kfs_init_pos_roll_timer_;
+  void kfs_init_pos(void);
 
   // 動いていたら危険なアクチュエータは停止する
   // 位置制御は止められないので、そのまま

@@ -1316,6 +1316,39 @@ void R1MainNode::spear_d2_valve(bool on)
   publish_gpio_pwm_output("spear_d2_valve", on ? 1.0 : 0.0);
 }
 
+void R1MainNode::kfs_init_pos(void)
+{  // spear_xを動かす
+  spear_x_pos_ref(SPEAR_X_MIDDLE_POS);
+  // まずrollを動かす
+  spear_roll_pos_ref(SPEAR_ROLL_VERTICAL_ANGLE);
+  spear1_pos_ref(SPEAR1_KFS_COLLECT_POS);
+  spear2_pos_ref(SPEAR2_KFS_COLLECT_POS);
+  // 一定時間経過後にKFS回収機構を動かす
+  kfs_init_pos_roll_timer_ = this->create_wall_timer(2500ms, [this]() {
+    // デバッグ用にKFS回収用アクチュエータを回収位置位置に移動
+    kfs_fx_pos_ref(KFS_FX_START_POS);
+    kfs_rx_pos_ref(KFS_RX_START_POS);
+    kfs_fz_pos_ref(KFS_FZ_STORAGE_POS);
+    kfs_rz_pos_ref(KFS_RZ_STORAGE_POS);
+    if (zone_ == "blue" && chassis_act_status_ == ChassisAct::ACT2) {
+      kfs_fyaw_pos_ref(KFS_FYAW_REAR_ANGLE);
+      kfs_ryaw_pos_ref(KFS_RYAW_REAR_ANGLE);
+    } else if (zone_ == "blue" && chassis_act_status_ == ChassisAct::ACT3) {
+      kfs_fyaw_pos_ref(KFS_FYAW_FRONT_ANGLE);
+      kfs_ryaw_pos_ref(KFS_RYAW_FRONT_ANGLE);
+    } else if (zone_ == "red" && chassis_act_status_ == ChassisAct::ACT2) {
+      kfs_fyaw_pos_ref(KFS_FYAW_FRONT_ANGLE);
+      kfs_ryaw_pos_ref(KFS_RYAW_FRONT_ANGLE);
+    } else if (zone_ == "red" && chassis_act_status_ == ChassisAct::ACT3) {
+      kfs_fyaw_pos_ref(KFS_FYAW_REAR_ANGLE);
+      kfs_ryaw_pos_ref(KFS_RYAW_REAR_ANGLE);
+    }
+    kfs_front_pump(0.0);
+    kfs_rear_pump(0.0);
+    manual_mode8_roll_timer_->cancel();
+  });
+}
+
 void R1MainNode::stop_actuator(void)
 {
   // 速度制御のモータ指令値を0にする
@@ -2368,36 +2401,7 @@ void R1MainNode::manual_mode8_auto_collect_kfs(void)
 
     if (ENABLE_AUTO_COLLECT_KFS_ACTUATOR) {
       // 最初にやり機構をKFS回収機構が干渉しないようにするために、動かす
-      // spear_xを動かす
-      spear_x_pos_ref(SPEAR_X_MIDDLE_POS);
-      // まずrollを動かす
-      spear_roll_pos_ref(SPEAR_ROLL_VERTICAL_ANGLE);
-      spear1_pos_ref(SPEAR1_KFS_COLLECT_POS);
-      spear2_pos_ref(SPEAR2_KFS_COLLECT_POS);
-      // 一定時間経過後にKFS回収機構を動かす
-      manual_mode8_roll_timer_ = this->create_wall_timer(3000ms, [this]() {
-        // デバッグ用にKFS回収用アクチュエータを回収位置位置に移動
-        kfs_fx_pos_ref(KFS_FX_START_POS);
-        kfs_rx_pos_ref(KFS_RX_START_POS);
-        kfs_fz_pos_ref(KFS_FZ_STORAGE_POS);
-        kfs_rz_pos_ref(KFS_RZ_STORAGE_POS);
-        if (zone_ == "blue" && chassis_act_status_ == ChassisAct::ACT2) {
-          kfs_fyaw_pos_ref(KFS_FYAW_REAR_ANGLE);
-          kfs_ryaw_pos_ref(KFS_RYAW_REAR_ANGLE);
-        } else if (zone_ == "blue" && chassis_act_status_ == ChassisAct::ACT3) {
-          kfs_fyaw_pos_ref(KFS_FYAW_FRONT_ANGLE);
-          kfs_ryaw_pos_ref(KFS_RYAW_FRONT_ANGLE);
-        } else if (zone_ == "red" && chassis_act_status_ == ChassisAct::ACT2) {
-          kfs_fyaw_pos_ref(KFS_FYAW_FRONT_ANGLE);
-          kfs_ryaw_pos_ref(KFS_RYAW_FRONT_ANGLE);
-        } else if (zone_ == "red" && chassis_act_status_ == ChassisAct::ACT3) {
-          kfs_fyaw_pos_ref(KFS_FYAW_REAR_ANGLE);
-          kfs_ryaw_pos_ref(KFS_RYAW_REAR_ANGLE);
-        }
-        kfs_front_pump(0.0);
-        kfs_rear_pump(0.0);
-        manual_mode8_roll_timer_->cancel();
-      });
+      kfs_init_pos();
     }
   }
 
@@ -2461,6 +2465,10 @@ void R1MainNode::auto_act0(void)
     auto_collect_kfs_task();
     if (ps4_->is_pushed_triangle()) {
       // 位置制御のプログラム実行
+      // spear_xを動かす
+      spear_x_pos_ref(SPEAR_X_MIDDLE_POS);
+      // まずrollを動かす
+      spear_roll_pos_ref(SPEAR_ROLL_VERTICAL_ANGLE);
       // publish_chassis_act_ref(ChassisAct::ACT0_START);
       request_auto_robot_move(
         ChassisAct::ACT0_START, std::vector<int>{}, std::vector<std::string>{});
@@ -2473,34 +2481,8 @@ void R1MainNode::auto_act0(void)
       // 最初にやり機構をKFS回収機構が干渉しないようにするために、動かす
       // spear_xを動かす
       spear_x_pos_ref(SPEAR_X_MIDDLE_POS);
-      // まずrollを動かす
+      // rollを動かす
       spear_roll_pos_ref(SPEAR_ROLL_VERTICAL_ANGLE);
-      spear1_pos_ref(SPEAR1_KFS_COLLECT_POS);
-      spear2_pos_ref(SPEAR2_KFS_COLLECT_POS);
-      // 一定時間経過後にKFS回収機構を動かす
-      manual_mode8_roll_timer_ = this->create_wall_timer(3000ms, [this]() {
-        // デバッグ用にKFS回収用アクチュエータを回収位置位置に移動
-        kfs_fx_pos_ref(KFS_FX_START_POS);
-        kfs_rx_pos_ref(KFS_RX_START_POS);
-        kfs_fz_pos_ref(KFS_FZ_STORAGE_POS);
-        kfs_rz_pos_ref(KFS_RZ_STORAGE_POS);
-        if (zone_ == "blue" && chassis_act_status_ == ChassisAct::ACT2) {
-          kfs_fyaw_pos_ref(KFS_FYAW_REAR_ANGLE);
-          kfs_ryaw_pos_ref(KFS_RYAW_REAR_ANGLE);
-        } else if (zone_ == "blue" && chassis_act_status_ == ChassisAct::ACT3) {
-          kfs_fyaw_pos_ref(KFS_FYAW_FRONT_ANGLE);
-          kfs_ryaw_pos_ref(KFS_RYAW_FRONT_ANGLE);
-        } else if (zone_ == "red" && chassis_act_status_ == ChassisAct::ACT2) {
-          kfs_fyaw_pos_ref(KFS_FYAW_FRONT_ANGLE);
-          kfs_ryaw_pos_ref(KFS_RYAW_FRONT_ANGLE);
-        } else if (zone_ == "red" && chassis_act_status_ == ChassisAct::ACT3) {
-          kfs_fyaw_pos_ref(KFS_FYAW_REAR_ANGLE);
-          kfs_ryaw_pos_ref(KFS_RYAW_REAR_ANGLE);
-        }
-        kfs_front_pump(0.0);
-        kfs_rear_pump(0.0);
-        manual_mode8_roll_timer_->cancel();
-      });
     }
     if (ps4_->is_pushed_cross()) {
       // 位置制御のプログラム実行
@@ -2531,6 +2513,8 @@ void R1MainNode::auto_act0(void)
         }
       }
       request_auto_robot_move(ChassisAct::ACT2_START, forest_order, collect_kfs_type);
+      // KFS回収機構を移動
+      kfs_init_pos();
     }
     if (ps4_->is_pushed_square()) {
       // 位置制御のプログラム実行
@@ -2561,6 +2545,8 @@ void R1MainNode::auto_act0(void)
         }
       }
       request_auto_robot_move(ChassisAct::ACT3_START, forest_order, collect_kfs_type);
+      // KFS回収機構を移動
+      kfs_init_pos();
     }
     if (ps4_->is_pushed_down()) {
       // 位置制御のプログラム実行
