@@ -106,9 +106,9 @@ public:
     // target_poseのPublisher
     target_pose_publisher_ =
       this->create_publisher<geometry_msgs::msg::PoseStamped>("/target_pose", 10);
-    // debug_map_posのPublisher
-    debug_map_pos_publisher_ =
-      this->create_publisher<geometry_msgs::msg::PoseStamped>("/debug_map_pos", 10);
+    // robot_map_posのPublisher
+    robot_map_pos_publisher_ =
+      this->create_publisher<geometry_msgs::msg::PoseStamped>("/robot_map_pos", 10);
     // cmd_vel_arrowのPublisher
     cmd_vel_arrow_publisher_ =
       this->create_publisher<visualization_msgs::msg::Marker>("/cmd_vel_arrow", 10);
@@ -527,14 +527,14 @@ public:
     }
   }
 
-  void publish_debug_map_pos()
+  void publish_robot_map_pos()
   {
     geometry_msgs::msg::PoseStamped pose_map;
     if (!try_get_current_map_pose(pose_map)) {
       return;
     }
     pose_map.header.stamp = this->get_clock()->now();
-    debug_map_pos_publisher_->publish(pose_map);
+    robot_map_pos_publisher_->publish(pose_map);
   }
 
   void publish_robot_marker(void)
@@ -753,7 +753,7 @@ public:
     std_msgs::msg::Int32 act_status_msg;
     act_status_msg.data = static_cast<int>(act_step_);
     act_publisher_->publish(act_status_msg);
-    publish_debug_map_pos();
+    publish_robot_map_pos();
     // ログを出力する
     if (act_step_ != prev_act_step_) {
       std::string act_name{magic_enum::enum_name(act_step_)};
@@ -992,8 +992,8 @@ public:
   rclcpp::Publisher<nav_msgs::msg::Path>::SharedPtr waypoints_publisher_;
   // target_poseのPublisher
   rclcpp::Publisher<geometry_msgs::msg::PoseStamped>::SharedPtr target_pose_publisher_;
-  // debug_map_posのPublisher
-  rclcpp::Publisher<geometry_msgs::msg::PoseStamped>::SharedPtr debug_map_pos_publisher_;
+  // robot_map_posのPublisher
+  rclcpp::Publisher<geometry_msgs::msg::PoseStamped>::SharedPtr robot_map_pos_publisher_;
   // cmd_vel_arrowのPublisher
   rclcpp::Publisher<visualization_msgs::msg::Marker>::SharedPtr cmd_vel_arrow_publisher_;
   // robot_markerのPublisher

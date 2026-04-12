@@ -7,6 +7,7 @@ source .venv/bin/activate
 source install/setup.bash
 
 # CAN ブリッジ系と Sabacan 系の topic は bag から除外する。
+# TODO: これでもrecordが重い場合はdebugと名のつくものも除外するようにする
 CAN_TOPIC_REGEX='(^|/)(sabacan_[^/]*|(from|to)_can_bus[^/]*)$'
 
 echo "exclude topic regex: ${CAN_TOPIC_REGEX}"
