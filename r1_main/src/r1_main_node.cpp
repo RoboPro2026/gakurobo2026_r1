@@ -2626,7 +2626,7 @@ void R1MainNode::manual_task(void)
     double vy_max = CHASSIS_MAX_VELOCITY;
     double vz_max = CHASSIS_MAX_OMEGA;
     if (const auto * manual_sub = std::get_if<ManualSubState>(&current_state.sub)) {
-      if (*manual_sub == ManualSubState::MODE3_SPEAR && ps4_->is_pushed_cross()) {
+      if (*manual_sub == ManualSubState::MODE3_SPEAR && ps4_->is_pushed_cross() == false) {
         // スピア作成中は速度を落とす
         vx_max = CHASSIS_MAKE_SPEAR_VELOCITY;
         vy_max = CHASSIS_MAKE_SPEAR_VELOCITY;
