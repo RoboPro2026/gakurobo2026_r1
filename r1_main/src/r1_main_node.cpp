@@ -1324,7 +1324,7 @@ void R1MainNode::kfs_init_pos(void)
   spear1_pos_ref(SPEAR1_KFS_COLLECT_POS);
   spear2_pos_ref(SPEAR2_KFS_COLLECT_POS);
   // 一定時間経過後にKFS回収機構を動かす
-  kfs_init_pos_roll_timer_ = this->create_wall_timer(2500ms, [this]() {
+  kfs_init_pos_roll_timer_ = this->create_wall_timer(1000ms, [this]() {
     // デバッグ用にKFS回収用アクチュエータを回収位置位置に移動
     kfs_fx_pos_ref(KFS_FX_START_POS);
     kfs_rx_pos_ref(KFS_RX_START_POS);
