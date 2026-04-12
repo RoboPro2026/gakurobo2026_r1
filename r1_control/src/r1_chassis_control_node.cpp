@@ -311,6 +311,10 @@ public:
       case ChassisAct::ACT3:
       case ChassisAct::ACT3_FINISH:
         return 3;
+      case ChassisAct::ACT4_START:
+      case ChassisAct::ACT4:
+      case ChassisAct::ACT4_FINISH:
+        return 4;
       case ChassisAct::NONE:
       default:
         return -1;
@@ -326,8 +330,8 @@ public:
       RCLCPP_ERROR(this->get_logger(), "Invalid act in RobotMove: %d", msg->act);
       return;
     }
-    bool is_inner = index == 1;
-    bool is_outer = index == 2;
+    bool is_inner = index == 2;
+    bool is_outer = index == 3;
     std::vector<int> forest_order(msg->forest_order.begin(), msg->forest_order.end());
     // パラメータを読み込み
     if (load_trajectory_csv(index) != 0) {
@@ -699,6 +703,24 @@ public:
         act_step_ = ChassisAct::ACT3_FINISH;
       }
     } else if (act_step_ == ChassisAct::ACT3_FINISH) {
+    } else if (act_step_ == ChassisAct::ACT4_START) {
+      act_step_ = ChassisAct::ACT4;
+      traj_follower_[4]->reset();
+      reset_robot_trajectory();
+      // act4のpathをpublishする
+      publish_path(4);
+    } else if (act_step_ == ChassisAct::ACT4) {
+      // 軌道追従の計算を行う
+      std::pair<WayPoint, geometry_msgs::msg::Twist> ret = traj_follower_[4]->update(odometry_);
+      // 指令値と目標のwaypointをpublishする
+      update_target_pose(ret.first);
+      publish_cmd_vel(ret.second);
+      publish_error(traj_follower_[4]->get_error());
+      // goal_range_以内に到達したらROTATEに遷移する
+      if (traj_follower_[4]->is_finished()) {
+        act_step_ = ChassisAct::ACT4_FINISH;
+      }
+    } else if (act_step_ == ChassisAct::ACT4_FINISH) {
     }
     // 現在のact_step_をpublishする
     std_msgs::msg::Int32 act_status_msg;

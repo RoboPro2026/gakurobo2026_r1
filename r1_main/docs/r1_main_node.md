@@ -311,14 +311,16 @@ LED は timer callback の最後に 1 回だけ更新されます。
   - `set_initialpose(-5.5, 0.5, 0.0)`
 - `cross`
   - 内回り KFS 回収用の `RobotMove` を publish
+  - `publish_robot_move(ChassisAct::ACT2_START, forest_order, collect_kfs_type)`
 - `square`
   - 外回り KFS 回収用の `RobotMove` を publish
+  - `publish_robot_move(ChassisAct::ACT3_START, forest_order, collect_kfs_type)`
 - `down`
-  - `publish_robot_move(ChassisAct::ACT3_START, {}, {})`
+  - `publish_robot_move(ChassisAct::ACT1_START, {}, {})`
 
 ### 自動回収の挙動
 
-- `ACT1` / `ACT2` 中は `map -> base_link` TF を見て、回収範囲の長方形に入ったかを判定します。
+- `ACT2` / `ACT3` 中は `map -> base_link` TF を見て、回収範囲の長方形に入ったかを判定します。
 - 判定対象の中心座標は `inner_collect_kfs_center_pos.*` / `outer_collect_kfs_center_pos.*` です。
 - `zone == blue` のときは `x` と `yaw` を反転して使用します。
 - `collect_kfs_offset` を、使用する KFS 機構に応じて中心座標へ加えます。
@@ -329,6 +331,7 @@ LED は timer callback の最後に 1 回だけ更新されます。
   - 複数の対象を見ている場合でも、どれか 1 つでも範囲内なら緑を優先
   - 範囲外なら赤
   - どちらも無ければ `AUTO` の base 色である黄色
+- `ACT1` と `ACT4` は KFS 自動回収を起動せず、通常の軌道追従だけを行います。
 
 ### 制約
 

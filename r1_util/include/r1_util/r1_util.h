@@ -16,7 +16,7 @@
 #include <vector>
 
 constexpr int FOREST_N = 12;
-constexpr int ACT_N = 4;
+constexpr int ACT_N = 5;
 
 enum class ChassisAct
 {
@@ -32,7 +32,10 @@ enum class ChassisAct
   ACT2_FINISH = 23,
   ACT3_START = 31,
   ACT3 = 32,
-  ACT3_FINISH = 33
+  ACT3_FINISH = 33,
+  ACT4_START = 41,
+  ACT4 = 42,
+  ACT4_FINISH = 43
 };
 
 /**

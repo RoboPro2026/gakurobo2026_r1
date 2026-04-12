@@ -177,12 +177,20 @@ public:
   double get_deadzone(void) { return deadzone_; }
   double get_connection_timeout(void) { return connection_timeout_; }
   bool is_connected() { return is_connected_; }
+  double get_left_stick_x() { return data.left_stick_x; }
+  double get_left_stick_y() { return data.left_stick_y; }
+  double get_right_stick_x() { return data.right_stick_x; }
+  double get_right_stick_y() { return data.right_stick_y; }
+  double get_l2_analog() { return data.l2_analog; }
+  double get_r2_analog() { return data.r2_analog; }
 
   // --- Left Stick ---
+  bool is_pushing_left_stick() { return data.left_stick_pushed; }
   bool is_pushed_left_stick() { return data.left_stick_pushed && !prev_data.left_stick_pushed; }
   bool is_released_left_stick() { return !data.left_stick_pushed && prev_data.left_stick_pushed; }
 
   // --- Right Stick ---
+  bool is_pushing_right_stick() { return data.right_stick_pushed; }
   bool is_pushed_right_stick() { return data.right_stick_pushed && !prev_data.right_stick_pushed; }
   bool is_released_right_stick()
   {
@@ -190,44 +198,59 @@ public:
   }
 
   // --- D-Pad (Directional Buttons) ---
+  bool is_pushing_up() { return data.up; }
   bool is_pushed_up() { return data.up && !prev_data.up; }
   bool is_released_up() { return !data.up && prev_data.up; }
+  bool is_pushing_down() { return data.down; }
   bool is_pushed_down() { return data.down && !prev_data.down; }
   bool is_released_down() { return !data.down && prev_data.down; }
+  bool is_pushing_left() { return data.left; }
   bool is_pushed_left() { return data.left && !prev_data.left; }
   bool is_released_left() { return !data.left && prev_data.left; }
+  bool is_pushing_right() { return data.right; }
   bool is_pushed_right() { return data.right && !prev_data.right; }
   bool is_released_right() { return !data.right && prev_data.right; }
 
   // --- Action Buttons (Cross, Circle, Triangle, Square) ---
+  bool is_pushing_cross() { return data.cross; }
   bool is_pushed_cross() { return data.cross && !prev_data.cross; }
   bool is_released_cross() { return !data.cross && prev_data.cross; }
+  bool is_pushing_circle() { return data.circle; }
   bool is_pushed_circle() { return data.circle && !prev_data.circle; }
   bool is_released_circle() { return !data.circle && prev_data.circle; }
+  bool is_pushing_triangle() { return data.triangle; }
   bool is_pushed_triangle() { return data.triangle && !prev_data.triangle; }
   bool is_released_triangle() { return !data.triangle && prev_data.triangle; }
+  bool is_pushing_square() { return data.square; }
   bool is_pushed_square() { return data.square && !prev_data.square; }
   bool is_released_square() { return !data.square && prev_data.square; }
 
   // --- Shoulder Buttons (L1, R1) ---
+  bool is_pushing_l1() { return data.l1; }
   bool is_pushed_l1() { return data.l1 && !prev_data.l1; }
   bool is_released_l1() { return !data.l1 && prev_data.l1; }
+  bool is_pushing_r1() { return data.r1; }
   bool is_pushed_r1() { return data.r1 && !prev_data.r1; }
   bool is_released_r1() { return !data.r1 && prev_data.r1; }
 
   // --- Trigger Buttons (L2, R2) ---
+  bool is_pushing_l2() { return data.l2; }
   bool is_pushed_l2() { return data.l2 && !prev_data.l2; }
   bool is_released_l2() { return !data.l2 && prev_data.l2; }
+  bool is_pushing_r2() { return data.r2; }
   bool is_pushed_r2() { return data.r2 && !prev_data.r2; }
   bool is_released_r2() { return !data.r2 && prev_data.r2; }
 
   // --- Stick Press Buttons (share, options) ---
+  bool is_pushing_share() { return data.share; }
   bool is_pushed_share() { return data.share && !prev_data.share; }
   bool is_released_share() { return !data.share && prev_data.share; }
+  bool is_pushing_options() { return data.options; }
   bool is_pushed_options() { return data.options && !prev_data.options; }
   bool is_released_options() { return !data.options && prev_data.options; }
 
   // --- PS Button ---
+  bool is_pushing_ps() { return data.ps; }
   bool is_pushed_ps() { return data.ps && !prev_data.ps; }
   bool is_released_ps() { return !data.ps && prev_data.ps; }
 };

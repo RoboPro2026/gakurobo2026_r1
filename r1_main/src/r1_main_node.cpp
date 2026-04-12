@@ -1867,14 +1867,14 @@ void R1MainNode::manual_mode6_r2_lift(void)
 {
   int & r2_lift_step = manual_mode6_r2_lift_step_;
   // fliftは逆転、rliftは正転させると、上昇する。
-  if (ps4_->data.triangle) {
+  if (ps4_->is_pushing_triangle()) {
     if (r2_lift_step != 2) {
       r2_flift(-R2_LIFT_UP_VELOCITY);
       r2_rlift(R2_LIFT_UP_VELOCITY);
       RCLCPP_INFO(this->get_logger(), "r2 lift up");
       r2_lift_step = 2;
     }
-  } else if (ps4_->data.cross) {
+  } else if (ps4_->is_pushing_cross()) {
     if (r2_lift_step != 3) {
       r2_flift(-R2_LIFT_DOWN_VELOCITY);
       r2_rlift(R2_LIFT_DOWN_VELOCITY);
@@ -2058,7 +2058,7 @@ void R1MainNode::auto_collect_kfs_task(void)
   constexpr int FKFS = 0;
   constexpr int RKFS = 1;
 
-  if (step != ChassisAct::ACT1 && step != ChassisAct::ACT2) return;
+  if (step != ChassisAct::ACT2 && step != ChassisAct::ACT3) return;
   // TODO: 進行方向と使用する回収機構の順番に応じて、OFFSETをいい感じに適応する
   geometry_msgs::msg::PoseStamped map_pos = get_map_pos();
   int n = current_robot_move_.forest_order.size();
@@ -2082,11 +2082,11 @@ void R1MainNode::auto_collect_kfs_task(void)
     // within はこの周期の判定結果なので、毎周期いったん false に戻して再評価する。
     within = false;
 
-    if (step == ChassisAct::ACT1) {
+    if (step == ChassisAct::ACT2) {
       center_x = INNER_COLLECT_KFS_CENTER_POS[target_forest_number - 1][0];
       center_y = INNER_COLLECT_KFS_CENTER_POS[target_forest_number - 1][1];
       rect_yaw = INNER_COLLECT_KFS_CENTER_POS[target_forest_number - 1][2];
-    } else if (step == ChassisAct::ACT2) {
+    } else if (step == ChassisAct::ACT3) {
       center_x = OUTER_COLLECT_KFS_CENTER_POS[target_forest_number - 1][0];
       center_y = OUTER_COLLECT_KFS_CENTER_POS[target_forest_number - 1][1];
       rect_yaw = OUTER_COLLECT_KFS_CENTER_POS[target_forest_number - 1][2];
@@ -2098,11 +2098,11 @@ void R1MainNode::auto_collect_kfs_task(void)
     }
     // TODO: ココらへんの処理はかなり怪しいので、赤ゾーンに対応するときに見直す。おそらく角度の扱いが怪しい
     // yは進行方向と同じ向きに対してオフセットを適用する
-    if (step == ChassisAct::ACT1 && current_robot_move_.kfs_mechanism_type[i] == "rear_kfs") {
+    if (step == ChassisAct::ACT2 && current_robot_move_.kfs_mechanism_type[i] == "rear_kfs") {
       offset_x = COLLECT_KFS_OFFSET * std::cos(rect_yaw);
       offset_y = COLLECT_KFS_OFFSET * std::sin(rect_yaw);
     } else if (
-      step == ChassisAct::ACT2 && current_robot_move_.kfs_mechanism_type[i] == "front_kfs") {
+      step == ChassisAct::ACT3 && current_robot_move_.kfs_mechanism_type[i] == "front_kfs") {
       offset_x = COLLECT_KFS_OFFSET * std::cos(rect_yaw);
       offset_y = COLLECT_KFS_OFFSET * std::sin(rect_yaw);
     }
@@ -2175,13 +2175,13 @@ void R1MainNode::auto_collect_kfs_task(void)
           if (within_index == FKFS) {
             // 回収機構を動かす
             kfs_fx_pos_ref(KFS_FX_EXPAND_POS);
-            if (zone_ == "blue" && step == ChassisAct::ACT1) {
+            if (zone_ == "blue" && step == ChassisAct::ACT2) {
               kfs_fyaw_pos_ref(KFS_FYAW_REAR_ANGLE);
-            } else if (zone_ == "blue" && step == ChassisAct::ACT2) {
-              kfs_fyaw_pos_ref(KFS_FYAW_FRONT_ANGLE);
-            } else if (zone_ == "red" && step == ChassisAct::ACT1) {
+            } else if (zone_ == "blue" && step == ChassisAct::ACT3) {
               kfs_fyaw_pos_ref(KFS_FYAW_FRONT_ANGLE);
             } else if (zone_ == "red" && step == ChassisAct::ACT2) {
+              kfs_fyaw_pos_ref(KFS_FYAW_FRONT_ANGLE);
+            } else if (zone_ == "red" && step == ChassisAct::ACT3) {
               kfs_fyaw_pos_ref(KFS_FYAW_REAR_ANGLE);
             }
             kfs_front_pump(1.0);
@@ -2200,13 +2200,13 @@ void R1MainNode::auto_collect_kfs_task(void)
           } else {
             // 回収機構を動かす
             kfs_rx_pos_ref(KFS_RX_EXPAND_POS);
-            if (zone_ == "blue" && step == ChassisAct::ACT1) {
+            if (zone_ == "blue" && step == ChassisAct::ACT2) {
               kfs_ryaw_pos_ref(KFS_RYAW_REAR_ANGLE);
-            } else if (zone_ == "blue" && step == ChassisAct::ACT2) {
-              kfs_ryaw_pos_ref(KFS_RYAW_FRONT_ANGLE);
-            } else if (zone_ == "red" && step == ChassisAct::ACT1) {
+            } else if (zone_ == "blue" && step == ChassisAct::ACT3) {
               kfs_ryaw_pos_ref(KFS_RYAW_FRONT_ANGLE);
             } else if (zone_ == "red" && step == ChassisAct::ACT2) {
+              kfs_ryaw_pos_ref(KFS_RYAW_FRONT_ANGLE);
+            } else if (zone_ == "red" && step == ChassisAct::ACT3) {
               kfs_ryaw_pos_ref(KFS_RYAW_REAR_ANGLE);
             }
             kfs_rear_pump(1.0);
@@ -2314,11 +2314,11 @@ void R1MainNode::manual_mode8_auto_collect_kfs(void)
       }
     }
     if (is_inner) {
-      publish_robot_move(ChassisAct::ACT1_START, forest_order, collect_kfs_type);
-      chassis_act_status_ = ChassisAct::ACT1;
-    } else {
       publish_robot_move(ChassisAct::ACT2_START, forest_order, collect_kfs_type);
       chassis_act_status_ = ChassisAct::ACT2;
+    } else {
+      publish_robot_move(ChassisAct::ACT3_START, forest_order, collect_kfs_type);
+      chassis_act_status_ = ChassisAct::ACT3;
     }
 
     if (ENABLE_AUTO_COLLECT_KFS_ACTUATOR) {
@@ -2336,16 +2336,16 @@ void R1MainNode::manual_mode8_auto_collect_kfs(void)
         kfs_rx_pos_ref(KFS_RX_START_POS);
         kfs_fz_pos_ref(KFS_FZ_STORAGE_POS);
         kfs_rz_pos_ref(KFS_RZ_STORAGE_POS);
-        if (zone_ == "blue" && chassis_act_status_ == ChassisAct::ACT1) {
+        if (zone_ == "blue" && chassis_act_status_ == ChassisAct::ACT2) {
           kfs_fyaw_pos_ref(KFS_FYAW_REAR_ANGLE);
           kfs_ryaw_pos_ref(KFS_RYAW_REAR_ANGLE);
-        } else if (zone_ == "blue" && chassis_act_status_ == ChassisAct::ACT2) {
-          kfs_fyaw_pos_ref(KFS_FYAW_FRONT_ANGLE);
-          kfs_ryaw_pos_ref(KFS_RYAW_FRONT_ANGLE);
-        } else if (zone_ == "red" && chassis_act_status_ == ChassisAct::ACT1) {
+        } else if (zone_ == "blue" && chassis_act_status_ == ChassisAct::ACT3) {
           kfs_fyaw_pos_ref(KFS_FYAW_FRONT_ANGLE);
           kfs_ryaw_pos_ref(KFS_RYAW_FRONT_ANGLE);
         } else if (zone_ == "red" && chassis_act_status_ == ChassisAct::ACT2) {
+          kfs_fyaw_pos_ref(KFS_FYAW_FRONT_ANGLE);
+          kfs_ryaw_pos_ref(KFS_RYAW_FRONT_ANGLE);
+        } else if (zone_ == "red" && chassis_act_status_ == ChassisAct::ACT3) {
           kfs_fyaw_pos_ref(KFS_FYAW_REAR_ANGLE);
           kfs_ryaw_pos_ref(KFS_RYAW_REAR_ANGLE);
         }
@@ -2428,7 +2428,7 @@ void R1MainNode::auto_act0(void)
     }
     if (ps4_->is_pushed_cross()) {
       // 位置制御のプログラム実行
-      // publish_chassis_act_ref(ChassisAct::ACT1_START);
+      // publish_chassis_act_ref(ChassisAct::ACT2_START);
       std::vector<int> forest_order;
       std::vector<std::string> collect_kfs_type;
       int j = 0;
@@ -2454,11 +2454,11 @@ void R1MainNode::auto_act0(void)
           }
         }
       }
-      publish_robot_move(ChassisAct::ACT1_START, forest_order, collect_kfs_type);
+      publish_robot_move(ChassisAct::ACT2_START, forest_order, collect_kfs_type);
     }
     if (ps4_->is_pushed_square()) {
       // 位置制御のプログラム実行
-      // publish_chassis_act_ref(ChassisAct::ACT2_START);
+      // publish_chassis_act_ref(ChassisAct::ACT3_START);
       std::vector<int> forest_order;
       std::vector<std::string> collect_kfs_type;
       int j = 0;
@@ -2484,15 +2484,15 @@ void R1MainNode::auto_act0(void)
           }
         }
       }
-      publish_robot_move(ChassisAct::ACT2_START, forest_order, collect_kfs_type);
+      publish_robot_move(ChassisAct::ACT3_START, forest_order, collect_kfs_type);
     }
     if (ps4_->is_pushed_down()) {
       // 位置制御のプログラム実行
-      // publish_chassis_act_ref(ChassisAct::ACT3_START);
+      publish_robot_move(ChassisAct::ACT1_START, std::vector<int>{}, std::vector<std::string>{});
     }
-    double vx_ref = CHASSIS_MAX_VELOCITY * (-1) * ps4_->data.left_stick_x;
-    double vy_ref = CHASSIS_MAX_VELOCITY * ps4_->data.left_stick_y;
-    double vz_ref = CHASSIS_MAX_OMEGA * ps4_->data.right_stick_x;
+    double vx_ref = CHASSIS_MAX_VELOCITY * (-1) * ps4_->get_left_stick_x();
+    double vy_ref = CHASSIS_MAX_VELOCITY * ps4_->get_left_stick_y();
+    double vz_ref = CHASSIS_MAX_OMEGA * ps4_->get_right_stick_x();
     chassis_move_vel(vx_ref, vy_ref, vz_ref);
   } else if (step == ChassisAct::ACT0_START) {
     // 何もしない
@@ -2501,7 +2501,7 @@ void R1MainNode::auto_act0(void)
   } else if (step == ChassisAct::ACT0_FINISH) {
     publish_chassis_act_ref(ChassisAct::NONE);
   } else if (step == ChassisAct::ACT1) {
-    auto_collect_kfs_task();
+    // 何もしない
   } else if (step == ChassisAct::ACT1_FINISH) {
     publish_chassis_act_ref(ChassisAct::NONE);
   } else if (step == ChassisAct::ACT2) {
@@ -2509,8 +2509,12 @@ void R1MainNode::auto_act0(void)
   } else if (step == ChassisAct::ACT2_FINISH) {
     publish_chassis_act_ref(ChassisAct::NONE);
   } else if (step == ChassisAct::ACT3) {
-    // 何もしない
+    auto_collect_kfs_task();
   } else if (step == ChassisAct::ACT3_FINISH) {
+    publish_chassis_act_ref(ChassisAct::NONE);
+  } else if (step == ChassisAct::ACT4) {
+    // 何もしない
+  } else if (step == ChassisAct::ACT4_FINISH) {
     publish_chassis_act_ref(ChassisAct::NONE);
   }
 
@@ -2523,6 +2527,8 @@ void R1MainNode::auto_act0(void)
       publish_robot_move(ChassisAct::ACT2_FINISH, std::vector<int>{}, std::vector<std::string>{});
     } else if (step == ChassisAct::ACT3) {
       publish_robot_move(ChassisAct::ACT3_FINISH, std::vector<int>{}, std::vector<std::string>{});
+    } else if (step == ChassisAct::ACT4) {
+      publish_robot_move(ChassisAct::ACT4_FINISH, std::vector<int>{}, std::vector<std::string>{});
     }
   }
 }
@@ -2626,16 +2632,16 @@ void R1MainNode::manual_task(void)
     double vy_max = CHASSIS_MAX_VELOCITY;
     double vz_max = CHASSIS_MAX_OMEGA;
     if (const auto * manual_sub = std::get_if<ManualSubState>(&current_state.sub)) {
-      if (*manual_sub == ManualSubState::MODE3_SPEAR && ps4_->data.cross == false) {
+      if (*manual_sub == ManualSubState::MODE3_SPEAR && !ps4_->is_pushing_cross()) {
         // スピア作成中は速度を落とす
         vx_max = CHASSIS_MAKE_SPEAR_VELOCITY;
         vy_max = CHASSIS_MAKE_SPEAR_VELOCITY;
         vz_max = CHASSIS_MAKE_SPEAR_OMEGA;
       }
     }
-    double vx_ref = vx_max * (-1) * ps4_->data.left_stick_x;
-    double vy_ref = vy_max * ps4_->data.left_stick_y;
-    double vz_ref = vz_max * ps4_->data.right_stick_x;
+    double vx_ref = vx_max * (-1) * ps4_->get_left_stick_x();
+    double vy_ref = vy_max * ps4_->get_left_stick_y();
+    double vz_ref = vz_max * ps4_->get_right_stick_x();
     // 台形制御で速度を滑らかに変化させる
     // double vx = simple_trapezoid_vx_.update(vx_ref);
     // double vy = simple_trapezoid_vy_.update(vy_ref);
