@@ -115,10 +115,12 @@ r1_main_node:
     timer_rate: 25.0
     ps4_connection_timeout: 1.0
     # ========== 足回り ==========
-    chassis_max_velocity: 0.2
-    chassis_max_omega: 0.2
-    # chassis_max_velocity: 0.6
-    # chassis_max_omega: 0.5
+
+    chassis_make_spear_velocity: 0.2
+    chassis_make_spear_omega: 0.2
+    # 通常動作時の最大速度
+    chassis_max_velocity: 0.6
+    chassis_max_omega: 0.5
     # ========== KFS回収 ==========
     # fx
     kfs_fx_normal_pos: 0.05

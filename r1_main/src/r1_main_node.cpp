@@ -484,6 +484,8 @@ R1MainNode::R1MainNode() : Node("r1_main_node")
   // 足回り
   declare_and_get_parameter("timer_rate", timer_rate_, 100.0);
   declare_and_get_parameter("ps4_connection_timeout", ps4_connection_timeout_, 0.3);
+  declare_and_get_parameter("chassis_make_spear_velocity", CHASSIS_MAKE_SPEAR_VELOCITY);
+  declare_and_get_parameter("chassis_make_spear_omega", CHASSIS_MAKE_SPEAR_OMEGA);
   declare_and_get_parameter("chassis_max_velocity", CHASSIS_MAX_VELOCITY);
   declare_and_get_parameter("chassis_max_omega", CHASSIS_MAX_OMEGA);
 
@@ -2619,9 +2621,21 @@ void R1MainNode::manual_task(void)
   } else {
     stop_actuator_flag = false;
     // 共通タスク
-    double vx_ref = CHASSIS_MAX_VELOCITY * (-1) * ps4_->data.left_stick_x;
-    double vy_ref = CHASSIS_MAX_VELOCITY * ps4_->data.left_stick_y;
-    double vz_ref = CHASSIS_MAX_OMEGA * ps4_->data.right_stick_x;
+    // スピア作成時だけロボットの速度を落とす
+    double vx_max = CHASSIS_MAX_VELOCITY;
+    double vy_max = CHASSIS_MAX_VELOCITY;
+    double vz_max = CHASSIS_MAX_OMEGA;
+    if (const auto * manual_sub = std::get_if<ManualSubState>(&current_state.sub)) {
+      if (*manual_sub == ManualSubState::MODE3_SPEAR) {
+        // スピア作成中は速度を落とす
+        vx_max = CHASSIS_MAKE_SPEAR_VELOCITY;
+        vy_max = CHASSIS_MAKE_SPEAR_VELOCITY;
+        vz_max = CHASSIS_MAKE_SPEAR_OMEGA;
+      }
+    }
+    double vx_ref = vx_max * (-1) * ps4_->data.left_stick_x;
+    double vy_ref = vy_max * ps4_->data.left_stick_y;
+    double vz_ref = vz_max * ps4_->data.right_stick_x;
     // 台形制御で速度を滑らかに変化させる
     // double vx = simple_trapezoid_vx_.update(vx_ref);
     // double vy = simple_trapezoid_vy_.update(vy_ref);

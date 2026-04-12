@@ -243,6 +243,8 @@ public:
 
   // 指令値関係
   // ========== 足回り ==========
+  double CHASSIS_MAKE_SPEAR_VELOCITY = 0.0;
+  double CHASSIS_MAKE_SPEAR_OMEGA = 0.0;
   double CHASSIS_MAX_VELOCITY = 0.0;
   double CHASSIS_MAX_OMEGA = 0.0;
   // ========== KFS回収 ==========
