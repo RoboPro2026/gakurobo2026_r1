@@ -5,8 +5,8 @@ urg_node2_1:
     serial_baud: 115200
     frame_id : 'laser1'
     calibrate_time : true
-    # synchronize_time : true
-    synchronize_time : false
+    synchronize_time : true
+    # synchronize_time : false
     publish_intensity : false
     publish_multiecho : false
     error_limit : 4
@@ -23,8 +23,8 @@ urg_node2_2:
     serial_port: "/dev/serial/by-path/pci-0000:00:14.0-usb-0:1.1:1.0"
     serial_baud: 115200
     frame_id : 'laser2'
-    calibrate_time : true
-    # synchronize_time : true
+    # calibrate_time : true
+    synchronize_time : true
     synchronize_time : false
     publish_intensity : false
     publish_multiecho : false
@@ -185,7 +185,7 @@ amcl:
     # update_min_a: 回転[rad]
     # 既定値は 0.25[m], 0.2[rad]
 
-    transform_tolerance: 0.2
+    transform_tolerance: 0.5
     # publish する TF が少し未来まで有効であるとみなす余裕時間[s]
     # 既定値は 1.0s
 
@@ -218,7 +218,7 @@ amcl:
     z_rand: 0.1
     # ランダムノイズ観測の重み
 
-    sigma_hit: 0.1
+    sigma_hit: 0.15
     # z_hit のガウス分布の標準偏差[m]
     # 小さいほど scan と map の一致に厳しくなる
     # 既定値は 0.2
