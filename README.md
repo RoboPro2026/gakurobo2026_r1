@@ -43,18 +43,18 @@ source ~/ros2_ws/install/setup.bash
 
 ## Bag 記録
 
-`ros2 bag record -a` だと CAN 関連 topic まで全部記録して重くなるため、R1 ではルートの [`record.bash`](./record.bash) を使います。  
+`ros2 bag record -a` だと CAN 関連 topic まで全部記録して重くなるため、R1 では [`scripts/record.bash`](./scripts/record.bash) を使います。  
 このスクリプトは、`sabacan_*` と `from_can_bus*` / `to_can_bus*` を除外して、それ以外の topic をまとめて記録します。
 
 ```bash
 cd ~/ros2_ws/src/gakurobo2026_r1
-./record.bash
+./scripts/record.bash
 ```
 
 `ros2 bag record` に渡したい追加オプションは、そのまま後ろに書けます。
 
 ```bash
-./record.bash -o bag/run1
+./scripts/record.bash -o bag/run1
 ```
 
 パッケージの役割は次のとおりです。  
@@ -400,7 +400,7 @@ source install/setup.bash
 
 ```bash
 cd ~/ros2_ws
-./src/gakurobo2026_r1/r1_setup.bash
+./src/gakurobo2026_r1/scripts/r1_setup.bash
 ros2 launch ros2_socketcan socket_can_bridge.launch.xml interface:=can0
 ```
 

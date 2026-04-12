@@ -4,7 +4,7 @@
 
 補足:
 
-- bag 記録は `ros2 bag record -a` ではなく、リポジトリルートの [`record.bash`](../record.bash) を使います。
+- bag 記録は `ros2 bag record -a` ではなく、[`scripts/record.bash`](../scripts/record.bash) を使います。
 - `record.bash` は CAN 関連 topic を除外して、その他の topic を記録します。
 
 - [`r1_bringup.launch.py`](./docs/r1_bringup.launch.md)
