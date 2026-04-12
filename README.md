@@ -41,6 +41,22 @@ source ~/ros2_ws/install/setup.bash
 - launch ファイルは ROS 標準ライブラリ中心に保ち、GUI 依存は各ノード側に閉じ込める構成を推奨します。
 - `.venv` に依存を追加したあとに Python ノードが起動できない場合は、`.venv` を有効化した状態で再度 `colcon build` してください。
 
+## Bag 記録
+
+`ros2 bag record -a` だと CAN 関連 topic まで全部記録して重くなるため、R1 ではルートの [`record.bash`](./record.bash) を使います。  
+このスクリプトは、`sabacan_*` と `from_can_bus*` / `to_can_bus*` を除外して、それ以外の topic をまとめて記録します。
+
+```bash
+cd ~/ros2_ws/src/gakurobo2026_r1
+./record.bash
+```
+
+`ros2 bag record` に渡したい追加オプションは、そのまま後ろに書けます。
+
+```bash
+./record.bash -o bag/run1
+```
+
 パッケージの役割は次のとおりです。  
 
 - `r1_bringup`
