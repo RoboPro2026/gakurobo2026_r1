@@ -2566,7 +2566,7 @@ void R1MainNode::auto_act0(void)
     publish_chassis_act_ref(ChassisAct::NONE);
   }
 
-  if (ps4_->is_pushed_left()) {
+  if (ps4_->is_pushed_r2()) {
     if (step == ChassisAct::ACT0) {
       publish_robot_move(ChassisAct::ACT0_FINISH, std::vector<int>{}, std::vector<std::string>{});
     } else if (step == ChassisAct::ACT1) {
