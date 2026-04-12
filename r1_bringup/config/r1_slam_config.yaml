@@ -101,10 +101,10 @@ amcl:
     # OmniMotionModel: mecanum / omni 向け
     # Nav2 AMCL は plugin 名で指定する形式 :contentReference[oaicite:1]{index=1}
 
-    alpha1: 0.35   # 回転によって生じる回転誤差
+    alpha1: 0.4   # 回転によって生じる回転誤差
     alpha2: 0.25   # 並進によって生じる回転誤差
     alpha3: 0.2   # 並進によって生じる並進誤差
-    alpha4: 0.35   # 回転によって生じる並進誤差
+    alpha4: 0.4   # 回転によって生じる並進誤差
     alpha5: 0.3   # Omni 専用の並進ノイズ
     # 値を大きくすると odom を信用しにくくなる
 
