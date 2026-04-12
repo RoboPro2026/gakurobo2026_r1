@@ -40,7 +40,7 @@ r1_chassis_control_node:
     # 制御の終了判定閾値
     goal_pos_range: 0.03
     goal_angle_range: 0.03
-    finish_time_threshold: 1.0
+    finish_time_threshold: 0.5
     enable_visualization: true
     arrow_scale: 3.0
     # ========== robot_moveのパラメータ ==========
