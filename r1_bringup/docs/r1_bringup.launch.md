@@ -29,10 +29,11 @@
 - 常時起動
   - `joy_node`
   - `r1_main_node`
-  - `r1_chassis_control_node`
   - `r1_chassis_velocity_control_node`
   - `r1_machine_manage_node`
   - 足回り・機構・Sabacan 関連ノード群
+- `robot_control_mode:=auto` のとき
+  - `r1_chassis_control_node`
 - `use_aruco_display:=true` のとき
   - `r1_aruco_display_node`
 - 実機モード時
@@ -45,9 +46,54 @@
 
 ## 起動例
 
+- 実機を手動モードで通常起動する
+  - `r1_setup.bash` を含めてまとめて実行する、普段使いの入口です。
+
 ```bash
+cd ~/ros2_ws
+./src/gakurobo2026_r1/scripts/r1_manual.bash
+```
+
+- 実機を自動モードで通常起動する
+  - `robot_control_mode:=auto` を含めてまとめて実行する、普段使いの入口です。
+
+```bash
+cd ~/ros2_ws
+./src/gakurobo2026_r1/scripts/r1_auto.bash
+```
+
+- `r1_setup.bash` 実行後に、手動モードの既定引数で直接 launch する
+  - `use_sim:=false`、`use_lidar:=true`、`robot_control_mode:=manual` の既定値をそのまま使います。
+
+```bash
+cd ~/ros2_ws
+source install/setup.bash
 ros2 launch r1_bringup r1_bringup.launch.py
+```
+
+- `robot_control_mode:=auto` を指定して直接 launch する
+  - 自動モードで起動したいが、他の引数も自分で調整したいときに使います。
+
+```bash
+cd ~/ros2_ws
+source install/setup.bash
 ros2 launch r1_bringup r1_bringup.launch.py robot_control_mode:=auto
+```
+
+- シミュレーションモードで起動する
+  - 実機デバイスを使わず、`r1_sim.launch.py` 側のダミー map / odometry 構成で起動します。
+
+```bash
+cd ~/ros2_ws
+source install/setup.bash
 ros2 launch r1_bringup r1_bringup.launch.py use_sim:=true
+```
+
+- ArUco 表示ノードも同時に起動する
+  - `r1_ui` の `r1_aruco_display_node` を追加で立ち上げたいときに使います。
+
+```bash
+cd ~/ros2_ws
+source install/setup.bash
 ros2 launch r1_bringup r1_bringup.launch.py use_aruco_display:=true
 ```
