@@ -417,6 +417,7 @@ public:
   void imu_callback(const sensor_msgs::msg::Imu::SharedPtr msg);
   void set_mecanum_yaw(double yaw);
   void set_swerve_drive_yaw(double yaw);
+  void publish_chassis_act_stop(void);
   // オドメトリ
   void odometry_callback(const nav_msgs::msg::Odometry::SharedPtr msg);
   void set_odometry(double x, double y, double yaw);

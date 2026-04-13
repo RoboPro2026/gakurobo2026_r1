@@ -1017,6 +1017,44 @@ void R1MainNode::publish_chassis_act_ref(ChassisAct ref)
   // RCLCPP_INFO(this->get_logger(), "chassis act ref: %d", ref);
 }
 
+void R1MainNode::publish_chassis_act_stop(void)
+{
+  ChassisAct stop_ref = ChassisAct::NONE;
+  switch (chassis_act_status_) {
+    case ChassisAct::ACT0_START:
+    case ChassisAct::ACT0:
+      stop_ref = ChassisAct::ACT0_FINISH;
+      break;
+    case ChassisAct::ACT1_START:
+    case ChassisAct::ACT1:
+      stop_ref = ChassisAct::ACT1_FINISH;
+      break;
+    case ChassisAct::ACT2_START:
+    case ChassisAct::ACT2:
+      stop_ref = ChassisAct::ACT2_FINISH;
+      break;
+    case ChassisAct::ACT3_START:
+    case ChassisAct::ACT3:
+      stop_ref = ChassisAct::ACT3_FINISH;
+      break;
+    case ChassisAct::ACT4_START:
+    case ChassisAct::ACT4:
+      stop_ref = ChassisAct::ACT4_FINISH;
+      break;
+    case ChassisAct::ACT0_FINISH:
+    case ChassisAct::ACT1_FINISH:
+    case ChassisAct::ACT2_FINISH:
+    case ChassisAct::ACT3_FINISH:
+    case ChassisAct::ACT4_FINISH:
+    case ChassisAct::NONE:
+    default:
+      stop_ref = ChassisAct::NONE;
+      break;
+  }
+
+  publish_chassis_act_ref(stop_ref);
+}
+
 void R1MainNode::publish_robot_move(
   ChassisAct act, std::vector<int> forest_order, std::vector<std::string> kfs_mechanism_type)
 {
@@ -1324,6 +1362,9 @@ void R1MainNode::kfs_init_pos(void)
   spear1_pos_ref(SPEAR1_KFS_COLLECT_POS);
   spear2_pos_ref(SPEAR2_KFS_COLLECT_POS);
   // 一定時間経過後にKFS回収機構を動かす
+  if (kfs_init_pos_roll_timer_) {
+    kfs_init_pos_roll_timer_->cancel();
+  }
   kfs_init_pos_roll_timer_ = this->create_wall_timer(1000ms, [this]() {
     // デバッグ用にKFS回収用アクチュエータを回収位置位置に移動
     kfs_fx_pos_ref(KFS_FX_START_POS);
@@ -1345,7 +1386,9 @@ void R1MainNode::kfs_init_pos(void)
     }
     kfs_front_pump(0.0);
     kfs_rear_pump(0.0);
-    manual_mode8_roll_timer_->cancel();
+    if (kfs_init_pos_roll_timer_) {
+      kfs_init_pos_roll_timer_->cancel();
+    }
   });
 }
 
@@ -2137,6 +2180,14 @@ void R1MainNode::auto_collect_kfs_task(void)
   constexpr int RKFS = 1;
 
   if (step != ChassisAct::ACT2 && step != ChassisAct::ACT3) return;
+  if (current_robot_move_.forest_order.size() != current_robot_move_.kfs_mechanism_type.size()) {
+    RCLCPP_ERROR(
+      this->get_logger(),
+      "robot_move size mismatch during %s: forest_order=%zu, kfs_mechanism_type=%zu",
+      magic_enum::enum_name(step).data(), current_robot_move_.forest_order.size(),
+      current_robot_move_.kfs_mechanism_type.size());
+    return;
+  }
   // TODO: 進行方向と使用する回収機構の順番に応じて、OFFSETをいい感じに適応する
   geometry_msgs::msg::PoseStamped map_pos = get_map_pos();
   int n = current_robot_move_.forest_order.size();
@@ -2146,12 +2197,24 @@ void R1MainNode::auto_collect_kfs_task(void)
   bool rear_kfs_within = false;
   for (int i = 0; i < n; i++) {
     int target_forest_number = current_robot_move_.forest_order[i];
+    if (target_forest_number < 1 || target_forest_number > 12) {
+      RCLCPP_ERROR(
+        this->get_logger(), "invalid forest number in robot_move: %d", target_forest_number);
+      continue;
+    }
+    const std::string & mechanism_type = current_robot_move_.kfs_mechanism_type[i];
+    if (mechanism_type != "front_kfs" && mechanism_type != "rear_kfs") {
+      RCLCPP_ERROR(
+        this->get_logger(), "invalid kfs_mechanism_type in robot_move: %s",
+        mechanism_type.c_str());
+      continue;
+    }
     double map_x = map_pos.pose.position.x;
     double map_y = map_pos.pose.position.y;
     double center_x = 0.0, center_y = 0.0, rect_yaw = 0.0, offset_x = 0.0, offset_y = 0.0;
 
     // within関連はメンバー変数。名前が長いので、参照として短い名前で扱う。
-    int within_index = (current_robot_move_.kfs_mechanism_type[i] == "front_kfs") ? FKFS : RKFS;
+    int within_index = (mechanism_type == "front_kfs") ? FKFS : RKFS;
     front_kfs_assigned = front_kfs_assigned || (within_index == FKFS);
     rear_kfs_assigned = rear_kfs_assigned || (within_index == RKFS);
     std::vector<bool>::reference within = auto_act0_within_[target_forest_number - 1][within_index];
@@ -2176,11 +2239,10 @@ void R1MainNode::auto_collect_kfs_task(void)
     }
     // TODO: ココらへんの処理はかなり怪しいので、赤ゾーンに対応するときに見直す。おそらく角度の扱いが怪しい
     // yは進行方向と同じ向きに対してオフセットを適用する
-    if (step == ChassisAct::ACT2 && current_robot_move_.kfs_mechanism_type[i] == "rear_kfs") {
+    if (step == ChassisAct::ACT2 && mechanism_type == "rear_kfs") {
       offset_x = COLLECT_KFS_OFFSET * std::cos(rect_yaw);
       offset_y = COLLECT_KFS_OFFSET * std::sin(rect_yaw);
-    } else if (
-      step == ChassisAct::ACT3 && current_robot_move_.kfs_mechanism_type[i] == "front_kfs") {
+    } else if (step == ChassisAct::ACT3 && mechanism_type == "front_kfs") {
       offset_x = COLLECT_KFS_OFFSET * std::cos(rect_yaw);
       offset_y = COLLECT_KFS_OFFSET * std::sin(rect_yaw);
     }
@@ -2298,7 +2360,7 @@ void R1MainNode::auto_collect_kfs_task(void)
               target_forest_number == 9 || target_forest_number == 11) {
               kfs_rz_pos_ref(KFS_RZ_MIDDLE_POS);
             } else if (target_forest_number == 6) {
-              kfs_fz_pos_ref(KFS_FZ_HIGH_POS);
+              kfs_rz_pos_ref(KFS_RZ_HIGH_POS);
             }
           }
         } else {
@@ -2635,7 +2697,7 @@ void R1MainNode::reset_step(void)
     }
   }
   pending_auto_robot_move_valid_ = false;
-  publish_chassis_act_ref(ChassisAct::NONE);
+  publish_chassis_act_stop();
 }
 
 void R1MainNode::reset_position(bool is_start_zone)
