@@ -41,6 +41,41 @@ source ~/ros2_ws/install/setup.bash
 - launch ファイルは ROS 標準ライブラリ中心に保ち、GUI 依存は各ノード側に閉じ込める構成を推奨します。
 - `.venv` に依存を追加したあとに Python ノードが起動できない場合は、`.venv` を有効化した状態で再度 `colcon build` してください。
 
+## Bag 記録
+
+`ros2 bag record -a` だと CAN 関連 topic まで全部記録して重くなるため、R1 では [`scripts/record.bash`](./scripts/record.bash) を使います。  
+このスクリプトは、`sabacan_*` と `from_can_bus*` / `to_can_bus*` を除外して、それ以外の topic をまとめて記録します。
+
+```bash
+cd ~/ros2_ws/src/gakurobo2026_r1
+./scripts/record.bash
+```
+
+`ros2 bag record` に渡したい追加オプションは、そのまま後ろに書けます。
+
+```bash
+./scripts/record.bash -o bag/run1
+```
+
+## 起動スクリプト
+
+実機の通常起動は、まず `scripts/` のショートカットを使う想定にしておくと迷いにくくなります。
+
+- [`scripts/r1_setup.bash`](./scripts/r1_setup.bash)
+  - `.venv` と `install/setup.bash` を読み込み、CPU 周波数設定、USB 権限付与、CAN 初期化をまとめて行います。
+- [`scripts/r1_manual.bash`](./scripts/r1_manual.bash)
+  - `r1_setup.bash` を実行したあと、実機モード + LiDAR 有効 + 手動モードで `r1_bringup.launch.py` を起動します。
+- [`scripts/r1_auto.bash`](./scripts/r1_auto.bash)
+  - `r1_setup.bash` を実行したあと、実機モード + LiDAR 有効 + 自動モードで `r1_bringup.launch.py` を起動します。
+- [`scripts/record.bash`](./scripts/record.bash)
+  - CAN 関連 topic を除外して bag を記録します。
+
+補足:
+
+- `r1_manual.bash` / `r1_auto.bash` は `~/ros2_ws` を前提にしています。
+- `r1_setup.bash` は `sudo` を使うため、実行時にパスワード入力が必要です。
+- LiDAR を無効にしたい、ArUco 表示を足したい、シミュレーションで起動したい、といったときだけ `ros2 launch` を直接使う運用にすると整理しやすくなります。
+
 パッケージの役割は次のとおりです。  
 
 - `r1_bringup`
@@ -376,45 +411,50 @@ source install/setup.bash
 `use_aruco_display` 引数で、`r1_ui` の `r1_aruco_display_node` を起動するかを切り替えられます。既定値は `false` です。  
 `zone` は現在 [`r1_bringup.launch.py`](./r1_bringup/launch/r1_bringup.launch.py) 内で設定しています。
 
-### 実機モード
+### 基本の起動コマンド（これさえ覚えればOK）
 
-現在は 2 つのターミナルを使用しています。
+普段の起動はショートカットを使うのが基本です。
 
-ターミナル 1:
+- 手動機:
 
 ```bash
 cd ~/ros2_ws
-./src/gakurobo2026_r1/r1_setup.bash
-ros2 launch ros2_socketcan socket_can_bridge.launch.xml interface:=can0
+./src/gakurobo2026_r1/scripts/r1_manual.bash
 ```
 
-ターミナル 2:
+- 自動機:
+
+```bash
+cd ~/ros2_ws
+./src/gakurobo2026_r1/scripts/r1_auto.bash
+```
+
+### 細かい起動コマンド
+ros2 launchする前は`r1_setup.bash`を実行してください。  
+```bash
+cd ~/ros2_ws
+./src/gakurobo2026_r1/scripts/r1_setup.bash
+```
 
 - LiDAR を使う場合:
 
 ```bash
-cd ~/ros2_ws
-source install/setup.bash
 ros2 launch r1_bringup r1_bringup.launch.py use_sim:=false use_lidar:=true
 ```
 
 - LiDAR を使わない場合:
 
 ```bash
-cd ~/ros2_ws
-source install/setup.bash
 ros2 launch r1_bringup r1_bringup.launch.py use_sim:=false use_lidar:=false
 ```
 
 自動機として起動したい場合は `robot_control_mode:=auto` を付けます。
 
 ```bash
-cd ~/ros2_ws
-source install/setup.bash
 ros2 launch r1_bringup r1_bringup.launch.py use_sim:=false use_lidar:=true robot_control_mode:=auto
 ```
 
-`use_sim:=false` と `use_lidar:=true` と `robot_control_mode:=manual` はデフォルトなので、LiDAR を使う通常の手動機起動は以下でも同じです。
+`use_sim:=false` と `use_lidar:=true` と `robot_control_mode:=manual` はデフォルトなので、`r1_manual.bash` の実体は以下です。
 
 ```bash
 ros2 launch r1_bringup r1_bringup.launch.py
@@ -423,8 +463,6 @@ ros2 launch r1_bringup r1_bringup.launch.py
 ArUco 表示ノードも同時に起動したい場合は、`use_aruco_display:=true` を付けます。
 
 ```bash
-cd ~/ros2_ws
-source install/setup.bash
 ros2 launch r1_bringup r1_bringup.launch.py use_aruco_display:=true
 ```
 

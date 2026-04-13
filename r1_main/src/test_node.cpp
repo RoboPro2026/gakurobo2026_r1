@@ -604,9 +604,9 @@ private:
     geometry_msgs::msg::Twist cmd_vel;
     if (ps4_->is_connected()) {
       // PS4 クラス側で deadzone 適用済みのスティック値を速度指令へ変換する。
-      cmd_vel.linear.x = -max_velocity_ * ps4_->data.left_stick_x;
-      cmd_vel.linear.y = max_velocity_ * ps4_->data.left_stick_y;
-      cmd_vel.angular.z = max_angular_velocity_ * ps4_->data.right_stick_x;
+      cmd_vel.linear.x = -max_velocity_ * ps4_->get_left_stick_x();
+      cmd_vel.linear.y = max_velocity_ * ps4_->get_left_stick_y();
+      cmd_vel.angular.z = max_angular_velocity_ * ps4_->get_right_stick_x();
     }
 
     cmd_vel_pub_->publish(cmd_vel);

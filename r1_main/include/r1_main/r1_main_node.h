@@ -417,6 +417,7 @@ public:
   void imu_callback(const sensor_msgs::msg::Imu::SharedPtr msg);
   void set_mecanum_yaw(double yaw);
   void set_swerve_drive_yaw(double yaw);
+  void publish_chassis_act_stop(void);
   // オドメトリ
   void odometry_callback(const nav_msgs::msg::Odometry::SharedPtr msg);
   void set_odometry(double x, double y, double yaw);
@@ -427,8 +428,12 @@ public:
   // robot_move
   void publish_robot_move(
     ChassisAct act, std::vector<int> forest_order, std::vector<std::string> kfs_mechanism_type);
+  bool is_localization_ready(void);
+  void request_auto_robot_move(
+    ChassisAct act, std::vector<int> forest_order, std::vector<std::string> kfs_mechanism_type);
+  void publish_pending_auto_robot_move_if_ready(void);
   geometry_msgs::msg::PoseStamped get_map_pos(void);
-  // ========== 各動作の関数 ==========
+  // ========== 各アクチュエータ単体の動作関数 ==========
   // 足回り
   void chassis_move_vel(double vx, double vy, double omega);
   // KFS回収
@@ -497,6 +502,11 @@ public:
   void spear_d1_valve(bool on);
   void spear_u2_valve(bool on);
   void spear_d2_valve(bool on);
+
+  // ========== 各動作の関数 ==========
+
+  rclcpp::TimerBase::SharedPtr kfs_init_pos_roll_timer_;
+  void kfs_init_pos(void);
 
   // 動いていたら危険なアクチュエータは停止する
   // 位置制御は止められないので、そのまま
@@ -577,6 +587,8 @@ public:
     std::vector<std::vector<bool>>(12, std::vector<bool>(2, false));
   std::vector<std::vector<bool>> auto_act0_prev_within_ =
     std::vector<std::vector<bool>>(12, std::vector<bool>(2, false));
+  bool pending_auto_robot_move_valid_ = false;
+  r1_msgs::msg::RobotMove pending_auto_robot_move_;
   // ========== リセット ==========
   void reset_step(void);
   void reset_robot(bool is_start_zone);

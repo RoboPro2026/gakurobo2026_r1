@@ -106,6 +106,9 @@ public:
     // target_poseのPublisher
     target_pose_publisher_ =
       this->create_publisher<geometry_msgs::msg::PoseStamped>("/target_pose", 10);
+    // robot_map_posのPublisher
+    robot_map_pos_publisher_ =
+      this->create_publisher<geometry_msgs::msg::PoseStamped>("/robot_map_pos", 10);
     // cmd_vel_arrowのPublisher
     cmd_vel_arrow_publisher_ =
       this->create_publisher<visualization_msgs::msg::Marker>("/cmd_vel_arrow", 10);
@@ -311,6 +314,10 @@ public:
       case ChassisAct::ACT3:
       case ChassisAct::ACT3_FINISH:
         return 3;
+      case ChassisAct::ACT4_START:
+      case ChassisAct::ACT4:
+      case ChassisAct::ACT4_FINISH:
+        return 4;
       case ChassisAct::NONE:
       default:
         return -1;
@@ -326,8 +333,8 @@ public:
       RCLCPP_ERROR(this->get_logger(), "Invalid act in RobotMove: %d", msg->act);
       return;
     }
-    bool is_inner = index == 1;
-    bool is_outer = index == 2;
+    bool is_inner = index == 2;
+    bool is_outer = index == 3;
     std::vector<int> forest_order(msg->forest_order.begin(), msg->forest_order.end());
     // パラメータを読み込み
     if (load_trajectory_csv(index) != 0) {
@@ -497,6 +504,39 @@ public:
     chassis_error_theta_publisher_->publish(error_msg);
   }
 
+  bool try_get_current_map_pose(geometry_msgs::msg::PoseStamped & pose_map)
+  {
+    geometry_msgs::msg::PoseStamped pose_odom;
+    pose_odom.header = odometry_.header;
+    pose_odom.pose = odometry_.pose.pose;
+    try {
+      pose_map = tf_buffer_->transform(pose_odom, "map", tf2::durationFromSec(0.01));
+      has_seen_map_transform_ = true;
+      return true;
+    } catch (const tf2::TransformException & ex) {
+      if (has_seen_map_transform_) {
+        RCLCPP_WARN_THROTTLE(
+          this->get_logger(), *this->get_clock(), 1000,
+          "Failed to transform odometry pose after localization became available: %s", ex.what());
+      } else {
+        RCLCPP_INFO_THROTTLE(
+          this->get_logger(), *this->get_clock(), 1000,
+          "Waiting for localization: map->base_link TF is not available yet.");
+      }
+      return false;
+    }
+  }
+
+  void publish_robot_map_pos()
+  {
+    geometry_msgs::msg::PoseStamped pose_map;
+    if (!try_get_current_map_pose(pose_map)) {
+      return;
+    }
+    pose_map.header.stamp = this->get_clock()->now();
+    robot_map_pos_publisher_->publish(pose_map);
+  }
+
   void publish_robot_marker(void)
   {
     visualization_msgs::msg::Marker marker;
@@ -571,16 +611,7 @@ public:
       return;
     }
     geometry_msgs::msg::PoseStamped pose_map;
-    geometry_msgs::msg::PoseStamped pose_odom;
-    pose_odom.header = odometry_.header;
-    pose_odom.pose = odometry_.pose.pose;
-    try {
-      // odomからmapへのtf変換を行う。
-      pose_map = tf_buffer_->transform(pose_odom, "map", tf2::durationFromSec(0.01));
-    } catch (const tf2::TransformException & ex) {
-      RCLCPP_WARN_THROTTLE(
-        this->get_logger(), *this->get_clock(), 1000, "Failed to transform odometry pose: %s",
-        ex.what());
+    if (!try_get_current_map_pose(pose_map)) {
       return;
     }
     // robot_trajectory_.posesの要素数が1以上のときは、前回値と比較して、
@@ -699,11 +730,30 @@ public:
         act_step_ = ChassisAct::ACT3_FINISH;
       }
     } else if (act_step_ == ChassisAct::ACT3_FINISH) {
+    } else if (act_step_ == ChassisAct::ACT4_START) {
+      act_step_ = ChassisAct::ACT4;
+      traj_follower_[4]->reset();
+      reset_robot_trajectory();
+      // act4のpathをpublishする
+      publish_path(4);
+    } else if (act_step_ == ChassisAct::ACT4) {
+      // 軌道追従の計算を行う
+      std::pair<WayPoint, geometry_msgs::msg::Twist> ret = traj_follower_[4]->update(odometry_);
+      // 指令値と目標のwaypointをpublishする
+      update_target_pose(ret.first);
+      publish_cmd_vel(ret.second);
+      publish_error(traj_follower_[4]->get_error());
+      // goal_range_以内に到達したらROTATEに遷移する
+      if (traj_follower_[4]->is_finished()) {
+        act_step_ = ChassisAct::ACT4_FINISH;
+      }
+    } else if (act_step_ == ChassisAct::ACT4_FINISH) {
     }
     // 現在のact_step_をpublishする
     std_msgs::msg::Int32 act_status_msg;
     act_status_msg.data = static_cast<int>(act_step_);
     act_publisher_->publish(act_status_msg);
+    publish_robot_map_pos();
     // ログを出力する
     if (act_step_ != prev_act_step_) {
       std::string act_name{magic_enum::enum_name(act_step_)};
@@ -711,16 +761,7 @@ public:
       // act_stepにFINISHという文字が含まれていた場合は現在の位置も出力する
       if (act_name.find("FINISH") != std::string::npos) {
         geometry_msgs::msg::PoseStamped pose_map;
-        geometry_msgs::msg::PoseStamped pose_odom;
-        pose_odom.header = odometry_.header;
-        pose_odom.pose = odometry_.pose.pose;
-        try {
-          // odomからmapへのtf変換を行う。
-          pose_map = tf_buffer_->transform(pose_odom, "map", tf2::durationFromSec(0.01));
-        } catch (const tf2::TransformException & ex) {
-          RCLCPP_WARN_THROTTLE(
-            this->get_logger(), *this->get_clock(), 1000, "Failed to transform odometry pose: %s",
-            ex.what());
+        if (!try_get_current_map_pose(pose_map)) {
           return;
         }
         // 現在の位置をログに出力する
@@ -951,6 +992,8 @@ public:
   rclcpp::Publisher<nav_msgs::msg::Path>::SharedPtr waypoints_publisher_;
   // target_poseのPublisher
   rclcpp::Publisher<geometry_msgs::msg::PoseStamped>::SharedPtr target_pose_publisher_;
+  // robot_map_posのPublisher
+  rclcpp::Publisher<geometry_msgs::msg::PoseStamped>::SharedPtr robot_map_pos_publisher_;
   // cmd_vel_arrowのPublisher
   rclcpp::Publisher<visualization_msgs::msg::Marker>::SharedPtr cmd_vel_arrow_publisher_;
   // robot_markerのPublisher
@@ -981,6 +1024,7 @@ public:
   geometry_msgs::msg::Twist cmd_vel_;
   std::string cmd_vel_topic_;
   bool has_target_pose_ = false;
+  bool has_seen_map_transform_ = false;
   ChassisAct act_step_ = ChassisAct::NONE;
   ChassisAct prev_act_step_ = ChassisAct::NONE;
   // ロボットの軌道保管用

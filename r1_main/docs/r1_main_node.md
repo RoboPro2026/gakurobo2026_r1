@@ -25,6 +25,7 @@
 - `/set_mecanum_yaw`、`/set_swerve_drive_yaw`、`/set_odometry`、`/initialpose` を publish して姿勢・自己位置を初期化する。
 - `PS` ボタン押下時に `/r1_machine_initialize` を publish して、`r1_machine_manage_node` 側の復帰処理を開始する。
 - 自動回収中は `map -> base_link` TF を用いて KFS 回収範囲への進入判定を行う。
+- `AUTO` の開始要求は `map -> base_link` TF がまだ無い場合に即時 publish せず、自己位置推定が立ち上がるまで待機します。
 
 ## 状態遷移
 
@@ -303,7 +304,7 @@ LED は timer callback の最後に 1 回だけ更新されます。
 ### `chassis_act_status_ == NONE` のときの操作
 
 - `triangle`
-  - `publish_robot_move(ChassisAct::ACT0_START, {}, {})`
+  - `request_auto_robot_move(ChassisAct::ACT0_START, {}, {})`
 - `circle`
   - 青ゾーン用の開始姿勢を設定
   - `set_mecanum_yaw(0.0)`
@@ -311,14 +312,22 @@ LED は timer callback の最後に 1 回だけ更新されます。
   - `set_initialpose(-5.5, 0.5, 0.0)`
 - `cross`
   - 内回り KFS 回収用の `RobotMove` を publish
+  - `request_auto_robot_move(ChassisAct::ACT2_START, forest_order, collect_kfs_type)`
 - `square`
   - 外回り KFS 回収用の `RobotMove` を publish
+  - `request_auto_robot_move(ChassisAct::ACT3_START, forest_order, collect_kfs_type)`
 - `down`
-  - `publish_robot_move(ChassisAct::ACT3_START, {}, {})`
+  - `request_auto_robot_move(ChassisAct::ACT1_START, {}, {})`
+
+### 起動直後の開始要求
+
+- `map -> base_link` TF がまだ無い間に `triangle` / `cross` / `square` / `down` を押した場合は、`RobotMove` を pending として保持します。
+- TF が利用可能になった周期で、その pending 要求を 1 回だけ publish します。
+- `reset_robot()` 実行時は pending 要求を破棄します。
 
 ### 自動回収の挙動
 
-- `ACT1` / `ACT2` 中は `map -> base_link` TF を見て、回収範囲の長方形に入ったかを判定します。
+- `ACT2` / `ACT3` 中は `map -> base_link` TF を見て、回収範囲の長方形に入ったかを判定します。
 - 判定対象の中心座標は `inner_collect_kfs_center_pos.*` / `outer_collect_kfs_center_pos.*` です。
 - `zone == blue` のときは `x` と `yaw` を反転して使用します。
 - `collect_kfs_offset` を、使用する KFS 機構に応じて中心座標へ加えます。
@@ -329,6 +338,7 @@ LED は timer callback の最後に 1 回だけ更新されます。
   - 複数の対象を見ている場合でも、どれか 1 つでも範囲内なら緑を優先
   - 範囲外なら赤
   - どちらも無ければ `AUTO` の base 色である黄色
+- `ACT1` と `ACT4` は KFS 自動回収を起動せず、通常の軌道追従だけを行います。
 
 ### 制約
 

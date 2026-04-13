@@ -29,6 +29,8 @@ from run_trajectory_planner import RunTrajectoryPlanner
 
 
 class MainWindow(QMainWindow):
+    WAYPOINT_DISPLAY_SIG_DIGITS = 15
+
     def __init__(self) -> None:
         super().__init__()
 
@@ -774,14 +776,16 @@ class MainWindow(QMainWindow):
 
             for i in range(n):
                 idx_item = QTableWidgetItem(str(i))
-                x_item = QTableWidgetItem(f"{x_wp[i]:.3f}")
-                y_item = QTableWidgetItem(f"{y_wp[i]:.3f}")
+                x_item = QTableWidgetItem(self._format_waypoint_value(x_wp[i]))
+                y_item = QTableWidgetItem(self._format_waypoint_value(y_wp[i]))
                 theta_val = theta_wp[i]
                 v_val = v_trans_wp[i]
                 theta_item = QTableWidgetItem(
-                    "" if not math.isfinite(theta_val) else f"{theta_val:.3f}"
+                    "" if not math.isfinite(theta_val) else self._format_waypoint_value(theta_val)
                 )
-                v_item = QTableWidgetItem("" if not math.isfinite(v_val) else f"{v_val:.3f}")
+                v_item = QTableWidgetItem(
+                    "" if not math.isfinite(v_val) else self._format_waypoint_value(v_val)
+                )
 
                 self.table.setItem(i, 0, idx_item)
                 self.table.setItem(i, 1, x_item)
@@ -790,6 +794,12 @@ class MainWindow(QMainWindow):
                 self.table.setItem(i, 4, v_item)
         finally:
             self.table.blockSignals(False)
+
+    def _format_waypoint_value(self, value: float) -> str:
+        """waypoint テーブル向けに double 相当の桁数で表示する"""
+        if value == 0.0:
+            value = 0.0
+        return format(value, f".{self.WAYPOINT_DISPLAY_SIG_DIGITS}g")
 
     def on_waypoint_item_changed(self, item: QTableWidgetItem) -> None:
         """waypoint テーブルの編集を runner とプロットへ即時反映する"""
