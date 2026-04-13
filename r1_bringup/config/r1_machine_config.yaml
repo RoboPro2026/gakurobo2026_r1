@@ -79,9 +79,9 @@ r1_chassis_control_node:
       11: [2.55, 8.55, 0.0]
       12: [0.6, 6.55, 1.57]
     # KFS回収時のオフセット（front_kfsかrear_kfsのうち、遠い方に適応する）
-    collect_kfs_offset: 0.6
+    collect_kfs_offset: 0.838
     # 減速時の速度
-    decel_speed: 0.5
+    decel_speed: 0.4
 r1_chassis_velocity_control_node:
   ros__parameters:
     # true のとき input_cmd_vel_topic と /odometry から PID 補正した output_cmd_vel_topic を出す
