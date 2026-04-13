@@ -24,7 +24,8 @@
 - 各機構へ位置指令、速度指令、GPIO 指令、原点検出指令を publish する。
 - `/set_mecanum_yaw`、`/set_swerve_drive_yaw`、`/set_odometry`、`/initialpose` を publish して姿勢・自己位置を初期化する。
 - `PS` ボタン押下時に `/r1_machine_initialize` を publish して、`r1_machine_manage_node` 側の復帰処理を開始する。
-- 自動回収中は `map -> base_link` TF を用いて KFS 回収範囲への進入判定を行う。
+- KFS 自動回収中は `map -> base_link` TF を用いて KFS 回収範囲への進入判定を行う。
+- KFS 自動回収の有効/無効は内部状態 `kfs_auto_collect_status` で管理し、`chassis_act_status_` とは独立に動作する。
 - `AUTO` の開始要求は `map -> base_link` TF がまだ無い場合に即時 publish せず、自己位置推定が立ち上がるまで待機します。
 
 ## 状態遷移
@@ -279,6 +280,29 @@ LED は timer callback の最後に 1 回だけ更新されます。
 - `l2` / `r2`
   - `kfs_rz` を `-0.01 / +0.01`
 
+### `MANUAL / MODE8_AUTO_COLLECT_KFS`
+
+- `triangle`
+  - 内回り KFS 自動回収を開始
+- `cross`
+  - 外回り KFS 自動回収を開始
+- `square`
+  - KFS 自動回収を停止
+- `circle`
+  - 開始位置リセット
+  - 併せて KFS 自動回収も停止
+- `up` / `down`
+  - `spear_x` を `+0.01 / -0.01`
+- `left`
+  - 前後 KFS のポンプを停止
+  - バルブを 250 ms だけ開けてから閉じる
+- `l1` / `r1`
+  - `kfs_fx` を `-0.01 / +0.01`
+- `l2` / `r2`
+  - `kfs_fz` を `-0.01 / +0.01`
+
+この mode では手動操縦を続けながら、KFS 自動回収だけを並行で動かせます。
+
 ### `MANUAL / MODE6_R2_LIFT`
 
 - `triangle` を押している間
@@ -313,9 +337,11 @@ LED は timer callback の最後に 1 回だけ更新されます。
 - `cross`
   - 内回り KFS 回収用の `RobotMove` を publish
   - `request_auto_robot_move(ChassisAct::ACT2_START, forest_order, collect_kfs_type)`
+  - 併せて内回り KFS 自動回収を開始
 - `square`
   - 外回り KFS 回収用の `RobotMove` を publish
   - `request_auto_robot_move(ChassisAct::ACT3_START, forest_order, collect_kfs_type)`
+  - 併せて外回り KFS 自動回収を開始
 - `down`
   - `request_auto_robot_move(ChassisAct::ACT1_START, {}, {})`
 
@@ -327,7 +353,8 @@ LED は timer callback の最後に 1 回だけ更新されます。
 
 ### 自動回収の挙動
 
-- `ACT2` / `ACT3` 中は `map -> base_link` TF を見て、回収範囲の長方形に入ったかを判定します。
+- `kfs_auto_collect_status != NONE` の間は `map -> base_link` TF を見て、回収範囲の長方形に入ったかを判定します。
+- `INNER_ACTIVE` では `inner_collect_kfs_center_pos.*` を、`OUTER_ACTIVE` では `outer_collect_kfs_center_pos.*` を使います。
 - 判定対象の中心座標は `inner_collect_kfs_center_pos.*` / `outer_collect_kfs_center_pos.*` です。
 - `zone == blue` のときは `x` と `yaw` を反転して使用します。
 - `collect_kfs_offset` を、使用する KFS 機構に応じて中心座標へ加えます。
@@ -339,6 +366,7 @@ LED は timer callback の最後に 1 回だけ更新されます。
   - 範囲外なら赤
   - どちらも無ければ `AUTO` の base 色である黄色
 - `ACT1` と `ACT4` は KFS 自動回収を起動せず、通常の軌道追従だけを行います。
+- `ACT2` / `ACT3` が終了または中断されたときは、対応する KFS 自動回収も停止します。
 
 ### 制約
 
@@ -350,6 +378,7 @@ LED は timer callback の最後に 1 回だけ更新されます。
 `reset_robot(is_start_zone)` では次を行います。
 
 - 各 step カウンタを初期化
+- `kfs_auto_collect_status` を `NONE` に戻し、KFS 自動回収の tracking 状態と収納用タイマを破棄
 - メンバー変数 `zone_` を `blue` / `red` として検証します
 - `zone_ == blue` なら開始姿勢を `(-5.5, 0.5, 0.0)` に設定します
 - `zone_ == red` なら開始姿勢を `(5.5, 0.5, 0.0)` に設定します

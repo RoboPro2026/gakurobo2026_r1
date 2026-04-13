@@ -116,6 +116,20 @@ public:
     double blink_period_s = 0.0;
   };
 
+  enum class KfsAutoCollectStatus
+  {
+    NONE,
+    INNER_ACTIVE,
+    OUTER_ACTIVE,
+  };
+
+  struct KfsAutoCollectPlan
+  {
+    KfsAutoCollectStatus status = KfsAutoCollectStatus::NONE;
+    std::vector<int> forest_order;
+    std::vector<std::string> kfs_mechanism_type;
+  };
+
   std::shared_ptr<StateMachine> state_machine_;
   std::shared_ptr<PS4> ps4_;
   SimpleTrapezoid simple_trapezoid_vx_;
@@ -433,6 +447,15 @@ public:
     ChassisAct act, std::vector<int> forest_order, std::vector<std::string> kfs_mechanism_type);
   void publish_pending_auto_robot_move_if_ready(void);
   geometry_msgs::msg::PoseStamped get_map_pos(void);
+  bool build_inner_kfs_auto_collect_plan(
+    std::vector<int> & forest_order, std::vector<std::string> & collect_kfs_type) const;
+  bool build_outer_kfs_auto_collect_plan(
+    std::vector<int> & forest_order, std::vector<std::string> & collect_kfs_type) const;
+  void start_kfs_auto_collect(
+    KfsAutoCollectStatus status, std::vector<int> forest_order,
+    std::vector<std::string> kfs_mechanism_type);
+  void stop_kfs_auto_collect(void);
+  void reset_kfs_auto_collect_tracking(void);
   // ========== 各アクチュエータ単体の動作関数 ==========
   // 足回り
   void chassis_move_vel(double vx, double vy, double omega);
@@ -582,10 +605,11 @@ public:
   void auto_act0(void);
   rclcpp::TimerBase::SharedPtr auto_collect_front_storage_yaw_timer_;
   rclcpp::TimerBase::SharedPtr auto_collect_rear_storage_yaw_timer_;
+  KfsAutoCollectPlan kfs_auto_collect_plan_;
   // [12][2]の2次元配列
-  std::vector<std::vector<bool>> auto_act0_within_ =
+  std::vector<std::vector<bool>> kfs_auto_collect_within_ =
     std::vector<std::vector<bool>>(12, std::vector<bool>(2, false));
-  std::vector<std::vector<bool>> auto_act0_prev_within_ =
+  std::vector<std::vector<bool>> kfs_auto_collect_prev_within_ =
     std::vector<std::vector<bool>>(12, std::vector<bool>(2, false));
   bool pending_auto_robot_move_valid_ = false;
   r1_msgs::msg::RobotMove pending_auto_robot_move_;
