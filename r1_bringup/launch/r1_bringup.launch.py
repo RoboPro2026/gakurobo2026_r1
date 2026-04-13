@@ -10,7 +10,7 @@ from launch.actions import (
     SetEnvironmentVariable,
     TimerAction,
 )
-from launch.conditions import IfCondition, LaunchConfigurationEquals, UnlessCondition
+from launch.conditions import IfCondition, UnlessCondition
 from launch.launch_description_sources import (
     AnyLaunchDescriptionSource,
     PythonLaunchDescriptionSource,
@@ -63,8 +63,6 @@ def generate_launch_description():
         name="r1_chassis_control_node",
         parameters=[param_file, zone_parameter],
         arguments=["--ros-args", "--log-level", "info"],
-        # autoのときのみ起動
-        condition=LaunchConfigurationEquals("robot_control_mode", "auto"),
     )
 
     r1_chassis_velocity_control_node = Node(

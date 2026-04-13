@@ -32,16 +32,43 @@ std::optional<RobotState> parse_robot_control_mode_parameter(std::string_view va
   }
 
   if (normalized == "manual") {
-    return RobotState{MainState::MANUAL, ManualSubState::MODE1_DETECT_ORIGIN};
+    return RobotState{
+      MainState::READY, OperationMode::MODE1_DETECT_ORIGIN, ChassisControlMode::MANUAL};
   }
   if (normalized == "auto") {
-    return RobotState{MainState::AUTO, AutoSubState::ACT0};
+    return RobotState{
+      MainState::READY, OperationMode::MODE9_AUTO_CHASSIS, ChassisControlMode::MANUAL};
   }
 
   return std::nullopt;
 }
 
 std::string robot_control_mode_parameter_help() { return "Accepted values: manual, auto."; }
+
+OperationMode next_operation_mode(OperationMode mode)
+{
+  switch (mode) {
+    case OperationMode::MODE1_DETECT_ORIGIN:
+      return OperationMode::MODE2_POLE;
+    case OperationMode::MODE2_POLE:
+      return OperationMode::MODE3_SPEAR;
+    case OperationMode::MODE3_SPEAR:
+      return OperationMode::MODE4_FKFS;
+    case OperationMode::MODE4_FKFS:
+      return OperationMode::MODE5_RKFS;
+    case OperationMode::MODE5_RKFS:
+      return OperationMode::MODE6_R2_LIFT;
+    case OperationMode::MODE6_R2_LIFT:
+      return OperationMode::MODE7_SPEAR_ATTACK;
+    case OperationMode::MODE7_SPEAR_ATTACK:
+      return OperationMode::MODE8_AUTO_COLLECT_KFS;
+    case OperationMode::MODE8_AUTO_COLLECT_KFS:
+      return OperationMode::MODE9_AUTO_CHASSIS;
+    case OperationMode::MODE9_AUTO_CHASSIS:
+    default:
+      return OperationMode::MODE1_DETECT_ORIGIN;
+  }
+}
 
 const char * kfs_auto_collect_status_name(R1MainNode::KfsAutoCollectStatus status)
 {
@@ -836,55 +863,41 @@ R1MainNode::LedPattern R1MainNode::resolve_base_led_pattern(void)
     // 赤点滅
     return LedPattern{true, {50, 0, 0}, 0.25};
   }
-  if (state.main == MainState::AUTO) {
-    // 黄固定
-    return LedPattern{true, {50, 50, 0}, 0};
-  }
-  if (state.main != MainState::MANUAL) {
+  if (state.main != MainState::READY) {
     // 想定外状態は消灯
     return LedPattern{};
   }
 
-  if (const auto * manual_sub = std::get_if<ManualSubState>(&state.sub)) {
-    if (*manual_sub == ManualSubState::MODE1_DETECT_ORIGIN) {
-      // 青固定
-      return LedPattern{true, {0, 0, 50}, 0};
-    }
-    if (*manual_sub == ManualSubState::MODE2_POLE) {
-      // 緑固定
-      return LedPattern{true, {0, 50, 0}, 0};
-    }
-    if (*manual_sub == ManualSubState::MODE3_SPEAR) {
-      // 水色固定
-      return LedPattern{true, {0, 50, 50}, 0};
-    }
-    if (*manual_sub == ManualSubState::MODE4_FKFS) {
-      // 赤固定
-      return LedPattern{true, {50, 0, 0}, 0};
-    }
-    if (*manual_sub == ManualSubState::MODE5_RKFS) {
-      // 紫固定
-      return LedPattern{true, {50, 0, 50}, 0};
-    }
-    if (*manual_sub == ManualSubState::MODE6_R2_LIFT) {
-      // 黄固定
-      return LedPattern{true, {50, 50, 0}, 0};
-    }
-    if (*manual_sub == ManualSubState::MODE7_SPEAR_ATTACK) {
-      // 白固定
-      return LedPattern{true, {50, 50, 50}, 0};
-    }
-    if (*manual_sub == ManualSubState::MODE8_AUTO_COLLECT_KFS) {
-      // オレンジ固定
-      return LedPattern{true, {50, 25, 0}, 0};
-    }
-    if (*manual_sub == ManualSubState::TEST) {
-      // 白点滅
-      return LedPattern{true, {50, 50, 50}, 0.25};
-    }
+  if (state.operation_mode == OperationMode::MODE1_DETECT_ORIGIN) {
+    return LedPattern{true, {0, 0, 50}, 0};
+  }
+  if (state.operation_mode == OperationMode::MODE2_POLE) {
+    return LedPattern{true, {0, 50, 0}, 0};
+  }
+  if (state.operation_mode == OperationMode::MODE3_SPEAR) {
+    return LedPattern{true, {0, 50, 50}, 0};
+  }
+  if (state.operation_mode == OperationMode::MODE4_FKFS) {
+    return LedPattern{true, {50, 0, 0}, 0};
+  }
+  if (state.operation_mode == OperationMode::MODE5_RKFS) {
+    return LedPattern{true, {50, 0, 50}, 0};
+  }
+  if (state.operation_mode == OperationMode::MODE6_R2_LIFT) {
+    return LedPattern{true, {50, 50, 0}, 0};
+  }
+  if (state.operation_mode == OperationMode::MODE7_SPEAR_ATTACK) {
+    return LedPattern{true, {50, 50, 50}, 0};
+  }
+  if (state.operation_mode == OperationMode::MODE8_AUTO_COLLECT_KFS) {
+    return LedPattern{true, {50, 25, 0}, 0};
+  }
+  if (state.operation_mode == OperationMode::MODE9_AUTO_CHASSIS) {
+    // TODO: 9の色は変える
+    return LedPattern{true, {50, 50, 0}, 0};
   }
 
-  // manual substate が未定義なら消灯
+  // 未定義なら消灯
   return LedPattern{};
 }
 
@@ -1143,6 +1156,23 @@ void R1MainNode::publish_pending_auto_robot_move_if_ready(void)
   pending_auto_robot_move_valid_ = false;
 }
 
+void R1MainNode::start_auto_chassis(
+  ChassisAct act, std::vector<int> forest_order, std::vector<std::string> kfs_mechanism_type)
+{
+  auto_chassis_status_ = act;
+  request_auto_robot_move(act, std::move(forest_order), std::move(kfs_mechanism_type));
+}
+
+void R1MainNode::clear_auto_chassis_state(bool stop_kfs_auto_collect)
+{
+  if (stop_kfs_auto_collect) {
+    this->stop_kfs_auto_collect();
+  }
+  auto_chassis_status_ = ChassisAct::NONE;
+  pending_auto_robot_move_valid_ = false;
+  pending_auto_robot_move_ = r1_msgs::msg::RobotMove();
+}
+
 bool R1MainNode::build_inner_kfs_auto_collect_plan(
   std::vector<int> & forest_order, std::vector<std::string> & collect_kfs_type) const
 {
@@ -1226,7 +1256,8 @@ void R1MainNode::reset_kfs_auto_collect_tracking(void)
 }
 
 void R1MainNode::start_kfs_auto_collect(
-  KfsAutoCollectStatus status, std::vector<int> forest_order, std::vector<std::string> kfs_mechanism_type)
+  KfsAutoCollectStatus status, std::vector<int> forest_order,
+  std::vector<std::string> kfs_mechanism_type)
 {
   if (status == KfsAutoCollectStatus::NONE) {
     stop_kfs_auto_collect();
@@ -1235,8 +1266,7 @@ void R1MainNode::start_kfs_auto_collect(
 
   if (forest_order.empty() || forest_order.size() != kfs_mechanism_type.size()) {
     RCLCPP_ERROR(
-      this->get_logger(),
-      "invalid kfs auto collect plan: forest_order=%zu, kfs_mechanism_type=%zu",
+      this->get_logger(), "invalid kfs auto collect plan: forest_order=%zu, kfs_mechanism_type=%zu",
       forest_order.size(), kfs_mechanism_type.size());
     return;
   }
@@ -2330,13 +2360,14 @@ void R1MainNode::auto_collect_kfs_task(void)
   }
 
   const bool is_inner = (kfs_auto_collect_plan_.status == KfsAutoCollectStatus::INNER_ACTIVE);
-  if (kfs_auto_collect_plan_.forest_order.size() != kfs_auto_collect_plan_.kfs_mechanism_type.size()) {
+  if (
+    kfs_auto_collect_plan_.forest_order.size() !=
+    kfs_auto_collect_plan_.kfs_mechanism_type.size()) {
     RCLCPP_ERROR(
       this->get_logger(),
       "kfs auto collect plan size mismatch during %s: forest_order=%zu, kfs_mechanism_type=%zu",
       kfs_auto_collect_status_name(kfs_auto_collect_plan_.status),
-      kfs_auto_collect_plan_.forest_order.size(),
-      kfs_auto_collect_plan_.kfs_mechanism_type.size());
+      kfs_auto_collect_plan_.forest_order.size(), kfs_auto_collect_plan_.kfs_mechanism_type.size());
     return;
   }
   // TODO: 進行方向と使用する回収機構の順番に応じて、OFFSETをいい感じに適応する
@@ -2356,8 +2387,7 @@ void R1MainNode::auto_collect_kfs_task(void)
     const std::string & mechanism_type = kfs_auto_collect_plan_.kfs_mechanism_type[i];
     if (mechanism_type != "front_kfs" && mechanism_type != "rear_kfs") {
       RCLCPP_ERROR(
-        this->get_logger(), "invalid kfs_mechanism_type in robot_move: %s",
-        mechanism_type.c_str());
+        this->get_logger(), "invalid kfs_mechanism_type in robot_move: %s", mechanism_type.c_str());
       continue;
     }
     double map_x = map_pos.pose.position.x;
@@ -2628,90 +2658,73 @@ void R1MainNode::manual_mode8_auto_collect_kfs(void)
   }
 }
 
-void R1MainNode::auto_act0(void)
+void R1MainNode::manual_mode9_auto_chassis(void)
 {
-  ChassisAct & step = chassis_act_status_;
+  const bool chassis_idle =
+    (chassis_act_status_ == ChassisAct::NONE) && !pending_auto_robot_move_valid_;
 
-  if (step == ChassisAct::NONE) {
-    publish_pending_auto_robot_move_if_ready();
-    auto_collect_kfs_task();
-    if (ps4_->is_pushed_triangle()) {
-      // 位置制御のプログラム実行
-      // spear_xを動かす
-      spear_x_pos_ref(SPEAR_X_MIDDLE_POS);
-      // まずrollを動かす
-      spear_roll_pos_ref(SPEAR_ROLL_VERTICAL_ANGLE);
-      // publish_chassis_act_ref(ChassisAct::ACT0_START);
-      request_auto_robot_move(
-        ChassisAct::ACT0_START, std::vector<int>{}, std::vector<std::string>{});
-    }
-    if (ps4_->is_pushed_circle()) {
-      // 青のスタートゾーン
-      set_mecanum_yaw(0.0);
-      set_odometry(-5.5, 0.5, 0.0);
-      set_initialpose(-5.5, 0.5, 0.0);
-    }
-    if (ps4_->is_pushed_cross()) {
-      std::vector<int> forest_order;
-      std::vector<std::string> collect_kfs_type;
-      if (build_inner_kfs_auto_collect_plan(forest_order, collect_kfs_type)) {
-        request_auto_robot_move(ChassisAct::ACT2_START, forest_order, collect_kfs_type);
-        start_kfs_auto_collect(
-          KfsAutoCollectStatus::INNER_ACTIVE, std::move(forest_order), std::move(collect_kfs_type));
-      }
-    }
-    if (ps4_->is_pushed_square()) {
-      std::vector<int> forest_order;
-      std::vector<std::string> collect_kfs_type;
-      if (build_outer_kfs_auto_collect_plan(forest_order, collect_kfs_type)) {
-        request_auto_robot_move(ChassisAct::ACT3_START, forest_order, collect_kfs_type);
-        start_kfs_auto_collect(
-          KfsAutoCollectStatus::OUTER_ACTIVE, std::move(forest_order), std::move(collect_kfs_type));
-      }
-    }
-    if (ps4_->is_pushed_down()) {
-      // 位置制御のプログラム実行
-      request_auto_robot_move(
-        ChassisAct::ACT1_START, std::vector<int>{}, std::vector<std::string>{});
-    }
+  if (!chassis_idle) {
+    return;
+  }
 
-    if (ps4_->is_pushed_right()) {
-      // 原点検出のプログラムを実行
-      kfs_fx_detect_origin();
-      kfs_fz_detect_origin();
-      kfs_fyaw_detect_origin();
-      kfs_rx_detect_origin();
-      kfs_rz_detect_origin();
-      kfs_ryaw_detect_origin();
+  if (ps4_->is_pushed_triangle()) {
+    spear_x_pos_ref(SPEAR_X_MIDDLE_POS);
+    spear_roll_pos_ref(SPEAR_ROLL_VERTICAL_ANGLE);
+    start_auto_chassis(ChassisAct::ACT0_START, std::vector<int>{}, std::vector<std::string>{});
+  } else if (ps4_->is_pushed_circle()) {
+    set_mecanum_yaw(0.0);
+    set_odometry(-5.5, 0.5, 0.0);
+    set_initialpose(-5.5, 0.5, 0.0);
+  } else if (ps4_->is_pushed_cross()) {
+    std::vector<int> forest_order;
+    std::vector<std::string> collect_kfs_type;
+    if (build_inner_kfs_auto_collect_plan(forest_order, collect_kfs_type)) {
+      start_auto_chassis(ChassisAct::ACT2_START, forest_order, collect_kfs_type);
+      start_kfs_auto_collect(
+        KfsAutoCollectStatus::INNER_ACTIVE, std::move(forest_order), std::move(collect_kfs_type));
     }
-    double vx_ref = CHASSIS_MAX_VELOCITY * (-1) * ps4_->get_left_stick_x();
-    double vy_ref = CHASSIS_MAX_VELOCITY * ps4_->get_left_stick_y();
-    double vz_ref = CHASSIS_MAX_OMEGA * ps4_->get_right_stick_x();
-    chassis_move_vel(vx_ref, vy_ref, vz_ref);
-  } else if (step == ChassisAct::ACT0_START) {
-    // 何もしない
-  } else if (step == ChassisAct::ACT0) {
-    // 何もしない
-  } else if (step == ChassisAct::ACT0_FINISH) {
+  } else if (ps4_->is_pushed_square()) {
+    std::vector<int> forest_order;
+    std::vector<std::string> collect_kfs_type;
+    if (build_outer_kfs_auto_collect_plan(forest_order, collect_kfs_type)) {
+      start_auto_chassis(ChassisAct::ACT3_START, forest_order, collect_kfs_type);
+      start_kfs_auto_collect(
+        KfsAutoCollectStatus::OUTER_ACTIVE, std::move(forest_order), std::move(collect_kfs_type));
+    }
+  } else if (ps4_->is_pushed_down()) {
+    start_auto_chassis(ChassisAct::ACT1_START, std::vector<int>{}, std::vector<std::string>{});
+  }
+  if (ps4_->is_pushed_right()) {
+    kfs_fx_detect_origin();
+    kfs_fz_detect_origin();
+    kfs_fyaw_detect_origin();
+    kfs_rx_detect_origin();
+    kfs_rz_detect_origin();
+    kfs_ryaw_detect_origin();
+  }
+}
+
+void R1MainNode::update_auto_chassis_task(void)
+{
+  publish_pending_auto_robot_move_if_ready();
+
+  const ChassisAct step = chassis_act_status_;
+  if (step != ChassisAct::NONE) {
+    auto_chassis_status_ = step;
+  } else if (!pending_auto_robot_move_valid_) {
+    auto_chassis_status_ = ChassisAct::NONE;
+  }
+
+  if (
+    step == ChassisAct::ACT0_FINISH || step == ChassisAct::ACT1_FINISH ||
+    step == ChassisAct::ACT2_FINISH || step == ChassisAct::ACT3_FINISH ||
+    step == ChassisAct::ACT4_FINISH) {
+    if (step == ChassisAct::ACT2_FINISH || step == ChassisAct::ACT3_FINISH) {
+      stop_kfs_auto_collect();
+    }
     publish_chassis_act_ref(ChassisAct::NONE);
-  } else if (step == ChassisAct::ACT1) {
-    // 何もしない
-  } else if (step == ChassisAct::ACT1_FINISH) {
-    publish_chassis_act_ref(ChassisAct::NONE);
-  } else if (step == ChassisAct::ACT2) {
-    auto_collect_kfs_task();
-  } else if (step == ChassisAct::ACT2_FINISH) {
-    stop_kfs_auto_collect();
-    publish_chassis_act_ref(ChassisAct::NONE);
-  } else if (step == ChassisAct::ACT3) {
-    auto_collect_kfs_task();
-  } else if (step == ChassisAct::ACT3_FINISH) {
-    stop_kfs_auto_collect();
-    publish_chassis_act_ref(ChassisAct::NONE);
-  } else if (step == ChassisAct::ACT4) {
-    // 何もしない
-  } else if (step == ChassisAct::ACT4_FINISH) {
-    publish_chassis_act_ref(ChassisAct::NONE);
+    clear_auto_chassis_state(false);
+    return;
   }
 
   if (ps4_->is_pushed_r2()) {
@@ -2727,6 +2740,8 @@ void R1MainNode::auto_act0(void)
       stop_kfs_auto_collect();
     } else if (step == ChassisAct::ACT4) {
       publish_robot_move(ChassisAct::ACT4_FINISH, std::vector<int>{}, std::vector<std::string>{});
+    } else if (pending_auto_robot_move_valid_) {
+      clear_auto_chassis_state(true);
     }
   }
 }
@@ -2753,7 +2768,7 @@ void R1MainNode::reset_step(void)
   manual_mode7_spear_attack_task_step_ = DEFAULT_STEP;
   manual_mode7_spear_hand_valve1_step_ = DEFAULT_STEP;
   stop_kfs_auto_collect();
-  pending_auto_robot_move_valid_ = false;
+  clear_auto_chassis_state(false);
   publish_chassis_act_stop();
 }
 
@@ -2803,166 +2818,100 @@ void R1MainNode::reset_robot(bool is_start_zone)
 
 void R1MainNode::manual_task(void)
 {
-  static bool stop_actuator_flag = false;
   auto current_state = state_machine_->get_current_state();
-  if (ps4_->is_connected() == false) {
-    // 未接続のときはアクチュエータ停止
-    if (stop_actuator_flag == false) {
-      stop_actuator();
-      stop_actuator_flag = true;
-    }
+  // スピア作成時だけロボットの速度を落とす
+  double vx_max = CHASSIS_MAX_VELOCITY;
+  double vy_max = CHASSIS_MAX_VELOCITY;
+  double vz_max = CHASSIS_MAX_OMEGA;
+  if (current_state.operation_mode == OperationMode::MODE3_SPEAR && !ps4_->is_pushing_cross()) {
+    vx_max = CHASSIS_MAKE_SPEAR_VELOCITY;
+    vy_max = CHASSIS_MAKE_SPEAR_VELOCITY;
+    vz_max = CHASSIS_MAKE_SPEAR_OMEGA;
+  }
 
-  } else {
-    stop_actuator_flag = false;
-    // 共通タスク
-    // スピア作成時だけロボットの速度を落とす
-    double vx_max = CHASSIS_MAX_VELOCITY;
-    double vy_max = CHASSIS_MAX_VELOCITY;
-    double vz_max = CHASSIS_MAX_OMEGA;
-    if (const auto * manual_sub = std::get_if<ManualSubState>(&current_state.sub)) {
-      if (*manual_sub == ManualSubState::MODE3_SPEAR && !ps4_->is_pushing_cross()) {
-        // スピア作成中は速度を落とす
-        vx_max = CHASSIS_MAKE_SPEAR_VELOCITY;
-        vy_max = CHASSIS_MAKE_SPEAR_VELOCITY;
-        vz_max = CHASSIS_MAKE_SPEAR_OMEGA;
-      }
-    }
+  if (current_state.chassis_control_mode == ChassisControlMode::MANUAL) {
     double vx_ref = vx_max * (-1) * ps4_->get_left_stick_x();
     double vy_ref = vy_max * ps4_->get_left_stick_y();
     double vz_ref = vz_max * ps4_->get_right_stick_x();
-    // 台形制御で速度を滑らかに変化させる
-    // double vx = simple_trapezoid_vx_.update(vx_ref);
-    // double vy = simple_trapezoid_vy_.update(vy_ref);
-    // double vz = simple_trapezoid_omega_.update(vz_ref);
     chassis_move_vel(vx_ref, vy_ref, vz_ref);
-
-    // optionsが押されたときは電源をOFFにする
-    if (ps4_->is_pushed_options()) {
-      sabacan_power_ref(!sabacan_is_ems_);
-    }
-    // psボタンが押されたときはsabacan resetを行う
-    if (ps4_->is_pushed_ps()) {
-      is_initialized_ = false;
-      reset_robot(true);
-      publish_r1_machine_initialize();
-    }
-    // shareボタンが押されたときはモードを切り替える
-    if (ps4_->is_pushed_share()) {
-      if (const auto * manual_sub = std::get_if<ManualSubState>(&current_state.sub)) {
-        if (*manual_sub == ManualSubState::MODE1_DETECT_ORIGIN) {
-          state_machine_->set_next_state({MainState::MANUAL, ManualSubState::MODE2_POLE});
-        } else if (*manual_sub == ManualSubState::MODE2_POLE) {
-          state_machine_->set_next_state({MainState::MANUAL, ManualSubState::MODE3_SPEAR});
-        } else if (*manual_sub == ManualSubState::MODE3_SPEAR) {
-          state_machine_->set_next_state({MainState::MANUAL, ManualSubState::MODE4_FKFS});
-        } else if (*manual_sub == ManualSubState::MODE4_FKFS) {
-          state_machine_->set_next_state({MainState::MANUAL, ManualSubState::MODE5_RKFS});
-        } else if (*manual_sub == ManualSubState::MODE5_RKFS) {
-          state_machine_->set_next_state({MainState::MANUAL, ManualSubState::MODE6_R2_LIFT});
-        } else if (*manual_sub == ManualSubState::MODE6_R2_LIFT) {
-          state_machine_->set_next_state({MainState::MANUAL, ManualSubState::MODE7_SPEAR_ATTACK});
-        } else if (*manual_sub == ManualSubState::MODE7_SPEAR_ATTACK) {
-          state_machine_->set_next_state(
-            {MainState::MANUAL, ManualSubState::MODE8_AUTO_COLLECT_KFS});
-        } else if (*manual_sub == ManualSubState::MODE8_AUTO_COLLECT_KFS) {
-          state_machine_->set_next_state({MainState::MANUAL, ManualSubState::MODE1_DETECT_ORIGIN});
-        }
-      }
-    }
-
-    // 初期化が行われていない場合はこれ以降の処理は実行しない
-    // TODO: 初期化の待ち時間が面倒だったら、この処理はなくす
-    if (is_initialized_ == false) {
-      return;
-    }
-
-    // 状態に応じて、各タスクを実行
-    if (const auto * manual_sub = std::get_if<ManualSubState>(&current_state.sub)) {
-      if (*manual_sub == ManualSubState::MODE1_DETECT_ORIGIN) {
-        manual_mode1_detect_origin();
-      } else if (*manual_sub == ManualSubState::MODE2_POLE) {
-        manual_mode2_pole();
-      } else if (*manual_sub == ManualSubState::MODE3_SPEAR) {
-        manual_mode3_spear();
-      } else if (*manual_sub == ManualSubState::MODE4_FKFS) {
-        manual_mode4_fkfs();
-      } else if (*manual_sub == ManualSubState::MODE5_RKFS) {
-        manual_mode5_rkfs();
-      } else if (*manual_sub == ManualSubState::MODE6_R2_LIFT) {
-        manual_mode6_r2_lift();
-      } else if (*manual_sub == ManualSubState::MODE7_SPEAR_ATTACK) {
-        manual_mode7_spear_attack();
-      } else if (*manual_sub == ManualSubState::MODE8_AUTO_COLLECT_KFS) {
-        manual_mode8_auto_collect_kfs();
-      }
-    }
-
-    // NOTE: 実験のために一度手動操縦のときにも回収動作を行えるようにする
-    auto_collect_kfs_task();
   }
-}
 
-void R1MainNode::auto_task(void)
-{
-  static bool stop_actuator_flag = false;
-  auto current_state = state_machine_->get_current_state();
-  if (ps4_->is_connected() == false) {
-    // 未接続のときはアクチュエータ停止
-    if (stop_actuator_flag == false) {
-      stop_actuator();
-      stop_actuator_flag = true;
-    }
-
-  } else {
-    stop_actuator_flag = false;
-    // 共通タスク
-
-    // optionsが押されたときは電源をOFFにする
-    if (ps4_->is_pushed_options()) {
-      sabacan_power_ref(!sabacan_is_ems_);
-    }
-    // psボタンが押されたときはsabacan resetを行う
-    if (ps4_->is_pushed_ps()) {
-      is_initialized_ = false;
-      reset_robot(true);
-      publish_r1_machine_initialize();
-    }
-    // shareボタンが押されたときはモードを切り替える
-    if (ps4_->is_pushed_share()) {
-      if (const auto * auto_sub = std::get_if<AutoSubState>(&current_state.sub)) {
-        if (*auto_sub == AutoSubState::ACT0) {
-          state_machine_->set_next_state({MainState::AUTO, AutoSubState::ACT0});
-        }
-      }
-    }
-
-    // 初期化が行われていない場合はこれ以降の処理は実行しない
-    // TODO: 初期化の待ち時間が面倒だったら、この処理はなくす
-    if (is_initialized_ == false) {
-      return;
-    }
-
-    // 状態に応じて、各タスクを実行
-    if (const auto * auto_sub = std::get_if<AutoSubState>(&current_state.sub)) {
-      if (*auto_sub == AutoSubState::ACT0) {
-        auto_act0();
-      }
-    }
+  if (current_state.operation_mode == OperationMode::MODE1_DETECT_ORIGIN) {
+    manual_mode1_detect_origin();
+  } else if (current_state.operation_mode == OperationMode::MODE2_POLE) {
+    manual_mode2_pole();
+  } else if (current_state.operation_mode == OperationMode::MODE3_SPEAR) {
+    manual_mode3_spear();
+  } else if (current_state.operation_mode == OperationMode::MODE4_FKFS) {
+    manual_mode4_fkfs();
+  } else if (current_state.operation_mode == OperationMode::MODE5_RKFS) {
+    manual_mode5_rkfs();
+  } else if (current_state.operation_mode == OperationMode::MODE6_R2_LIFT) {
+    manual_mode6_r2_lift();
+  } else if (current_state.operation_mode == OperationMode::MODE7_SPEAR_ATTACK) {
+    manual_mode7_spear_attack();
+  } else if (current_state.operation_mode == OperationMode::MODE8_AUTO_COLLECT_KFS) {
+    manual_mode8_auto_collect_kfs();
+  } else if (current_state.operation_mode == OperationMode::MODE9_AUTO_CHASSIS) {
+    manual_mode9_auto_chassis();
   }
 }
 
 void R1MainNode::main_task(void)
 {
+  static bool stop_actuator_flag = false;
   auto current_state = state_machine_->get_current_state();
   if (current_state.main == MainState::IDLE) {
     idle_task();
-  } else if (current_state.main == MainState::EMERGENCY) {
-    emergency_task();
-  } else if (current_state.main == MainState::MANUAL) {
-    manual_task();
-  } else if (current_state.main == MainState::AUTO) {
-    auto_task();
+    return;
   }
+  if (current_state.main == MainState::EMERGENCY) {
+    emergency_task();
+    return;
+  }
+  if (current_state.main != MainState::READY) {
+    return;
+  }
+
+  if (ps4_->is_connected() == false) {
+    if (stop_actuator_flag == false) {
+      stop_actuator();
+      stop_actuator_flag = true;
+    }
+    auto next_state = current_state;
+    next_state.chassis_control_mode = ChassisControlMode::HOLD;
+    state_machine_->set_next_state(next_state);
+    return;
+  }
+
+  stop_actuator_flag = false;
+
+  auto next_state = current_state;
+  if (ps4_->is_pushed_options()) {
+    sabacan_power_ref(!sabacan_is_ems_);
+  }
+  if (ps4_->is_pushed_ps()) {
+    is_initialized_ = false;
+    reset_robot(true);
+    publish_r1_machine_initialize();
+    return;
+  }
+  if (ps4_->is_pushed_share()) {
+    next_state.operation_mode = next_operation_mode(current_state.operation_mode);
+  }
+
+  next_state.chassis_control_mode = (chassis_act_status_ == ChassisAct::NONE)
+                                      ? ChassisControlMode::MANUAL
+                                      : ChassisControlMode::AUTO;
+  state_machine_->set_next_state(next_state);
+
+  if (is_initialized_ == false) {
+    return;
+  }
+
+  manual_task();
+  update_auto_chassis_task();
+  auto_collect_kfs_task();
 }
 
 int main(int argc, char * argv[])
