@@ -2770,6 +2770,7 @@ void R1MainNode::reset_step(void)
   manual_mode6_r2_lift_step_ = DEFAULT_STEP;
   manual_mode7_spear_attack_task_step_ = DEFAULT_STEP;
   manual_mode7_spear_hand_valve1_step_ = DEFAULT_STEP;
+  chassis_rotate90 = false;
   stop_kfs_auto_collect();
   clear_auto_chassis_state(false);
   publish_chassis_act_stop();
@@ -2839,6 +2840,9 @@ void R1MainNode::manual_task(void)
     if (
       current_state.operation_mode == OperationMode::MODE9_AUTO_CHASSIS &&
       ps4_->is_pushed_left_stick()) {
+      chassis_rotate90 = !chassis_rotate90;
+    }
+    if (chassis_rotate90) {
       //L2を押している間は赤ゾーンの場合はロボットを90度回転、青ゾーンの場合はロボットを-90度回転させる
       double rotated_vx_ref, rotated_vy_ref;
       if (zone_ == "red") {

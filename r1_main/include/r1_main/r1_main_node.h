@@ -463,6 +463,7 @@ public:
   void stop_kfs_auto_collect(void);
   void reset_kfs_auto_collect_tracking(void);
   // ========== 各アクチュエータ単体の動作関数 ==========
+  bool chassis_rotate90 = false;
   // 足回り
   void chassis_move_vel(double vx, double vy, double omega);
   // KFS回収
