@@ -1689,24 +1689,36 @@ void R1MainNode::manual_mode2_collect_pole_task(void)
     spear_u2_valve(false);
     step++;
   } else if (step == 9) {
-    spear_d1_valve(true);
-    spear_d2_valve(true);
+    roll_pos_ref(SPEAR_ROLL_NORMAL_ANGLE);
     step++;
-  } else if (step == 10) {
-    spear1_pos_ref(SPEAR1_NORMAL_POS);
-    spear2_pos_ref(SPEAR2_NORMAL_POS);
-    spear_pitch1_pos_ref(SPEAR_PITCH1_NORMAL_ANGLE);
-    spear_pitch2_pos_ref(SPEAR_PITCH2_NORMAL_ANGLE);
-    step++;
-  } else if (step == 11) {
-    spear_d1_valve(false);
-    spear_d2_valve(false);
-    step++;
-  } else if (step == 12) {
-    spear_y_pos_ref(SPEAR_Y_NORMAL_POS);
-    RCLCPP_INFO(this->get_logger(), "pole collect task completed");
-    step = 1;
   }
+}
+else if (step == 10)
+{
+  spear_d1_valve(true);
+  spear_d2_valve(true);
+  step++;
+}
+else if (step == 11)
+{
+  spear1_pos_ref(SPEAR1_NORMAL_POS);
+  spear2_pos_ref(SPEAR2_NORMAL_POS);
+  spear_pitch1_pos_ref(SPEAR_PITCH1_NORMAL_ANGLE);
+  spear_pitch2_pos_ref(SPEAR_PITCH2_NORMAL_ANGLE);
+  step++;
+}
+else if (step == 12)
+{
+  spear_d1_valve(false);
+  spear_d2_valve(false);
+  step++;
+}
+else if (step == 13)
+{
+  spear_y_pos_ref(SPEAR_Y_NORMAL_POS);
+  RCLCPP_INFO(this->get_logger(), "pole collect task completed");
+  step = 1;
+}
 }
 
 void R1MainNode::manual_mode2_pole(void)
