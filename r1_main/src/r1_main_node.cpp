@@ -2838,9 +2838,17 @@ void R1MainNode::manual_task(void)
     double vz_ref = vz_max * ps4_->get_right_stick_x();
     if (
       current_state.operation_mode == OperationMode::MODE9_AUTO_CHASSIS && ps4_->is_pushing_l2()) {
-      //L2を押している間はロボットを-90度回転させる。
-      const double rotated_vx_ref = vy_ref;
-      const double rotated_vy_ref = -vx_ref;
+      //L2を押している間は赤ゾーンの場合はロボットを90度回転、青ゾーンの場合はロボットを-90度回転させる
+      double rotated_vx_ref, rotated_vy_ref;
+      if (zone_ == "red") {
+        // 赤ゾーンのとき
+        rotated_vx_ref = -vy_ref;
+        rotated_vy_ref = vx_ref;
+      } else {
+        // 青ゾーンのとき
+        rotated_vx_ref = vy_ref;
+        rotated_vy_ref = -vx_ref;
+      }
       vx_ref = rotated_vx_ref;
       vy_ref = rotated_vy_ref;
     }
