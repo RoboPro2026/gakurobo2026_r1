@@ -215,7 +215,7 @@ r1_main_node:
     spear4_push_vel: 10.0
     # spear_x
     spear_x_normal_pos: 0.0
-    spear_x_middle_pos: 0.2
+    spear_x_middle_pos: 0.25
     spear_x_make_spear1_pos: 0.25
     # spear_x_make_spear1_pos: 0.15
     spear_x_make_spear2_pos: 0.25
@@ -227,7 +227,8 @@ r1_main_node:
     # spear_roll
     spear_roll_normal_angle: 0.0
     spear_roll_inv_normal_angle: 3.14159265358979326
-    spear_roll_vertical_angle: 1.5707963267948966
+    # spear_roll_vertical_angle: 1.5707963267948966
+    spear_roll_vertical_angle: 1.62
     spear_roll_low_attack_angle: 0.0
     spear_roll_middle_attack_angle: 0.5
     spear_roll_high_attack_angle: 0.7
