@@ -2924,13 +2924,67 @@ void R1MainNode::main_task(void)
     publish_r1_machine_initialize();
     return;
   }
+  if (ps4_->is_pushed_right_stick()) {
+    const bool auto_running =
+      (chassis_act_status_ != ChassisAct::NONE) || pending_auto_robot_move_valid_;
+    if (auto_running) {
+      publish_chassis_act_stop();
+      clear_auto_chassis_state(true);
+      chassis_act_status_ = ChassisAct::NONE;
+      next_state.chassis_control_mode = ChassisControlMode::MANUAL;
+    } else if (is_initialized_) {
+      bool started_auto = false;
+      if (current_state.operation_mode == OperationMode::MODE1_DETECT_ORIGIN) {
+        start_auto_chassis(ChassisAct::ACT0_START, std::vector<int>{}, std::vector<std::string>{});
+        started_auto = true;
+      } else if (current_state.operation_mode == OperationMode::MODE2_POLE) {
+        start_auto_chassis(ChassisAct::ACT1_START, std::vector<int>{}, std::vector<std::string>{});
+        started_auto = true;
+      } else if (current_state.operation_mode == OperationMode::MODE3_SPEAR) {
+        std::vector<int> forest_order;
+        std::vector<std::string> collect_kfs_type;
+        if (build_inner_kfs_auto_collect_plan(forest_order, collect_kfs_type)) {
+          start_auto_chassis(ChassisAct::ACT2_START, forest_order, collect_kfs_type);
+          start_kfs_auto_collect(
+            KfsAutoCollectStatus::INNER_ACTIVE, std::move(forest_order),
+            std::move(collect_kfs_type));
+          started_auto = true;
+        }
+      } else if (current_state.operation_mode == OperationMode::MODE4_FKFS) {
+        std::vector<int> forest_order;
+        std::vector<std::string> collect_kfs_type;
+        if (build_outer_kfs_auto_collect_plan(forest_order, collect_kfs_type)) {
+          start_auto_chassis(ChassisAct::ACT3_START, forest_order, collect_kfs_type);
+          start_kfs_auto_collect(
+            KfsAutoCollectStatus::OUTER_ACTIVE, std::move(forest_order),
+            std::move(collect_kfs_type));
+          started_auto = true;
+        }
+      } else if (current_state.operation_mode == OperationMode::MODE5_RKFS) {
+        start_auto_chassis(ChassisAct::ACT4_START, std::vector<int>{}, std::vector<std::string>{});
+        started_auto = true;
+      }
+
+      if (started_auto) {
+        next_state.operation_mode = next_operation_mode(current_state.operation_mode);
+        next_state.chassis_control_mode = ChassisControlMode::AUTO;
+      } else {
+        RCLCPP_WARN(
+          this->get_logger(),
+          "Right stick auto advance is not supported in operation_mode=%s",
+          std::string(magic_enum::enum_name(current_state.operation_mode)).c_str());
+      }
+    }
+  }
   if (ps4_->is_pushed_share()) {
     next_state.operation_mode = next_operation_mode(current_state.operation_mode);
   }
 
-  next_state.chassis_control_mode = (chassis_act_status_ == ChassisAct::NONE)
-                                      ? ChassisControlMode::MANUAL
-                                      : ChassisControlMode::AUTO;
+  const bool chassis_auto_requested =
+    (chassis_act_status_ != ChassisAct::NONE) || pending_auto_robot_move_valid_ ||
+    (auto_chassis_status_ != ChassisAct::NONE);
+  next_state.chassis_control_mode =
+    chassis_auto_requested ? ChassisControlMode::AUTO : ChassisControlMode::MANUAL;
   state_machine_->set_next_state(next_state);
 
   if (is_initialized_ == false) {
