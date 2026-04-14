@@ -12,5 +12,5 @@
 
 Python 依存は [`../requirements.txt`](../requirements.txt) にまとめています。
 
-`r1_ui` のような `ament_python` パッケージでは、build 時の Python interpreter が実行スクリプトに反映されます。  
-そのため、`.venv` の `PyQt6` や OpenCV を使いたい場合は、`.venv` を有効化して依存を入れた状態で `colcon build` してください。
+`r1_aruco_display_node` は Python スクリプトとして install しています。  
+`.venv` の `PyQt6` や OpenCV を使う場合は、実行時にその環境を有効化してください。

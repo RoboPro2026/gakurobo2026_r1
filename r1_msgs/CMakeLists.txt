@@ -22,6 +22,8 @@ rosidl_generate_interfaces(${PROJECT_NAME}
   "msg/Motor.msg"
   "msg/MotorRef.msg"
   "msg/OdometryEncoder.msg"
+  "msg/R1CollectKfs.msg"
+  "msg/R1InitParameter.msg"
   "msg/RobotMove.msg"
   "msg/SwerveDrive.msg"
   DEPENDENCIES std_msgs

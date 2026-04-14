@@ -6,13 +6,14 @@
 
 ## 現在の実装で重要な点
 
-- 起動時の next state はパラメータ `robot_control_mode` で決まります。
+- 起動時の初期状態はパラメータ `robot_control_mode` で決まります。
   - 既定値は `manual`
-  - `robot_control_mode:=manual` のとき `MANUAL / MODE1_DETECT_ORIGIN`
-  - `robot_control_mode:=auto` のとき `AUTO / ACT0`
-- `MainState` には `IDLE` / `EMERGENCY` / `MANUAL` / `AUTO` がありますが、現在のコードには main state を切り替える入力がありません。
-- そのため通常運用では `MANUAL` しか入りません。`AUTO` を使う場合は `robot_control_mode:=auto` を指定して起動します。
-- `PS` ボタンで `reset_robot(true)` と `/r1_machine_initialize` publish を行った後は、`/r1_machine_initialize_done` を受け取るまで `is_initialized_ == false` のため各 mode の実動作は走りません。
+  - `robot_control_mode:=manual` のとき `MainState=READY`、`OperationMode=MODE1_DETECT_ORIGIN`、`ChassisControlMode=MANUAL`
+  - `robot_control_mode:=auto` のとき `MainState=READY`、`OperationMode=MODE1_DETECT_ORIGIN`、`ChassisControlMode=AUTO`
+- 状態は `MainState` / `OperationMode` / `ChassisControlMode` の 3 軸で管理します。
+- `MainState` はライフサイクルと安全状態、`OperationMode` は操作モード、`ChassisControlMode` は足回りの制御権を表します。
+- これとは別に、シャーシ自動シーケンスは内部状態 `auto_chassis_status_`、KFS 自動回収は `kfs_auto_collect_status` で独立管理します。
+- `PS` ボタンで `reset_robot(true)` と `/r1_machine_initialize` publish を行った後は、`/r1_machine_initialize_done` を受け取るまで `is_initialized_ == false` のため各ページの実動作は走りません。
 - `MODE2_POLE` / `MODE3_SPEAR` / `MODE4_FKFS` / `MODE7_SPEAR_ATTACK` は、現状ほとんどの処理がコメントアウトされています。
 - LED 指令は timer 周期ごとに `sabacan_led_update()` で 1 回だけ publish します。各処理は直接 publish せず、LED の要求状態を更新します。
 
@@ -24,19 +25,19 @@
 - 各機構へ位置指令、速度指令、GPIO 指令、原点検出指令を publish する。
 - `/set_mecanum_yaw`、`/set_swerve_drive_yaw`、`/set_odometry`、`/initialpose` を publish して姿勢・自己位置を初期化する。
 - `PS` ボタン押下時に `/r1_machine_initialize` を publish して、`r1_machine_manage_node` 側の復帰処理を開始する。
-- 自動回収中は `map -> base_link` TF を用いて KFS 回収範囲への進入判定を行う。
-- `AUTO` の開始要求は `map -> base_link` TF がまだ無い場合に即時 publish せず、自己位置推定が立ち上がるまで待機します。
+- KFS 自動回収中は `map -> base_link` TF を用いて KFS 回収範囲への進入判定を行う。
+- KFS 自動回収の有効/無効は内部状態 `kfs_auto_collect_status` で管理し、`chassis_act_status_` とは独立に動作する。
+- シャーシ自動開始要求は `map -> base_link` TF がまだ無い場合に即時 publish せず、自己位置推定が立ち上がるまで待機します。
 
 ## 状態遷移
 
 ### MainState
 
 - `IDLE`
+- `READY`
 - `EMERGENCY`
-- `MANUAL`
-- `AUTO`
 
-### ManualSubState
+### OperationMode
 
 - `MODE1_DETECT_ORIGIN`
 - `MODE2_POLE`
@@ -45,18 +46,31 @@
 - `MODE5_RKFS`
 - `MODE6_R2_LIFT`
 - `MODE7_SPEAR_ATTACK`
-- `TEST`
+- `MODE8_AUTO_COLLECT_KFS`
+- `MODE9_AUTO_CHASSIS`
 
-### AutoSubState
+### AutoChassisStatus
 
-- `ACT0`
+- `ChassisAct` 相当の内部状態を保持します。
+- `NONE`
+- `ACT0_START` / `ACT0` / `ACT0_FINISH`
+- `ACT1_START` / `ACT1` / `ACT1_FINISH`
+- `ACT2_START` / `ACT2` / `ACT2_FINISH`
+- `ACT3_START` / `ACT3` / `ACT3_FINISH`
+- `ACT4_START` / `ACT4` / `ACT4_FINISH`
+
+### ChassisControlMode
+
+- `HOLD`
+- `MANUAL`
+- `AUTO`
 
 ### 現在の実行上の挙動
 
 - 起動時は `robot_control_mode` パラメータに応じた初期状態を使用
-- `robot_control_mode:=manual` なら `MANUAL / MODE1_DETECT_ORIGIN`
-- `robot_control_mode:=auto` なら `AUTO / ACT0`
-- `share` ボタンで `MANUAL` 内の sub state を次の順で巡回
+- `robot_control_mode:=manual` なら `OperationMode=MODE1_DETECT_ORIGIN`
+- `robot_control_mode:=auto` でも `OperationMode=MODE1_DETECT_ORIGIN`
+- `share` ボタンで `OperationMode` を次の順で巡回
   - `MODE1_DETECT_ORIGIN`
   - `MODE2_POLE`
   - `MODE3_SPEAR`
@@ -64,7 +78,13 @@
   - `MODE5_RKFS`
   - `MODE6_R2_LIFT`
   - `MODE7_SPEAR_ATTACK`
+  - `MODE8_AUTO_COLLECT_KFS`
+  - `MODE9_AUTO_CHASSIS`
   - `MODE1_DETECT_ORIGIN`
+- `ChassisControlMode` は `chassis_act_status_` に応じて自動更新されます。
+  - `chassis_act_status_ == NONE` のとき `MANUAL`
+  - それ以外のとき `AUTO`
+  - PS4 未接続時は `HOLD`
 ## 主なトピック
 
 ### Subscribe
@@ -126,12 +146,11 @@ LED は timer callback の最後に 1 回だけ更新されます。
 
 - `base` 表示
   - 現在の `next_state` から決まる通常表示です。
-  - `MANUAL` では sub state ごとに色が決まります。
-  - `AUTO` では黄色です。
+  - `READY` 中は `OperationMode` ごとに色が決まります。
   - `EMERGENCY` では赤点滅です。
 - `status` 表示
   - その周期だけ有効な状態表示です。
-  - 現在は `AUTO` の KFS 回収範囲判定に使っており、範囲内なら緑、範囲外なら赤です。
+  - 現在は KFS 回収範囲判定に使っており、範囲内なら緑、範囲外なら赤です。
 - `event` 表示
   - 一定時間だけ `base` / `status` より優先されます。
   - 現在は `reset_robot(true)` 実行後に 1 秒間の青点滅を出します。
@@ -140,7 +159,7 @@ LED は timer callback の最後に 1 回だけ更新されます。
 
 点滅は `r1_main_node` 側で timer 位相から ON/OFF を計算して実現しています。周期指定は秒単位の `blink_period_s` を使い、`SabacanLEDRef` 自体には点滅情報は持たせていません。
 
-### `MANUAL` の base 色
+### `OperationMode` の base 色
 
 - `MODE1_DETECT_ORIGIN`
   - 青
@@ -156,8 +175,10 @@ LED は timer callback の最後に 1 回だけ更新されます。
   - 黄
 - `MODE7_SPEAR_ATTACK`
   - 白
-- `TEST`
-  - 白点滅
+- `MODE8_AUTO_COLLECT_KFS`
+  - オレンジ
+- `MODE9_AUTO_CHASSIS`
+  - 黄
 
 ## 登録している機構
 
@@ -233,18 +254,17 @@ LED は timer callback の最後に 1 回だけ更新されます。
 ### 共通操作
 
 - 左スティック / 右スティック
-  - `MANUAL` 中はそのまま `cmd_vel_topic` へ反映します。
-  - `AUTO` 中も `chassis_act_status_ == NONE` の間は手動速度指令を送れます。
+  - `ChassisControlMode == MANUAL` のとき `cmd_vel_topic` へ反映します。
+  - つまり軌道実行中でない限り、`OperationMode` に関係なく手動速度指令を送れます。
 - `options`
   - `sabacan_power_ref(!sabacan_is_ems_)` を送り、電源基板の EMS をトグルします。
 - `ps`
   - `reset_robot(true)` を実行します。
   - `/r1_machine_initialize` を publish します。
 - `share`
-  - `MANUAL` 中は manual sub state を順送りします。
-  - `AUTO` 中は現状 `ACT0` のままで、実質何も変わりません。
+  - `OperationMode` を順送りします。
 
-### `MANUAL / MODE1_DETECT_ORIGIN`
+### `OperationMode / MODE1_DETECT_ORIGIN`
 
 現在有効なのは次の 2 つだけです。
 
@@ -253,7 +273,7 @@ LED は timer callback の最後に 1 回だけ更新されます。
 - `cross`
   - `kfs_ryaw_detect_origin()`
 
-### `MANUAL / MODE5_RKFS`
+### `OperationMode / MODE5_RKFS`
 
 - `up`
   - `kfs_rz` を 1 段上の preset へ移動
@@ -279,7 +299,30 @@ LED は timer callback の最後に 1 回だけ更新されます。
 - `l2` / `r2`
   - `kfs_rz` を `-0.01 / +0.01`
 
-### `MANUAL / MODE6_R2_LIFT`
+### `OperationMode / MODE8_AUTO_COLLECT_KFS`
+
+- `triangle`
+  - 内回り KFS 自動回収を開始
+- `cross`
+  - 外回り KFS 自動回収を開始
+- `square`
+  - KFS 自動回収を停止
+- `circle`
+  - 開始位置リセット
+  - 併せて KFS 自動回収も停止
+- `up` / `down`
+  - `spear_x` を `+0.01 / -0.01`
+- `left`
+  - 前後 KFS のポンプを停止
+  - バルブを 250 ms だけ開けてから閉じる
+- `l1` / `r1`
+  - `kfs_fx` を `-0.01 / +0.01`
+- `l2` / `r2`
+  - `kfs_fz` を `-0.01 / +0.01`
+
+この mode では手動操縦を続けながら、KFS 自動回収だけを並行で動かせます。
+
+### `OperationMode / MODE6_R2_LIFT`
 
 - `triangle` を押している間
   - 前後の lift を上昇方向へ速度指令
@@ -297,14 +340,14 @@ LED は timer callback の最後に 1 回だけ更新されます。
 
 これらは関数自体は残っていますが、大半の操作がコメントアウトされています。
 
-## `AUTO / ACT0`
+### `OperationMode / MODE9_AUTO_CHASSIS`
 
-`AUTO` は現在デフォルトで入らないため、主にコード読解用メモです。
+`MODE9_AUTO_CHASSIS` は、シャーシ自動シーケンスの開始要求を出すための操作ページです。実際の進行状態は `OperationMode` とは別に `auto_chassis_status_` で保持します。
 
-### `chassis_act_status_ == NONE` のときの操作
+### `chassis_act_status_ == NONE` かつ pending が無いときの操作
 
 - `triangle`
-  - `request_auto_robot_move(ChassisAct::ACT0_START, {}, {})`
+  - `start_auto_chassis(ChassisAct::ACT0_START, {}, {})`
 - `circle`
   - 青ゾーン用の開始姿勢を設定
   - `set_mecanum_yaw(0.0)`
@@ -312,33 +355,42 @@ LED は timer callback の最後に 1 回だけ更新されます。
   - `set_initialpose(-5.5, 0.5, 0.0)`
 - `cross`
   - 内回り KFS 回収用の `RobotMove` を publish
-  - `request_auto_robot_move(ChassisAct::ACT2_START, forest_order, collect_kfs_type)`
+  - `start_auto_chassis(ChassisAct::ACT2_START, forest_order, collect_kfs_type)`
+  - 併せて内回り KFS 自動回収を開始
 - `square`
   - 外回り KFS 回収用の `RobotMove` を publish
-  - `request_auto_robot_move(ChassisAct::ACT3_START, forest_order, collect_kfs_type)`
+  - `start_auto_chassis(ChassisAct::ACT3_START, forest_order, collect_kfs_type)`
+  - 併せて外回り KFS 自動回収を開始
 - `down`
-  - `request_auto_robot_move(ChassisAct::ACT1_START, {}, {})`
+  - `start_auto_chassis(ChassisAct::ACT1_START, {}, {})`
+- `right`
+  - KFS 回収系の原点検出をまとめて実行
 
 ### 起動直後の開始要求
 
 - `map -> base_link` TF がまだ無い間に `triangle` / `cross` / `square` / `down` を押した場合は、`RobotMove` を pending として保持します。
 - TF が利用可能になった周期で、その pending 要求を 1 回だけ publish します。
 - `reset_robot()` 実行時は pending 要求を破棄します。
+- `r2`
+  - 実行中の `ACT*` を中断し、対応する `*_FINISH` を要求します。
+  - pending の開始要求だけが残っている場合は、その pending を破棄します。
 
 ### 自動回収の挙動
 
-- `ACT2` / `ACT3` 中は `map -> base_link` TF を見て、回収範囲の長方形に入ったかを判定します。
+- `kfs_auto_collect_status != NONE` の間は `map -> base_link` TF を見て、回収範囲の長方形に入ったかを判定します。
+- `INNER_ACTIVE` では `inner_collect_kfs_center_pos.*` を、`OUTER_ACTIVE` では `outer_collect_kfs_center_pos.*` を使います。
 - 判定対象の中心座標は `inner_collect_kfs_center_pos.*` / `outer_collect_kfs_center_pos.*` です。
 - `zone == blue` のときは `x` と `yaw` を反転して使用します。
 - `collect_kfs_offset` を、使用する KFS 機構に応じて中心座標へ加えます。
 - `kfs_yaw_delay_time` 秒だけ遅らせて、範囲外へ出た後の収納用 yaw 指令を送ります。
 - `enable_auto_collect_kfs_actuator == false` のときは、範囲判定と LED 更新は続けますが、KFS の位置・yaw・ポンプ・バルブ指令は publish しません。
   - このパラメータは実行中の `ros2 param set` でも切り替えできます。
-- `AUTO` 中は判定結果を LED `status` として反映します。
+- 判定結果は LED `status` として反映します。
   - 複数の対象を見ている場合でも、どれか 1 つでも範囲内なら緑を優先
   - 範囲外なら赤
-  - どちらも無ければ `AUTO` の base 色である黄色
+  - `base` 色は `OperationMode` に従います。
 - `ACT1` と `ACT4` は KFS 自動回収を起動せず、通常の軌道追従だけを行います。
+- `ACT2` / `ACT3` が終了または中断されたときは、対応する KFS 自動回収も停止します。
 
 ### 制約
 
@@ -350,6 +402,8 @@ LED は timer callback の最後に 1 回だけ更新されます。
 `reset_robot(is_start_zone)` では次を行います。
 
 - 各 step カウンタを初期化
+- `auto_chassis_status_` を `NONE` に戻し、pending のシャーシ自動要求を破棄
+- `kfs_auto_collect_status` を `NONE` に戻し、KFS 自動回収の tracking 状態と収納用タイマを破棄
 - メンバー変数 `zone_` を `blue` / `red` として検証します
 - `zone_ == blue` なら開始姿勢を `(-5.5, 0.5, 0.0)` に設定します
 - `zone_ == red` なら開始姿勢を `(5.5, 0.5, 0.0)` に設定します
@@ -435,25 +489,25 @@ bringup 起動時は [`r1_bringup.launch.py`](../../r1_bringup/launch/r1_bringup
 - `register_velocity_axis()` は `MotorRef` を `control_type = "VELOCITY"` で publish します。
 - `publish_*` helper は publish と同時に内部の ref 値も更新します。
 - `set_initialpose()` は既定で 0.2 秒遅延してから `/initialpose` を 1 回だけ publish します。
-- `ps4_->is_connected() == false` の間は、`MANUAL` / `AUTO` とも危険側のアクチュエータを停止します。
+- `ps4_->is_connected() == false` の間は、`auto_chassis_status_` や KFS 自動回収状態に関係なく危険側のアクチュエータを停止します。
 
 ## Launch
 
 - 通常の bringup では [`r1_bringup.launch.py`](../../r1_bringup/launch/r1_bringup.launch.py) から起動します。
 - パラメータは [`r1_machine_config.yaml`](../../r1_bringup/config/r1_machine_config.yaml) から読み込みます。
 - bringup では `cmd_vel_topic` を `/cmd_vel_target` に設定し、[`r1_chassis_velocity_control_node`](../../r1_control/docs/r1_chassis_velocity_control_node.md) を経由して最終的な `/cmd_vel` に変換されます。
-- `robot_control_mode:=manual` なら `MANUAL / MODE1_DETECT_ORIGIN`、`robot_control_mode:=auto` なら `AUTO / ACT0` で起動します。
+- `robot_control_mode:=manual` なら `MainState=READY, OperationMode=MODE1_DETECT_ORIGIN, ChassisControlMode=MANUAL`、`robot_control_mode:=auto` なら `MainState=READY, OperationMode=MODE1_DETECT_ORIGIN, ChassisControlMode=AUTO` で起動します。
 
 ## 起動例
 
-bringup から手動機で起動:
+bringup から `MODE1_DETECT_ORIGIN` で起動:
 
 ```bash
 source ~/ros2_ws/install/setup.bash
 ros2 launch r1_bringup r1_bringup.launch.py robot_control_mode:=manual
 ```
 
-bringup から自動機で起動:
+bringup から足回り `AUTO` / `MODE1_DETECT_ORIGIN` で起動:
 
 ```bash
 source ~/ros2_ws/install/setup.bash

@@ -1,6 +1,6 @@
 # r1_bringup.launch.py
 
-通常の R1 起動に使うメイン launch です。実機モードとシミュレーションモードを `use_sim` で切り替え、`r1_main_node` の起動モードを `robot_control_mode` で切り替えます。parameter file で定義した `/cmd_vel_target -> r1_chassis_velocity_control_node -> /cmd_vel` の速度補正経路もここで組み立てます。必要に応じて `r1_ui` の ArUco 表示ノードも起動できます。
+通常の R1 起動に使うメイン launch です。実機モードとシミュレーションモードを `use_sim` で切り替え、`r1_main_node` の初期状態を `robot_control_mode` で切り替えます。parameter file で定義した `/cmd_vel_target -> r1_chassis_velocity_control_node -> /cmd_vel` の速度補正経路もここで組み立てます。必要に応じて `r1_ui` の ArUco 表示ノードも起動できます。
 
 ## 主な役割
 
@@ -18,8 +18,8 @@
 - `use_lidar`
   - 実機モード時に LiDAR 系構成を使うかを切り替える
 - `robot_control_mode`
-  - `manual` で `MANUAL/MODE1_DETECT_ORIGIN`
-  - `auto` で `AUTO/ACT0`
+  - `manual` で `OperationMode=MODE1_DETECT_ORIGIN`, `ChassisControlMode=MANUAL`
+  - `auto` で `OperationMode=MODE1_DETECT_ORIGIN`, `ChassisControlMode=AUTO`
 - `use_aruco_display`
   - `false` で `r1_aruco_display_node` を起動しない
   - `true` で `r1_aruco_display_node` を起動する
@@ -29,11 +29,10 @@
 - 常時起動
   - `joy_node`
   - `r1_main_node`
+  - `r1_chassis_control_node`
   - `r1_chassis_velocity_control_node`
   - `r1_machine_manage_node`
   - 足回り・機構・Sabacan 関連ノード群
-- `robot_control_mode:=auto` のとき
-  - `r1_chassis_control_node`
 - `use_aruco_display:=true` のとき
   - `r1_aruco_display_node`
 - 実機モード時
@@ -46,23 +45,23 @@
 
 ## 起動例
 
-- 実機を手動モードで通常起動する
-  - `r1_setup.bash` を含めてまとめて実行する、普段使いの入口です。
+- 実機を `MODE1_DETECT_ORIGIN` で通常起動する
+  - `robot_control_mode:=manual` を含む既定構成でまとめて起動します。
 
 ```bash
 cd ~/ros2_ws
 ./src/gakurobo2026_r1/scripts/r1_manual.bash
 ```
 
-- 実機を自動モードで通常起動する
-  - `robot_control_mode:=auto` を含めてまとめて実行する、普段使いの入口です。
+- 実機を足回り `AUTO` / `MODE1_DETECT_ORIGIN` で通常起動する
+  - `robot_control_mode:=auto` を含めてまとめて起動します。
 
 ```bash
 cd ~/ros2_ws
 ./src/gakurobo2026_r1/scripts/r1_auto.bash
 ```
 
-- `r1_setup.bash` 実行後に、手動モードの既定引数で直接 launch する
+- `r1_setup.bash` 実行後に、`MODE1_DETECT_ORIGIN` の既定引数で直接 launch する
   - `use_sim:=false`、`use_lidar:=true`、`robot_control_mode:=manual` の既定値をそのまま使います。
 
 ```bash
@@ -72,7 +71,7 @@ ros2 launch r1_bringup r1_bringup.launch.py
 ```
 
 - `robot_control_mode:=auto` を指定して直接 launch する
-  - 自動モードで起動したいが、他の引数も自分で調整したいときに使います。
+  - 足回り `AUTO` / `MODE1_DETECT_ORIGIN` で起動したいが、他の引数も自分で調整したいときに使います。
 
 ```bash
 cd ~/ros2_ws

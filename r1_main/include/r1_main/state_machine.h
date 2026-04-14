@@ -12,58 +12,23 @@
 #pragma once
 
 #include <string>
-#include <variant>
 
 #include "magic_enum.hpp"
+#include "r1_util/r1_util.h"
 #include "rclcpp/rclcpp.hpp"
-
-// MainStateの定義
-enum class MainState
-{
-  IDLE,
-  EMERGENCY,
-  MANUAL,
-  AUTO
-};
-
-// 各SubStateの定義
-enum class IdleSubState
-{
-  NONE
-};
-
-enum class EmergencySubState
-{
-  NONE
-};
-
-enum class ManualSubState
-{
-  MODE1_DETECT_ORIGIN,
-  MODE2_POLE,
-  MODE3_SPEAR,
-  MODE4_FKFS,
-  MODE5_RKFS,
-  MODE6_R2_LIFT,
-  MODE7_SPEAR_ATTACK,
-  MODE8_AUTO_COLLECT_KFS,
-  TEST
-};
-enum class AutoSubState
-{
-  ACT0,
-};
-
-// SubStateを保持するvariant
-using SubState = std::variant<IdleSubState, EmergencySubState, ManualSubState, AutoSubState>;
 
 // 現在の状態を管理する構造体
 struct RobotState
 {
   MainState main;
-  SubState sub;
+  OperationMode operation_mode;
+  ChassisControlMode chassis_control_mode;
 
-  bool operator==(const RobotState & other) const { return main == other.main && sub == other.sub; }
+  bool operator==(const RobotState & other) const
+  {
+    return main == other.main && operation_mode == other.operation_mode &&
+           chassis_control_mode == other.chassis_control_mode;
+  }
 
   bool operator!=(const RobotState & other) const { return !(*this == other); }
 };
@@ -90,10 +55,12 @@ public:
   void print_state(RobotState state, std::string prefix_msg = "")
   {
     std::string main_state_str = std::string(magic_enum::enum_name(state.main));
-    std::string sub_state_str =
-      std::visit([](auto s) { return std::string(magic_enum::enum_name(s)); }, state.sub);
+    std::string operation_mode_str = std::string(magic_enum::enum_name(state.operation_mode));
+    std::string chassis_mode_str = std::string(magic_enum::enum_name(state.chassis_control_mode));
 
-    auto s = prefix_msg + "main_state = " + main_state_str + ", sub_state = " + sub_state_str;
+    auto s = prefix_msg + "main_state = " + main_state_str +
+             ", operation_mode = " + operation_mode_str +
+             ", chassis_control_mode = " + chassis_mode_str;
     RCLCPP_INFO(rclcpp::get_logger(logger_name_), "%s", s.c_str());
   }
   bool is_changed_state(RobotState state1, RobotState state2) { return state1 != state2; }
@@ -119,7 +86,10 @@ public:
 
 private:
   std::string logger_name_;
-  RobotState next_state_{MainState::IDLE, IdleSubState::NONE};
-  RobotState current_state_{MainState::IDLE, IdleSubState::NONE};
-  RobotState prev_state_{MainState::IDLE, IdleSubState::NONE};
+  RobotState next_state_{
+    MainState::IDLE, OperationMode::MODE1_DETECT_ORIGIN, ChassisControlMode::HOLD};
+  RobotState current_state_{
+    MainState::IDLE, OperationMode::MODE1_DETECT_ORIGIN, ChassisControlMode::HOLD};
+  RobotState prev_state_{
+    MainState::IDLE, OperationMode::MODE1_DETECT_ORIGIN, ChassisControlMode::HOLD};
 };
