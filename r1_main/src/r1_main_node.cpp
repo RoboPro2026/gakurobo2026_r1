@@ -2836,6 +2836,14 @@ void R1MainNode::manual_task(void)
     double vx_ref = vx_max * (-1) * ps4_->get_left_stick_x();
     double vy_ref = vy_max * ps4_->get_left_stick_y();
     double vz_ref = vz_max * ps4_->get_right_stick_x();
+    if (
+      current_state.operation_mode == OperationMode::MODE9_AUTO_CHASSIS && ps4_->is_pushing_l2()) {
+      //L2を押している間はロボットを-90度回転させる。
+      const double rotated_vx_ref = vy_ref;
+      const double rotated_vy_ref = -vx_ref;
+      vx_ref = rotated_vx_ref;
+      vy_ref = rotated_vy_ref;
+    }
     chassis_move_vel(vx_ref, vy_ref, vz_ref);
   }
 
