@@ -89,6 +89,7 @@ class R1ControllerGatewayNode : public rclcpp::Node
 public:
   R1ControllerGatewayNode() : Node("r1_controller_gateway_node")
   {
+    // PublisherとSubscriptionの作成
     joy_publisher_ = this->create_publisher<sensor_msgs::msg::Joy>("/joy", 10);
     log_message_subscription_ = this->create_subscription<std_msgs::msg::String>(
       "/r1_gateway_log_message", 10,
@@ -98,12 +99,17 @@ public:
       this->create_publisher<r1_msgs::msg::R1InitParameter>("/r1_gateway_init_parameter", 10);
     r1_collect_kfs_publisher_ =
       this->create_publisher<r1_msgs::msg::R1CollectKfs>("/r1_gateway_collect_kfs", 10);
+
+    // timerの作成
     this->declare_parameter<double>("log_publish_timer_rate", 10.0);
     this->get_parameter("log_publish_timer_rate", log_publish_timer_rate_);
-
     timer_ = this->create_wall_timer(
       std::chrono::duration<double>(1.0 / log_publish_timer_rate_),
       std::bind(&R1ControllerGatewayNode::timer_callback, this));
+
+    // 各種パラメータ
+    this->declare_parameter<bool>("enable_log_message", true);
+    this->get_parameter("enable_log_message", enable_log_message_);
   }
 
   /**
@@ -141,7 +147,10 @@ public:
   r1_msgs::msg::R1CollectKfs kfs_ref_;
   std::string log_message_;
   // ========= ROS 2パラメータ ==========
+  // logをPublishするタイマーの周期
   double log_publish_timer_rate_;
+  // ログ出力を有効にするか
+  bool enable_log_message_;
 };
 
 int main(int argc, char * argv[])
