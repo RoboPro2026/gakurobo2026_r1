@@ -215,7 +215,7 @@ r1_main_node:
     spear4_push_vel: 10.0
     # spear_x
     spear_x_normal_pos: 0.0
-    spear_x_middle_pos: 0.2
+    spear_x_middle_pos: 0.25
     spear_x_make_spear1_pos: 0.25
     # spear_x_make_spear1_pos: 0.15
     spear_x_make_spear2_pos: 0.25
