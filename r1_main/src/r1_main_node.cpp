@@ -854,51 +854,57 @@ R1MainNode::LedPattern R1MainNode::resolve_base_led_pattern(void)
 {
   // base は通常時の表示。状態遷移先に合わせて色を決める。
   const auto state = state_machine_->get_next_state();
+  auto apply_rotate90_blink = [this](LedPattern pattern) {
+    if (chassis_rotate90 && pattern.enabled && pattern.blink_period_s <= 0.0) {
+      pattern.blink_period_s = 0.25;
+    }
+    return pattern;
+  };
 
   if (state.main == MainState::IDLE) {
     // 消灯
-    return LedPattern{};
+    return apply_rotate90_blink(LedPattern{});
   }
   if (state.main == MainState::EMERGENCY) {
     // 赤点滅
-    return LedPattern{true, {50, 0, 0}, 0.25};
+    return apply_rotate90_blink(LedPattern{true, {50, 0, 0}, 0.25});
   }
   if (state.main != MainState::READY) {
     // 想定外状態は消灯
-    return LedPattern{};
+    return apply_rotate90_blink(LedPattern{});
   }
 
   if (state.operation_mode == OperationMode::MODE1_DETECT_ORIGIN) {
-    return LedPattern{true, {0, 0, 50}, 0};
+    return apply_rotate90_blink(LedPattern{true, {0, 0, 50}, 0});
   }
   if (state.operation_mode == OperationMode::MODE2_POLE) {
-    return LedPattern{true, {0, 50, 0}, 0};
+    return apply_rotate90_blink(LedPattern{true, {0, 50, 0}, 0});
   }
   if (state.operation_mode == OperationMode::MODE3_SPEAR) {
-    return LedPattern{true, {0, 50, 50}, 0};
+    return apply_rotate90_blink(LedPattern{true, {0, 50, 50}, 0});
   }
   if (state.operation_mode == OperationMode::MODE4_FKFS) {
-    return LedPattern{true, {50, 0, 0}, 0};
+    return apply_rotate90_blink(LedPattern{true, {50, 0, 0}, 0});
   }
   if (state.operation_mode == OperationMode::MODE5_RKFS) {
-    return LedPattern{true, {50, 0, 50}, 0};
+    return apply_rotate90_blink(LedPattern{true, {50, 0, 50}, 0});
   }
   if (state.operation_mode == OperationMode::MODE6_R2_LIFT) {
-    return LedPattern{true, {50, 50, 0}, 0};
+    return apply_rotate90_blink(LedPattern{true, {50, 50, 0}, 0});
   }
   if (state.operation_mode == OperationMode::MODE7_SPEAR_ATTACK) {
-    return LedPattern{true, {50, 50, 50}, 0};
+    return apply_rotate90_blink(LedPattern{true, {50, 50, 50}, 0});
   }
   if (state.operation_mode == OperationMode::MODE8_AUTO_COLLECT_KFS) {
-    return LedPattern{true, {50, 25, 0}, 0};
+    return apply_rotate90_blink(LedPattern{true, {50, 25, 0}, 0});
   }
   if (state.operation_mode == OperationMode::MODE9_AUTO_CHASSIS) {
     // TODO: 9の色は変える
-    return LedPattern{true, {50, 50, 0}, 0};
+    return apply_rotate90_blink(LedPattern{true, {50, 50, 0}, 0});
   }
 
   // 未定義なら消灯
-  return LedPattern{};
+  return apply_rotate90_blink(LedPattern{});
 }
 
 R1MainNode::LedColor R1MainNode::resolve_led_output_color(
@@ -2837,9 +2843,7 @@ void R1MainNode::manual_task(void)
     double vx_ref = vx_max * (-1) * ps4_->get_left_stick_x();
     double vy_ref = vy_max * ps4_->get_left_stick_y();
     double vz_ref = vz_max * ps4_->get_right_stick_x();
-    if (
-      current_state.operation_mode == OperationMode::MODE9_AUTO_CHASSIS &&
-      ps4_->is_pushed_left_stick()) {
+    if (ps4_->is_pushed_left_stick()) {
       chassis_rotate90 = !chassis_rotate90;
     }
     if (chassis_rotate90) {
