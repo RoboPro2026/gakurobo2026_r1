@@ -1654,7 +1654,7 @@ void R1MainNode::manual_mode2_collect_pole_task(void)
   RCLCPP_INFO(this->get_logger(), "manual_mode2_collect_pole_task step: %d", step);
   if (step == 1) {
     spear_roll_pos_ref(SPEAR_ROLL_VERTICAL_ANGLE);
-    spear_x_pos_ref(SPEAR_X_NORMAL_POS);
+    spear_x_pos_ref(SPEAR_X_MIDDLE_POS);
     spear_y_pos_ref(SPEAR_Y_NORMAL_POS);
     step++;
   } else if (step == 2) {
