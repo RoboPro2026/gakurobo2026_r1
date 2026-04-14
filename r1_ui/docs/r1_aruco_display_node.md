@@ -47,8 +47,8 @@ source ~/ros2_ws/.venv/bin/activate
 python -m pip install -r ~/ros2_ws/src/gakurobo2026_r1/requirements.txt
 ```
 
-`r1_aruco_display_node` は `ament_python` パッケージとして install されるため、build 時に使った Python interpreter が実行スクリプトへ反映されます。  
-`.venv` の `PyQt6` や `opencv-contrib-python` を使う場合は、`.venv` を有効化した状態で build してください。
+`r1_aruco_display_node` は Python スクリプトとして install しています。  
+`.venv` の `PyQt6` や `opencv-contrib-python` を使う場合は、実行時に `.venv` を有効化してください。
 
 ## ビルド
 
@@ -106,5 +106,5 @@ ros2 topic pub /aruco_marker_id std_msgs/msg/Int32 "{data: 3}" -r 1
 - `dictionary` に対して無効な `marker_id` を送ると表示は更新されません。
 - このノードは `std_msgs/msg/Int32` を入力としているため、将来「画像種類」と「マーカ ID」を別管理したくなったら、専用 message に拡張したほうが扱いやすくなります。
 - 実行環境に `PyQt6` がないと GUI は起動できません。
-- `.venv` に依存を追加したあとで `ros2 run r1_ui r1_aruco_display_node` が失敗する場合は、`.venv` を有効化した状態で再度 `colcon build --packages-select r1_ui` を実行してください。
+- `.venv` に依存を追加したあとで `ros2 run r1_ui r1_aruco_display_node` が失敗する場合は、`source ~/ros2_ws/.venv/bin/activate` を行ってから再実行してください。
 - `spin_rate_hz` は ROS イベント処理の周期であり、GUI の再描画 FPS を固定するものではありません。描画は起動時、トピック更新時、リサイズ時に行われます。

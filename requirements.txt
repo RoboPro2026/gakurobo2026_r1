@@ -3,3 +3,8 @@ matplotlib==3.10.8
 numpy==2.2.6
 opencv-contrib-python
 PyYAML
+
+# ROS 2 Humble build-time Python dependencies for colcon in .venv
+catkin_pkg
+empy<4
+lark-parser

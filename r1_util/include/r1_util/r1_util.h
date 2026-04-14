@@ -38,6 +38,36 @@ enum class ChassisAct
   ACT4_FINISH = 43
 };
 
+// MainStateの定義
+enum class MainState
+{
+  IDLE,
+  READY,
+  EMERGENCY
+};
+
+// いまユーザが見ている/操作モード
+enum class OperationMode
+{
+  MODE1_DETECT_ORIGIN,
+  MODE2_POLE,
+  MODE3_SPEAR,
+  MODE4_FKFS,
+  MODE5_RKFS,
+  MODE6_R2_LIFT,
+  MODE7_SPEAR_ATTACK,
+  MODE8_AUTO_COLLECT_KFS,
+  MODE9_AUTO_CHASSIS
+};
+
+// 足回りの制御権
+enum class ChassisControlMode
+{
+  HOLD,
+  MANUAL,
+  AUTO,
+};
+
 /**
  * @brief 1次のローパスフィルタ
  * 

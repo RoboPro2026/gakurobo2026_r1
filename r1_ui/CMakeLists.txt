@@ -9,13 +9,12 @@ if(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
 endif()
 
 find_package(ament_cmake REQUIRED)
-find_package(ament_cmake_python REQUIRED)
+find_package(magic_enum CONFIG REQUIRED)
 find_package(r1_msgs REQUIRED)
+find_package(r1_util REQUIRED)
 find_package(rclcpp REQUIRED)
 find_package(sensor_msgs REQUIRED)
 find_package(std_msgs REQUIRED)
-
-ament_python_install_package(${PROJECT_NAME})
 
 add_executable(r1_controller_gateway_node src/r1_controller_gateway_node.cpp)
 ament_target_dependencies(r1_controller_gateway_node
@@ -24,6 +23,8 @@ ament_target_dependencies(r1_controller_gateway_node
   sensor_msgs
   std_msgs
 )
+target_link_libraries(r1_controller_gateway_node magic_enum::magic_enum)
+target_link_libraries(r1_controller_gateway_node r1_util::r1_util)
 
 install(TARGETS
   r1_controller_gateway_node
@@ -31,8 +32,9 @@ install(TARGETS
 )
 
 install(PROGRAMS
-  scripts/r1_aruco_display_node
+  src/r1_aruco_display_node.py
   DESTINATION lib/${PROJECT_NAME}
+  RENAME r1_aruco_display_node
 )
 
 install(FILES

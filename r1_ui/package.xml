@@ -8,8 +8,8 @@
   <license>TODO: License declaration</license>
 
   <buildtool_depend>ament_cmake</buildtool_depend>
-  <buildtool_depend>ament_cmake_python</buildtool_depend>
 
+  <depend>magic_enum</depend>
   <depend>r1_msgs</depend>
   <depend>r1_util</depend>
   <depend>rclcpp</depend>

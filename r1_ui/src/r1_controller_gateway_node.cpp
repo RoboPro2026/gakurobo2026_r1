@@ -76,10 +76,13 @@ string[] kfs_mechanism_type
 - joy関連は一定周期でスマホから送信する
 */
 
+#include "magic_enum.hpp"
 #include "r1_msgs/msg/r1_collect_kfs.hpp"
 #include "r1_msgs/msg/r1_init_parameter.hpp"
+#include "r1_util/r1_util.h"
 #include "rclcpp/rclcpp.hpp"
 #include "sensor_msgs/msg/joy.hpp"
+#include "std_msgs/msg/int32.hpp"
 #include "std_msgs/msg/string.hpp"
 
 using namespace std::chrono_literals;
@@ -91,15 +94,19 @@ public:
   {
     // PublisherとSubscriptionの作成
     joy_publisher_ = this->create_publisher<sensor_msgs::msg::Joy>("/joy", 10);
+    r1_init_parameter_publisher_ =
+      this->create_publisher<r1_msgs::msg::R1InitParameter>("/r1_init_parameter", 10);
+    r1_collect_kfs_publisher_ =
+      this->create_publisher<r1_msgs::msg::R1CollectKfs>("/r1_collect_kfs", 10);
     log_message_subscription_ = this->create_subscription<std_msgs::msg::String>(
-      "/r1_gateway_log_message", 10,
+      "/r1_log_message", 10,
       std::bind(
         &R1ControllerGatewayNode::log_message_subscription_callback, this, std::placeholders::_1));
-    r1_init_parameter_publisher_ =
-      this->create_publisher<r1_msgs::msg::R1InitParameter>("/r1_gateway_init_parameter", 10);
-    r1_collect_kfs_publisher_ =
-      this->create_publisher<r1_msgs::msg::R1CollectKfs>("/r1_gateway_collect_kfs", 10);
-
+    operation_mode_subscription_ = this->create_subscription<std_msgs::msg::Int32>(
+      "/r1_operation_mode", 10,
+      std::bind(
+        &R1ControllerGatewayNode::operation_mode_subscription_callback, this,
+        std::placeholders::_1));
     // timerの作成
     this->declare_parameter<double>("log_publish_timer_rate", 10.0);
     this->get_parameter("log_publish_timer_rate", log_publish_timer_rate_);
@@ -120,6 +127,14 @@ public:
   void log_message_subscription_callback(const std_msgs::msg::String::SharedPtr msg)
   {
     log_message_ = msg->data;
+    RCLCPP_INFO(this->get_logger(), "Received log message: %s", log_message_.c_str());
+  }
+
+  void operation_mode_subscription_callback(const std_msgs::msg::Int32::SharedPtr msg)
+  {
+    operation_mode_ = static_cast<OperationMode>(msg->data);
+    std::string operation_mode_str = std::string(magic_enum::enum_name(operation_mode_));
+    RCLCPP_INFO(this->get_logger(), "Received operation mode: %s", operation_mode_str.c_str());
   }
 
   /**
@@ -134,10 +149,11 @@ public:
   // ========== publisherとsubscription ==========
   // スマホ経由で受け取ったコントローラ情報のPublisher
   rclcpp::Publisher<sensor_msgs::msg::Joy>::SharedPtr joy_publisher_;
-  // スマホに出力するログ（文字列）のSubscription
-  rclcpp::Subscription<std_msgs::msg::String>::SharedPtr log_message_subscription_;
   rclcpp::Publisher<r1_msgs::msg::R1InitParameter>::SharedPtr r1_init_parameter_publisher_;
   rclcpp::Publisher<r1_msgs::msg::R1CollectKfs>::SharedPtr r1_collect_kfs_publisher_;
+  // スマホに出力するログ（文字列）のSubscription
+  rclcpp::Subscription<std_msgs::msg::String>::SharedPtr log_message_subscription_;
+  rclcpp::Subscription<std_msgs::msg::Int32>::SharedPtr operation_mode_subscription_;
   // timer
   rclcpp::TimerBase::SharedPtr timer_;
   // ========== R1状態保持用変数 ==========
@@ -145,6 +161,7 @@ public:
   r1_msgs::msg::R1InitParameter init_parameter_;
   // kfsの指令値
   r1_msgs::msg::R1CollectKfs kfs_ref_;
+  OperationMode operation_mode_{OperationMode::MODE1_DETECT_ORIGIN};
   std::string log_message_;
   // ========= ROS 2パラメータ ==========
   // logをPublishするタイマーの周期
