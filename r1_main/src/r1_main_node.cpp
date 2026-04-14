@@ -1689,7 +1689,7 @@ void R1MainNode::manual_mode2_collect_pole_task(void)
     spear_u2_valve(false);
     step++;
   } else if (step == 9) {
-    roll_pos_ref(SPEAR_ROLL_NORMAL_ANGLE);
+    spear_roll_pos_ref(SPEAR_ROLL_NORMAL_ANGLE);
     step++;
   } else if (step == 10) {
     spear_d1_valve(true);
