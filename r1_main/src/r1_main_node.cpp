@@ -1276,9 +1276,9 @@ void R1MainNode::start_kfs_auto_collect(
   kfs_auto_collect_plan_.forest_order = std::move(forest_order);
   kfs_auto_collect_plan_.kfs_mechanism_type = std::move(kfs_mechanism_type);
 
-  if (ENABLE_AUTO_COLLECT_KFS_ACTUATOR) {
-    kfs_init_pos();
-  }
+  // if (ENABLE_AUTO_COLLECT_KFS_ACTUATOR) {
+  kfs_init_pos();
+  // }
 
   RCLCPP_INFO(
     this->get_logger(), "started kfs auto collect: %s",
@@ -2724,6 +2724,9 @@ void R1MainNode::update_auto_chassis_task(void)
     }
     publish_chassis_act_ref(ChassisAct::NONE);
     clear_auto_chassis_state(false);
+    // FINISH 状態を 1 周期で消費しないと、manual mode の KFS 自動回収まで
+    // 毎周期 stop されてしまう。
+    chassis_act_status_ = ChassisAct::NONE;
     return;
   }
 
