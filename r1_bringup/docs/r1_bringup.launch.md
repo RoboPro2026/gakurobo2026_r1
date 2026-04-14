@@ -18,8 +18,8 @@
 - `use_lidar`
   - 実機モード時に LiDAR 系構成を使うかを切り替える
 - `robot_control_mode`
-  - `manual` で `OperationMode=MODE1_DETECT_ORIGIN`
-  - `auto` で `OperationMode=MODE9_AUTO_CHASSIS`
+  - `manual` で `OperationMode=MODE1_DETECT_ORIGIN`, `ChassisControlMode=MANUAL`
+  - `auto` で `OperationMode=MODE1_DETECT_ORIGIN`, `ChassisControlMode=AUTO`
 - `use_aruco_display`
   - `false` で `r1_aruco_display_node` を起動しない
   - `true` で `r1_aruco_display_node` を起動する
@@ -53,7 +53,7 @@ cd ~/ros2_ws
 ./src/gakurobo2026_r1/scripts/r1_manual.bash
 ```
 
-- 実機を `MODE9_AUTO_CHASSIS` で通常起動する
+- 実機を足回り `AUTO` / `MODE1_DETECT_ORIGIN` で通常起動する
   - `robot_control_mode:=auto` を含めてまとめて起動します。
 
 ```bash
@@ -71,7 +71,7 @@ ros2 launch r1_bringup r1_bringup.launch.py
 ```
 
 - `robot_control_mode:=auto` を指定して直接 launch する
-  - `MODE9_AUTO_CHASSIS` で起動したいが、他の引数も自分で調整したいときに使います。
+  - 足回り `AUTO` / `MODE1_DETECT_ORIGIN` で起動したいが、他の引数も自分で調整したいときに使います。
 
 ```bash
 cd ~/ros2_ws

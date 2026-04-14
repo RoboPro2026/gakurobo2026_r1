@@ -8,8 +8,8 @@
 
 - 起動時の初期状態はパラメータ `robot_control_mode` で決まります。
   - 既定値は `manual`
-  - `robot_control_mode:=manual` のとき `MainState=READY`、`OperationMode=MODE1_DETECT_ORIGIN`
-  - `robot_control_mode:=auto` のとき `MainState=READY`、`OperationMode=MODE9_AUTO_CHASSIS`
+  - `robot_control_mode:=manual` のとき `MainState=READY`、`OperationMode=MODE1_DETECT_ORIGIN`、`ChassisControlMode=MANUAL`
+  - `robot_control_mode:=auto` のとき `MainState=READY`、`OperationMode=MODE1_DETECT_ORIGIN`、`ChassisControlMode=AUTO`
 - 状態は `MainState` / `OperationMode` / `ChassisControlMode` の 3 軸で管理します。
 - `MainState` はライフサイクルと安全状態、`OperationMode` は操作モード、`ChassisControlMode` は足回りの制御権を表します。
 - これとは別に、シャーシ自動シーケンスは内部状態 `auto_chassis_status_`、KFS 自動回収は `kfs_auto_collect_status` で独立管理します。
@@ -69,7 +69,7 @@
 
 - 起動時は `robot_control_mode` パラメータに応じた初期状態を使用
 - `robot_control_mode:=manual` なら `OperationMode=MODE1_DETECT_ORIGIN`
-- `robot_control_mode:=auto` なら `OperationMode=MODE9_AUTO_CHASSIS`
+- `robot_control_mode:=auto` でも `OperationMode=MODE1_DETECT_ORIGIN`
 - `share` ボタンで `OperationMode` を次の順で巡回
   - `MODE1_DETECT_ORIGIN`
   - `MODE2_POLE`
@@ -496,7 +496,7 @@ bringup 起動時は [`r1_bringup.launch.py`](../../r1_bringup/launch/r1_bringup
 - 通常の bringup では [`r1_bringup.launch.py`](../../r1_bringup/launch/r1_bringup.launch.py) から起動します。
 - パラメータは [`r1_machine_config.yaml`](../../r1_bringup/config/r1_machine_config.yaml) から読み込みます。
 - bringup では `cmd_vel_topic` を `/cmd_vel_target` に設定し、[`r1_chassis_velocity_control_node`](../../r1_control/docs/r1_chassis_velocity_control_node.md) を経由して最終的な `/cmd_vel` に変換されます。
-- `robot_control_mode:=manual` なら `MainState=READY, OperationMode=MODE1_DETECT_ORIGIN`、`robot_control_mode:=auto` なら `MainState=READY, OperationMode=MODE9_AUTO_CHASSIS` で起動します。
+- `robot_control_mode:=manual` なら `MainState=READY, OperationMode=MODE1_DETECT_ORIGIN, ChassisControlMode=MANUAL`、`robot_control_mode:=auto` なら `MainState=READY, OperationMode=MODE1_DETECT_ORIGIN, ChassisControlMode=AUTO` で起動します。
 
 ## 起動例
 
@@ -507,7 +507,7 @@ source ~/ros2_ws/install/setup.bash
 ros2 launch r1_bringup r1_bringup.launch.py robot_control_mode:=manual
 ```
 
-bringup から `MODE9_AUTO_CHASSIS` で起動:
+bringup から足回り `AUTO` / `MODE1_DETECT_ORIGIN` で起動:
 
 ```bash
 source ~/ros2_ws/install/setup.bash

@@ -37,7 +37,7 @@ std::optional<RobotState> parse_robot_control_mode_parameter(std::string_view va
   }
   if (normalized == "auto") {
     return RobotState{
-      MainState::READY, OperationMode::MODE9_AUTO_CHASSIS, ChassisControlMode::MANUAL};
+      MainState::READY, OperationMode::MODE1_DETECT_ORIGIN, ChassisControlMode::AUTO};
   }
 
   return std::nullopt;
