@@ -1731,6 +1731,7 @@ void R1MainNode::manual_mode2_pole(void)
   }
 
   if (ps4_->is_pushed_cross()) {
+    // manual_task内で、速度トリガーとして使用
   }
 
   if (ps4_->is_pushed_square()) {
@@ -2818,7 +2819,11 @@ void R1MainNode::manual_task(void)
   double vx_max = CHASSIS_MAX_VELOCITY;
   double vy_max = CHASSIS_MAX_VELOCITY;
   double vz_max = CHASSIS_MAX_OMEGA;
-  if (current_state.operation_mode == OperationMode::MODE3_SPEAR && !ps4_->is_pushing_cross()) {
+  bool on_mode2_low_speed = (current_state.operation_mode == OperationMode::MODE2_POLE) &&
+                            ps4_->is_pushing_cross() == false;
+  bool on_mode3_low_speed = (current_state.operation_mode == OperationMode::MODE3_SPEAR) &&
+                            ps4_->is_pushing_cross() == false;
+  if (on_mode2_low_speed || on_mode3_low_speed) {
     vx_max = CHASSIS_MAKE_SPEAR_VELOCITY;
     vy_max = CHASSIS_MAKE_SPEAR_VELOCITY;
     vz_max = CHASSIS_MAKE_SPEAR_OMEGA;
