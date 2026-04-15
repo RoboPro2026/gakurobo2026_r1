@@ -588,8 +588,6 @@ public:
   int manual_mode2_collect_pole_task_step_ = DEFAULT_STEP;
   int manual_mode3_make_spear_task_step_ = DEFAULT_STEP;
   int manual_mode3_brake_valve_step_ = DEFAULT_STEP;
-  int manual_mode3_spear_hand_valve1_step_ = DEFAULT_STEP;
-  int manual_mode3_spear_hand_valve2_step_ = DEFAULT_STEP;
   int manual_mode4_fx_step_ = DEFAULT_STEP;
   int manual_mode4_fz_step_ = DEFAULT_STEP;
   int manual_mode4_fyaw_step_ = DEFAULT_STEP;
