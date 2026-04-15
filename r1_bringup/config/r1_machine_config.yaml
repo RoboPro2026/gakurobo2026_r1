@@ -227,8 +227,8 @@ r1_main_node:
     # spear_roll
     spear_roll_normal_angle: 0.0
     spear_roll_inv_normal_angle: 3.14159265358979326
-    # spear_roll_vertical_angle: 1.5707963267948966
-    spear_roll_vertical_angle: 1.62
+    spear_roll_vertical_angle: 1.5707963267948966
+    # spear_roll_vertical_angle: 1.62
     spear_roll_low_attack_angle: 0.0
     spear_roll_middle_attack_angle: 0.5
     spear_roll_high_attack_angle: 0.7
@@ -872,7 +872,7 @@ sabacan_robomasv2_node_id5:
     pos_gain_p: [5.0, 5.0, 5.0, 5.0]
     pos_gain_i: [0.0, 0.0, 0.0, 0.0]
     pos_gain_d: [0.0, 0.0, 0.0, 0.0]
-    speed_lim: [10.0, 10.0, 10.0, 10.0]
+    speed_lim: [30.0, 30.0, 10.0, 10.0]
     # TRQ+SPD+POSをフィードバック
     monitor_reg1: [0x0001000100010000, 0x0001000100010000, 0x0001000100010000, 0x0001000100010000]
     # TRQ+SPD+POS+MOTOR_STATEをフィードバック
