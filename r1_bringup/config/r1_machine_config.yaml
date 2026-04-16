@@ -112,7 +112,7 @@ r1_main_node:
     # auto のとき AUTO/ACT0 で開始する
     robot_control_mode: "manual"
     cmd_vel_topic: "/cmd_vel_target"
-    timer_rate: 25.0
+    timer_rate: 100.0
     ps4_connection_timeout: 1.0
     # ========== 足回り ==========
 
