@@ -248,7 +248,8 @@ r1_main_node:
     # KFSが置かれている場所
     # kfs_forest_number: [4]
     # kfs_forest_number: [4, 2]
-    kfs_forest_number: [4, 7]
+    # kfs_forest_number: [4, 7]
+    kfs_forest_number: [2, 3]
     # KFS回収範囲の長方形サイズ [m]
     # yaw=0 のとき width は map の x 方向、height は map の y 方向の長さになる
     # yaw を与えた場合は、その yaw だけ回転した長方形ローカル座標系での幅と高さになる
@@ -406,7 +407,7 @@ r1_kfs_fyaw_node:
     contact_torque_limit: 0.75 # Nm
     origin_detect_threshold_time: 0.5 # 秒
     origin_detect_speed: -6.28 # rad/s
-    move_mech_lock_speed: 30.0 # rad/s
+    move_mech_lock_speed: 20.0 # rad/s
     angle_min: -5.0
     angle_max: 5.0
     normal_angle: 0.1
@@ -476,7 +477,7 @@ r1_kfs_ryaw_node:
     contact_torque_limit: 0.75 # Nm
     origin_detect_threshold_time: 0.5 # 秒
     origin_detect_speed: -6.28 # rad/s
-    move_mech_lock_speed: 30.0 # rad/s
+    move_mech_lock_speed: 20.0 # rad/s
     angle_min: -5.0
     angle_max: 5.0
     normal_angle: 0.1
