@@ -70,17 +70,9 @@ OperationMode next_operation_mode(OperationMode mode)
   }
 }
 
-const char * kfs_auto_collect_status_name(R1MainNode::KfsAutoCollectStatus status)
+std::string kfs_auto_collect_status_name(R1MainNode::KfsAutoCollectStatus status)
 {
-  switch (status) {
-    case R1MainNode::KfsAutoCollectStatus::INNER_ACTIVE:
-      return "INNER_ACTIVE";
-    case R1MainNode::KfsAutoCollectStatus::OUTER_ACTIVE:
-      return "OUTER_ACTIVE";
-    case R1MainNode::KfsAutoCollectStatus::NONE:
-    default:
-      return "NONE";
-  }
+  return std::string(magic_enum::enum_name(status));
 }
 }  // namespace
 
@@ -1249,6 +1241,35 @@ bool R1MainNode::build_outer_kfs_auto_collect_plan(
   return !forest_order.empty() && forest_order.size() == collect_kfs_type.size();
 }
 
+bool R1MainNode::set_mode3_kfs_auto_collect_status(KfsAutoCollectStatus & status)
+{
+  auto is_inner_number = [](int n) { return n == 1 || n == 2 || n == 4 || n == 7 || n == 10; };
+  auto is_outer_number = [](int n) {
+    return n == 3 || n == 6 || n == 9 || n == 10 || n == 11 || n == 12;
+  };
+
+  int inner_count = 0;
+  int outer_count = 0;
+
+  // 回収するKFSの個数を多数決で決定する
+  for (const int n : KFS_FOREST_NUMBER) {
+    if (is_inner_number(n)) inner_count++;
+    if (is_outer_number(n)) outer_count++;
+  }
+
+  if (outer_count > inner_count) {
+    status = KfsAutoCollectStatus::OUTER_ACTIVE;
+  } else {
+    // inner_count >= outer_count (同数の場合はINNERを優先)
+    status = KfsAutoCollectStatus::INNER_ACTIVE;
+  }
+
+  RCLCPP_INFO(
+    this->get_logger(), "Set MODE3_SPEAR status to %s (inner=%d, outer=%d)",
+    kfs_auto_collect_status_name(status).c_str(), inner_count, outer_count);
+  return true;
+}
+
 void R1MainNode::reset_kfs_auto_collect_tracking(void)
 {
   if (auto_collect_front_storage_yaw_timer_) {
@@ -1292,7 +1313,7 @@ void R1MainNode::start_kfs_auto_collect(
 
   RCLCPP_INFO(
     this->get_logger(), "started kfs auto collect: %s",
-    kfs_auto_collect_status_name(kfs_auto_collect_plan_.status));
+    kfs_auto_collect_status_name(kfs_auto_collect_plan_.status).c_str());
 }
 
 void R1MainNode::stop_kfs_auto_collect(void)
@@ -1304,7 +1325,7 @@ void R1MainNode::stop_kfs_auto_collect(void)
 
   RCLCPP_INFO(
     this->get_logger(), "stopped kfs auto collect: %s",
-    kfs_auto_collect_status_name(kfs_auto_collect_plan_.status));
+    kfs_auto_collect_status_name(kfs_auto_collect_plan_.status).c_str());
   reset_kfs_auto_collect_tracking();
   kfs_auto_collect_plan_.status = KfsAutoCollectStatus::NONE;
   kfs_auto_collect_plan_.forest_order.clear();
@@ -2364,7 +2385,7 @@ void R1MainNode::auto_collect_kfs_task(void)
     RCLCPP_ERROR(
       this->get_logger(),
       "kfs auto collect plan size mismatch during %s: forest_order=%zu, kfs_mechanism_type=%zu",
-      kfs_auto_collect_status_name(kfs_auto_collect_plan_.status),
+      kfs_auto_collect_status_name(kfs_auto_collect_plan_.status).c_str(),
       kfs_auto_collect_plan_.forest_order.size(), kfs_auto_collect_plan_.kfs_mechanism_type.size());
     return;
   }
@@ -2949,7 +2970,15 @@ void R1MainNode::main_task(void)
         // MODE3のときはOUTER_ACTIVEのときはACT3_STARTを、INNER_ACTIVEのときはACT2_STARTを開始する
         std::vector<int> forest_order;
         std::vector<std::string> collect_kfs_type;
-        if (kfs_auto_collect_plan_.status == KfsAutoCollectStatus::OUTER_ACTIVE) {
+        KfsAutoCollectStatus mode3_collect_status = kfs_auto_collect_plan_.status;
+        if (mode3_collect_status == KfsAutoCollectStatus::NONE) {
+          if (!set_mode3_kfs_auto_collect_status(mode3_collect_status)) {
+            RCLCPP_WARN(
+              this->get_logger(),
+              "Failed to infer MODE3_SPEAR inner/outer placement for right stick auto advance.");
+          }
+        }
+        if (mode3_collect_status == KfsAutoCollectStatus::OUTER_ACTIVE) {
           if (build_outer_kfs_auto_collect_plan(forest_order, collect_kfs_type)) {
             start_auto_chassis(ChassisAct::ACT3_START, forest_order, collect_kfs_type);
             start_kfs_auto_collect(
@@ -2957,7 +2986,7 @@ void R1MainNode::main_task(void)
               std::move(collect_kfs_type));
             started_auto = true;
           }
-        } else if (kfs_auto_collect_plan_.status == KfsAutoCollectStatus::INNER_ACTIVE) {
+        } else if (mode3_collect_status == KfsAutoCollectStatus::INNER_ACTIVE) {
           if (build_inner_kfs_auto_collect_plan(forest_order, collect_kfs_type)) {
             start_auto_chassis(ChassisAct::ACT2_START, forest_order, collect_kfs_type);
             start_kfs_auto_collect(

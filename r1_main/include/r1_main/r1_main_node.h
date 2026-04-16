@@ -119,8 +119,10 @@ public:
   enum class KfsAutoCollectStatus
   {
     NONE,
-    INNER_ACTIVE,
-    OUTER_ACTIVE,
+    INNER_ACTIVE,           // 1回目: INNERが多い側から回収
+    OUTER_ACTIVE,           // 1回目: OUTERが多い側から回収
+    SECONDARY_INNER_ACTIVE, // 2回目: 1回目の回収後に残ったINNER側を回収
+    SECONDARY_OUTER_ACTIVE, // 2回目: 1回目の回収後に残ったOUTER側を回収
   };
 
   struct KfsAutoCollectPlan
@@ -457,6 +459,7 @@ public:
     std::vector<int> & forest_order, std::vector<std::string> & collect_kfs_type) const;
   bool build_outer_kfs_auto_collect_plan(
     std::vector<int> & forest_order, std::vector<std::string> & collect_kfs_type) const;
+  bool set_mode3_kfs_auto_collect_status(KfsAutoCollectStatus & status);
   void start_kfs_auto_collect(
     KfsAutoCollectStatus status, std::vector<int> forest_order,
     std::vector<std::string> kfs_mechanism_type);
