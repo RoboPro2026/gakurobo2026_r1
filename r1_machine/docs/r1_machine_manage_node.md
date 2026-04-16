@@ -30,60 +30,81 @@
 - 非常停止解除後は `/r1_machine_initialize` 受信まで open-loop 停止を継続する。
 - `/r1_machine_initialize` を受けると、open-loop 中に一度 initialize を送り、その後 Sabacan reset を順番に実行する。
 - reset 完了後は linear / angle motion node へ initialize 信号を再度中継し、`swerve` モードでは `/swerve_drive_initialize`、速度補正用には `/chassis_velocity_control_initialize` も再度 publish する。
-- post-reset initialize 待機が完了したタイミングで、LED 基板 `/sabacan_led_ref1` の `pin_number=0..2` へ一度だけ `r=g=b=0` を送信し、Sabacan 側に残っていた LED 表示をクリアする。
 - post-reset initialize 待機が完了したタイミングで、`/r1_machine_initialize_done` (`std_msgs/msg/Empty`) を 1 回 publish し、上位ノードへ sabacan 初期化完了を通知する。
 - post-reset initialize の送信後は一定時間だけ open-loop 停止を維持し、その後に通常制御へ戻す。
 
 ## 初期化と非常停止
 
+### MachineState
+
+内部状態は `MachineState` enum 1 本で管理します。`should_force_open_loop()` は `Normal` 以外のすべての状態で `true` を返し、モータ指令を open-loop 停止へ上書きします。
+
+| 状態 | 意味 |
+| --- | --- |
+| `Normal` | 通常動作。モータ制御有効。 |
+| `EmergencyActive` | EMS / SOFT EMS 発報中。 |
+| `PendingInitialize` | EMS 解除済み。`/r1_machine_initialize` 待ち。 |
+| `InitializeRequested` | EMS 発報中に `/r1_machine_initialize` を受信済み。EMS 解除後に自動実行。 |
+| `Resetting` | Sabacan reset サービス送信中。 |
+| `WaitingDelay` | post-reset initialize 送信済み。`post_reset_initialize_delay_sec` 待ち。 |
+
 ### 通常時の `/r1_machine_initialize`
 
-- `/r1_machine_initialize` を受けると、`r1_machine_manage_node` は Sabacan reset シーケンスを開始します。
+- `/r1_machine_initialize` を受けると、まず `/sabacan_power_ref0` に `is_ems=false` を送信してソフト EMS ラッチをクリアします。
+- EMS が解除済み (`Normal` / `PendingInitialize`) なら、即座に Sabacan reset シーケンスを開始します。
 - reset シーケンス中は通常指令を通さず、全モータ指令を open-loop 停止へ強制します。
 - reset 開始直前に、open-loop 停止のまま linear motion node、angle motion node、`swerve` モード用 initialize、`/chassis_velocity_control_initialize` を先に 1 回 publish します。
 - reset service は `power -> robomas -> gpio -> led` の順に呼び出します。
 - reset 完了後、linear motion node と angle motion node へ initialize をもう一度中継します。
 - `swerve` モードでは、そのとき `/swerve_drive_initialize` ももう一度 1 回 publish します。
 - あわせて `/chassis_velocity_control_initialize` ももう一度 1 回 publish し、`r1_chassis_velocity_control_node` の PID 内部状態をリセットします。
-- 2 回目の initialize 後は `post_reset_initialize_delay_sec` のあいだ open-loop 停止を維持し、その後に通常制御へ戻します。
-- 通常制御へ戻す直前に、`/sabacan_led_ref1` の LED 0, 1, 2 を一度だけ全消灯します。
+- 2 回目の initialize 後は `post_reset_initialize_delay_sec` のあいだ open-loop 停止を維持し、その後に通常制御 (`Normal`) へ戻します。
 - 非常停止由来ではない通常の initialize でも、Sabacan reset と motion node initialize は実行されます。
 
 ### 非常停止に入ったとき
 
-- `/sabacan_power_status0` の EMS / SOFT EMS が active になると、`emergency_feedback_active_ = true` と `emergency_reinit_required_ = true` になります。
+- `/sabacan_power_status0` の EMS / SOFT EMS が active になると、`EmergencyActive` 状態へ遷移します。
 - この時点で全モータへ open-loop 停止を即時 publish します。
 - 以後は `POSITION` / `VELOCITY` などの通常指令を受けても、そのまま Sabacan へは流さず、0 指令の open-loop 制御へ上書きします。
 - open-loop 停止の内容は固定です。
   - Robomas: `TORQUE 0.0`
   - VESC / Robstride: `CURRENT 0.0`
+- `Resetting` / `WaitingDelay` 中に EMS が active になった場合も `EmergencyActive` へ遷移し、進行中のシーケンスは中断されます。
 
 ### 非常停止を解除した直後
 
-- EMS / SOFT EMS が inactive になると `emergency_feedback_active_` は false になります。
-- ただし `emergency_reinit_required_` は残るため、この時点ではまだ通常制御には戻りません。
+- EMS / SOFT EMS が inactive になると `PendingInitialize` 状態へ遷移します。
+- ただし、この時点ではまだ通常制御には戻りません。
 - 非常停止解除だけではモータ指令は復帰せず、全モータは open-loop 停止のままです。
 - この状態では `/r1_machine_initialize` を受けるまで、位置制御や速度制御の指令はすべて open-loop 停止へ変換されます。
 
 ### 非常停止解除後に `/r1_machine_initialize` を受けたとき
 
-- まだ EMS / SOFT EMS が active の場合、`/r1_machine_initialize` は無視されます。
-- EMS / SOFT EMS が inactive なら、Sabacan reset シーケンスを開始します。
-- reset 開始前に、open-loop 停止のまま initialize を 1 回送ります。
-- reset シーケンス中も open-loop 停止は維持されます。
-- reset 完了後に、linear motion node と angle motion node へ initialize をもう一度中継します。
-- `swerve` モードでは、あわせて `/swerve_drive_initialize` をもう一度 publish し、`r1_swerve_drive_node` の steer 角キャッシュを現在の motor status に同期させます。
-- `/chassis_velocity_control_initialize` も再送し、`r1_chassis_velocity_control_node` の PID 内部状態をリセットします。
-- その後、`post_reset_initialize_delay_sec` だけ待ってから LED 0, 1, 2 を全消灯し、`emergency_reinit_required_` を解除して通常の motor routing を再開します。
+- `PendingInitialize` または `Normal` 状態のとき、Sabacan reset シーケンスを開始します（上記「通常時の `/r1_machine_initialize`」と同じ手順）。
+
+### 非常停止中に `/r1_machine_initialize` を受けたとき
+
+- `EmergencyActive` 状態のとき、`/sabacan_power_ref0` に `is_ems=false` を送信してソフト EMS ラッチをクリアし、`InitializeRequested` 状態へ遷移します。
+- `InitializeRequested` 状態では、EMS が解除されたことを `sabacan_power_status_callback` が検知した時点で自動的に Sabacan reset シーケンスを開始します。ユーザーが PS ボタンを再度押す必要はありません。
 
 ### 状態遷移の要点
 
-- 非常停止中: open-loop 停止
-- 非常停止解除直後: まだ open-loop 停止
-- `/r1_machine_initialize` 受信直後: pre-reset initialize を送るが、まだ open-loop 停止
-- `/r1_machine_initialize` 受信後の reset 中: まだ open-loop 停止
-- reset 完了直後: post-reset initialize を送るが、まだ open-loop 停止
-- initialize 待ち時間満了後: LED 0, 1, 2 を全消灯してから通常制御へ復帰
+```
+[Normal] ─── EMS 発報 ──────────────────────────────────────────┐
+   ↑                                                            ↓
+[WaitingDelay]                                          [EmergencyActive]
+   ↑                                                   PS 押し ↓↑ EMS 再発報
+[Resetting] ←─ PS 押し ←─ [PendingInitialize] ←─ EMS 解除（PS 無し）
+                                  ↑
+                            EMS 解除（PS 押し済み）──────────────┘
+                                                    [InitializeRequested]
+```
+
+- 非常停止中: `EmergencyActive` → open-loop 停止
+- 非常停止解除直後: `PendingInitialize` → まだ open-loop 停止
+- `/r1_machine_initialize` 受信直後（EMS 解除済み）: `Resetting` → pre-reset initialize を送るが、まだ open-loop 停止
+- reset 完了直後: `WaitingDelay` → post-reset initialize を送るが、まだ open-loop 停止
+- 待ち時間満了後: `Normal` → 通常制御へ復帰
 
 ## Drive Mode
 
@@ -126,11 +147,12 @@
 - `/odometry_encoder` (`r1_msgs/msg/OdometryEncoder`)
 - `/set_robomas_gains_id0` ... `/set_robomas_gains_id7` (`sabacan_msgs/srv/SetRobomasGains`)
   - `torque_lim` 更新に加えて、単軸 `control_type` 更新にも使用します。
+- `/sabacan_power_ref0` (`sabacan_msgs/msg/SabacanPowerRef`): `/r1_machine_initialize` 受信時に `is_ems=false` を送信してソフト EMS ラッチをクリアします。
 - `/sabacan_power_reset` (`sabacan_msgs/srv/SabacanReset`)
 - `/sabacan_robomas_reset_id1` ... `/sabacan_robomas_reset_id7`
 - `/sabacan_gpio_reset_id1` ... `/sabacan_gpio_reset_id3`
 - `/sabacan_led_reset`
-- `/sabacan_led_ref1` (`sabacan_msgs/msg/SabacanLEDRef`): post-reset initialize 完了後に LED 0, 1, 2 をクリアするための全消灯指令を 1 回だけ publish します。
+- `/sabacan_led_ref1` (`sabacan_msgs/msg/SabacanLEDRef`)
 
 ### Mecanum Mode
 
@@ -228,6 +250,7 @@
 | `gpio_timer_rate` | double | `100.0` | GPIO 入力状態 publish 周期 [Hz]。 |
 | `sabacan_reset_send_interval_sec` | double | `1.0` | `sabacan_reset` service を順番に送る間隔 [s]。 |
 | `post_reset_initialize_delay_sec` | double | `0.2` | reset 完了後に initialize を再送してから通常制御へ戻すまでの待ち時間 [s]。 |
+
 補足:
 
 - `drive_mode` は実行中の `ros2 param set` で更新できます。
