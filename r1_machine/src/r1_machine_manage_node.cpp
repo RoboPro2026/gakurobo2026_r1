@@ -38,6 +38,7 @@
 #include "sabacan_msgs/msg/sabacan_gpio_ref_int.hpp"
 #include "sabacan_msgs/msg/sabacan_led_ref.hpp"
 #include "sabacan_msgs/msg/sabacan_gpio_status.hpp"
+#include "sabacan_msgs/msg/sabacan_power_ref.hpp"
 #include "sabacan_msgs/msg/sabacan_power_status.hpp"
 #include "sabacan_msgs/msg/sabacan_robomas_status.hpp"
 #include "sabacan_msgs/msg/sabacan_robstride_ref.hpp"
@@ -892,6 +893,8 @@ private:
       this->create_subscription<sabacan_msgs::msg::SabacanPowerStatus>(
         "/sabacan_power_status0", 10,
         std::bind(&MachineManageNode::sabacan_power_status_callback, this, std::placeholders::_1));
+    sabacan_power_ref_publisher_ =
+      this->create_publisher<sabacan_msgs::msg::SabacanPowerRef>("/sabacan_power_ref0", 10);
     sabacan_led_ref_publisher_ =
       this->create_publisher<sabacan_msgs::msg::SabacanLEDRef>("/sabacan_led_ref1", 10);
     initialize_done_publisher_ =
@@ -2000,10 +2003,20 @@ private:
     emergency_feedback_active_ = emergency_active;
     if (emergency_feedback_active_) {
       emergency_reinit_required_ = true;
+      pending_initialize_ = false;
       publish_open_loop_stop_to_enabled_motors();
       RCLCPP_WARN(
         this->get_logger(),
         "sabacan power status entered emergency. forcing motor outputs to open-loop stop");
+      return;
+    }
+
+    if (pending_initialize_) {
+      pending_initialize_ = false;
+      RCLCPP_INFO(
+        this->get_logger(),
+        "sabacan power status cleared emergency. auto-triggering pending /r1_machine_initialize");
+      start_sabacan_reset_sequence("/r1_machine_initialize");
       return;
     }
 
@@ -2014,15 +2027,26 @@ private:
 
   /**
    * @brief 初期化信号を受け取り、非常停止解除後の open-loop ラッチを解除する。
+   * @details まず SabacanPowerRef(is_ems=false) を送信してソフト EMS ラッチをクリアする。
+   *          emergency_feedback_active_ がすでに false なら即座にシーケンスを開始する。
+   *          まだ true の場合は pending_initialize_ を立てて待機し、
+   *          sabacan_power_status_callback で EMS クリアが確認された時点で自動実行する。
    * @param msg 受信した初期化信号
    */
   void initialize_signal_callback(const std_msgs::msg::Empty::SharedPtr msg)
   {
     (void)msg;
 
+    sabacan_msgs::msg::SabacanPowerRef power_ref;
+    power_ref.is_ems = false;
+    sabacan_power_ref_publisher_->publish(power_ref);
+
     if (emergency_feedback_active_) {
-      RCLCPP_WARN(
-        this->get_logger(), "ignored /r1_machine_initialize because sabacan is still in emergency");
+      pending_initialize_ = true;
+      RCLCPP_INFO(
+        this->get_logger(),
+        "received /r1_machine_initialize while emergency active. "
+        "sent SabacanPowerRef(is_ems=false) and waiting for EMS to clear");
       return;
     }
     start_sabacan_reset_sequence("/r1_machine_initialize");
@@ -2385,6 +2409,7 @@ private:
   std::vector<SetRobomasGainsClient::SharedPtr> set_robomas_gains_clients_;
   std::vector<SabacanResetServiceEntry> sabacan_reset_service_entries_;
   SubscriptionPtr<sabacan_msgs::msg::SabacanPowerStatus> sabacan_power_status_subscription_;
+  rclcpp::Publisher<sabacan_msgs::msg::SabacanPowerRef>::SharedPtr sabacan_power_ref_publisher_;
   SubscriptionPtr<std_msgs::msg::Empty> initialize_signal_subscription_;
   rclcpp::TimerBase::SharedPtr sabacan_reset_timer_;
 
@@ -2392,6 +2417,7 @@ private:
   DriveMode drive_mode_{DriveMode::Mecanum};
   bool emergency_feedback_active_{false};
   bool emergency_reinit_required_{false};
+  bool pending_initialize_{false};
   SabacanResetState sabacan_reset_state_{SabacanResetState::Idle};
   rclcpp::Time sabacan_reset_last_send_time_{0LL, RCL_SYSTEM_TIME};
   bool sabacan_reset_last_send_valid_{false};
