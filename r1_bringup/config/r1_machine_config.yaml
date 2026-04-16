@@ -222,7 +222,7 @@ r1_main_node:
     spear_x_middle_pos: 0.25
     spear_x_make_spear1_pos: 0.25
     # spear_x_make_spear1_pos: 0.15
-    spear_x_make_spear2_pos: 0.335
+    spear_x_make_spear2_pos: 0.405
     spear_x_make_spear3_pos: 0.0
     spear_x_make_spear4_pos: 0.0
     # spear_y
