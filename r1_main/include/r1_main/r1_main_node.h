@@ -532,6 +532,24 @@ public:
   void spear_roll_speed_mode_stop(void);
   void spear_pitch1_speed_mode_stop(void);
   void spear_pitch2_speed_mode_stop(void);
+  // ========== move_mech_lock関数 ==========
+  // KFS回収
+  void kfs_fx_move_mech_lock(int direction);
+  void kfs_fz_move_mech_lock(int direction);
+  void kfs_fyaw_move_mech_lock(int direction);
+  void kfs_rx_move_mech_lock(int direction);
+  void kfs_rz_move_mech_lock(int direction);
+  void kfs_ryaw_move_mech_lock(int direction);
+  // やり
+  void spear1_move_mech_lock(int direction);
+  void spear2_move_mech_lock(int direction);
+  void spear3_move_mech_lock(int direction);
+  void spear4_move_mech_lock(int direction);
+  void spear_x_move_mech_lock(int direction);
+  void spear_y_move_mech_lock(int direction);
+  void spear_roll_move_mech_lock(int direction);
+  void spear_pitch1_move_mech_lock(int direction);
+  void spear_pitch2_move_mech_lock(int direction);
   // KFS真空ポンプ・電磁弁
   void kfs_front_pump(double pwm);
   void kfs_rear_pump(double pwm);
@@ -570,24 +588,6 @@ public:
   void spear_roll_detect_origin(void);
   void spear_pitch1_detect_origin(void);
   void spear_pitch2_detect_origin(void);
-  // ========== move_mech_lock関数 ==========
-  // KFS回収
-  void kfs_fx_move_mech_lock(int direction);
-  void kfs_fz_move_mech_lock(int direction);
-  void kfs_fyaw_move_mech_lock(int direction);
-  void kfs_rx_move_mech_lock(int direction);
-  void kfs_rz_move_mech_lock(int direction);
-  void kfs_ryaw_move_mech_lock(int direction);
-  // やり
-  void spear1_move_mech_lock(int direction);
-  void spear2_move_mech_lock(int direction);
-  void spear3_move_mech_lock(int direction);
-  void spear4_move_mech_lock(int direction);
-  void spear_x_move_mech_lock(int direction);
-  void spear_y_move_mech_lock(int direction);
-  void spear_roll_move_mech_lock(int direction);
-  void spear_pitch1_move_mech_lock(int direction);
-  void spear_pitch2_move_mech_lock(int direction);
   // ========== センサーの取得 ==========
   bool get_kfs_fz_low_switch_status(void) { return kfs_fz_low_switch_status_; }
   bool get_kfs_rz_low_switch_status(void) { return kfs_rz_low_switch_status_; }

@@ -2080,11 +2080,13 @@ void R1MainNode::manual_mode4_fkfs(void)
     }
     RCLCPP_INFO(this->get_logger(), "fyaw_step: %d", fyaw_step);
     if (fyaw_step == 1) {
-      kfs_fyaw_pos_ref(KFS_FYAW_FRONT_ANGLE);
+      // kfs_fyaw_pos_ref(KFS_FYAW_FRONT_ANGLE);
+      kfs_fyaw_mech_lock(-1);
     } else if (fyaw_step == 2) {
       kfs_fyaw_pos_ref(KFS_FYAW_SIDE_ANGLE);
     } else if (fyaw_step == 3) {
-      kfs_fyaw_pos_ref(KFS_FYAW_REAR_ANGLE);
+      // kfs_fyaw_pos_ref(KFS_FYAW_REAR_ANGLE);
+      kfs_fyaw_mech_lock(1);
     }
   }
 
@@ -2113,11 +2115,13 @@ void R1MainNode::manual_mode4_fkfs(void)
     }
     RCLCPP_INFO(this->get_logger(), "fyaw_step: %d", fyaw_step);
     if (fyaw_step == 1) {
-      kfs_fyaw_pos_ref(KFS_FYAW_FRONT_ANGLE);
+      // kfs_fyaw_pos_ref(KFS_FYAW_FRONT_ANGLE);
+      kfs_fyaw_mech_lock(-1);
     } else if (fyaw_step == 2) {
       kfs_fyaw_pos_ref(KFS_FYAW_SIDE_ANGLE);
     } else if (fyaw_step == 3) {
-      kfs_fyaw_pos_ref(KFS_FYAW_REAR_ANGLE);
+      // kfs_fyaw_pos_ref(KFS_FYAW_REAR_ANGLE);
+      kfs_fyaw_mech_lock(1);
     }
   }
 
@@ -2234,11 +2238,13 @@ void R1MainNode::manual_mode5_rkfs(void)
     }
     RCLCPP_INFO(this->get_logger(), "ryaw_step: %d", ryaw_step);
     if (ryaw_step == 1) {
-      kfs_ryaw_pos_ref(KFS_RYAW_FRONT_ANGLE);
+      // kfs_ryaw_pos_ref(KFS_RYAW_FRONT_ANGLE);
+      kfs_ryaw_mech_lock(-1);
     } else if (ryaw_step == 2) {
       kfs_ryaw_pos_ref(KFS_RYAW_SIDE_ANGLE);
     } else if (ryaw_step == 3) {
-      kfs_ryaw_pos_ref(KFS_RYAW_REAR_ANGLE);
+      // kfs_ryaw_pos_ref(KFS_RYAW_REAR_ANGLE);
+      kfs_ryaw_mech_lock(1);
     }
   }
 
@@ -2267,11 +2273,13 @@ void R1MainNode::manual_mode5_rkfs(void)
     }
     RCLCPP_INFO(this->get_logger(), "ryaw_step: %d", ryaw_step);
     if (ryaw_step == 1) {
-      kfs_ryaw_pos_ref(KFS_RYAW_FRONT_ANGLE);
+      // kfs_ryaw_pos_ref(KFS_RYAW_FRONT_ANGLE);
+      kfs_ryaw_mech_lock(-1);
     } else if (ryaw_step == 2) {
       kfs_ryaw_pos_ref(KFS_RYAW_SIDE_ANGLE);
     } else if (ryaw_step == 3) {
-      kfs_ryaw_pos_ref(KFS_RYAW_REAR_ANGLE);
+      // kfs_ryaw_pos_ref(KFS_RYAW_REAR_ANGLE);
+      kfs_ryaw_mech_lock(1);
     }
   }
 
