@@ -2511,8 +2511,8 @@ void R1MainNode::auto_collect_kfs_task(void)
 
     // within関連はメンバー変数。名前が長いので、参照として短い名前で扱う。
     int within_index = (mechanism_type == "front_kfs") ? FKFS : RKFS;
-    front_kfs_assigned = front_kfs_assigned || (within_index == FKFS);
-    rear_kfs_assigned = rear_kfs_assigned || (within_index == RKFS);
+    front_kfs_assigned |= (within_index == FKFS);
+    rear_kfs_assigned |= (within_index == RKFS);
     std::vector<bool>::reference within =
       kfs_auto_collect_within_[target_forest_number - 1][within_index];
     std::vector<bool>::reference prev_within =
