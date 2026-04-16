@@ -120,10 +120,10 @@ public:
   enum class KfsAutoCollectStatus
   {
     NONE,
-    INNER_ACTIVE,           // 1回目: INNERが多い側から回収
-    OUTER_ACTIVE,           // 1回目: OUTERが多い側から回収
-    SECONDARY_INNER_ACTIVE, // 2回目: 1回目の回収後に残ったINNER側を回収
-    SECONDARY_OUTER_ACTIVE, // 2回目: 1回目の回収後に残ったOUTER側を回収
+    INNER_ACTIVE,            // 1回目: INNERが多い側から回収
+    OUTER_ACTIVE,            // 1回目: OUTERが多い側から回収
+    SECONDARY_INNER_ACTIVE,  // 2回目: 1回目の回収後に残ったINNER側を回収
+    SECONDARY_OUTER_ACTIVE,  // 2回目: 1回目の回収後に残ったOUTER側を回収
   };
 
   struct KfsAutoCollectPlan
@@ -254,6 +254,11 @@ public:
 
   double ps4_connection_timeout_ = 0.3;
 
+  // shareボタン長押し判定
+  double share_long_press_sec_ = 1.0;
+  rclcpp::Time share_press_start_time_;
+  bool share_long_press_triggered_ = false;
+
   // robot_move
   r1_msgs::msg::RobotMove current_robot_move_;
 
@@ -270,16 +275,16 @@ public:
   // ========== KFS回収 ==========
   // fx
   double KFS_FX_NORMAL_POS = 0.0;
-  double KFS_FX_START_POS = 0.0;
-  double KFS_FX_EXPAND_POS = 0.0;
   double KFS_FX_STORAGE_POS = 0.0;
+  double KFS_FX_START_POS = 0.0;
+  double KFS_FX_PUT_POS = 0.0;
+  double KFS_FX_EXPAND_POS = 0.0;
   // fz
   double KFS_FZ_NORMAL_POS = 0.0;
-  double KFS_FZ_EXPAND_POS = 0.0;
   double KFS_FZ_LOW_POS = 0.0;
   double KFS_FZ_MIDDLE_POS = 0.0;
   double KFS_FZ_HIGH_POS = 0.0;
-  double KFS_FZ_BOOK_POS = 0.0;
+  double KFS_FZ_PUT_POS = 0.0;
   double KFS_FZ_STORAGE_POS = 0.0;
   // fyaw
   double KFS_FYAW_NORMAL_ANGLE = 0.0;
@@ -288,16 +293,16 @@ public:
   double KFS_FYAW_REAR_ANGLE = 0.0;
   // rx
   double KFS_RX_NORMAL_POS = 0.0;
-  double KFS_RX_START_POS = 0.0;
-  double KFS_RX_EXPAND_POS = 0.0;
   double KFS_RX_STORAGE_POS = 0.0;
+  double KFS_RX_START_POS = 0.0;
+  double KFS_RX_PUT_POS = 0.0;
+  double KFS_RX_EXPAND_POS = 0.0;
   // rz
   double KFS_RZ_NORMAL_POS = 0.0;
-  double KFS_RZ_EXPAND_POS = 0.0;
   double KFS_RZ_LOW_POS = 0.0;
   double KFS_RZ_MIDDLE_POS = 0.0;
   double KFS_RZ_HIGH_POS = 0.0;
-  double KFS_RZ_BOOK_POS = 0.0;
+  double KFS_RZ_PUT_POS = 0.0;
   double KFS_RZ_STORAGE_POS = 0.0;
   // ryaw
   double KFS_RYAW_NORMAL_ANGLE = 0.0;

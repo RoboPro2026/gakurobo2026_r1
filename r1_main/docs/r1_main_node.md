@@ -262,7 +262,8 @@ LED は timer callback の最後に 1 回だけ更新されます。
   - `reset_robot(true)` を実行します。
   - `/r1_machine_initialize` を publish します。
 - `share`
-  - `OperationMode` を順送りします。
+  - 短押し（`share_long_press_sec` 秒未満でリリース）: `OperationMode` を順送りします。
+  - 長押し（`share_long_press_sec` 秒以上押し続けた時点で即時発火）: 一つ前の `OperationMode` へ戻ります。
 
 ### `OperationMode / MODE1_DETECT_ORIGIN`
 

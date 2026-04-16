@@ -4,9 +4,9 @@
  * @brief R1の状態遷移ノード
  * @version 0.1
  * @date 2025-09-27
- * 
+ *
  * @copyright Copyright (c) 2025
- * 
+ *
  */
 
 #include "r1_main/r1_main_node.h"
@@ -537,6 +537,7 @@ R1MainNode::R1MainNode() : Node("r1_main_node")
   // 足回り
   declare_and_get_parameter("timer_rate", timer_rate_, 100.0);
   declare_and_get_parameter("ps4_connection_timeout", ps4_connection_timeout_, 0.3);
+  declare_and_get_parameter("share_long_press_sec", share_long_press_sec_, 1.0);
   declare_and_get_parameter("chassis_make_spear_velocity", CHASSIS_MAKE_SPEAR_VELOCITY);
   declare_and_get_parameter("chassis_make_spear_omega", CHASSIS_MAKE_SPEAR_OMEGA);
   declare_and_get_parameter("chassis_max_velocity", CHASSIS_MAX_VELOCITY);
@@ -546,16 +547,16 @@ R1MainNode::R1MainNode() : Node("r1_main_node")
   // fx
   declare_and_get_parameter("kfs_fx_normal_pos", KFS_FX_NORMAL_POS);
   declare_and_get_parameter("kfs_fx_start_pos", KFS_FX_START_POS);
-  declare_and_get_parameter("kfs_fx_expand_pos", KFS_FX_EXPAND_POS);
+  declare_and_get_parameter("kfs_fx_put_pos", KFS_FX_PUT_POS);
   declare_and_get_parameter("kfs_fx_storage_pos", KFS_FX_STORAGE_POS);
+  declare_and_get_parameter("kfs_fx_expand_pos", KFS_FX_EXPAND_POS);
   // fz
   declare_and_get_parameter("kfs_fz_normal_pos", KFS_FZ_NORMAL_POS);
   declare_and_get_parameter("kfs_fz_low_pos", KFS_FZ_LOW_POS);
   declare_and_get_parameter("kfs_fz_middle_pos", KFS_FZ_MIDDLE_POS);
   declare_and_get_parameter("kfs_fz_high_pos", KFS_FZ_HIGH_POS);
-  declare_and_get_parameter("kfs_fz_book_pos", KFS_FZ_BOOK_POS);
-  declare_and_get_parameter("kfs_fz_expand_pos", KFS_FZ_EXPAND_POS, KFS_FZ_LOW_POS);
-  declare_and_get_parameter("kfs_fz_storage_pos", KFS_FZ_STORAGE_POS, KFS_FZ_BOOK_POS);
+  declare_and_get_parameter("kfs_fz_put_pos", KFS_FZ_PUT_POS);
+  declare_and_get_parameter("kfs_fz_storage_pos", KFS_FZ_STORAGE_POS);
   // fyaw
   declare_and_get_parameter("kfs_fyaw_normal_angle", KFS_FYAW_NORMAL_ANGLE);
   declare_and_get_parameter("kfs_fyaw_front_angle", KFS_FYAW_FRONT_ANGLE);
@@ -564,16 +565,16 @@ R1MainNode::R1MainNode() : Node("r1_main_node")
   // rx
   declare_and_get_parameter("kfs_rx_normal_pos", KFS_RX_NORMAL_POS);
   declare_and_get_parameter("kfs_rx_start_pos", KFS_RX_START_POS);
-  declare_and_get_parameter("kfs_rx_expand_pos", KFS_RX_EXPAND_POS);
+  declare_and_get_parameter("kfs_rx_put_pos", KFS_RX_PUT_POS);
   declare_and_get_parameter("kfs_rx_storage_pos", KFS_RX_STORAGE_POS);
+  declare_and_get_parameter("kfs_rx_expand_pos", KFS_RX_EXPAND_POS);
   // rz
   declare_and_get_parameter("kfs_rz_normal_pos", KFS_RZ_NORMAL_POS);
   declare_and_get_parameter("kfs_rz_low_pos", KFS_RZ_LOW_POS);
   declare_and_get_parameter("kfs_rz_middle_pos", KFS_RZ_MIDDLE_POS);
   declare_and_get_parameter("kfs_rz_high_pos", KFS_RZ_HIGH_POS);
-  declare_and_get_parameter("kfs_rz_book_pos", KFS_RZ_BOOK_POS);
-  declare_and_get_parameter("kfs_rz_expand_pos", KFS_RZ_EXPAND_POS, KFS_RZ_LOW_POS);
-  declare_and_get_parameter("kfs_rz_storage_pos", KFS_RZ_STORAGE_POS, KFS_RZ_BOOK_POS);
+  declare_and_get_parameter("kfs_rz_put_pos", KFS_RZ_PUT_POS);
+  declare_and_get_parameter("kfs_rz_storage_pos", KFS_RZ_STORAGE_POS);
   // ryaw
   declare_and_get_parameter("kfs_ryaw_normal_angle", KFS_RYAW_NORMAL_ANGLE);
   declare_and_get_parameter("kfs_ryaw_front_angle", KFS_RYAW_FRONT_ANGLE);
@@ -2025,19 +2026,16 @@ void R1MainNode::manual_mode4_fkfs(void)
     } else if (fz_step == 3) {
       kfs_fz_pos_ref(KFS_FZ_HIGH_POS);
     } else if (fz_step == 4) {
-      kfs_fz_pos_ref(KFS_FZ_BOOK_POS);
+      kfs_fz_pos_ref(KFS_FZ_PUT_POS);
     }
   }
 
   if (ps4_->is_pushed_right()) {
-    // kfs_fxを動かす
-    if (fx_step == 1) {
-      kfs_fx_pos_ref(KFS_FX_EXPAND_POS);
-      fx_step = 2;
-    } else {
-      kfs_fx_pos_ref(KFS_FX_NORMAL_POS);
-      fx_step = 1;
-    }
+    kfs_fx_pos_ref(KFS_FX_PUT_POS);
+    kfs_fz_pos_ref(KFS_FZ_PUT_POS);
+    kfs_rx_pos_ref(KFS_RX_NORMAL_POS);
+    kfs_rz_pos_ref(KFS_RZ_PUT_POS);
+    RCLCPP_INFO(this->get_logger(), "moved to front_kfs put position");
   }
 
   if (ps4_->is_pushed_down()) {
@@ -2091,8 +2089,20 @@ void R1MainNode::manual_mode4_fkfs(void)
   }
 
   if (ps4_->is_pushed_circle()) {
-    // kfs_fyawを微調整（指令値を増加）
-    kfs_fyaw_pos_ref(kfs_fyaw_position_ref_ + 0.1);
+    fx_step++;
+    if (fx_step > 4) {
+      fx_step = 4;
+    }
+    RCLCPP_INFO(this->get_logger(), "fx_step: %d", fx_step);
+    if (fx_step == 1) {
+      kfs_fx_pos_ref(KFS_FX_NORMAL_POS);
+    } else if (fx_step == 2) {
+      kfs_fx_pos_ref(KFS_FX_STORAGE_POS);
+    } else if (fx_step == 3) {
+      kfs_fx_pos_ref(KFS_FX_PUT_POS);
+    } else if (fx_step == 4) {
+      kfs_fx_pos_ref(KFS_FX_EXPAND_POS);
+    }
   }
 
   if (ps4_->is_pushed_cross()) {
@@ -2112,8 +2122,20 @@ void R1MainNode::manual_mode4_fkfs(void)
   }
 
   if (ps4_->is_pushed_square()) {
-    // kfs_fyawを微調整（指令値を減少）
-    kfs_fyaw_pos_ref(kfs_fyaw_position_ref_ - 0.05);
+    fx_step--;
+    if (fx_step < 1) {
+      fx_step = 1;
+    }
+    RCLCPP_INFO(this->get_logger(), "fx_step: %d", fx_step);
+    if (fx_step == 1) {
+      kfs_fx_pos_ref(KFS_FX_NORMAL_POS);
+    } else if (fx_step == 2) {
+      kfs_fx_pos_ref(KFS_FX_STORAGE_POS);
+    } else if (fx_step == 3) {
+      kfs_fx_pos_ref(KFS_FX_PUT_POS);
+    } else if (fx_step == 4) {
+      kfs_fx_pos_ref(KFS_FX_EXPAND_POS);
+    }
   }
 
   if (ps4_->is_pushed_l1()) {
@@ -2158,19 +2180,16 @@ void R1MainNode::manual_mode5_rkfs(void)
     } else if (rz_step == 3) {
       kfs_rz_pos_ref(KFS_RZ_HIGH_POS);
     } else if (rz_step == 4) {
-      kfs_rz_pos_ref(KFS_RZ_BOOK_POS);
+      kfs_rz_pos_ref(KFS_RZ_PUT_POS);
     }
   }
 
   if (ps4_->is_pushed_right()) {
-    // kfs_rxを動かす
-    if (rx_step == 1) {
-      kfs_rx_pos_ref(KFS_RX_EXPAND_POS);
-      rx_step = 2;
-    } else {
-      kfs_rx_pos_ref(KFS_RX_NORMAL_POS);
-      rx_step = 1;
-    }
+    RCLCPP_INFO(this->get_logger(), "moved to rear_kfs put position");
+    kfs_fx_pos_ref(KFS_FX_NORMAL_POS);
+    kfs_fz_pos_ref(KFS_FZ_PUT_POS);
+    kfs_rx_pos_ref(KFS_RX_PUT_POS);
+    kfs_rz_pos_ref(KFS_RZ_PUT_POS);
   }
 
   if (ps4_->is_pushed_down()) {
@@ -2224,8 +2243,20 @@ void R1MainNode::manual_mode5_rkfs(void)
   }
 
   if (ps4_->is_pushed_circle()) {
-    // kfs_ryawを微調整（指令値を増加）
-    kfs_ryaw_pos_ref(kfs_ryaw_position_ref_ + 0.1);
+    rx_step++;
+    if (rx_step > 4) {
+      rx_step = 4;
+    }
+    RCLCPP_INFO(this->get_logger(), "rx_step: %d", rx_step);
+    if (rx_step == 1) {
+      kfs_rx_pos_ref(KFS_RX_NORMAL_POS);
+    } else if (rx_step == 2) {
+      kfs_rx_pos_ref(KFS_RX_STORAGE_POS);
+    } else if (rx_step == 3) {
+      kfs_rx_pos_ref(KFS_RX_PUT_POS);
+    } else if (rx_step == 4) {
+      kfs_rx_pos_ref(KFS_RX_EXPAND_POS);
+    }
   }
 
   if (ps4_->is_pushed_cross()) {
@@ -2245,8 +2276,20 @@ void R1MainNode::manual_mode5_rkfs(void)
   }
 
   if (ps4_->is_pushed_square()) {
-    // kfs_ryawを微調整（指令値を減少）
-    kfs_ryaw_pos_ref(kfs_ryaw_position_ref_ - 0.1);
+    rx_step--;
+    if (rx_step < 1) {
+      rx_step = 1;
+    }
+    RCLCPP_INFO(this->get_logger(), "rx_step: %d", rx_step);
+    if (rx_step == 1) {
+      kfs_rx_pos_ref(KFS_RX_NORMAL_POS);
+    } else if (rx_step == 2) {
+      kfs_rx_pos_ref(KFS_RX_STORAGE_POS);
+    } else if (rx_step == 3) {
+      kfs_rx_pos_ref(KFS_RX_PUT_POS);
+    } else if (rx_step == 4) {
+      kfs_rx_pos_ref(KFS_RX_EXPAND_POS);
+    }
   }
 
   if (ps4_->is_pushed_l1()) {
@@ -2273,6 +2316,23 @@ void R1MainNode::manual_mode5_rkfs(void)
 void R1MainNode::manual_mode6_r2_lift(void)
 {
   int & r2_lift_step = manual_mode6_r2_lift_step_;
+
+  if (ps4_->is_pushed_up()) {
+    kfs_fyaw_pos_ref(kfs_fyaw_position_ref_ + 0.05);
+  }
+
+  if (ps4_->is_pushed_right()) {
+    kfs_fyaw_pos_ref(kfs_fyaw_position_ref_ - 0.05);
+  }
+
+  if (ps4_->is_pushed_down()) {
+    kfs_fyaw_pos_ref(kfs_fyaw_position_ref_ + 0.05);
+  }
+
+  if (ps4_->is_pushed_left()) {
+    kfs_fyaw_pos_ref(kfs_fyaw_position_ref_ - 0.05);
+  }
+
   // fliftは逆転、rliftは正転させると、上昇する。
   if (ps4_->is_pushing_triangle()) {
     if (r2_lift_step != 2) {
@@ -2319,8 +2379,8 @@ void R1MainNode::manual_mode6_r2_lift(void)
 }
 
 /**
- * @brief 
- * 
+ * @brief
+ *
  * @param n 何個目の機構を動かすか。
  * @param m どの高さを狙うか。m==1で下段、m==2で中段、m==3で上段を狙う
  */
@@ -3103,7 +3163,18 @@ void R1MainNode::main_task(void)
       }
     }
   }
+  // shareボタン: 短押し→次のモードへ、長押し（1秒以上）→一つ前のモードへ戻る
   if (ps4_->is_pushed_share()) {
+    share_press_start_time_ = this->now();
+    share_long_press_triggered_ = false;
+  }
+  if (ps4_->is_pushing_share() && !share_long_press_triggered_) {
+    if ((this->now() - share_press_start_time_).seconds() >= share_long_press_sec_) {
+      next_state.operation_mode = state_machine_->get_prev_state().operation_mode;
+      share_long_press_triggered_ = true;
+    }
+  }
+  if (ps4_->is_released_share() && !share_long_press_triggered_) {
     next_state.operation_mode = next_operation_mode(current_state.operation_mode);
   }
 
