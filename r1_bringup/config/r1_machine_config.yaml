@@ -406,6 +406,7 @@ r1_kfs_fyaw_node:
     contact_torque_limit: 0.75 # Nm
     origin_detect_threshold_time: 0.5 # 秒
     origin_detect_speed: -6.28 # rad/s
+    move_mech_lock_speed: 30.0 # rad/s
     angle_min: -5.0
     angle_max: 5.0
     normal_angle: 0.1
@@ -475,6 +476,7 @@ r1_kfs_ryaw_node:
     contact_torque_limit: 0.75 # Nm
     origin_detect_threshold_time: 0.5 # 秒
     origin_detect_speed: -6.28 # rad/s
+    move_mech_lock_speed: 30.0 # rad/s
     angle_min: -5.0
     angle_max: 5.0
     normal_angle: 0.1
