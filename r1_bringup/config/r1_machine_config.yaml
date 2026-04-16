@@ -129,7 +129,7 @@ r1_main_node:
     kfs_fx_storage_pos: 0.2
     # fz
     kfs_fz_normal_pos: 0.005
-    kfs_fz_low_pos: 0.02
+    kfs_fz_low_pos: 0.005
     kfs_fz_middle_pos: 0.22
     kfs_fz_high_pos: 0.42
     kfs_fz_book_pos: 0.5
@@ -146,7 +146,7 @@ r1_main_node:
     kfs_rx_storage_pos: 0.2
     # rz
     kfs_rz_normal_pos: 0.005
-    kfs_rz_low_pos: 0.02
+    kfs_rz_low_pos: 0.005
     kfs_rz_middle_pos: 0.22
     kfs_rz_high_pos: 0.42
     kfs_rz_book_pos: 0.5
@@ -284,7 +284,6 @@ r1_main_node:
       12: [0.6, 6.55, 1.57]
     collect_kfs_offset: 0.838 # KFS回収時のオフセット（front_kfsかrear_kfsのうち、遠い方に適応する）
     kfs_yaw_delay_time: 1.0 # 範囲外へ出たあとに収納用 yaw を送るまでの遅延時間 [s]
-    # collect_kfs_offset: 0.419 # KFS回収時のオフセット（front_kfsかrear_kfsのうち、遠い方に適応する）
 
 # -------- 足回り ----------
 r1_mecanum_node:
@@ -822,7 +821,7 @@ sabacan_robomasv2_node_id3:
     pos_gain_p: [5.0, 5.0, 5.0, 5.0]
     pos_gain_i: [0.0, 0.0, 0.0, 0.0]
     pos_gain_d: [0.0, 0.0, 0.0, 0.0]
-    speed_lim: [100.0, 100.0, 30.0, 30.0]
+    speed_lim: [100.0, 100.0, 100.0, 30.0]
     # TRQ+SPD+POSをフィードバック
     monitor_reg1: [0x0001000100010000, 0x0001000100010000, 0x0001000100010000, 0x0001000100010000]
     # TRQ+SPD+POS+MOTOR_STATEをフィードバック
@@ -847,7 +846,7 @@ sabacan_robomasv2_node_id4:
     pos_gain_p: [5.0, 5.0, 5.0, 5.0]
     pos_gain_i: [0.0, 0.0, 0.0, 0.0]
     pos_gain_d: [0.0, 0.0, 0.0, 0.0]
-    speed_lim: [100.0, 100.0, 30.0, 30.0]
+    speed_lim: [100.0, 100.0, 100.0, 30.0]
     # TRQ+SPD+POSをフィードバック
     monitor_reg1: [0x0001000100010000, 0x0001000100010000, 0x0001000100010000, 0x0001000100010000]
     # TRQ+SPD+POS+MOTOR_STATEをフィードバック
