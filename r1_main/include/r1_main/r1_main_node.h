@@ -59,6 +59,7 @@ public:
     rclcpp::Publisher<std_msgs::msg::Float64>::SharedPtr speed_ref_publisher;
     rclcpp::Publisher<std_msgs::msg::Bool>::SharedPtr detect_origin_publisher;
     rclcpp::Publisher<std_msgs::msg::Empty>::SharedPtr speed_mode_stop_publisher;
+    rclcpp::Publisher<std_msgs::msg::Int32>::SharedPtr move_mech_lock_publisher;
     rclcpp::Subscription<std_msgs::msg::Int32>::SharedPtr mode_status_subscription;
     bool is_pos_mode = false;
     double position_ref = 0.0;
@@ -404,6 +405,7 @@ public:
   void publish_position_axis_speed_ref(const std::string & name, double speed);
   void detect_origin_position_axis(const std::string & name);
   void stop_position_axis_speed_mode(const std::string & name);
+  void move_mech_lock_position_axis(const std::string & name, int direction);
   void publish_velocity_axis(const std::string & name, double vel);
   void publish_gpio_pwm_output(const std::string & name, double ref);
   void publish_gpio_servo_output(const std::string & name, int ref);
@@ -563,6 +565,24 @@ public:
   void spear_roll_detect_origin(void);
   void spear_pitch1_detect_origin(void);
   void spear_pitch2_detect_origin(void);
+  // ========== move_mech_lock関数 ==========
+  // KFS回収
+  void kfs_fx_move_mech_lock(int direction);
+  void kfs_fz_move_mech_lock(int direction);
+  void kfs_fyaw_move_mech_lock(int direction);
+  void kfs_rx_move_mech_lock(int direction);
+  void kfs_rz_move_mech_lock(int direction);
+  void kfs_ryaw_move_mech_lock(int direction);
+  // やり
+  void spear1_move_mech_lock(int direction);
+  void spear2_move_mech_lock(int direction);
+  void spear3_move_mech_lock(int direction);
+  void spear4_move_mech_lock(int direction);
+  void spear_x_move_mech_lock(int direction);
+  void spear_y_move_mech_lock(int direction);
+  void spear_roll_move_mech_lock(int direction);
+  void spear_pitch1_move_mech_lock(int direction);
+  void spear_pitch2_move_mech_lock(int direction);
   // ========== センサーの取得 ==========
   bool get_kfs_fz_low_switch_status(void) { return kfs_fz_low_switch_status_; }
   bool get_kfs_rz_low_switch_status(void) { return kfs_rz_low_switch_status_; }

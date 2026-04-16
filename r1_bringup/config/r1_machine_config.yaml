@@ -166,7 +166,7 @@ r1_main_node:
 
     # ========== やり ==========
     # spear1
-    spear1_normal_pos: 0.0
+    spear1_normal_pos: 0.05
     # ポールを掴む位置
     spear1_collect1_pos: 0.25
     # ポールを掴んでちょっとだけ上げたときの位置
@@ -182,7 +182,7 @@ r1_main_node:
     # スピアを押し込むときの速度[rad/s]
     spear1_push_vel: 10.0
     # spear2
-    spear2_normal_pos: 0.0
+    spear2_normal_pos: 0.05
     # ポールを掴む位置
     spear2_collect1_pos: 0.25
     # ポールを掴んでちょっとだけ上げたときの位置
@@ -493,7 +493,7 @@ r1_spear1_node:
     # 通常位置モード時に Robomas の torque_lim として使う値
     normal_torque_limit: 1.0 # Nm
     # 原点検出・メカロック移動中に Robomas の torque_lim として使う値
-    contact_torque_limit: 1.0 # Nm
+    contact_torque_limit: 0.75 # Nm
     origin_detect_threshold_time: 0.5 # 秒
     # 原点検出のときは、0の方向に戻るので、負の速度にする
     origin_detect_speed: -6.28 # rad/s
@@ -517,12 +517,13 @@ r1_spear2_node:
     # 通常位置モード時に Robomas の torque_lim として使う値
     normal_torque_limit: 1.0 # Nm
     # 原点検出・メカロック移動中に Robomas の torque_lim として使う値
-    contact_torque_limit: 1.0 # Nm
+    contact_torque_limit: 0.75 # Nm
     origin_detect_threshold_time: 0.5 # 秒
     # 原点検出のときは、0の方向に戻るので、負の速度にする
     origin_detect_speed: -6.28 # rad/s
     pos_min: -0.1
     pos_max: 1.0
+    normal_pos: 0.05
     # モータが1回転すると100mm進むので、半径は15.9mm
     radius: 0.015915494309189534
     inverse_motor: false

@@ -185,6 +185,8 @@ void R1MainNode::register_position_axis(
     this->create_publisher<std_msgs::msg::Bool>("/" + name + "_detect_origin", 10);
   axis.speed_mode_stop_publisher =
     this->create_publisher<std_msgs::msg::Empty>("/" + name + "_speed_mode_stop", 10);
+  axis.move_mech_lock_publisher =
+    this->create_publisher<std_msgs::msg::Int32>("/" + name + "_move_mech_lock", 10);
   axis.mode_status_subscription = this->create_subscription<std_msgs::msg::Int32>(
     "/" + name + "_mode_status", 10, create_mode_status_callback(&axis, name));
 }
@@ -338,6 +340,25 @@ void R1MainNode::stop_position_axis_speed_mode(const std::string & name)
   std_msgs::msg::Empty msg;
   it->second.speed_mode_stop_publisher->publish(msg);
   RCLCPP_INFO(this->get_logger(), "%s speed_mode_stop", name.c_str());
+}
+
+/**
+ * @brief 指定した位置制御軸へ mech lock 移動指令を publish する。
+ * @param name 軸名。
+ * @param direction 移動方向。正の値で正方向、負の値で負方向、0 で停止。
+ */
+void R1MainNode::move_mech_lock_position_axis(const std::string & name, int direction)
+{
+  const auto it = position_axes_.find(name);
+  if (it == position_axes_.end() || !it->second.move_mech_lock_publisher) {
+    RCLCPP_ERROR(this->get_logger(), "%s move_mech_lock axis is not initialized", name.c_str());
+    return;
+  }
+
+  std_msgs::msg::Int32 msg;
+  msg.data = direction;
+  it->second.move_mech_lock_publisher->publish(msg);
+  RCLCPP_INFO(this->get_logger(), "%s move_mech_lock direction %d", name.c_str(), direction);
 }
 
 /**
@@ -767,6 +788,81 @@ void R1MainNode::spear_roll_detect_origin(void) { detect_origin_position_axis("s
 void R1MainNode::spear_pitch1_detect_origin(void) { detect_origin_position_axis("spear_pitch1"); }
 
 void R1MainNode::spear_pitch2_detect_origin(void) { detect_origin_position_axis("spear_pitch2"); }
+
+void R1MainNode::kfs_fx_move_mech_lock(int direction)
+{
+  move_mech_lock_position_axis("kfs_fx", direction);
+}
+
+void R1MainNode::kfs_fz_move_mech_lock(int direction)
+{
+  move_mech_lock_position_axis("kfs_fz", direction);
+}
+
+void R1MainNode::kfs_fyaw_move_mech_lock(int direction)
+{
+  move_mech_lock_position_axis("kfs_fyaw", direction);
+}
+
+void R1MainNode::kfs_rx_move_mech_lock(int direction)
+{
+  move_mech_lock_position_axis("kfs_rx", direction);
+}
+
+void R1MainNode::kfs_rz_move_mech_lock(int direction)
+{
+  move_mech_lock_position_axis("kfs_rz", direction);
+}
+
+void R1MainNode::kfs_ryaw_move_mech_lock(int direction)
+{
+  move_mech_lock_position_axis("kfs_ryaw", direction);
+}
+
+void R1MainNode::spear1_move_mech_lock(int direction)
+{
+  move_mech_lock_position_axis("spear1", direction);
+}
+
+void R1MainNode::spear2_move_mech_lock(int direction)
+{
+  move_mech_lock_position_axis("spear2", direction);
+}
+
+void R1MainNode::spear3_move_mech_lock(int direction)
+{
+  move_mech_lock_position_axis("spear3", direction);
+}
+
+void R1MainNode::spear4_move_mech_lock(int direction)
+{
+  move_mech_lock_position_axis("spear4", direction);
+}
+
+void R1MainNode::spear_x_move_mech_lock(int direction)
+{
+  move_mech_lock_position_axis("spear_x", direction);
+}
+
+void R1MainNode::spear_y_move_mech_lock(int direction)
+{
+  move_mech_lock_position_axis("spear_y", direction);
+}
+
+void R1MainNode::spear_roll_move_mech_lock(int direction)
+{
+  move_mech_lock_position_axis("spear_roll", direction);
+}
+
+void R1MainNode::spear_pitch1_move_mech_lock(int direction)
+{
+  move_mech_lock_position_axis("spear_pitch1", direction);
+}
+
+void R1MainNode::spear_pitch2_move_mech_lock(int direction)
+{
+  move_mech_lock_position_axis("spear_pitch2", direction);
+}
 
 // --- コールバック関数 ---
 void R1MainNode::joy_callback(const sensor_msgs::msg::Joy::SharedPtr msg)
@@ -1656,13 +1752,13 @@ void R1MainNode::manual_mode1_detect_origin(void)
   //   rear_expand_detect_origin();
   // }
 
-  // if (ps4_->is_pushed_l1()) {
-  //   spear_roger1_detect_origin();
-  // }
+  if (ps4_->is_pushed_l1()) {
+    spear1_detect_origin();
+  }
 
-  // if (ps4_->is_pushed_r1()) {
-  //   spear_roger2_detect_origin();
-  // }
+  if (ps4_->is_pushed_r1()) {
+    spear2_detect_origin();
+  }
 
   // if (ps4_->is_pushed_l2()) {
   //   spear_move_detect_origin();
