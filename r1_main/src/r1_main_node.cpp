@@ -1212,8 +1212,12 @@ void R1MainNode::publish_robot_move(
 
 bool R1MainNode::is_localization_ready(void)
 {
+  if (!tf_buffer_->_frameExists("map") || !tf_buffer_->_frameExists("base_link")) {
+    return false;
+  }
+  std::string err;
   return tf_buffer_->canTransform(
-    "map", "base_link", tf2::TimePointZero, tf2::durationFromSec(0.0));
+    "map", "base_link", tf2::TimePointZero, tf2::durationFromSec(0.0), &err);
 }
 
 void R1MainNode::request_auto_robot_move(
