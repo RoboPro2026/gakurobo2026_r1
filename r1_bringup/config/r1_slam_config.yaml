@@ -113,6 +113,11 @@ amcl:
     alpha5: 0.2   # Omni 専用の並進ノイズ
     # 値を大きくすると odom を信用しにくくなる
 
+    recovery_alpha_fast: 0.1
+    recovery_alpha_slow: 0.001
+    # フィルタが崩れたときにランダム粒子を入れて復帰しやすくする
+    # fast は変化検出、slow は長期平均との差分を見るための係数
+
     # min_particles: 500   # 粒子数の最小値
     min_particles: 1000   # 粒子数の最小値
     max_particles: 3000  # 粒子数の最大値。増やすと計算量も増える
