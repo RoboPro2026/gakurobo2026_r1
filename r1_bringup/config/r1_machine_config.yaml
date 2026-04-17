@@ -123,7 +123,9 @@ r1_main_node:
     chassis_max_velocity: 0.6
     chassis_max_omega: 0.5
     # ========== KFS回収 ==========
-    use_kfs_mech_lock: true
+    # 現状だと、fx,fz,rx,rzのnormal_torqueが1Nmになっていて、長時間接触しているとC610が止まるので、falseにする
+    # normal_torqueをもう少し低くできれば、trueにする予定
+    use_kfs_mech_lock: false
     # fx
     kfs_fx_normal_pos: 0.05
     kfs_fx_storage_pos: 0.2

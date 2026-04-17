@@ -2198,7 +2198,7 @@ void R1MainNode::manual_mode4_fkfs(void)
     if (USE_KFS_MECH_LOCK && next_ref < KFS_FZ_LOW_MECH_LOCK_POS) {
       kfs_fz_position_ref_ = KFS_FZ_LOW_MECH_LOCK_POS;
       kfs_fz_move_mech_lock(-1);
-      RCLCPP_INFO(this->get_logger(), "moved kfs_fz mech lock");
+      RCLCPP_INFO(this->get_logger(), "moved kfs_fz low mech lock");
     } else {
       kfs_fz_pos_ref(kfs_fz_position_ref_ - 0.01);
     }
@@ -2211,7 +2211,7 @@ void R1MainNode::manual_mode4_fkfs(void)
     if (USE_KFS_MECH_LOCK && next_ref > KFS_FZ_HIGH_MECH_LOCK_POS) {
       kfs_fz_position_ref_ = KFS_FZ_HIGH_MECH_LOCK_POS;
       kfs_fz_move_mech_lock(1);
-      RCLCPP_INFO(this->get_logger(), "moved kfs_fz mech lock");
+      RCLCPP_INFO(this->get_logger(), "moved kfs_fz high mech lock");
     } else {
       kfs_fz_pos_ref(kfs_fz_position_ref_ + 0.01);
     }
