@@ -52,8 +52,8 @@ r1_chassis_control_node:
     # 内回り/外回りの減速範囲の中心座標 [x, y, yaw]
     # # 内回りのときは2,1,4,7,10を通る
     inner_decel_center_pos:
-      1: [3.75, 2.58, 0.0]
-      2: [2.55, 2.58, 0.0]
+      1: [3.6, 2.58, 0.0]
+      2: [2.4, 2.58, 0.0]
       3: [100.0, 100.0, 0.0] # ここは通らない
       4: [5.4, 4.2, 1.57]
       5: [100.0, 100.0, 0.0] # ここにはKFSは置かれない
@@ -248,8 +248,8 @@ r1_main_node:
     # KFSが置かれている場所
     # kfs_forest_number: [4]
     # kfs_forest_number: [4, 2]
-    # kfs_forest_number: [4, 7]
-    kfs_forest_number: [2, 1]
+    kfs_forest_number: [4, 7]
+    # kfs_forest_number: [2, 1]
     # KFS回収範囲の長方形サイズ [m]
     # yaw=0 のとき width は map の x 方向、height は map の y 方向の長さになる
     # yaw を与えた場合は、その yaw だけ回転した長方形ローカル座標系での幅と高さになる
@@ -257,12 +257,12 @@ r1_main_node:
     collect_kfs_width: 0.6
     # false にすると auto_collect_kfs_task は範囲判定と LED 更新だけ行い、
     # KFS の位置・yaw・ポンプ・バルブ指令は出さない
-    enable_auto_collect_kfs_actuator: false
+    enable_auto_collect_kfs_actuator: true
     # 内回り/外回りのKFS回収範囲の中心座標 [x, y, yaw]
     # # 内回りのときは2,1,4,7,10を通る
     inner_collect_kfs_center_pos:
-      1: [3.75, 2.58, 0.0]
-      2: [2.55, 2.58, 0.0]
+      1: [3.6, 2.58, 0.0]
+      2: [2.4, 2.58, 0.0]
       3: [100.0, 100.0, 0.0] # ここは通らない
       4: [5.4, 4.2, 1.57]
       5: [100.0, 100.0, 0.0] # ここにはKFSは置かれない
