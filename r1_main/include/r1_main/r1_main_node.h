@@ -540,6 +540,11 @@ public:
   void kfs_rx_move_mech_lock(int direction);
   void kfs_rz_move_mech_lock(int direction);
   void kfs_ryaw_move_mech_lock(int direction);
+  // fyawとryawはmech_lockの方向がわからなくなることが多いので関数を作る
+  void kfs_fyaw_move_front_mech_lock(void);
+  void kfs_fyaw_move_rear_mech_lock(void);
+  void kfs_ryaw_move_front_mech_lock(void);
+  void kfs_ryaw_move_rear_mech_lock(void);
   // やり
   void spear1_move_mech_lock(int direction);
   void spear2_move_mech_lock(int direction);
