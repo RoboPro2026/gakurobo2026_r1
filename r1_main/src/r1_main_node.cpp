@@ -865,10 +865,10 @@ void R1MainNode::spear_pitch2_move_mech_lock(int direction)
   move_mech_lock_position_axis("spear_pitch2", direction);
 }
 
-void R1MainNode::kfs_fyaw_move_front_mech_lock(void) { kfs_fyaw_move_mech_lock(-1); }
-void R1MainNode::kfs_fyaw_move_rear_mech_lock(void) { kfs_fyaw_move_mech_lock(1); }
-void R1MainNode::kfs_ryaw_move_front_mech_lock(void) { kfs_ryaw_move_mech_lock(-1); }
-void R1MainNode::kfs_ryaw_move_rear_mech_lock(void) { kfs_ryaw_move_mech_lock(1); }
+void R1MainNode::kfs_fyaw_move_front_mech_lock(void) { kfs_fyaw_move_mech_lock(1); }
+void R1MainNode::kfs_fyaw_move_rear_mech_lock(void) { kfs_fyaw_move_mech_lock(-1); }
+void R1MainNode::kfs_ryaw_move_front_mech_lock(void) { kfs_ryaw_move_mech_lock(1); }
+void R1MainNode::kfs_ryaw_move_rear_mech_lock(void) { kfs_ryaw_move_mech_lock(-1); }
 
 // --- コールバック関数 ---
 void R1MainNode::joy_callback(const sensor_msgs::msg::Joy::SharedPtr msg)
@@ -1680,21 +1680,21 @@ void R1MainNode::kfs_init_pos(void)
     kfs_fz_pos_ref(KFS_FZ_STORAGE_POS);
     kfs_rz_pos_ref(KFS_RZ_STORAGE_POS);
     if (zone_ == "blue" && chassis_act_status_ == ChassisAct::ACT2) {
-      // rear
-      kfs_fyaw_move_rear_mech_lock();
-      kfs_ryaw_move_rear_mech_lock();
+      // front
+      kfs_fyaw_move_front_mech_lock();
+      kfs_ryaw_move_front_mech_lock();
     } else if (zone_ == "blue" && chassis_act_status_ == ChassisAct::ACT3) {
-      // front
-      kfs_fyaw_move_front_mech_lock();
-      kfs_ryaw_move_front_mech_lock();
-    } else if (zone_ == "red" && chassis_act_status_ == ChassisAct::ACT2) {
-      // front
-      kfs_fyaw_move_front_mech_lock();
-      kfs_ryaw_move_front_mech_lock();
-    } else if (zone_ == "red" && chassis_act_status_ == ChassisAct::ACT3) {
       // rear
       kfs_fyaw_move_rear_mech_lock();
       kfs_ryaw_move_rear_mech_lock();
+    } else if (zone_ == "red" && chassis_act_status_ == ChassisAct::ACT2) {
+      // rear
+      kfs_fyaw_move_rear_mech_lock();
+      kfs_ryaw_move_rear_mech_lock();
+    } else if (zone_ == "red" && chassis_act_status_ == ChassisAct::ACT3) {
+      // front
+      kfs_fyaw_move_front_mech_lock();
+      kfs_ryaw_move_front_mech_lock();
     }
     kfs_front_pump(0.0);
     kfs_rear_pump(0.0);
@@ -2093,11 +2093,11 @@ void R1MainNode::manual_mode4_fkfs(void)
     }
     RCLCPP_INFO(this->get_logger(), "fyaw_step: %d", fyaw_step);
     if (fyaw_step == 1) {
-      kfs_fyaw_move_front_mech_lock();
+      kfs_fyaw_move_rear_mech_lock();
     } else if (fyaw_step == 2) {
       kfs_fyaw_pos_ref(KFS_FYAW_SIDE_ANGLE);
     } else if (fyaw_step == 3) {
-      kfs_fyaw_move_rear_mech_lock();
+      kfs_fyaw_move_front_mech_lock();
     }
   }
 
@@ -2126,11 +2126,11 @@ void R1MainNode::manual_mode4_fkfs(void)
     }
     RCLCPP_INFO(this->get_logger(), "fyaw_step: %d", fyaw_step);
     if (fyaw_step == 1) {
-      kfs_fyaw_move_front_mech_lock();
+      kfs_fyaw_move_rear_mech_lock();
     } else if (fyaw_step == 2) {
       kfs_fyaw_pos_ref(KFS_FYAW_SIDE_ANGLE);
     } else if (fyaw_step == 3) {
-      kfs_fyaw_move_rear_mech_lock();
+      kfs_fyaw_move_front_mech_lock();
     }
   }
 
@@ -2247,11 +2247,11 @@ void R1MainNode::manual_mode5_rkfs(void)
     }
     RCLCPP_INFO(this->get_logger(), "ryaw_step: %d", ryaw_step);
     if (ryaw_step == 1) {
-      kfs_ryaw_move_front_mech_lock();
+      kfs_ryaw_move_rear_mech_lock();
     } else if (ryaw_step == 2) {
       kfs_ryaw_pos_ref(KFS_RYAW_SIDE_ANGLE);
     } else if (ryaw_step == 3) {
-      kfs_ryaw_move_rear_mech_lock();
+      kfs_ryaw_move_front_mech_lock();
     }
   }
 
@@ -2280,11 +2280,11 @@ void R1MainNode::manual_mode5_rkfs(void)
     }
     RCLCPP_INFO(this->get_logger(), "ryaw_step: %d", ryaw_step);
     if (ryaw_step == 1) {
-      kfs_ryaw_move_front_mech_lock();
+      kfs_ryaw_move_rear_mech_lock();
     } else if (ryaw_step == 2) {
       kfs_ryaw_pos_ref(KFS_RYAW_SIDE_ANGLE);
     } else if (ryaw_step == 3) {
-      kfs_ryaw_move_rear_mech_lock();
+      kfs_ryaw_move_front_mech_lock();
     }
   }
 
@@ -2686,13 +2686,13 @@ void R1MainNode::auto_collect_kfs_task(void)
             // 回収機構を動かす
             kfs_fx_pos_ref(KFS_FX_EXPAND_POS);
             if (zone_ == "blue" && is_inner) {
-              kfs_fyaw_move_rear_mech_lock();
+              kfs_fyaw_move_front_mech_lock();
             } else if (zone_ == "blue" && !is_inner) {
-              kfs_fyaw_move_front_mech_lock();
-            } else if (zone_ == "red" && is_inner) {
-              kfs_fyaw_move_front_mech_lock();
-            } else if (zone_ == "red" && !is_inner) {
               kfs_fyaw_move_rear_mech_lock();
+            } else if (zone_ == "red" && is_inner) {
+              kfs_fyaw_move_rear_mech_lock();
+            } else if (zone_ == "red" && !is_inner) {
+              kfs_fyaw_move_front_mech_lock();
             }
             kfs_front_pump(1.0);
             kfs_front_valve(false);
@@ -2711,13 +2711,13 @@ void R1MainNode::auto_collect_kfs_task(void)
             // 回収機構を動かす
             kfs_rx_pos_ref(KFS_RX_EXPAND_POS);
             if (zone_ == "blue" && is_inner) {
-              kfs_ryaw_move_rear_mech_lock();
+              kfs_ryaw_move_front_mech_lock();
             } else if (zone_ == "blue" && !is_inner) {
-              kfs_ryaw_move_front_mech_lock();
-            } else if (zone_ == "red" && is_inner) {
-              kfs_ryaw_move_front_mech_lock();
-            } else if (zone_ == "red" && !is_inner) {
               kfs_ryaw_move_rear_mech_lock();
+            } else if (zone_ == "red" && is_inner) {
+              kfs_ryaw_move_rear_mech_lock();
+            } else if (zone_ == "red" && !is_inner) {
+              kfs_ryaw_move_front_mech_lock();
             }
             kfs_rear_pump(1.0);
             kfs_rear_valve(false);

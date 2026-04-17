@@ -138,9 +138,9 @@ r1_main_node:
     kfs_fz_storage_pos: 0.5
     # fyaw
     kfs_fyaw_normal_angle: 0.0
-    kfs_fyaw_front_angle: 0.0
+    kfs_fyaw_front_angle: 3.141592653589793
     kfs_fyaw_side_angle: 1.5707963267948966
-    kfs_fyaw_rear_angle: 3.141592653589793
+    kfs_fyaw_rear_angle: 0.0
     # rx
     kfs_rx_normal_pos: 0.05
     kfs_rx_storage_pos: 0.2
@@ -157,9 +157,9 @@ r1_main_node:
     kfs_rz_put_pos: 0.5
     # ryaw
     kfs_ryaw_normal_angle: 0.0
-    kfs_ryaw_front_angle: 0.0
+    kfs_ryaw_front_angle: 3.141592653589793
     kfs_ryaw_side_angle: 1.5707963267948966
-    kfs_ryaw_rear_angle: 3.141592653589793
+    kfs_ryaw_rear_angle: 0.0
     # 回収するときの遅延時間
     kfs_yaw_delay_time: 0.4
 
