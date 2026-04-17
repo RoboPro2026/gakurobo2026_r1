@@ -544,12 +544,15 @@ R1MainNode::R1MainNode() : Node("r1_main_node")
   declare_and_get_parameter("chassis_max_omega", CHASSIS_MAX_OMEGA);
 
   // ========== KFS回収 ==========
+  declare_and_get_parameter("use_kfs_mech_lock", USE_KFS_MECH_LOCK);
   // fx
   declare_and_get_parameter("kfs_fx_normal_pos", KFS_FX_NORMAL_POS);
   declare_and_get_parameter("kfs_fx_start_pos", KFS_FX_START_POS);
   declare_and_get_parameter("kfs_fx_put_pos", KFS_FX_PUT_POS);
   declare_and_get_parameter("kfs_fx_storage_pos", KFS_FX_STORAGE_POS);
   declare_and_get_parameter("kfs_fx_expand_pos", KFS_FX_EXPAND_POS);
+  declare_and_get_parameter("kfs_fx_low_mech_lock_pos", KFS_FX_LOW_MECH_LOCK_POS);
+  declare_and_get_parameter("kfs_fx_high_mech_lock_pos", KFS_FX_HIGH_MECH_LOCK_POS);
   // fz
   declare_and_get_parameter("kfs_fz_normal_pos", KFS_FZ_NORMAL_POS);
   declare_and_get_parameter("kfs_fz_low_pos", KFS_FZ_LOW_POS);
@@ -557,17 +560,23 @@ R1MainNode::R1MainNode() : Node("r1_main_node")
   declare_and_get_parameter("kfs_fz_high_pos", KFS_FZ_HIGH_POS);
   declare_and_get_parameter("kfs_fz_put_pos", KFS_FZ_PUT_POS);
   declare_and_get_parameter("kfs_fz_storage_pos", KFS_FZ_STORAGE_POS);
+  declare_and_get_parameter("kfs_fz_low_mech_lock_pos", KFS_FZ_LOW_MECH_LOCK_POS);
+  declare_and_get_parameter("kfs_fz_high_mech_lock_pos", KFS_FZ_HIGH_MECH_LOCK_POS);
   // fyaw
   declare_and_get_parameter("kfs_fyaw_normal_angle", KFS_FYAW_NORMAL_ANGLE);
   declare_and_get_parameter("kfs_fyaw_front_angle", KFS_FYAW_FRONT_ANGLE);
   declare_and_get_parameter("kfs_fyaw_side_angle", KFS_FYAW_SIDE_ANGLE);
   declare_and_get_parameter("kfs_fyaw_rear_angle", KFS_FYAW_REAR_ANGLE);
+  declare_and_get_parameter("kfs_fyaw_low_mech_lock_angle", KFS_FYAW_LOW_MECH_LOCK_ANGLE);
+  declare_and_get_parameter("kfs_fyaw_high_mech_lock_angle", KFS_FYAW_HIGH_MECH_LOCK_ANGLE);
   // rx
   declare_and_get_parameter("kfs_rx_normal_pos", KFS_RX_NORMAL_POS);
   declare_and_get_parameter("kfs_rx_start_pos", KFS_RX_START_POS);
   declare_and_get_parameter("kfs_rx_put_pos", KFS_RX_PUT_POS);
   declare_and_get_parameter("kfs_rx_storage_pos", KFS_RX_STORAGE_POS);
   declare_and_get_parameter("kfs_rx_expand_pos", KFS_RX_EXPAND_POS);
+  declare_and_get_parameter("kfs_rx_low_mech_lock_pos", KFS_RX_LOW_MECH_LOCK_POS);
+  declare_and_get_parameter("kfs_rx_high_mech_lock_pos", KFS_RX_HIGH_MECH_LOCK_POS);
   // rz
   declare_and_get_parameter("kfs_rz_normal_pos", KFS_RZ_NORMAL_POS);
   declare_and_get_parameter("kfs_rz_low_pos", KFS_RZ_LOW_POS);
@@ -575,11 +584,15 @@ R1MainNode::R1MainNode() : Node("r1_main_node")
   declare_and_get_parameter("kfs_rz_high_pos", KFS_RZ_HIGH_POS);
   declare_and_get_parameter("kfs_rz_put_pos", KFS_RZ_PUT_POS);
   declare_and_get_parameter("kfs_rz_storage_pos", KFS_RZ_STORAGE_POS);
+  declare_and_get_parameter("kfs_rz_low_mech_lock_pos", KFS_RZ_LOW_MECH_LOCK_POS);
+  declare_and_get_parameter("kfs_rz_high_mech_lock_pos", KFS_RZ_HIGH_MECH_LOCK_POS);
   // ryaw
   declare_and_get_parameter("kfs_ryaw_normal_angle", KFS_RYAW_NORMAL_ANGLE);
   declare_and_get_parameter("kfs_ryaw_front_angle", KFS_RYAW_FRONT_ANGLE);
   declare_and_get_parameter("kfs_ryaw_side_angle", KFS_RYAW_SIDE_ANGLE);
   declare_and_get_parameter("kfs_ryaw_rear_angle", KFS_RYAW_REAR_ANGLE);
+  declare_and_get_parameter("kfs_ryaw_low_mech_lock_angle", KFS_RYAW_LOW_MECH_LOCK_ANGLE);
+  declare_and_get_parameter("kfs_ryaw_high_mech_lock_angle", KFS_RYAW_HIGH_MECH_LOCK_ANGLE);
 
   // ========== 展開 ==========
   // R2昇降
@@ -1663,7 +1676,8 @@ void R1MainNode::spear_d2_valve(bool on)
 }
 
 void R1MainNode::kfs_init_pos(void)
-{  // spear_xを動かす
+{
+  // spear_xを動かす
   spear_x_pos_ref(SPEAR_X_MIDDLE_POS);
   // まずrollを動かす
   spear_roll_pos_ref(SPEAR_ROLL_VERTICAL_ANGLE);
@@ -1841,7 +1855,7 @@ void R1MainNode::manual_mode2_collect_pole_task(void)
 void R1MainNode::manual_mode2_pole(void)
 {
   if (ps4_->is_pushed_up()) {
-    spear_roll_pos_ref(spear_roll_position_ref_ + 0.05);
+    spear_roll_pos_ref(spear_roll_position_ref_ + 0.025);
   }
 
   if (ps4_->is_pushed_right()) {
@@ -1849,7 +1863,7 @@ void R1MainNode::manual_mode2_pole(void)
   }
 
   if (ps4_->is_pushed_down()) {
-    spear_roll_pos_ref(spear_roll_position_ref_ - 0.05);
+    spear_roll_pos_ref(spear_roll_position_ref_ - 0.025);
   }
 
   if (ps4_->is_pushed_left()) {
@@ -2153,22 +2167,54 @@ void R1MainNode::manual_mode4_fkfs(void)
 
   if (ps4_->is_pushed_l1()) {
     // kfs_fxの微調整（指令値を減少）
-    kfs_fx_pos_ref(kfs_fx_position_ref_ - 0.01);
+    // メカロックが有効かつ次の指令値がメカロックしきい値を下回る場合は、メカロックにぶつける。
+    double next_ref = kfs_fx_position_ref_ - 0.01;
+    if (USE_KFS_MECH_LOCK && next_ref < KFS_FX_LOW_MECH_LOCK_POS) {
+      kfs_fx_position_ref_ = KFS_FX_LOW_MECH_LOCK_POS;
+      kfs_fx_move_mech_lock(-1);
+      RCLCPP_INFO(this->get_logger(), "moved kfs_fx low mech lock");
+    } else {
+      kfs_fx_pos_ref(kfs_fx_position_ref_ - 0.01);
+    }
   }
 
   if (ps4_->is_pushed_r1()) {
     // kfs_fxの微調整（指令値を増加）
-    kfs_fx_pos_ref(kfs_fx_position_ref_ + 0.01);
+    // メカロックが有効かつ次の指令値がメカロックしきい値を上回る場合は、メカロックにぶつける。
+    double next_ref = kfs_fx_position_ref_ + 0.01;
+    if (USE_KFS_MECH_LOCK && next_ref > KFS_FX_HIGH_MECH_LOCK_POS) {
+      kfs_fx_position_ref_ = KFS_FX_HIGH_MECH_LOCK_POS;
+      kfs_fx_move_mech_lock(1);
+      RCLCPP_INFO(this->get_logger(), "moved kfs_fx high mech lock");
+    } else {
+      kfs_fx_pos_ref(kfs_fx_position_ref_ + 0.01);
+    }
   }
 
   if (ps4_->is_pushed_l2()) {
     // kfs_fzの微調整（指令値を減少）
-    kfs_fz_pos_ref(kfs_fz_position_ref_ - 0.01);
+    // メカロックが有効かつ次の指令値がメカロックしきい値を下回る場合は、メカロックにぶつける。
+    double next_ref = kfs_fz_position_ref_ - 0.01;
+    if (USE_KFS_MECH_LOCK && next_ref < KFS_FZ_LOW_MECH_LOCK_POS) {
+      kfs_fz_position_ref_ = KFS_FZ_LOW_MECH_LOCK_POS;
+      kfs_fz_move_mech_lock(-1);
+      RCLCPP_INFO(this->get_logger(), "moved kfs_fz mech lock");
+    } else {
+      kfs_fz_pos_ref(kfs_fz_position_ref_ - 0.01);
+    }
   }
 
   if (ps4_->is_pushed_r2()) {
     // kfs_fzの微調整（指令値を増加）
-    kfs_fz_pos_ref(kfs_fz_position_ref_ + 0.01);
+    // メカロックが有効かつ次の指令値がメカロックしきい値を上回る場合は、メカロックにぶつける。
+    double next_ref = kfs_fz_position_ref_ + 0.01;
+    if (USE_KFS_MECH_LOCK && next_ref > KFS_FZ_HIGH_MECH_LOCK_POS) {
+      kfs_fz_position_ref_ = KFS_FZ_HIGH_MECH_LOCK_POS;
+      kfs_fz_move_mech_lock(1);
+      RCLCPP_INFO(this->get_logger(), "moved kfs_fz mech lock");
+    } else {
+      kfs_fz_pos_ref(kfs_fz_position_ref_ + 0.01);
+    }
   }
 }
 
@@ -2307,22 +2353,54 @@ void R1MainNode::manual_mode5_rkfs(void)
 
   if (ps4_->is_pushed_l1()) {
     // kfs_rxの微調整（指令値を減少）
-    kfs_rx_pos_ref(kfs_rx_position_ref_ - 0.01);
+    // メカロックが有効かつ次の指令値がメカロックしきい値を下回る場合は、メカロックにぶつける。
+    double next_ref = kfs_rx_position_ref_ - 0.01;
+    if (USE_KFS_MECH_LOCK && next_ref < KFS_RX_LOW_MECH_LOCK_POS) {
+      kfs_rx_position_ref_ = KFS_RX_LOW_MECH_LOCK_POS;
+      kfs_rx_move_mech_lock(-1);
+      RCLCPP_INFO(this->get_logger(), "moved kfs_rx low mech lock");
+    } else {
+      kfs_rx_pos_ref(kfs_rx_position_ref_ - 0.01);
+    }
   }
 
   if (ps4_->is_pushed_r1()) {
     // kfs_rxの微調整（指令値を増加）
-    kfs_rx_pos_ref(kfs_rx_position_ref_ + 0.01);
+    // メカロックが有効かつ次の指令値がメカロックしきい値を上回る場合は、メカロックにぶつける。
+    double next_ref = kfs_rx_position_ref_ + 0.01;
+    if (USE_KFS_MECH_LOCK && next_ref > KFS_RX_HIGH_MECH_LOCK_POS) {
+      kfs_rx_position_ref_ = KFS_RX_HIGH_MECH_LOCK_POS;
+      kfs_rx_move_mech_lock(1);
+      RCLCPP_INFO(this->get_logger(), "moved kfs_rx high mech lock");
+    } else {
+      kfs_rx_pos_ref(kfs_rx_position_ref_ + 0.01);
+    }
   }
 
   if (ps4_->is_pushed_l2()) {
     // kfs_rzの微調整（指令値を減少）
-    kfs_rz_pos_ref(kfs_rz_position_ref_ - 0.01);
+    // メカロックが有効かつ次の指令値がメカロックしきい値を下回る場合は、メカロックにぶつける。
+    double next_ref = kfs_rz_position_ref_ - 0.01;
+    if (USE_KFS_MECH_LOCK && next_ref < KFS_RZ_LOW_MECH_LOCK_POS) {
+      kfs_rz_position_ref_ = KFS_RZ_LOW_MECH_LOCK_POS;
+      kfs_rz_move_mech_lock(-1);
+      RCLCPP_INFO(this->get_logger(), "moved kfs_rz mech lock");
+    } else {
+      kfs_rz_pos_ref(kfs_rz_position_ref_ - 0.01);
+    }
   }
 
   if (ps4_->is_pushed_r2()) {
     // kfs_rzの微調整（指令値を増加）
-    kfs_rz_pos_ref(kfs_rz_position_ref_ + 0.01);
+    // メカロックが有効かつ次の指令値がメカロックしきい値を上回る場合は、メカロックにぶつける。
+    double next_ref = kfs_rz_position_ref_ + 0.01;
+    if (USE_KFS_MECH_LOCK && next_ref > KFS_RZ_HIGH_MECH_LOCK_POS) {
+      kfs_rz_position_ref_ = KFS_RZ_HIGH_MECH_LOCK_POS;
+      kfs_rz_move_mech_lock(1);
+      RCLCPP_INFO(this->get_logger(), "moved kfs_rz mech lock");
+    } else {
+      kfs_rz_pos_ref(kfs_rz_position_ref_ + 0.01);
+    }
   }
 }
 

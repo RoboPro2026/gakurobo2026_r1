@@ -273,12 +273,15 @@ public:
   double CHASSIS_MAX_VELOCITY = 0.0;
   double CHASSIS_MAX_OMEGA = 0.0;
   // ========== KFS回収 ==========
+  bool USE_KFS_MECH_LOCK = false;
   // fx
   double KFS_FX_NORMAL_POS = 0.0;
   double KFS_FX_STORAGE_POS = 0.0;
   double KFS_FX_START_POS = 0.0;
   double KFS_FX_PUT_POS = 0.0;
   double KFS_FX_EXPAND_POS = 0.0;
+  double KFS_FX_LOW_MECH_LOCK_POS = 0.0;
+  double KFS_FX_HIGH_MECH_LOCK_POS = 0.0;
   // fz
   double KFS_FZ_NORMAL_POS = 0.0;
   double KFS_FZ_LOW_POS = 0.0;
@@ -286,17 +289,23 @@ public:
   double KFS_FZ_HIGH_POS = 0.0;
   double KFS_FZ_PUT_POS = 0.0;
   double KFS_FZ_STORAGE_POS = 0.0;
+  double KFS_FZ_LOW_MECH_LOCK_POS = 0.0;
+  double KFS_FZ_HIGH_MECH_LOCK_POS = 0.0;
   // fyaw
   double KFS_FYAW_NORMAL_ANGLE = 0.0;
   double KFS_FYAW_FRONT_ANGLE = 0.0;
   double KFS_FYAW_SIDE_ANGLE = 0.0;
   double KFS_FYAW_REAR_ANGLE = 0.0;
+  double KFS_FYAW_LOW_MECH_LOCK_ANGLE = 0.0;
+  double KFS_FYAW_HIGH_MECH_LOCK_ANGLE = 0.0;
   // rx
   double KFS_RX_NORMAL_POS = 0.0;
   double KFS_RX_STORAGE_POS = 0.0;
   double KFS_RX_START_POS = 0.0;
   double KFS_RX_PUT_POS = 0.0;
   double KFS_RX_EXPAND_POS = 0.0;
+  double KFS_RX_LOW_MECH_LOCK_POS = 0.0;
+  double KFS_RX_HIGH_MECH_LOCK_POS = 0.0;
   // rz
   double KFS_RZ_NORMAL_POS = 0.0;
   double KFS_RZ_LOW_POS = 0.0;
@@ -304,11 +313,15 @@ public:
   double KFS_RZ_HIGH_POS = 0.0;
   double KFS_RZ_PUT_POS = 0.0;
   double KFS_RZ_STORAGE_POS = 0.0;
+  double KFS_RZ_LOW_MECH_LOCK_POS = 0.0;
+  double KFS_RZ_HIGH_MECH_LOCK_POS = 0.0;
   // ryaw
   double KFS_RYAW_NORMAL_ANGLE = 0.0;
   double KFS_RYAW_FRONT_ANGLE = 0.0;
   double KFS_RYAW_SIDE_ANGLE = 0.0;
   double KFS_RYAW_REAR_ANGLE = 0.0;
+  double KFS_RYAW_LOW_MECH_LOCK_ANGLE = 0.0;
+  double KFS_RYAW_HIGH_MECH_LOCK_ANGLE = 0.0;
   // R2昇降
   double R2_LIFT_UP_VELOCITY = 0.0;
   double R2_LIFT_DOWN_VELOCITY = 0.0;

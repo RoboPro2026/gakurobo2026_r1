@@ -123,12 +123,15 @@ r1_main_node:
     chassis_max_velocity: 0.6
     chassis_max_omega: 0.5
     # ========== KFS回収 ==========
+    use_kfs_mech_lock: true
     # fx
     kfs_fx_normal_pos: 0.05
     kfs_fx_storage_pos: 0.2
     kfs_fx_start_pos: 0.3
     kfs_fx_put_pos: 0.3
     kfs_fx_expand_pos: 0.67
+    kfs_fx_low_mech_lock_pos: 0.05
+    kfs_fx_high_mech_lock_pos: 0.67
     # fz
     kfs_fz_normal_pos: 0.005
     kfs_fz_low_pos: 0.005
@@ -136,17 +139,23 @@ r1_main_node:
     kfs_fz_high_pos: 0.42
     kfs_fz_put_pos: 0.5
     kfs_fz_storage_pos: 0.5
+    kfs_fz_low_mech_lock_pos: 0.005
+    lfs_fz_high_mech_lock_pos: 0.55
     # fyaw
     kfs_fyaw_normal_angle: 0.0
     kfs_fyaw_front_angle: 3.141592653589793
     kfs_fyaw_side_angle: 1.5707963267948966
     kfs_fyaw_rear_angle: 0.0
+    kfs_fyaw_low_mech_lock_angle: 0.05
+    kfs_fyaw_high_mech_lock_angle: 3.1
     # rx
     kfs_rx_normal_pos: 0.05
     kfs_rx_storage_pos: 0.2
     kfs_rx_start_pos: 0.3
     kfs_rx_put_pos: 0.3
     kfs_rx_expand_pos: 0.67
+    kfs_fx_low_mech_lock_pos: 0.05
+    kfs_fx_high_mech_lock_pos: 0.67
     # rz
     kfs_rz_normal_pos: 0.005
     kfs_rz_low_pos: 0.005
@@ -155,11 +164,15 @@ r1_main_node:
     kfs_rz_put_pos: 0.5
     kfs_rz_storage_pos: 0.5
     kfs_rz_put_pos: 0.5
+    kfs_rz_low_mech_lock_pos: 0.005
+    kfs_rz_high_mech_lock_pos: 0.55
     # ryaw
     kfs_ryaw_normal_angle: 0.0
     kfs_ryaw_front_angle: 3.141592653589793
     kfs_ryaw_side_angle: 1.5707963267948966
     kfs_ryaw_rear_angle: 0.0
+    kfs_ryaw_low_mech_lock_angle: 0.05
+    kfs_ryaw_high_mech_lock_angle: 3.1
     # 回収するときの遅延時間
     kfs_yaw_delay_time: 0.4
 
@@ -363,6 +376,7 @@ r1_kfs_fx_node:
     origin_detect_threshold_time: 0.5 # 秒
     # 原点検出のときは、0の方向に戻るので、負の速度にする
     origin_detect_speed: -10.0 # rad/s
+    move_mech_lock_speed: 10.0 # rad/s
     pos_min: -0.1
     pos_max: 1.0
     normal_pos: 0.05
@@ -386,6 +400,7 @@ r1_kfs_fz_node:
     origin_detect_threshold_time: 0.5 # 秒
     # 原点検出のときは、0の方向に戻るので、負の速度にする
     origin_detect_speed: -10.0 # rad/s
+    move_mech_lock_speed: 10.0 # rad/s
     pos_min: -0.1
     pos_max: 1.0
     normal_pos: 0.05
@@ -401,11 +416,11 @@ r1_kfs_fyaw_node:
   ros__parameters:
     timer_rate: 10.0
     # トルク検出時のしきい値
-    torque_threshold: 0.5 # Nm
+    torque_threshold: 0.45 # Nm
     # 通常位置モード時に Robomas の torque_lim として使う値
     normal_torque_limit: 0.75 # Nm
     # 原点検出・メカロック移動中に Robomas の torque_lim として使う値
-    contact_torque_limit: 0.75 # Nm
+    contact_torque_limit: 0.6 # Nm
     origin_detect_threshold_time: 0.5 # 秒
     origin_detect_speed: -6.28 # rad/s
     move_mech_lock_speed: 20.0 # rad/s
@@ -433,6 +448,7 @@ r1_kfs_rx_node:
     origin_detect_threshold_time: 0.5 # 秒
     # 原点検出のときは、0の方向に戻るので、負の速度にする
     origin_detect_speed: -10.0 # rad/s
+    move_mech_lock_speed: 10.0 # rad/s
     pos_min: -0.1
     pos_max: 1.0
     normal_pos: 0.05
@@ -456,6 +472,7 @@ r1_kfs_rz_node:
     origin_detect_threshold_time: 0.5 # 秒
     # 原点検出のときは、0の方向に戻るので、負の速度にする
     origin_detect_speed: -10.0 # rad/s
+    move_mech_lock_speed: 10.0 # rad/s
     pos_min: -0.1
     pos_max: 1.0
     normal_pos: 0.05
@@ -471,11 +488,11 @@ r1_kfs_ryaw_node:
   ros__parameters:
     timer_rate: 10.0
     # トルク検出時のしきい値
-    torque_threshold: 0.5 # Nm
+    torque_threshold: 0.45 # Nm
     # 通常位置モード時に Robomas の torque_lim として使う値
     normal_torque_limit: 0.75 # Nm
     # 原点検出・メカロック移動中に Robomas の torque_lim として使う値
-    contact_torque_limit: 0.75 # Nm
+    contact_torque_limit: 0.6 # Nm
     origin_detect_threshold_time: 0.5 # 秒
     origin_detect_speed: -6.28 # rad/s
     move_mech_lock_speed: 20.0 # rad/s

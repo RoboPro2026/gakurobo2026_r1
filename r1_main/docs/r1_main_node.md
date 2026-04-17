@@ -14,7 +14,7 @@
 - `MainState` はライフサイクルと安全状態、`OperationMode` は操作モード、`ChassisControlMode` は足回りの制御権を表します。
 - これとは別に、シャーシ自動シーケンスは内部状態 `auto_chassis_status_`、KFS 自動回収は `kfs_auto_collect_status` で独立管理します。
 - `PS` ボタンで `reset_robot(true)` と `/r1_machine_initialize` publish を行った後は、`/r1_machine_initialize_done` を受け取るまで `is_initialized_ == false` のため各ページの実動作は走りません。
-- `MODE2_POLE` / `MODE3_SPEAR` / `MODE4_FKFS` / `MODE7_SPEAR_ATTACK` は、現状ほとんどの処理がコメントアウトされています。
+- `MODE2_POLE` / `MODE3_SPEAR` / `MODE7_SPEAR_ATTACK` は、現状ほとんどの処理がコメントアウトされています。
 - LED 指令は timer 周期ごとに `sabacan_led_update()` で 1 回だけ publish します。各処理は直接 publish せず、LED の要求状態を更新します。
 
 ## 役割
@@ -297,8 +297,35 @@ LED は timer callback の最後に 1 回だけ更新されます。
   - `kfs_ryaw` を `-0.1` rad 微調整
 - `l1` / `r1`
   - `kfs_rx` を `-0.01 / +0.01`
+  - `use_kfs_mech_lock == true` のとき、次の目標値が `kfs_rx_low_mech_lock_pos` / `kfs_rx_high_mech_lock_pos` を超える場合は通常の位置指令ではなく `move_mech_lock` を送ります
 - `l2` / `r2`
   - `kfs_rz` を `-0.01 / +0.01`
+  - `use_kfs_mech_lock == true` のとき、次の目標値が `kfs_rz_low_mech_lock_pos` / `kfs_rz_high_mech_lock_pos` を超える場合は通常の位置指令ではなく `move_mech_lock` を送ります
+
+### `OperationMode / MODE4_FKFS`
+
+- `up`
+  - `kfs_fz` を 1 段上の preset へ移動
+  - `LOW -> MIDDLE -> HIGH -> PUT`
+- `down`
+  - `kfs_fz` を 1 段下の preset へ移動
+- `right`
+  - `kfs_front_pump` を ON/OFF
+  - OFF 時は `kfs_front_valve` を 250 ms だけ開けてから閉じます
+- `triangle`
+  - `kfs_fyaw` を `REAR -> SIDE -> FRONT` へ進める
+- `circle`
+  - `kfs_fx` を `NORMAL -> STORAGE -> PUT -> EXPAND` へ進める
+- `cross`
+  - `kfs_fyaw` を 1 段戻す
+- `square`
+  - `kfs_fx` を 1 段戻す
+- `l1` / `r1`
+  - `kfs_fx` を `-0.01 / +0.01`
+  - `use_kfs_mech_lock == true` のとき、次の目標値が `kfs_fx_low_mech_lock_pos` / `kfs_fx_high_mech_lock_pos` を超える場合は通常の位置指令ではなく `move_mech_lock` を送ります
+- `l2` / `r2`
+  - `kfs_fz` を `-0.01 / +0.01`
+  - `use_kfs_mech_lock == true` のとき、次の目標値が `kfs_fz_low_mech_lock_pos` / `kfs_fz_high_mech_lock_pos` を超える場合は通常の位置指令ではなく `move_mech_lock` を送ります
 
 ### `OperationMode / MODE8_AUTO_COLLECT_KFS`
 
@@ -336,7 +363,6 @@ LED は timer callback の最後に 1 回だけ更新されます。
 
 - `MODE2_POLE`
 - `MODE3_SPEAR`
-- `MODE4_FKFS`
 - `MODE7_SPEAR_ATTACK`
 
 これらは関数自体は残っていますが、大半の操作がコメントアウトされています。
@@ -443,28 +469,49 @@ bringup 起動時は [`r1_bringup.launch.py`](../../r1_bringup/launch/r1_bringup
 
 ### KFS
 
+- `use_kfs_mech_lock`
 - `kfs_fx_normal_pos`
+- `kfs_fx_storage_pos`
+- `kfs_fx_start_pos`
+- `kfs_fx_put_pos`
 - `kfs_fx_expand_pos`
+- `kfs_fx_low_mech_lock_pos`
+- `kfs_fx_high_mech_lock_pos`
 - `kfs_fz_normal_pos`
 - `kfs_fz_low_pos`
 - `kfs_fz_middle_pos`
 - `kfs_fz_high_pos`
-- `kfs_fz_book_pos`
+- `kfs_fz_put_pos`
+- `kfs_fz_storage_pos`
+- `kfs_fz_low_mech_lock_pos`
+- `kfs_fz_high_mech_lock_pos`
 - `kfs_fyaw_normal_angle`
 - `kfs_fyaw_front_angle`
 - `kfs_fyaw_side_angle`
 - `kfs_fyaw_rear_angle`
+- `kfs_fyaw_low_mech_lock_angle`
+- `kfs_fyaw_high_mech_lock_angle`
 - `kfs_rx_normal_pos`
+- `kfs_rx_storage_pos`
+- `kfs_rx_start_pos`
+- `kfs_rx_put_pos`
 - `kfs_rx_expand_pos`
+- `kfs_rx_low_mech_lock_pos`
+- `kfs_rx_high_mech_lock_pos`
 - `kfs_rz_normal_pos`
 - `kfs_rz_low_pos`
 - `kfs_rz_middle_pos`
 - `kfs_rz_high_pos`
-- `kfs_rz_book_pos`
+- `kfs_rz_put_pos`
+- `kfs_rz_storage_pos`
+- `kfs_rz_low_mech_lock_pos`
+- `kfs_rz_high_mech_lock_pos`
 - `kfs_ryaw_normal_angle`
 - `kfs_ryaw_front_angle`
 - `kfs_ryaw_side_angle`
 - `kfs_ryaw_rear_angle`
+- `kfs_ryaw_low_mech_lock_angle`
+- `kfs_ryaw_high_mech_lock_angle`
 
 ### R2 昇降
 
