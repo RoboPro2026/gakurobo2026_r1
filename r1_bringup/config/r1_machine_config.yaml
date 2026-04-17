@@ -248,9 +248,9 @@ r1_main_node:
     # KFSが置かれている場所
     # kfs_forest_number: [4]
     # kfs_forest_number: [4, 2]
-    # kfs_forest_number: [4, 7]
+    kfs_forest_number: [4, 7]
     # kfs_forest_number: [2, 1]
-    kfs_forest_number: [3, 6]
+    # kfs_forest_number: [3, 6]
     # KFS回収範囲の長方形サイズ [m]
     # yaw=0 のとき width は map の x 方向、height は map の y 方向の長さになる
     # yaw を与えた場合は、その yaw だけ回転した長方形ローカル座標系での幅と高さになる
