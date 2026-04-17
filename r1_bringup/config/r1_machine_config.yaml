@@ -588,7 +588,7 @@ r1_spear4_node:
     inverse_low_switch_logic: false
     inverse_high_switch_logic: false
 # linear motion node
-# C610
+# C620
 r1_spear_x_node:
   ros__parameters:
     timer_rate: 10.0
@@ -604,8 +604,8 @@ r1_spear_x_node:
     pos_min: -0.1
     pos_max: 1.0
     normal_pos: 0.05
-    # モータが1回転すると110mm進むので、半径は17.5mm
-    radius: 0.01750704374010849
+    # モータが1回転すると36pi mm進むので、半径は18.0mm
+    radius: 0.018
     inverse_motor: true
     use_low_switch: false
     use_high_switch: false
