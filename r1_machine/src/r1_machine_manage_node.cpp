@@ -38,6 +38,7 @@
 #include "sabacan_msgs/msg/sabacan_gpio_ref_int.hpp"
 #include "sabacan_msgs/msg/sabacan_led_ref.hpp"
 #include "sabacan_msgs/msg/sabacan_gpio_status.hpp"
+#include "sabacan_msgs/msg/sabacan_power_ref.hpp"
 #include "sabacan_msgs/msg/sabacan_power_status.hpp"
 #include "sabacan_msgs/msg/sabacan_robomas_status.hpp"
 #include "sabacan_msgs/msg/sabacan_robstride_ref.hpp"
@@ -719,12 +720,14 @@ private:
     TIMER_COUNT,
   };
 
-  enum class SabacanResetState
+  enum class MachineState
   {
-    Idle,
-    Requested,
-    Sending,
-    WaitingPostInitializeDelay,
+    Normal,              // 通常動作（モータ制御有効）
+    EmergencyActive,     // EMS 発報中
+    PendingInitialize,   // EMS 解除済み、/r1_machine_initialize 待ち
+    InitializeRequested, // /r1_machine_initialize 受信済み・EMS 解除待ち（解除後に自動実行）
+    Resetting,           // sabacan reset サービス送信中
+    WaitingDelay,        // post-reset 遅延待ち
   };
 
   /**
@@ -892,6 +895,8 @@ private:
       this->create_subscription<sabacan_msgs::msg::SabacanPowerStatus>(
         "/sabacan_power_status0", 10,
         std::bind(&MachineManageNode::sabacan_power_status_callback, this, std::placeholders::_1));
+    sabacan_power_ref_publisher_ =
+      this->create_publisher<sabacan_msgs::msg::SabacanPowerRef>("/sabacan_power_ref0", 10);
     sabacan_led_ref_publisher_ =
       this->create_publisher<sabacan_msgs::msg::SabacanLEDRef>("/sabacan_led_ref1", 10);
     initialize_done_publisher_ =
@@ -1621,8 +1626,7 @@ private:
    */
   bool should_force_open_loop() const
   {
-    return emergency_feedback_active_ || emergency_reinit_required_ ||
-           sabacan_reset_state_ != SabacanResetState::Idle;
+    return machine_state_ != MachineState::Normal;
   }
 
   /**
@@ -1631,13 +1635,14 @@ private:
    */
   void start_sabacan_reset_sequence(const char * request_name)
   {
-    if (sabacan_reset_state_ != SabacanResetState::Idle) {
+    if (machine_state_ == MachineState::Resetting ||
+        machine_state_ == MachineState::WaitingDelay) {
       RCLCPP_WARN(
         this->get_logger(), "ignored %s because sabacan reset is already running", request_name);
       return;
     }
 
-    sabacan_reset_state_ = SabacanResetState::Requested;
+    machine_state_ = MachineState::Resetting;
     sabacan_reset_step_ = 0;
     sabacan_reset_last_send_valid_ = false;
     post_reset_initialize_sent_valid_ = false;
@@ -1655,8 +1660,7 @@ private:
    */
   void finish_initialize_sequence_after_reset()
   {
-    if (emergency_feedback_active_) {
-      sabacan_reset_state_ = SabacanResetState::Idle;
+    if (machine_state_ == MachineState::EmergencyActive) {
       post_reset_initialize_sent_valid_ = false;
       RCLCPP_WARN(
         this->get_logger(),
@@ -1668,7 +1672,7 @@ private:
     publish_all_initialize_signals();
     post_reset_initialize_sent_time_ = this->get_clock()->now();
     post_reset_initialize_sent_valid_ = true;
-    sabacan_reset_state_ = SabacanResetState::WaitingPostInitializeDelay;
+    machine_state_ = MachineState::WaitingDelay;
 
     if (post_reset_initialize_delay_sec_ <= 0.0) {
       complete_initialize_sequence_after_delay();
@@ -1687,8 +1691,7 @@ private:
    */
   void complete_initialize_sequence_after_delay()
   {
-    if (emergency_feedback_active_) {
-      sabacan_reset_state_ = SabacanResetState::Idle;
+    if (machine_state_ == MachineState::EmergencyActive) {
       post_reset_initialize_sent_valid_ = false;
       RCLCPP_WARN(
         this->get_logger(),
@@ -1696,23 +1699,13 @@ private:
       return;
     }
 
-    const bool was_reinit_required = emergency_reinit_required_;
-    emergency_reinit_required_ = false;
-    sabacan_reset_state_ = SabacanResetState::Idle;
+    machine_state_ = MachineState::Normal;
     post_reset_initialize_sent_valid_ = false;
-    clear_all_sabacan_leds_once();
     // 将来的に原点検出や初期位置指令などの後処理を追加する場合も、この publish を
     // sabacan 初期化完了の同期点として使えるようにしておく。
     publish_initialize_done();
-
-    if (was_reinit_required) {
-      RCLCPP_INFO(
-        this->get_logger(),
-        "post-reset initialize delay completed. restoring normal motor control routing");
-      return;
-    }
-
-    RCLCPP_INFO(this->get_logger(), "post-reset initialize delay completed");
+    RCLCPP_INFO(
+      this->get_logger(), "initialization complete. restored normal motor control routing");
   }
 
   /**
@@ -1720,40 +1713,22 @@ private:
    */
   void sabacan_reset_update()
   {
-    if (sabacan_reset_state_ == SabacanResetState::Idle) {
-      return;
-    }
-
-    if (sabacan_reset_state_ == SabacanResetState::WaitingPostInitializeDelay) {
-      if (emergency_feedback_active_) {
-        sabacan_reset_state_ = SabacanResetState::Idle;
-        post_reset_initialize_sent_valid_ = false;
-        RCLCPP_WARN(
-          this->get_logger(),
-          "emergency became active during post-reset initialize delay. aborting restore to "
-          "normal motor control");
-        return;
-      }
-
+    if (machine_state_ == MachineState::WaitingDelay) {
       if (!post_reset_initialize_sent_valid_) {
         complete_initialize_sequence_after_delay();
         return;
       }
-
       const auto now = this->get_clock()->now();
       const rclcpp::Duration post_initialize_delay =
         rclcpp::Duration::from_seconds(post_reset_initialize_delay_sec_);
-      if ((now - post_reset_initialize_sent_time_) < post_initialize_delay) {
-        return;
+      if ((now - post_reset_initialize_sent_time_) >= post_initialize_delay) {
+        complete_initialize_sequence_after_delay();
       }
-      complete_initialize_sequence_after_delay();
       return;
     }
 
-    if (sabacan_reset_state_ == SabacanResetState::Requested) {
-      sabacan_reset_state_ = SabacanResetState::Sending;
-      sabacan_reset_step_ = 0;
-      sabacan_reset_last_send_valid_ = false;
+    if (machine_state_ != MachineState::Resetting) {
+      return;
     }
 
     const rclcpp::Duration send_interval =
@@ -1993,13 +1968,13 @@ private:
   void sabacan_power_status_callback(const sabacan_msgs::msg::SabacanPowerStatus::SharedPtr msg)
   {
     const bool emergency_active = is_emergency_active(*msg);
-    if (emergency_feedback_active_ == emergency_active) {
+    if (hardware_ems_active_ == emergency_active) {
       return;
     }
+    hardware_ems_active_ = emergency_active;
 
-    emergency_feedback_active_ = emergency_active;
-    if (emergency_feedback_active_) {
-      emergency_reinit_required_ = true;
+    if (emergency_active) {
+      machine_state_ = MachineState::EmergencyActive;
       publish_open_loop_stop_to_enabled_motors();
       RCLCPP_WARN(
         this->get_logger(),
@@ -2007,6 +1982,16 @@ private:
       return;
     }
 
+    // EMS 解除
+    if (machine_state_ == MachineState::InitializeRequested) {
+      RCLCPP_INFO(
+        this->get_logger(),
+        "sabacan power status cleared emergency. auto-triggering pending /r1_machine_initialize");
+      start_sabacan_reset_sequence("/r1_machine_initialize (auto)");
+      return;
+    }
+
+    machine_state_ = MachineState::PendingInitialize;
     RCLCPP_INFO(
       this->get_logger(),
       "sabacan power status cleared emergency. keep open-loop stop until /r1_machine_initialize");
@@ -2014,17 +1999,38 @@ private:
 
   /**
    * @brief 初期化信号を受け取り、非常停止解除後の open-loop ラッチを解除する。
+   * @details まず SabacanPowerRef(is_ems=false) を送信してソフト EMS ラッチをクリアする。
+   *          EMS が解除済みなら即座にリセットシーケンスを開始する。
+   *          EMS 発報中なら InitializeRequested 状態へ遷移し、
+   *          EMS 解除が確認された時点で sabacan_power_status_callback が自動実行する。
    * @param msg 受信した初期化信号
    */
   void initialize_signal_callback(const std_msgs::msg::Empty::SharedPtr msg)
   {
     (void)msg;
 
-    if (emergency_feedback_active_) {
+    sabacan_msgs::msg::SabacanPowerRef power_ref;
+    power_ref.is_ems = false;
+    sabacan_power_ref_publisher_->publish(power_ref);
+
+    if (machine_state_ == MachineState::Resetting ||
+        machine_state_ == MachineState::WaitingDelay) {
       RCLCPP_WARN(
-        this->get_logger(), "ignored /r1_machine_initialize because sabacan is still in emergency");
+        this->get_logger(),
+        "ignored /r1_machine_initialize because sabacan reset is already running");
       return;
     }
+
+    if (machine_state_ == MachineState::EmergencyActive ||
+        machine_state_ == MachineState::InitializeRequested) {
+      machine_state_ = MachineState::InitializeRequested;
+      RCLCPP_INFO(
+        this->get_logger(),
+        "received /r1_machine_initialize while emergency active. "
+        "sent SabacanPowerRef(is_ems=false) and waiting for EMS to clear");
+      return;
+    }
+
     start_sabacan_reset_sequence("/r1_machine_initialize");
   }
 
@@ -2385,14 +2391,14 @@ private:
   std::vector<SetRobomasGainsClient::SharedPtr> set_robomas_gains_clients_;
   std::vector<SabacanResetServiceEntry> sabacan_reset_service_entries_;
   SubscriptionPtr<sabacan_msgs::msg::SabacanPowerStatus> sabacan_power_status_subscription_;
+  rclcpp::Publisher<sabacan_msgs::msg::SabacanPowerRef>::SharedPtr sabacan_power_ref_publisher_;
   SubscriptionPtr<std_msgs::msg::Empty> initialize_signal_subscription_;
   rclcpp::TimerBase::SharedPtr sabacan_reset_timer_;
 
   // drive mode と足回りの制御設定。
   DriveMode drive_mode_{DriveMode::Mecanum};
-  bool emergency_feedback_active_{false};
-  bool emergency_reinit_required_{false};
-  SabacanResetState sabacan_reset_state_{SabacanResetState::Idle};
+  MachineState machine_state_{MachineState::Normal};
+  bool hardware_ems_active_{false};
   rclcpp::Time sabacan_reset_last_send_time_{0LL, RCL_SYSTEM_TIME};
   bool sabacan_reset_last_send_valid_{false};
   rclcpp::Time post_reset_initialize_sent_time_{0LL, RCL_SYSTEM_TIME};

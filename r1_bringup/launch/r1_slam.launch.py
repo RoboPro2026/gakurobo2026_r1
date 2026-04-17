@@ -1,4 +1,6 @@
 import os
+import sys
+import yaml
 
 from ament_index_python.packages import get_package_share_directory
 from launch import LaunchDescription
@@ -11,6 +13,9 @@ from launch_ros.event_handlers import OnStateTransition
 from launch_ros.events.lifecycle import ChangeState
 from lifecycle_msgs.msg import Transition
 
+sys.path.append(os.path.dirname(__file__))
+from lidar_reset import reset_lidar
+
 
 def generate_launch_description():
 
@@ -19,6 +24,19 @@ def generate_launch_description():
 
     # パラメータファイルのフルパスを作成
     param_file = os.path.join(pkg_dir, "config", "r1_slam_config.yaml")
+
+    # YAMLからシリアルポートパスを読み込む
+    with open(param_file, "r") as f:
+        slam_params = yaml.safe_load(f)
+    lidar1_port = slam_params["urg_node2_1"]["ros__parameters"]["serial_port"]
+    lidar2_port = slam_params["urg_node2_2"]["ros__parameters"]["serial_port"]
+
+    # urg_node2 起動前に LiDAR へ QT コマンド（計測停止）を送信する
+    # 理由: URG が連続スキャン中のまま前セッションが終了した場合、
+    #        urg_open() 内の clear_urg_communication_buffer() がデータを
+    #        読み続けて無限ループに陥るため、事前に停止させる
+    reset_lidar(lidar1_port)
+    reset_lidar(lidar2_port)
 
     # urg_node2をライフサイクルノードとして起動
     urg_node2_1 = LifecycleNode(

@@ -8,7 +8,7 @@
   - `/linear_motion_status` (`r1_msgs/msg/LinearMotion`): トルク [Nm], 速度 [rad/s], 位置 [rad] を取得。
 - `/low_switch_status`(`r1_msgs/msg/GpioInput`): スイッチの値。 `inverse_*data` で XOR 反転されます。
 - `/high_switch_status`(`r1_msgs/msg/GpioInput`): スイッチの値。 `inverse_*data` で XOR 反転されます。
-  - `/linear_motion_position_ref` (`std_msgs/msg/Float64`): 目標位置 [m]。原点検出中（速度モード）は無視されます。
+  - `/linear_motion_position_ref` (`std_msgs/msg/Float64`): 目標位置 [m]。速度モード中に受信した場合はその場で位置モードへ戻り、この指令で上書きします。
   - `/linear_motion_speed_ref` (`std_msgs/msg/Float64`): 目標角速度 [rad/s]。受信するとユーザ速度モードへ移行し、指定速度を流し続けます。ユーザ速度モード中は原点検出用のトルク/リミットスイッチ判定を無効化します。
   - `/linear_motion_speed_mode_stop` (`std_msgs/msg/Empty`): ユーザ速度モードを停止します。現在位置を `POSITION` 指令へ切り替えて保持します。
   - `/linear_motion_detect_origin` (`std_msgs/msg/Bool`): `true` で原点検出モードに移行し、`false` で通常の位置モードに戻ります。
@@ -45,9 +45,9 @@
 ## 動作の流れ
 
 1. `/linear_motion_status` を受信してトルク・速度・位置・リミットスイッチ状態を内部に保持します。スイッチ値は `inverse_*_logic` 設定で XOR 反転されます。
-2. 通常は位置モード（`MODE_POSITION`）。`/linear_motion_position_ref` で受けた目標位置 [m] を `pos_min`〜`pos_max` にクランプし、原点検出で決まる `pos_offset` を加算した後、`target_angle = (target_pos) / radius` として `"POSITION"` 指令を配信します (`inverse_motor` で符号反転)。速度モード中はこのトピックを無視します。
+2. 通常は位置モード（`MODE_POSITION`）。`/linear_motion_position_ref` で受けた目標位置 [m] を `pos_min`〜`pos_max` にクランプし、原点検出で決まる `pos_offset` を加算した後、`target_angle = (target_pos) / radius` として `"POSITION"` 指令を配信します (`inverse_motor` で符号反転)。速度モード中にこのトピックを受けた場合も、速度モードを中断して位置モードへ戻り、その指令値をそのまま適用します。
 3. `/linear_motion_speed_ref` に角速度 [rad/s] を送るとユーザ速度モードへ移行し、`timer_rate` 周期で `"VELOCITY"` 指令を流し続けます。`/linear_motion_speed_mode_stop` を受けると、現在のモータ位置を `"POSITION"` 指令へ切り替えて保持し、位置モードへ戻ります。
-4. `/linear_motion_speed_ref` によるユーザ速度モード中は、原点検出用のトルク上昇判定とリミットスイッチ判定を行いません。停止は `/linear_motion_speed_mode_stop`、`/linear_motion_initialize`、または別モード要求で行います。
+4. `/linear_motion_speed_ref` によるユーザ速度モード中は、原点検出用のトルク上昇判定とリミットスイッチ判定を行いません。停止は `/linear_motion_speed_mode_stop`、`/linear_motion_initialize`、または位置指令を含む別モード要求で行います。
 5. `/linear_motion_detect_origin` に `true` を送ると速度モード（原点検出）へ移行し、`timer_rate` 周期のタイマで `"VELOCITY"` 指令 `-origin_detect_speed` を流し続けます。この切替と同時に `/linear_motion_torque_limit_ref` へ `contact_torque_limit` を publish します。検出条件は以下の OR です。  
    - `use_low_switch`/`use_high_switch` が有効で、対応するスイッチがオン。  
    - `|torque| > torque_threshold` の状態が `origin_detect_threshold_time` 秒以上続く。

@@ -262,7 +262,8 @@ LED は timer callback の最後に 1 回だけ更新されます。
   - `reset_robot(true)` を実行します。
   - `/r1_machine_initialize` を publish します。
 - `share`
-  - `OperationMode` を順送りします。
+  - 短押し（`share_long_press_sec` 秒未満でリリース）: `OperationMode` を順送りします。
+  - 長押し（`share_long_press_sec` 秒以上押し続けた時点で即時発火）: 一つ前の `OperationMode` へ戻ります。
 
 ### `OperationMode / MODE1_DETECT_ORIGIN`
 
@@ -370,6 +371,9 @@ LED は timer callback の最後に 1 回だけ更新されます。
 
 - `map -> base_link` TF がまだ無い間に `triangle` / `cross` / `square` / `down` を押した場合は、`RobotMove` を pending として保持します。
 - TF が利用可能になった周期で、その pending 要求を 1 回だけ publish します。
+- `MODE3_SPEAR` の pending 開始要求は `kfs_auto_collect_plan_.status` に応じて切り替わります。
+  - `INNER_ACTIVE` のときは `ACT2_START`
+  - `OUTER_ACTIVE` のときは `ACT3_START`
 - `reset_robot()` 実行時は pending 要求を破棄します。
 - `r2`
   - 実行中の `ACT*` を中断し、対応する `*_FINISH` を要求します。

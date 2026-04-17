@@ -261,8 +261,12 @@ public:
     double target_pos;
 
     if (mode_ == MODE_SPEED) {
-      RCLCPP_ERROR(this->get_logger(), "Currently in speed mode, position ref ignored.");
-      return;
+      mode_ = MODE_POSITON;
+      speed_mode_reason_ = SPEED_MODE_NONE;
+      publish_active_torque_limit();
+      RCLCPP_INFO(
+        this->get_logger(),
+        "Position ref received during speed mode. Switching to position mode and overriding speed command.");
     }
 
     // 範囲内に収める

@@ -59,6 +59,7 @@ public:
     rclcpp::Publisher<std_msgs::msg::Float64>::SharedPtr speed_ref_publisher;
     rclcpp::Publisher<std_msgs::msg::Bool>::SharedPtr detect_origin_publisher;
     rclcpp::Publisher<std_msgs::msg::Empty>::SharedPtr speed_mode_stop_publisher;
+    rclcpp::Publisher<std_msgs::msg::Int32>::SharedPtr move_mech_lock_publisher;
     rclcpp::Subscription<std_msgs::msg::Int32>::SharedPtr mode_status_subscription;
     bool is_pos_mode = false;
     double position_ref = 0.0;
@@ -119,8 +120,10 @@ public:
   enum class KfsAutoCollectStatus
   {
     NONE,
-    INNER_ACTIVE,
-    OUTER_ACTIVE,
+    INNER_ACTIVE,            // 1回目: INNERが多い側から回収
+    OUTER_ACTIVE,            // 1回目: OUTERが多い側から回収
+    SECONDARY_INNER_ACTIVE,  // 2回目: 1回目の回収後に残ったINNER側を回収
+    SECONDARY_OUTER_ACTIVE,  // 2回目: 1回目の回収後に残ったOUTER側を回収
   };
 
   struct KfsAutoCollectPlan
@@ -251,6 +254,11 @@ public:
 
   double ps4_connection_timeout_ = 0.3;
 
+  // shareボタン長押し判定
+  double share_long_press_sec_ = 1.0;
+  rclcpp::Time share_press_start_time_;
+  bool share_long_press_triggered_ = false;
+
   // robot_move
   r1_msgs::msg::RobotMove current_robot_move_;
 
@@ -267,16 +275,16 @@ public:
   // ========== KFS回収 ==========
   // fx
   double KFS_FX_NORMAL_POS = 0.0;
-  double KFS_FX_START_POS = 0.0;
-  double KFS_FX_EXPAND_POS = 0.0;
   double KFS_FX_STORAGE_POS = 0.0;
+  double KFS_FX_START_POS = 0.0;
+  double KFS_FX_PUT_POS = 0.0;
+  double KFS_FX_EXPAND_POS = 0.0;
   // fz
   double KFS_FZ_NORMAL_POS = 0.0;
-  double KFS_FZ_EXPAND_POS = 0.0;
   double KFS_FZ_LOW_POS = 0.0;
   double KFS_FZ_MIDDLE_POS = 0.0;
   double KFS_FZ_HIGH_POS = 0.0;
-  double KFS_FZ_BOOK_POS = 0.0;
+  double KFS_FZ_PUT_POS = 0.0;
   double KFS_FZ_STORAGE_POS = 0.0;
   // fyaw
   double KFS_FYAW_NORMAL_ANGLE = 0.0;
@@ -285,16 +293,16 @@ public:
   double KFS_FYAW_REAR_ANGLE = 0.0;
   // rx
   double KFS_RX_NORMAL_POS = 0.0;
-  double KFS_RX_START_POS = 0.0;
-  double KFS_RX_EXPAND_POS = 0.0;
   double KFS_RX_STORAGE_POS = 0.0;
+  double KFS_RX_START_POS = 0.0;
+  double KFS_RX_PUT_POS = 0.0;
+  double KFS_RX_EXPAND_POS = 0.0;
   // rz
   double KFS_RZ_NORMAL_POS = 0.0;
-  double KFS_RZ_EXPAND_POS = 0.0;
   double KFS_RZ_LOW_POS = 0.0;
   double KFS_RZ_MIDDLE_POS = 0.0;
   double KFS_RZ_HIGH_POS = 0.0;
-  double KFS_RZ_BOOK_POS = 0.0;
+  double KFS_RZ_PUT_POS = 0.0;
   double KFS_RZ_STORAGE_POS = 0.0;
   // ryaw
   double KFS_RYAW_NORMAL_ANGLE = 0.0;
@@ -402,6 +410,7 @@ public:
   void publish_position_axis_speed_ref(const std::string & name, double speed);
   void detect_origin_position_axis(const std::string & name);
   void stop_position_axis_speed_mode(const std::string & name);
+  void move_mech_lock_position_axis(const std::string & name, int direction);
   void publish_velocity_axis(const std::string & name, double vel);
   void publish_gpio_pwm_output(const std::string & name, double ref);
   void publish_gpio_servo_output(const std::string & name, int ref);
@@ -457,6 +466,7 @@ public:
     std::vector<int> & forest_order, std::vector<std::string> & collect_kfs_type) const;
   bool build_outer_kfs_auto_collect_plan(
     std::vector<int> & forest_order, std::vector<std::string> & collect_kfs_type) const;
+  bool set_mode3_kfs_auto_collect_status(KfsAutoCollectStatus & status);
   void start_kfs_auto_collect(
     KfsAutoCollectStatus status, std::vector<int> forest_order,
     std::vector<std::string> kfs_mechanism_type);
@@ -522,6 +532,24 @@ public:
   void spear_roll_speed_mode_stop(void);
   void spear_pitch1_speed_mode_stop(void);
   void spear_pitch2_speed_mode_stop(void);
+  // ========== move_mech_lock関数 ==========
+  // KFS回収
+  void kfs_fx_move_mech_lock(int direction);
+  void kfs_fz_move_mech_lock(int direction);
+  void kfs_fyaw_move_mech_lock(int direction);
+  void kfs_rx_move_mech_lock(int direction);
+  void kfs_rz_move_mech_lock(int direction);
+  void kfs_ryaw_move_mech_lock(int direction);
+  // やり
+  void spear1_move_mech_lock(int direction);
+  void spear2_move_mech_lock(int direction);
+  void spear3_move_mech_lock(int direction);
+  void spear4_move_mech_lock(int direction);
+  void spear_x_move_mech_lock(int direction);
+  void spear_y_move_mech_lock(int direction);
+  void spear_roll_move_mech_lock(int direction);
+  void spear_pitch1_move_mech_lock(int direction);
+  void spear_pitch2_move_mech_lock(int direction);
   // KFS真空ポンプ・電磁弁
   void kfs_front_pump(double pwm);
   void kfs_rear_pump(double pwm);
@@ -588,8 +616,6 @@ public:
   int manual_mode2_collect_pole_task_step_ = DEFAULT_STEP;
   int manual_mode3_make_spear_task_step_ = DEFAULT_STEP;
   int manual_mode3_brake_valve_step_ = DEFAULT_STEP;
-  int manual_mode3_spear_hand_valve1_step_ = DEFAULT_STEP;
-  int manual_mode3_spear_hand_valve2_step_ = DEFAULT_STEP;
   int manual_mode4_fx_step_ = DEFAULT_STEP;
   int manual_mode4_fz_step_ = DEFAULT_STEP;
   int manual_mode4_fyaw_step_ = DEFAULT_STEP;

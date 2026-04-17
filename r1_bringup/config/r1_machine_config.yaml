@@ -48,40 +48,40 @@ r1_chassis_control_node:
     # yaw=0 のとき width は map の x 方向、height は map の y 方向の長さになる
     # yaw を与えた場合は、その yaw だけ回転した長方形ローカル座標系での幅と高さになる
     decel_height: 0.3
-    decel_width: 1.0
+    decel_width: 1.5
     # 内回り/外回りの減速範囲の中心座標 [x, y, yaw]
     # # 内回りのときは2,1,4,7,10を通る
     inner_decel_center_pos:
-      1: [3.75, 2.725, 0.0]
-      2: [2.55, 2.725, 0.0]
+      1: [3.6, 2.58, 0.0]
+      2: [2.4, 2.58, 0.0]
       3: [100.0, 100.0, 0.0] # ここは通らない
-      4: [5.4, 4.15, 1.57]
+      4: [5.4, 4.2, 1.57]
       5: [100.0, 100.0, 0.0] # ここにはKFSは置かれない
       6: [100.0, 100.0, 0.0] # ここは通らない
-      7: [5.4, 5.35, 1.57]
+      7: [5.4, 5.4, 1.57]
       8: [100.0, 100.0, 0.0] # ここにはKFSは置かれない
       9: [100.0, 100.0, 0.0] # ここは通らない
-      10: [5.4, 6.55, 1.57]
+      10: [5.4, 6.6, 1.57]
       11: [100.0, 100.0, 0.0] # ここは通らない
       12: [100.0, 100.0, 0.0] # ここは通らない
     # 外回りのときは3,6,9,12,10,11を通る
     outer_decel_center_pos:
       1: [100.0, 100.0, 0.0] # ここは通らない
       2: [100.0, 100.0, 0.0] # ここは通らない
-      3: [0.6, 2.95, 1.57]
+      3: [0.6, 3.0, 1.57]
       4: [100.0, 100.0, 0.0] # ここは通らない
       5: [100.0, 100.0, 0.0] # ここにはKFSは置かれない
-      6: [0.6, 4.15, 1.57]
+      6: [0.6, 4.2, 1.57]
       7: [100.0, 100.0, 0.0] # ここは通らない
       8: [100.0, 100.0, 0.0] # ここにはKFSは置かれない
-      9: [0.6, 5.35, 1.57]
+      9: [0.6, 5.4, 1.57]
       10: [3.75, 8.55, 0.0]
       11: [2.55, 8.55, 0.0]
-      12: [0.6, 6.55, 1.57]
+      12: [0.6, 6.6, 1.57]
     # KFS回収時のオフセット（front_kfsかrear_kfsのうち、遠い方に適応する）
     collect_kfs_offset: 0.838
     # 減速時の速度
-    decel_speed: 0.4
+    decel_speed: 0.3
 r1_chassis_velocity_control_node:
   ros__parameters:
     # true のとき input_cmd_vel_topic と /odometry から PID 補正した output_cmd_vel_topic を出す
@@ -112,8 +112,9 @@ r1_main_node:
     # auto のとき AUTO/ACT0 で開始する
     robot_control_mode: "manual"
     cmd_vel_topic: "/cmd_vel_target"
-    timer_rate: 25.0
+    timer_rate: 100.0
     ps4_connection_timeout: 1.0
+    share_long_press_sec: 0.6  # shareボタン長押し判定秒数 [s]
     # ========== 足回り ==========
 
     chassis_make_spear_velocity: 0.2
@@ -124,15 +125,16 @@ r1_main_node:
     # ========== KFS回収 ==========
     # fx
     kfs_fx_normal_pos: 0.05
-    kfs_fx_start_pos: 0.3
-    kfs_fx_expand_pos: 0.67
     kfs_fx_storage_pos: 0.2
+    kfs_fx_start_pos: 0.3
+    kfs_fx_put_pos: 0.3
+    kfs_fx_expand_pos: 0.67
     # fz
     kfs_fz_normal_pos: 0.005
-    kfs_fz_low_pos: 0.02
+    kfs_fz_low_pos: 0.005
     kfs_fz_middle_pos: 0.22
     kfs_fz_high_pos: 0.42
-    kfs_fz_book_pos: 0.5
+    kfs_fz_put_pos: 0.5
     kfs_fz_storage_pos: 0.5
     # fyaw
     kfs_fyaw_normal_angle: 0.0
@@ -141,16 +143,18 @@ r1_main_node:
     kfs_fyaw_rear_angle: 3.141592653589793
     # rx
     kfs_rx_normal_pos: 0.05
-    kfs_rx_start_pos: 0.3
-    kfs_rx_expand_pos: 0.67
     kfs_rx_storage_pos: 0.2
+    kfs_rx_start_pos: 0.3
+    kfs_rx_put_pos: 0.3
+    kfs_rx_expand_pos: 0.67
     # rz
     kfs_rz_normal_pos: 0.005
-    kfs_rz_low_pos: 0.02
+    kfs_rz_low_pos: 0.005
     kfs_rz_middle_pos: 0.22
     kfs_rz_high_pos: 0.42
-    kfs_rz_book_pos: 0.5
+    kfs_rz_put_pos: 0.5
     kfs_rz_storage_pos: 0.5
+    kfs_rz_put_pos: 0.5
     # ryaw
     kfs_ryaw_normal_angle: 0.0
     kfs_ryaw_front_angle: 0.0
@@ -166,7 +170,7 @@ r1_main_node:
 
     # ========== やり ==========
     # spear1
-    spear1_normal_pos: 0.0
+    spear1_normal_pos: 0.05
     # ポールを掴む位置
     spear1_collect1_pos: 0.25
     # ポールを掴んでちょっとだけ上げたときの位置
@@ -182,7 +186,7 @@ r1_main_node:
     # スピアを押し込むときの速度[rad/s]
     spear1_push_vel: 10.0
     # spear2
-    spear2_normal_pos: 0.0
+    spear2_normal_pos: 0.05
     # ポールを掴む位置
     spear2_collect1_pos: 0.25
     # ポールを掴んでちょっとだけ上げたときの位置
@@ -218,7 +222,7 @@ r1_main_node:
     spear_x_middle_pos: 0.25
     spear_x_make_spear1_pos: 0.25
     # spear_x_make_spear1_pos: 0.15
-    spear_x_make_spear2_pos: 0.25
+    spear_x_make_spear2_pos: 0.405
     spear_x_make_spear3_pos: 0.0
     spear_x_make_spear4_pos: 0.0
     # spear_y
@@ -227,8 +231,8 @@ r1_main_node:
     # spear_roll
     spear_roll_normal_angle: 0.0
     spear_roll_inv_normal_angle: 3.14159265358979326
-    # spear_roll_vertical_angle: 1.5707963267948966
-    spear_roll_vertical_angle: 1.62
+    spear_roll_vertical_angle: 1.5707963267948966
+    # spear_roll_vertical_angle: 1.62
     spear_roll_low_attack_angle: 0.0
     spear_roll_middle_attack_angle: 0.5
     spear_roll_high_attack_angle: 0.7
@@ -244,7 +248,9 @@ r1_main_node:
     # KFSが置かれている場所
     # kfs_forest_number: [4]
     # kfs_forest_number: [4, 2]
-    kfs_forest_number: [4, 7]
+    # kfs_forest_number: [4, 7]
+    # kfs_forest_number: [2, 1]
+    kfs_forest_number: [3, 6]
     # KFS回収範囲の長方形サイズ [m]
     # yaw=0 のとき width は map の x 方向、height は map の y 方向の長さになる
     # yaw を与えた場合は、その yaw だけ回転した長方形ローカル座標系での幅と高さになる
@@ -256,35 +262,34 @@ r1_main_node:
     # 内回り/外回りのKFS回収範囲の中心座標 [x, y, yaw]
     # # 内回りのときは2,1,4,7,10を通る
     inner_collect_kfs_center_pos:
-      1: [3.75, 2.725, 0.0]
-      2: [2.55, 2.725, 0.0]
+      1: [3.6, 2.58, 0.0]
+      2: [2.4, 2.58, 0.0]
       3: [100.0, 100.0, 0.0] # ここは通らない
-      4: [5.4, 4.15, 1.57]
+      4: [5.4, 4.2, 1.57]
       5: [100.0, 100.0, 0.0] # ここにはKFSは置かれない
       6: [100.0, 100.0, 0.0] # ここは通らない
-      7: [5.4, 5.35, 1.57]
+      7: [5.4, 5.4, 1.57]
       8: [100.0, 100.0, 0.0] # ここにはKFSは置かれない
       9: [100.0, 100.0, 0.0] # ここは通らない
-      10: [5.4, 6.55, 1.57]
+      10: [5.4, 6.6, 1.57]
       11: [100.0, 100.0, 0.0] # ここは通らない
       12: [100.0, 100.0, 0.0] # ここは通らない
     # 外回りのときは3,6,9,12,10,11を通る
     outer_collect_kfs_center_pos:
       1: [100.0, 100.0, 0.0] # ここは通らない
       2: [100.0, 100.0, 0.0] # ここは通らない
-      3: [0.6, 2.95, 1.57]
+      3: [0.6, 3.0, 1.57]
       4: [100.0, 100.0, 0.0] # ここは通らない
       5: [100.0, 100.0, 0.0] # ここにはKFSは置かれない
-      6: [0.6, 4.15, 1.57]
+      6: [0.6, 4.2, 1.57]
       7: [100.0, 100.0, 0.0] # ここは通らない
       8: [100.0, 100.0, 0.0] # ここにはKFSは置かれない
-      9: [0.6, 5.35, 1.57]
+      9: [0.6, 5.4, 1.57]
       10: [3.75, 8.55, 0.0]
       11: [2.55, 8.55, 0.0]
-      12: [0.6, 6.55, 1.57]
+      12: [0.6, 6.6, 1.57]
     collect_kfs_offset: 0.838 # KFS回収時のオフセット（front_kfsかrear_kfsのうち、遠い方に適応する）
     kfs_yaw_delay_time: 1.0 # 範囲外へ出たあとに収納用 yaw を送るまでの遅延時間 [s]
-    # collect_kfs_offset: 0.419 # KFS回収時のオフセット（front_kfsかrear_kfsのうち、遠い方に適応する）
 
 # -------- 足回り ----------
 r1_mecanum_node:
@@ -403,6 +408,7 @@ r1_kfs_fyaw_node:
     contact_torque_limit: 0.75 # Nm
     origin_detect_threshold_time: 0.5 # 秒
     origin_detect_speed: -6.28 # rad/s
+    move_mech_lock_speed: 20.0 # rad/s
     angle_min: -5.0
     angle_max: 5.0
     normal_angle: 0.1
@@ -472,6 +478,7 @@ r1_kfs_ryaw_node:
     contact_torque_limit: 0.75 # Nm
     origin_detect_threshold_time: 0.5 # 秒
     origin_detect_speed: -6.28 # rad/s
+    move_mech_lock_speed: 20.0 # rad/s
     angle_min: -5.0
     angle_max: 5.0
     normal_angle: 0.1
@@ -494,7 +501,7 @@ r1_spear1_node:
     # 通常位置モード時に Robomas の torque_lim として使う値
     normal_torque_limit: 1.0 # Nm
     # 原点検出・メカロック移動中に Robomas の torque_lim として使う値
-    contact_torque_limit: 1.0 # Nm
+    contact_torque_limit: 0.75 # Nm
     origin_detect_threshold_time: 0.5 # 秒
     # 原点検出のときは、0の方向に戻るので、負の速度にする
     origin_detect_speed: -6.28 # rad/s
@@ -518,12 +525,13 @@ r1_spear2_node:
     # 通常位置モード時に Robomas の torque_lim として使う値
     normal_torque_limit: 1.0 # Nm
     # 原点検出・メカロック移動中に Robomas の torque_lim として使う値
-    contact_torque_limit: 1.0 # Nm
+    contact_torque_limit: 0.75 # Nm
     origin_detect_threshold_time: 0.5 # 秒
     # 原点検出のときは、0の方向に戻るので、負の速度にする
     origin_detect_speed: -6.28 # rad/s
     pos_min: -0.1
     pos_max: 1.0
+    normal_pos: 0.05
     # モータが1回転すると100mm進むので、半径は15.9mm
     radius: 0.015915494309189534
     inverse_motor: false
@@ -580,7 +588,7 @@ r1_spear4_node:
     inverse_low_switch_logic: false
     inverse_high_switch_logic: false
 # linear motion node
-# C610
+# C620
 r1_spear_x_node:
   ros__parameters:
     timer_rate: 10.0
@@ -596,8 +604,8 @@ r1_spear_x_node:
     pos_min: -0.1
     pos_max: 1.0
     normal_pos: 0.05
-    # モータが1回転すると110mm進むので、半径は17.5mm
-    radius: 0.01750704374010849
+    # モータが1回転すると36pi mm進むので、半径は18.0mm
+    radius: 0.018
     inverse_motor: true
     use_low_switch: false
     use_high_switch: false
@@ -822,7 +830,7 @@ sabacan_robomasv2_node_id3:
     pos_gain_p: [5.0, 5.0, 5.0, 5.0]
     pos_gain_i: [0.0, 0.0, 0.0, 0.0]
     pos_gain_d: [0.0, 0.0, 0.0, 0.0]
-    speed_lim: [100.0, 100.0, 30.0, 30.0]
+    speed_lim: [100.0, 100.0, 100.0, 30.0]
     # TRQ+SPD+POSをフィードバック
     monitor_reg1: [0x0001000100010000, 0x0001000100010000, 0x0001000100010000, 0x0001000100010000]
     # TRQ+SPD+POS+MOTOR_STATEをフィードバック
@@ -847,7 +855,7 @@ sabacan_robomasv2_node_id4:
     pos_gain_p: [5.0, 5.0, 5.0, 5.0]
     pos_gain_i: [0.0, 0.0, 0.0, 0.0]
     pos_gain_d: [0.0, 0.0, 0.0, 0.0]
-    speed_lim: [100.0, 100.0, 30.0, 30.0]
+    speed_lim: [100.0, 100.0, 100.0, 30.0]
     # TRQ+SPD+POSをフィードバック
     monitor_reg1: [0x0001000100010000, 0x0001000100010000, 0x0001000100010000, 0x0001000100010000]
     # TRQ+SPD+POS+MOTOR_STATEをフィードバック
@@ -872,7 +880,7 @@ sabacan_robomasv2_node_id5:
     pos_gain_p: [5.0, 5.0, 5.0, 5.0]
     pos_gain_i: [0.0, 0.0, 0.0, 0.0]
     pos_gain_d: [0.0, 0.0, 0.0, 0.0]
-    speed_lim: [10.0, 10.0, 10.0, 10.0]
+    speed_lim: [30.0, 30.0, 10.0, 10.0]
     # TRQ+SPD+POSをフィードバック
     monitor_reg1: [0x0001000100010000, 0x0001000100010000, 0x0001000100010000, 0x0001000100010000]
     # TRQ+SPD+POS+MOTOR_STATEをフィードバック
