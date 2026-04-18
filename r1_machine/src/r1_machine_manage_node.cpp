@@ -36,8 +36,8 @@
 #include "rclcpp/rclcpp.hpp"
 #include "sabacan_msgs/msg/sabacan_gpio_ref_float.hpp"
 #include "sabacan_msgs/msg/sabacan_gpio_ref_int.hpp"
-#include "sabacan_msgs/msg/sabacan_led_ref.hpp"
 #include "sabacan_msgs/msg/sabacan_gpio_status.hpp"
+#include "sabacan_msgs/msg/sabacan_led_ref.hpp"
 #include "sabacan_msgs/msg/sabacan_power_ref.hpp"
 #include "sabacan_msgs/msg/sabacan_power_status.hpp"
 #include "sabacan_msgs/msg/sabacan_robomas_status.hpp"
@@ -722,12 +722,12 @@ private:
 
   enum class MachineState
   {
-    Normal,              // 通常動作（モータ制御有効）
-    EmergencyActive,     // EMS 発報中
-    PendingInitialize,   // EMS 解除済み、/r1_machine_initialize 待ち
-    InitializeRequested, // /r1_machine_initialize 受信済み・EMS 解除待ち（解除後に自動実行）
-    Resetting,           // sabacan reset サービス送信中
-    WaitingDelay,        // post-reset 遅延待ち
+    Normal,               // 通常動作（モータ制御有効）
+    EmergencyActive,      // EMS 発報中
+    PendingInitialize,    // EMS 解除済み、/r1_machine_initialize 待ち
+    InitializeRequested,  // /r1_machine_initialize 受信済み・EMS 解除待ち（解除後に自動実行）
+    Resetting,            // sabacan reset サービス送信中
+    WaitingDelay,         // post-reset 遅延待ち
   };
 
   /**
@@ -1624,10 +1624,7 @@ private:
    * @return true 非常停止中、または初期化待ち
    * @return false 通常制御を通してよい
    */
-  bool should_force_open_loop() const
-  {
-    return machine_state_ != MachineState::Normal;
-  }
+  bool should_force_open_loop() const { return machine_state_ != MachineState::Normal; }
 
   /**
    * @brief Sabacan reset シーケンスを開始する。
@@ -1635,8 +1632,7 @@ private:
    */
   void start_sabacan_reset_sequence(const char * request_name)
   {
-    if (machine_state_ == MachineState::Resetting ||
-        machine_state_ == MachineState::WaitingDelay) {
+    if (machine_state_ == MachineState::Resetting || machine_state_ == MachineState::WaitingDelay) {
       RCLCPP_WARN(
         this->get_logger(), "ignored %s because sabacan reset is already running", request_name);
       return;
@@ -2013,16 +2009,16 @@ private:
     power_ref.is_ems = false;
     sabacan_power_ref_publisher_->publish(power_ref);
 
-    if (machine_state_ == MachineState::Resetting ||
-        machine_state_ == MachineState::WaitingDelay) {
+    if (machine_state_ == MachineState::Resetting || machine_state_ == MachineState::WaitingDelay) {
       RCLCPP_WARN(
         this->get_logger(),
         "ignored /r1_machine_initialize because sabacan reset is already running");
       return;
     }
 
-    if (machine_state_ == MachineState::EmergencyActive ||
-        machine_state_ == MachineState::InitializeRequested) {
+    if (
+      machine_state_ == MachineState::EmergencyActive ||
+      machine_state_ == MachineState::InitializeRequested) {
       machine_state_ = MachineState::InitializeRequested;
       RCLCPP_INFO(
         this->get_logger(),
@@ -2436,17 +2432,24 @@ private:
 
   // 足回り以外のモータチャネルは、機構別ではなく役割別の vector でまとめて保持する。
   std::vector<MotorStatusChannel> velocity_control_channels_{
-    make_velocity_control_channel({3, 3}, "r2_flift"),
-    make_velocity_control_channel({4, 3}, "r2_rlift"),
+    // make_velocity_control_channel({3, 3}, "r2_flift"),
+    // make_velocity_control_channel({4, 3}, "r2_rlift"),
   };
   std::vector<LinearMotionChannel> linear_motion_channels_{
-    make_linear_motion_channel({3, 0}, "kfs_fx"), make_linear_motion_channel({3, 1}, "kfs_fz"),
-    make_linear_motion_channel({4, 0}, "kfs_rx"), make_linear_motion_channel({4, 1}, "kfs_rz"),
-    make_linear_motion_channel({5, 0}, "spear1"), make_linear_motion_channel({5, 1}, "spear2"),
+    make_linear_motion_channel({3, 0}, "kfs_fx"),
+    make_linear_motion_channel({3, 1}, "kfs_fz"),
+    make_linear_motion_channel({4, 0}, "kfs_rx"),
+    make_linear_motion_channel({4, 1}, "kfs_rz"),
+    make_linear_motion_channel({5, 0}, "spear1"),
+    make_linear_motion_channel({5, 1}, "spear2"),
     // NOTE: 一旦spear3,4は使わない構成
     // make_linear_motion_channel({5, 2}, "spear3"),  make_linear_motion_channel({5, 3}, "spear4"),
     // make_linear_motion_channel({6, 0}, "spear_x"),
-    make_linear_motion_channel({5, 2}, "spear_x"), make_linear_motion_channel({6, 1}, "spear_y")};
+    make_linear_motion_channel({5, 2}, "spear_x"),
+    make_linear_motion_channel({6, 1}, "spear_y"),
+    make_linear_motion_channel({3, 3}, "r2_flift"),
+    make_linear_motion_channel({4, 3}, "r2_rlift"),
+  };
   std::vector<AngleMotionChannel> angle_motion_channels_{
     make_angle_motion_channel({3, 2}, "kfs_fyaw"), make_angle_motion_channel({4, 2}, "kfs_ryaw"),
     make_angle_motion_channel({6, 2}, "spear_pitch1"),

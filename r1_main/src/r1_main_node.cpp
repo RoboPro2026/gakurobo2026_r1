@@ -450,6 +450,8 @@ R1MainNode::R1MainNode() : Node("r1_main_node")
   register_position_axis("kfs_rx", &kfs_rx_position_ref_);
   register_position_axis("kfs_rz", &kfs_rz_position_ref_);
   register_position_axis("kfs_ryaw", &kfs_ryaw_position_ref_);
+  register_position_axis("r2_flift", &r2_flift_position_ref_);
+  register_position_axis("r2_rlift", &r2_rlift_position_ref_);
   register_position_axis("spear1", &spear1_position_ref_);
   register_position_axis("spear2", &spear2_position_ref_);
   register_position_axis("spear3", &spear3_position_ref_);
@@ -460,9 +462,9 @@ R1MainNode::R1MainNode() : Node("r1_main_node")
   register_position_axis("spear_pitch1", &spear_pitch1_position_ref_);
   register_position_axis("spear_pitch2", &spear_pitch2_position_ref_);
 
-  // ========== R2昇降指令値 ==========
-  register_velocity_axis("r2_flift", "/r2_flift_motor_ref", &r2_flift_velocity_ref_);
-  register_velocity_axis("r2_rlift", "/r2_rlift_motor_ref", &r2_rlift_velocity_ref_);
+  // // ========== R2昇降指令値 ==========
+  // register_velocity_axis("r2_flift", "/r2_flift_motor_ref", &r2_flift_velocity_ref_);
+  // register_velocity_axis("r2_rlift", "/r2_rlift_motor_ref", &r2_rlift_velocity_ref_);
   // ========== GPIO ==========
   // kfs
   register_gpio_pwm_output("kfs_front_pump", &kfs_front_pump_ref_, nullptr);
@@ -553,6 +555,7 @@ R1MainNode::R1MainNode() : Node("r1_main_node")
   declare_and_get_parameter("kfs_fx_expand_pos", KFS_FX_EXPAND_POS);
   declare_and_get_parameter("kfs_fx_low_mech_lock_pos", KFS_FX_LOW_MECH_LOCK_POS);
   declare_and_get_parameter("kfs_fx_high_mech_lock_pos", KFS_FX_HIGH_MECH_LOCK_POS);
+  declare_and_get_parameter("kfs_fx_r2_lift_pos", KFS_FX_R2_LIFT_POS);
   // fz
   declare_and_get_parameter("kfs_fz_normal_pos", KFS_FZ_NORMAL_POS);
   declare_and_get_parameter("kfs_fz_low_pos", KFS_FZ_LOW_POS);
@@ -562,6 +565,7 @@ R1MainNode::R1MainNode() : Node("r1_main_node")
   declare_and_get_parameter("kfs_fz_storage_pos", KFS_FZ_STORAGE_POS);
   declare_and_get_parameter("kfs_fz_low_mech_lock_pos", KFS_FZ_LOW_MECH_LOCK_POS);
   declare_and_get_parameter("kfs_fz_high_mech_lock_pos", KFS_FZ_HIGH_MECH_LOCK_POS);
+  declare_and_get_parameter("kfs_fz_r2_lift_pos", KFS_FZ_R2_LIFT_POS);
   // fyaw
   declare_and_get_parameter("kfs_fyaw_normal_angle", KFS_FYAW_NORMAL_ANGLE);
   declare_and_get_parameter("kfs_fyaw_front_angle", KFS_FYAW_FRONT_ANGLE);
@@ -577,6 +581,7 @@ R1MainNode::R1MainNode() : Node("r1_main_node")
   declare_and_get_parameter("kfs_rx_expand_pos", KFS_RX_EXPAND_POS);
   declare_and_get_parameter("kfs_rx_low_mech_lock_pos", KFS_RX_LOW_MECH_LOCK_POS);
   declare_and_get_parameter("kfs_rx_high_mech_lock_pos", KFS_RX_HIGH_MECH_LOCK_POS);
+  declare_and_get_parameter("kfs_rx_r2_lift_pos", KFS_RX_R2_LIFT_POS);
   // rz
   declare_and_get_parameter("kfs_rz_normal_pos", KFS_RZ_NORMAL_POS);
   declare_and_get_parameter("kfs_rz_low_pos", KFS_RZ_LOW_POS);
@@ -586,6 +591,7 @@ R1MainNode::R1MainNode() : Node("r1_main_node")
   declare_and_get_parameter("kfs_rz_storage_pos", KFS_RZ_STORAGE_POS);
   declare_and_get_parameter("kfs_rz_low_mech_lock_pos", KFS_RZ_LOW_MECH_LOCK_POS);
   declare_and_get_parameter("kfs_rz_high_mech_lock_pos", KFS_RZ_HIGH_MECH_LOCK_POS);
+  declare_and_get_parameter("kfs_rz_r2_lift_pos", KFS_RZ_R2_LIFT_POS);
   // ryaw
   declare_and_get_parameter("kfs_ryaw_normal_angle", KFS_RYAW_NORMAL_ANGLE);
   declare_and_get_parameter("kfs_ryaw_front_angle", KFS_RYAW_FRONT_ANGLE);
@@ -596,8 +602,12 @@ R1MainNode::R1MainNode() : Node("r1_main_node")
 
   // ========== 展開 ==========
   // R2昇降
-  declare_and_get_parameter("r2_lift_up_velocity", R2_LIFT_UP_VELOCITY);
-  declare_and_get_parameter("r2_lift_down_velocity", R2_LIFT_DOWN_VELOCITY);
+  declare_and_get_parameter("r2_flift_normal_pos", R2_FLIFT_NORMAL_POS);
+  declare_and_get_parameter("r2_flift_up_pos", R2_FLIFT_UP_POS);
+  declare_and_get_parameter("r2_flift_down_pos", R2_FLIFT_DOWN_POS);
+  declare_and_get_parameter("r2_rlift_normal_pos", R2_RLIFT_NORMAL_POS);
+  declare_and_get_parameter("r2_rlift_up_pos", R2_RLIFT_UP_POS);
+  declare_and_get_parameter("r2_rlift_down_pos", R2_RLIFT_DOWN_POS);
   // ========== やり ==========
   // spear1
   declare_and_get_parameter("spear1_normal_pos", SPEAR1_NORMAL_POS);
@@ -785,6 +795,10 @@ void R1MainNode::kfs_rz_detect_origin(void) { detect_origin_position_axis("kfs_r
 
 void R1MainNode::kfs_ryaw_detect_origin(void) { detect_origin_position_axis("kfs_ryaw"); }
 
+void R1MainNode::r2_flift_detect_origin(void) { detect_origin_position_axis("r2_flift"); }
+
+void R1MainNode::r2_rlift_detect_origin(void) { detect_origin_position_axis("r2_rlift"); }
+
 void R1MainNode::spear1_detect_origin(void) { detect_origin_position_axis("spear1"); }
 
 void R1MainNode::spear2_detect_origin(void) { detect_origin_position_axis("spear2"); }
@@ -831,6 +845,16 @@ void R1MainNode::kfs_rz_move_mech_lock(int direction)
 void R1MainNode::kfs_ryaw_move_mech_lock(int direction)
 {
   move_mech_lock_position_axis("kfs_ryaw", direction);
+}
+
+void R1MainNode::r2_flift_move_mech_lock(int direction)
+{
+  move_mech_lock_position_axis("r2_flift", direction);
+}
+
+void R1MainNode::r2_rlift_move_mech_lock(int direction)
+{
+  move_mech_lock_position_axis("r2_rlift", direction);
 }
 
 void R1MainNode::spear1_move_mech_lock(int direction)
@@ -1502,6 +1526,10 @@ void R1MainNode::kfs_rz_pos_ref(double pos) { publish_position_axis("kfs_rz", po
 
 void R1MainNode::kfs_ryaw_pos_ref(double pos) { publish_position_axis("kfs_ryaw", pos); }
 
+void R1MainNode::r2_flift_pos_ref(double pos) { publish_position_axis("r2_flift", pos); }
+
+void R1MainNode::r2_rlift_pos_ref(double pos) { publish_position_axis("r2_rlift", pos); }
+
 void R1MainNode::kfs_fx_speed_ref(double speed)
 {
   publish_position_axis_speed_ref("kfs_fx", speed);
@@ -1544,9 +1572,19 @@ void R1MainNode::kfs_rz_speed_mode_stop(void) { stop_position_axis_speed_mode("k
 
 void R1MainNode::kfs_ryaw_speed_mode_stop(void) { stop_position_axis_speed_mode("kfs_ryaw"); }
 
-void R1MainNode::r2_flift(double vel) { publish_velocity_axis("r2_flift", vel); }
+void R1MainNode::r2_flift_speed_ref(double speed)
+{
+  publish_position_axis_speed_ref("r2_flift", speed);
+}
 
-void R1MainNode::r2_rlift(double vel) { publish_velocity_axis("r2_rlift", vel); }
+void R1MainNode::r2_rlift_speed_ref(double speed)
+{
+  publish_position_axis_speed_ref("r2_rlift", speed);
+}
+
+void R1MainNode::r2_flift_speed_mode_stop(void) { stop_position_axis_speed_mode("r2_flift"); }
+
+void R1MainNode::r2_rlift_speed_mode_stop(void) { stop_position_axis_speed_mode("r2_rlift"); }
 
 void R1MainNode::spear1_pos_ref(double pos) { publish_position_axis("spear1", pos); }
 
@@ -1722,8 +1760,10 @@ void R1MainNode::stop_actuator(void)
 {
   // 速度制御のモータ指令値を0にする
   chassis_move_vel(0.0, 0.0, 0.0);
-  r2_flift(0.0);
-  r2_rlift(0.0);
+  r2_flift_speed_ref(0.0);
+  r2_rlift_speed_ref(0.0);
+  r2_flift_speed_mode_stop();
+  r2_rlift_speed_mode_stop();
   // 真空ポンプを止める
   kfs_front_pump(0.0);
   kfs_rear_pump(0.0);
@@ -1788,13 +1828,13 @@ void R1MainNode::manual_mode1_detect_origin(void)
     spear2_detect_origin();
   }
 
-  // if (ps4_->is_pushed_l2()) {
-  //   spear_move_detect_origin();
-  // }
+  if (ps4_->is_pushed_l2()) {
+    r2_rlift_detect_origin();
+  }
 
-  // if (ps4_->is_pushed_r2()) {
-  //   spear_rotate_detect_origin();
-  // }
+  if (ps4_->is_pushed_r2()) {
+    r2_flift_detect_origin();
+  }
 }
 
 void R1MainNode::manual_mode2_collect_pole_task(void)
@@ -2430,66 +2470,56 @@ void R1MainNode::manual_mode5_rkfs(void)
 
 void R1MainNode::manual_mode6_r2_lift(void)
 {
-  int & r2_lift_step = manual_mode6_r2_lift_step_;
-
   if (ps4_->is_pushed_up()) {
-    kfs_fyaw_pos_ref(kfs_fyaw_position_ref_ + 0.05);
   }
 
   if (ps4_->is_pushed_right()) {
-    kfs_fyaw_pos_ref(kfs_fyaw_position_ref_ - 0.05);
   }
 
   if (ps4_->is_pushed_down()) {
-    kfs_fyaw_pos_ref(kfs_fyaw_position_ref_ + 0.05);
   }
 
   if (ps4_->is_pushed_left()) {
-    kfs_fyaw_pos_ref(kfs_fyaw_position_ref_ - 0.05);
   }
 
-  // fliftは逆転、rliftは正転させると、上昇する。
-  if (ps4_->is_pushing_triangle()) {
-    if (r2_lift_step != 2) {
-      r2_flift(-R2_LIFT_UP_VELOCITY);
-      r2_rlift(R2_LIFT_UP_VELOCITY);
-      RCLCPP_INFO(this->get_logger(), "r2 lift up");
-      r2_lift_step = 2;
-    }
-  } else if (ps4_->is_pushing_cross()) {
-    if (r2_lift_step != 3) {
-      r2_flift(-R2_LIFT_DOWN_VELOCITY);
-      r2_rlift(R2_LIFT_DOWN_VELOCITY);
-      RCLCPP_INFO(this->get_logger(), "r2 lift down");
-      r2_lift_step = 3;
-    }
-  } else {
-    if (r2_lift_step != 1) {
-      r2_flift(0.0);
-      r2_rlift(0.0);
-      RCLCPP_INFO(this->get_logger(), "r2 lift stop");
-      r2_lift_step = 1;
-    }
+  if (ps4_->is_pushed_triangle()) {
+    r2_flift_pos_ref(R2_FLIFT_UP_POS);
+    r2_rlift_pos_ref(R2_RLIFT_UP_POS);
+  }
+
+  if (ps4_->is_pushed_circle()) {
+    kfs_fx_pos_ref(KFS_FX_R2_LIFT_POS);
+    kfs_fz_pos_ref(KFS_FZ_R2_LIFT_POS);
+    kfs_rx_pos_ref(KFS_RX_R2_LIFT_POS);
+    kfs_rz_pos_ref(KFS_RZ_R2_LIFT_POS);
+    RCLCPP_INFO(this->get_logger(), "moved to r2_lift position");
+    manual_mode6_r2_lift_timer_ = this->create_wall_timer(500ms, [this]() {
+      r2_flift_move_mech_lock(-1);
+      r2_rlift_move_mech_lock(-1);
+      manual_mode6_r2_lift_timer_->cancel();
+      RCLCPP_INFO(this->get_logger(), "r2 lift stop (timer)");
+    });
+  }
+
+  if (ps4_->is_pushed_cross()) {
+    r2_flift_pos_ref(R2_FLIFT_DOWN_POS);
+    r2_rlift_pos_ref(R2_RLIFT_DOWN_POS);
   }
 
   if (ps4_->is_pushed_l1()) {
-    // kfs_fxの微調整（指令値を減少）
-    kfs_fx_pos_ref(kfs_fx_position_ref_ - 0.01);
+    r2_flift_pos_ref(r2_flift_position_ref_ - 0.01);
   }
 
   if (ps4_->is_pushed_r1()) {
-    // kfs_fxの微調整（指令値を増加）
-    kfs_fx_pos_ref(kfs_fx_position_ref_ + 0.01);
+    r2_flift_pos_ref(r2_flift_position_ref_ + 0.01);
   }
 
   if (ps4_->is_pushed_l2()) {
-    // kfs_rxの微調整（指令値を減少）
-    kfs_rx_pos_ref(kfs_rx_position_ref_ - 0.01);
+    r2_rlift_pos_ref(r2_rlift_position_ref_ - 0.01);
   }
 
   if (ps4_->is_pushed_r2()) {
-    // kfs_rxの微調整（指令値を増加）
-    kfs_rx_pos_ref(kfs_rx_position_ref_ + 0.01);
+    r2_rlift_pos_ref(r2_rlift_position_ref_ + 0.01);
   }
 }
 

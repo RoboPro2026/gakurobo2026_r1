@@ -134,6 +134,7 @@ r1_main_node:
     kfs_fx_expand_pos: 0.67
     kfs_fx_low_mech_lock_pos: 0.05
     kfs_fx_high_mech_lock_pos: 0.67
+    kfs_fx_r2_lift_pos: 0.45
     # fz
     kfs_fz_normal_pos: 0.005
     kfs_fz_low_pos: 0.005
@@ -142,7 +143,8 @@ r1_main_node:
     kfs_fz_put_pos: 0.5
     kfs_fz_storage_pos: 0.5
     kfs_fz_low_mech_lock_pos: 0.005
-    lfs_fz_high_mech_lock_pos: 0.55
+    kfs_fz_high_mech_lock_pos: 0.55
+    kfs_fz_r2_lift_pos: 0.005
     # fyaw
     kfs_fyaw_normal_angle: 0.0
     kfs_fyaw_front_angle: 3.141592653589793
@@ -156,8 +158,9 @@ r1_main_node:
     kfs_rx_start_pos: 0.3
     kfs_rx_put_pos: 0.3
     kfs_rx_expand_pos: 0.67
-    kfs_fx_low_mech_lock_pos: 0.05
-    kfs_fx_high_mech_lock_pos: 0.67
+    kfs_rx_low_mech_lock_pos: 0.05
+    kfs_rx_high_mech_lock_pos: 0.67
+    kfs_rx_r2_lift_pos: 0.45
     # rz
     kfs_rz_normal_pos: 0.005
     kfs_rz_low_pos: 0.005
@@ -168,6 +171,7 @@ r1_main_node:
     kfs_rz_put_pos: 0.5
     kfs_rz_low_mech_lock_pos: 0.005
     kfs_rz_high_mech_lock_pos: 0.55
+    kfs_rz_r2_lift_pos: 0.005
     # ryaw
     kfs_ryaw_normal_angle: 0.0
     kfs_ryaw_front_angle: 3.141592653589793
@@ -180,8 +184,12 @@ r1_main_node:
 
     # ========== 展開 ==========
     # R2昇降
-    r2_lift_up_velocity: 10.0
-    r2_lift_down_velocity: -10.0
+    r2_flift_normal_pos: 0.05
+    r2_flift_up_pos: 0.62
+    r2_flift_down_pos: 0.0
+    r2_lift_normal_pos: 0.05
+    r2_rlift_up_pos: 0.62
+    r2_rlift_down_pos: 0.0
 
     # ========== やり ==========
     # spear1
@@ -439,6 +447,30 @@ r1_kfs_fyaw_node:
     inverse_low_switch_logic: false
     inverse_high_switch_logic: false
 # linear motion node
+# C620
+r1_r2_flift_node:
+  ros__parameters:
+    timer_rate: 10.0
+    # トルク検出時のしきい値
+    torque_threshold: 0.5 # Nm
+    # 通常位置モード時に Robomas の torque_lim として使う値
+    normal_torque_limit: 4.0 # Nm
+    # 原点検出・メカロック移動中に Robomas の torque_lim として使う値
+    contact_torque_limit: 1.0 # Nm
+    origin_detect_threshold_time: 0.5 # 秒
+    # 原点検出のときは、0の方向に戻るので、負の速度にする
+    origin_detect_speed: -6.28 # rad/s
+    pos_min: -0.1
+    pos_max: 1.0
+    normal_pos: 0.025
+    # モータが1回転すると63.66pi mm進むので、半径は31.83mm
+    radius: 0.03183
+    inverse_motor: true
+    use_low_switch: false
+    use_high_switch: false
+    inverse_low_switch_logic: false
+    inverse_high_switch_logic: false
+# linear motion node
 r1_kfs_rx_node:
   ros__parameters:
     timer_rate: 10.0
@@ -505,6 +537,30 @@ r1_kfs_ryaw_node:
     # ギア比で割った値がモーターの角度指令値となる
     # 減速比は1 / 2 = 0.5
     gear_ratio: 0.5
+    inverse_motor: false
+    use_low_switch: false
+    use_high_switch: false
+    inverse_low_switch_logic: false
+    inverse_high_switch_logic: false
+# linear motion node
+# C620
+r1_r2_rlift_node:
+  ros__parameters:
+    timer_rate: 10.0
+    # トルク検出時のしきい値
+    torque_threshold: 0.5 # Nm
+    # 通常位置モード時に Robomas の torque_lim として使う値
+    normal_torque_limit: 4.0 # Nm
+    # 原点検出・メカロック移動中に Robomas の torque_lim として使う値
+    contact_torque_limit: 1.0 # Nm
+    origin_detect_threshold_time: 0.5 # 秒
+    # 原点検出のときは、0の方向に戻るので、負の速度にする
+    origin_detect_speed: -6.28 # rad/s
+    pos_min: -0.1
+    pos_max: 1.0
+    normal_pos: 0.025
+    # モータが1回転すると63.66pi mm進むので、半径は31.83mm
+    radius: 0.03183
     inverse_motor: false
     use_low_switch: false
     use_high_switch: false
@@ -851,7 +907,7 @@ sabacan_robomasv2_node_id3:
     pos_gain_p: [5.0, 5.0, 5.0, 5.0]
     pos_gain_i: [0.0, 0.0, 0.0, 0.0]
     pos_gain_d: [0.0, 0.0, 0.0, 0.0]
-    speed_lim: [100.0, 100.0, 100.0, 30.0]
+    speed_lim: [100.0, 100.0, 100.0, 10.0]
     # TRQ+SPD+POSをフィードバック
     monitor_reg1: [0x0001000100010000, 0x0001000100010000, 0x0001000100010000, 0x0001000100010000]
     # TRQ+SPD+POS+MOTOR_STATEをフィードバック
@@ -876,7 +932,7 @@ sabacan_robomasv2_node_id4:
     pos_gain_p: [5.0, 5.0, 5.0, 5.0]
     pos_gain_i: [0.0, 0.0, 0.0, 0.0]
     pos_gain_d: [0.0, 0.0, 0.0, 0.0]
-    speed_lim: [100.0, 100.0, 100.0, 30.0]
+    speed_lim: [100.0, 100.0, 100.0, 10.0]
     # TRQ+SPD+POSをフィードバック
     monitor_reg1: [0x0001000100010000, 0x0001000100010000, 0x0001000100010000, 0x0001000100010000]
     # TRQ+SPD+POS+MOTOR_STATEをフィードバック

@@ -221,8 +221,8 @@ public:
   double spear_roll_position_ref_ = 0.0;
   double spear_pitch1_position_ref_ = 0.0;
   double spear_pitch2_position_ref_ = 0.0;
-  double r2_flift_velocity_ref_ = 0.0;
-  double r2_rlift_velocity_ref_ = 0.0;
+  double r2_flift_position_ref_ = 0.0;
+  double r2_rlift_position_ref_ = 0.0;
   double kfs_front_pump_ref_ = 0.0;
   double kfs_rear_pump_ref_ = 0.0;
   bool kfs_front_valve_ref_ = false;
@@ -282,6 +282,7 @@ public:
   double KFS_FX_EXPAND_POS = 0.0;
   double KFS_FX_LOW_MECH_LOCK_POS = 0.0;
   double KFS_FX_HIGH_MECH_LOCK_POS = 0.0;
+  double KFS_FX_R2_LIFT_POS = 0.0;
   // fz
   double KFS_FZ_NORMAL_POS = 0.0;
   double KFS_FZ_LOW_POS = 0.0;
@@ -291,6 +292,7 @@ public:
   double KFS_FZ_STORAGE_POS = 0.0;
   double KFS_FZ_LOW_MECH_LOCK_POS = 0.0;
   double KFS_FZ_HIGH_MECH_LOCK_POS = 0.0;
+  double KFS_FZ_R2_LIFT_POS = 0.0;
   // fyaw
   double KFS_FYAW_NORMAL_ANGLE = 0.0;
   double KFS_FYAW_FRONT_ANGLE = 0.0;
@@ -306,6 +308,7 @@ public:
   double KFS_RX_EXPAND_POS = 0.0;
   double KFS_RX_LOW_MECH_LOCK_POS = 0.0;
   double KFS_RX_HIGH_MECH_LOCK_POS = 0.0;
+  double KFS_RX_R2_LIFT_POS = 0.0;
   // rz
   double KFS_RZ_NORMAL_POS = 0.0;
   double KFS_RZ_LOW_POS = 0.0;
@@ -315,6 +318,7 @@ public:
   double KFS_RZ_STORAGE_POS = 0.0;
   double KFS_RZ_LOW_MECH_LOCK_POS = 0.0;
   double KFS_RZ_HIGH_MECH_LOCK_POS = 0.0;
+  double KFS_RZ_R2_LIFT_POS = 0.0;
   // ryaw
   double KFS_RYAW_NORMAL_ANGLE = 0.0;
   double KFS_RYAW_FRONT_ANGLE = 0.0;
@@ -323,8 +327,12 @@ public:
   double KFS_RYAW_LOW_MECH_LOCK_ANGLE = 0.0;
   double KFS_RYAW_HIGH_MECH_LOCK_ANGLE = 0.0;
   // R2昇降
-  double R2_LIFT_UP_VELOCITY = 0.0;
-  double R2_LIFT_DOWN_VELOCITY = 0.0;
+  double R2_FLIFT_NORMAL_POS = 0.0;
+  double R2_FLIFT_UP_POS = 0.0;
+  double R2_FLIFT_DOWN_POS = 0.0;
+  double R2_RLIFT_NORMAL_POS = 0.0;
+  double R2_RLIFT_UP_POS = 0.0;
+  double R2_RLIFT_DOWN_POS = 0.0;
 
   // ========== やり ==========
   // spear1
@@ -512,8 +520,15 @@ public:
   void kfs_rz_speed_mode_stop(void);
   void kfs_ryaw_speed_mode_stop(void);
   // R2昇降
-  void r2_flift(double vel);
-  void r2_rlift(double vel);
+  // 位置指令
+  void r2_flift_pos_ref(double pos);
+  void r2_rlift_pos_ref(double pos);
+  // 速度指令
+  void r2_flift_speed_ref(double speed);
+  void r2_rlift_speed_ref(double speed);
+  // 速度指令停止
+  void r2_flift_speed_mode_stop(void);
+  void r2_rlift_speed_mode_stop(void);
   // やり
   // 位置指令
   void spear1_pos_ref(double pos);
@@ -558,6 +573,9 @@ public:
   void kfs_fyaw_move_rear_mech_lock(void);
   void kfs_ryaw_move_front_mech_lock(void);
   void kfs_ryaw_move_rear_mech_lock(void);
+  // R2昇降
+  void r2_flift_move_mech_lock(int direction);
+  void r2_rlift_move_mech_lock(int direction);
   // やり
   void spear1_move_mech_lock(int direction);
   void spear2_move_mech_lock(int direction);
@@ -596,6 +614,9 @@ public:
   void kfs_rx_detect_origin(void);
   void kfs_rz_detect_origin(void);
   void kfs_ryaw_detect_origin(void);
+  // r2昇降
+  void r2_flift_detect_origin(void);
+  void r2_rlift_detect_origin(void);
   // やり
   void spear1_detect_origin(void);
   void spear2_detect_origin(void);
@@ -651,6 +672,7 @@ public:
   int manual_mode7_spear_hand_valve1_step_ = DEFAULT_STEP;
   rclcpp::TimerBase::SharedPtr manual_mode4_front_valve_timer_;
   rclcpp::TimerBase::SharedPtr manual_mode5_rear_valve_timer_;
+  rclcpp::TimerBase::SharedPtr manual_mode6_r2_lift_timer_;
   rclcpp::TimerBase::SharedPtr manual_mode7_front_valve_timer_;
   rclcpp::TimerBase::SharedPtr manual_mode7_rear_valve_timer_;
   rclcpp::TimerBase::SharedPtr manual_mode8_roll_timer_;

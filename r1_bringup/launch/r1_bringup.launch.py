@@ -171,11 +171,19 @@ def generate_launch_description():
         extra_remappings=[("low_switch_status", "kfs_fz_low_switch_status")],
     )
     r1_kfs_fyaw_node = create_r1_angle_motion_node("r1_kfs_fyaw_node", "kfs_fyaw")
+    r1_r2_flift_node = create_r1_linear_motion_node(
+        "r1_r2_flift_node",
+        "r2_flift",
+    )
     r1_kfs_rx_node = create_r1_linear_motion_node("r1_kfs_rx_node", "kfs_rx")
     r1_kfs_rz_node = create_r1_linear_motion_node(
         "r1_kfs_rz_node",
         "kfs_rz",
         extra_remappings=[("low_switch_status", "kfs_rz_low_switch_status")],
+    )
+    r1_r2_rlift_node = create_r1_linear_motion_node(
+        "r1_r2_rlift_node",
+        "r2_rlift",
     )
     r1_kfs_ryaw_node = create_r1_angle_motion_node("r1_kfs_ryaw_node", "kfs_ryaw")
 
@@ -529,9 +537,11 @@ def generate_launch_description():
         r1_kfs_fx_node,
         r1_kfs_fz_node,
         r1_kfs_fyaw_node,
+        r1_r2_flift_node,
         r1_kfs_rx_node,
         r1_kfs_rz_node,
         r1_kfs_ryaw_node,
+        r1_r2_rlift_node,
         r1_spear1_node,
         r1_spear2_node,
         r1_spear3_node,
