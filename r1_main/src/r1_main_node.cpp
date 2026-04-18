@@ -2106,8 +2106,7 @@ void R1MainNode::manual_mode4_fkfs(void)
   if (ps4_->is_pushing_r1() && ps4_->is_pushed_triangle()) {
     // R1+△: kfs_fyawの微調整（指令値を増加）
     manual_mode4_r1_long_press_triger_ = false;
-    kfs_fyaw_pos_ref(kfs_fyaw_position_ref_ + 0.01);
-    RCLCPP_INFO(this->get_logger(), "fyaw fine +0.01: %.3f", kfs_fyaw_position_ref_);
+    kfs_fyaw_pos_ref(kfs_fyaw_position_ref_ + 0.05);
   } else if (ps4_->is_pushed_triangle()) {
     // △単押し: kfs_fyawを90度進める
     fyaw_step++;
@@ -2144,8 +2143,7 @@ void R1MainNode::manual_mode4_fkfs(void)
   if (ps4_->is_pushing_r1() && ps4_->is_pushed_cross()) {
     // R1+×: kfs_fyawの微調整（指令値を減少）
     manual_mode4_r1_long_press_triger_ = false;
-    kfs_fyaw_pos_ref(kfs_fyaw_position_ref_ - 0.01);
-    RCLCPP_INFO(this->get_logger(), "fyaw fine -0.01: %.3f", kfs_fyaw_position_ref_);
+    kfs_fyaw_pos_ref(kfs_fyaw_position_ref_ - 0.05);
   } else if (ps4_->is_pushed_cross()) {
     // ×単押し: kfs_fyawを90度戻す
     fyaw_step--;
@@ -2306,8 +2304,7 @@ void R1MainNode::manual_mode5_rkfs(void)
   if (ps4_->is_pushing_r1() && ps4_->is_pushed_triangle()) {
     // R1+△: kfs_ryawの微調整（指令値を増加）
     manual_mode5_r1_long_press_triger_ = false;
-    kfs_ryaw_pos_ref(kfs_ryaw_position_ref_ + 0.01);
-    RCLCPP_INFO(this->get_logger(), "ryaw fine +0.01: %.3f", kfs_ryaw_position_ref_);
+    kfs_ryaw_pos_ref(kfs_ryaw_position_ref_ + 0.05);
   } else if (ps4_->is_pushed_triangle()) {
     // △単押し: kfs_ryawを90度進める
     ryaw_step++;
@@ -2344,8 +2341,7 @@ void R1MainNode::manual_mode5_rkfs(void)
   if (ps4_->is_pushing_r1() && ps4_->is_pushed_cross()) {
     // R1+×: kfs_ryawの微調整（指令値を減少）
     manual_mode5_r1_long_press_triger_ = false;
-    kfs_ryaw_pos_ref(kfs_ryaw_position_ref_ - 0.01);
-    RCLCPP_INFO(this->get_logger(), "ryaw fine -0.01: %.3f", kfs_ryaw_position_ref_);
+    kfs_ryaw_pos_ref(kfs_ryaw_position_ref_ - 0.05);
   } else if (ps4_->is_pushed_cross()) {
     // ×単押し: kfs_ryawを90度戻す
     ryaw_step--;
