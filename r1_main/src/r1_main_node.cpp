@@ -2023,7 +2023,7 @@ void R1MainNode::manual_mode3_make_spear_task(int n)
 void R1MainNode::manual_mode3_spear(void)
 {
   if (ps4_->is_pushed_up()) {
-    spear_roll_pos_ref(spear_roll_position_ref_ + 0.025);
+    spear_roll_pos_ref(spear_roll_position_ref_ + 0.01);
   }
 
   if (ps4_->is_pushed_right()) {
@@ -2031,7 +2031,7 @@ void R1MainNode::manual_mode3_spear(void)
   }
 
   if (ps4_->is_pushed_down()) {
-    spear_roll_pos_ref(spear_roll_position_ref_ - 0.025);
+    spear_roll_pos_ref(spear_roll_position_ref_ - 0.01);
   }
 
   if (ps4_->is_pushed_left()) {
