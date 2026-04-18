@@ -2504,9 +2504,17 @@ void R1MainNode::manual_mode7_spear_attack_task(int n, int m)
   (void)n;
   int & step = manual_mode7_spear_attack_task_step_;
   RCLCPP_INFO(this->get_logger(), "manual_mode7_spear_attack_task step: %d", step);
-
   if (step == 1) {
+    kfs_fx_pos_ref(KFS_FX_NORMAL_POS);
+    kfs_fz_pos_ref(KFS_FZ_NORMAL_POS);
+    kfs_fyaw_pos_ref(KFS_FYAW_NORMAL_ANGLE);
+    kfs_rx_pos_ref(KFS_RX_NORMAL_POS);
+    kfs_rz_pos_ref(KFS_RZ_NORMAL_POS);
+    kfs_ryaw_pos_ref(KFS_RYAW_NORMAL_ANGLE);
+    step++;
+  } else if (step == 2) {
     spear_x_pos_ref(SPEAR_X_NORMAL_POS);
+    spear_y_pos_ref(SPEAR_Y_NORMAL_POS);
     if (m == 1) {
       // 下段を狙う
       spear_roll_pos_ref(SPEAR_ROLL_LOW_ATTACK_ANGLE);
@@ -2518,7 +2526,7 @@ void R1MainNode::manual_mode7_spear_attack_task(int n, int m)
       spear_roll_pos_ref(SPEAR_ROLL_HIGH_ATTACK_ANGLE);
     }
     step++;
-  } else if (step == 2) {
+  } else if (step == 3) {
     if (n == 1) {
       if (m == 1) {
         // 下段を狙う
@@ -2545,7 +2553,7 @@ void R1MainNode::manual_mode7_spear_attack_task(int n, int m)
     } else if (n == 4) {
     }
     step++;
-  } else if (step == 3) {
+  } else if (step == 4) {
     if (n == 1) {
       spear1_pos_ref(SPEAR1_NORMAL_POS);
     } else if (n == 2) {
@@ -2557,7 +2565,7 @@ void R1MainNode::manual_mode7_spear_attack_task(int n, int m)
     }
     spear_roll_pos_ref(SPEAR_ROLL_NORMAL_ANGLE);
     step++;
-  } else if (step == 4) {
+  } else if (step == 5) {
     if (n == 1) {
       spear_u1_valve(true);
       spear_d1_valve(true);
@@ -2568,7 +2576,7 @@ void R1MainNode::manual_mode7_spear_attack_task(int n, int m)
     } else if (n == 4) {
     }
     step++;
-  } else if (step == 5) {
+  } else if (step == 6) {
     if (n == 1) {
       spear_u1_valve(false);
       spear_d1_valve(false);
