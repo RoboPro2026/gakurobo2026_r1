@@ -1156,6 +1156,9 @@ void R1MainNode::set_odometry(double x, double y, double yaw)
 void R1MainNode::set_initialpose(double x, double y, double yaw, double delay_sec)
 {
   // setTimeout風でdelay_sec秒後にinitialposeをpublishする
+  if (initialpose_publish_timer_) {
+    initialpose_publish_timer_->cancel();
+  }
   initialpose_publish_timer_ =
     this->create_wall_timer(std::chrono::duration<double>(delay_sec), [this, x, y, yaw]() {
       geometry_msgs::msg::PoseWithCovarianceStamped msg;
@@ -1172,7 +1175,9 @@ void R1MainNode::set_initialpose(double x, double y, double yaw, double delay_se
       initialpose_publisher_->publish(msg);
       RCLCPP_INFO(this->get_logger(), "publish initialpose x: %f, y: %f, yaw: %f", x, y, yaw);
       // タイマーは1回だけ実行するので、初期化する
-      initialpose_publish_timer_->cancel();
+      if (initialpose_publish_timer_) {
+        initialpose_publish_timer_->cancel();
+      }
     });
 }
 
@@ -2100,8 +2105,10 @@ void R1MainNode::manual_mode4_fkfs(void)
   if (ps4_->is_pushed_right()) {
     kfs_fx_pos_ref(KFS_FX_PUT_POS);
     kfs_fz_pos_ref(KFS_FZ_PUT_POS);
+    kfs_fyaw_pos_ref(KFS_FYAW_SIDE_ANGLE);
     kfs_rx_pos_ref(KFS_RX_NORMAL_POS);
     kfs_rz_pos_ref(KFS_RZ_PUT_POS);
+    kfs_ryaw_pos_ref(KFS_RYAW_SIDE_ANGLE);
     RCLCPP_INFO(this->get_logger(), "moved to front_kfs put position");
   }
 
@@ -2131,9 +2138,14 @@ void R1MainNode::manual_mode4_fkfs(void)
       kfs_front_pump(0.0);
       kfs_front_valve(true);
       // setTimeout風で電磁弁をOFFにする。
+      if (manual_mode4_front_valve_timer_) {
+        manual_mode4_front_valve_timer_->cancel();
+      }
       manual_mode4_front_valve_timer_ = this->create_wall_timer(250ms, [this]() {
         kfs_front_valve(false);
-        manual_mode4_front_valve_timer_->cancel();
+        if (manual_mode4_front_valve_timer_) {
+          manual_mode4_front_valve_timer_->cancel();
+        }
       });
       front_pump_step = 1;
     }
@@ -2299,8 +2311,10 @@ void R1MainNode::manual_mode5_rkfs(void)
     RCLCPP_INFO(this->get_logger(), "moved to rear_kfs put position");
     kfs_fx_pos_ref(KFS_FX_NORMAL_POS);
     kfs_fz_pos_ref(KFS_FZ_PUT_POS);
+    kfs_fyaw_pos_ref(KFS_FYAW_SIDE_ANGLE);
     kfs_rx_pos_ref(KFS_RX_PUT_POS);
     kfs_rz_pos_ref(KFS_RZ_PUT_POS);
+    kfs_ryaw_pos_ref(KFS_RYAW_SIDE_ANGLE);
   }
 
   if (ps4_->is_pushed_down()) {
@@ -2329,9 +2343,14 @@ void R1MainNode::manual_mode5_rkfs(void)
       kfs_rear_pump(0.0);
       kfs_rear_valve(true);
       // setTimeout風で電磁弁をOFFにする。
+      if (manual_mode5_rear_valve_timer_) {
+        manual_mode5_rear_valve_timer_->cancel();
+      }
       manual_mode5_rear_valve_timer_ = this->create_wall_timer(250ms, [this]() {
         kfs_rear_valve(false);
-        manual_mode5_rear_valve_timer_->cancel();
+        if (manual_mode5_rear_valve_timer_) {
+          manual_mode5_rear_valve_timer_->cancel();
+        }
       });
       rear_pump_step = 1;
     }
@@ -2481,10 +2500,15 @@ void R1MainNode::manual_mode6_r2_lift(void)
     kfs_rx_pos_ref(KFS_RX_R2_LIFT_POS);
     kfs_rz_pos_ref(KFS_RZ_R2_LIFT_POS);
     RCLCPP_INFO(this->get_logger(), "moved to r2_lift position");
+    if (manual_mode6_r2_lift_timer_ != nullptr) {
+      manual_mode6_r2_lift_timer_->cancel();
+    }
     manual_mode6_r2_lift_timer_ = this->create_wall_timer(500ms, [this]() {
       r2_flift_move_mech_lock(-1);
       r2_rlift_move_mech_lock(-1);
-      manual_mode6_r2_lift_timer_->cancel();
+      if (manual_mode6_r2_lift_timer_ != nullptr) {
+        manual_mode6_r2_lift_timer_->cancel();
+      }
       RCLCPP_INFO(this->get_logger(), "r2 lift stop (timer)");
     });
   }
@@ -2497,12 +2521,17 @@ void R1MainNode::manual_mode6_r2_lift(void)
   if (ps4_->is_pushed_left()) {
     r2_flift_pos_ref(R2_FLIFT_NORMAL_POS);
     r2_rlift_pos_ref(R2_RLIFT_NORMAL_POS);
+    if (manual_mode6_r2_lift_timer_ != nullptr) {
+      manual_mode6_r2_lift_timer_->cancel();
+    }
     manual_mode6_r2_lift_timer_ = this->create_wall_timer(500ms, [this]() {
       kfs_fx_pos_ref(KFS_FX_NORMAL_POS);
       kfs_fz_pos_ref(KFS_FZ_NORMAL_POS);
       kfs_rx_pos_ref(KFS_RX_NORMAL_POS);
       kfs_rz_pos_ref(KFS_RZ_NORMAL_POS);
-      manual_mode6_r2_lift_timer_->cancel();
+      if (manual_mode6_r2_lift_timer_ != nullptr) {
+        manual_mode6_r2_lift_timer_->cancel();
+      }
       RCLCPP_INFO(this->get_logger(), "r2 lift lock (timer)");
     });
   }
@@ -2804,7 +2833,9 @@ void R1MainNode::auto_collect_kfs_task(void)
             auto_collect_front_storage_yaw_timer_ =
               this->create_wall_timer(std::chrono::duration<double>(KFS_YAW_DELAY_TIME), [this]() {
                 kfs_fyaw_pos_ref(KFS_FYAW_SIDE_ANGLE);
-                auto_collect_front_storage_yaw_timer_->cancel();
+                if (auto_collect_front_storage_yaw_timer_) {
+                  auto_collect_front_storage_yaw_timer_->cancel();
+                }
               });
           } else {
             kfs_rx_pos_ref(KFS_RX_STORAGE_POS);
@@ -2815,7 +2846,9 @@ void R1MainNode::auto_collect_kfs_task(void)
             auto_collect_rear_storage_yaw_timer_ =
               this->create_wall_timer(std::chrono::duration<double>(KFS_YAW_DELAY_TIME), [this]() {
                 kfs_ryaw_pos_ref(KFS_RYAW_SIDE_ANGLE);
-                auto_collect_rear_storage_yaw_timer_->cancel();
+                if (auto_collect_rear_storage_yaw_timer_) {
+                  auto_collect_rear_storage_yaw_timer_->cancel();
+                }
               });
           }
         } else {
@@ -2961,16 +2994,26 @@ void R1MainNode::manual_mode8_auto_collect_kfs(void)
     kfs_front_pump(0.0);
     kfs_front_valve(true);
     // setTimeout風で電磁弁をOFFにする。
+    if (manual_mode7_front_valve_timer_) {
+      manual_mode7_front_valve_timer_->cancel();
+    }
     manual_mode7_front_valve_timer_ = this->create_wall_timer(250ms, [this]() {
       kfs_front_valve(false);
-      manual_mode7_front_valve_timer_->cancel();
+      if (manual_mode7_front_valve_timer_) {
+        manual_mode7_front_valve_timer_->cancel();
+      }
     });
     kfs_rear_pump(0.0);
     kfs_rear_valve(true);
     // setTimeout風で電磁弁をOFFにする。
+    if (manual_mode7_rear_valve_timer_) {
+      manual_mode7_rear_valve_timer_->cancel();
+    }
     manual_mode7_rear_valve_timer_ = this->create_wall_timer(250ms, [this]() {
       kfs_rear_valve(false);
-      manual_mode7_rear_valve_timer_->cancel();
+      if (manual_mode7_rear_valve_timer_) {
+        manual_mode7_rear_valve_timer_->cancel();
+      }
     });
   }
 
