@@ -2471,23 +2471,11 @@ void R1MainNode::manual_mode5_rkfs(void)
 void R1MainNode::manual_mode6_r2_lift(void)
 {
   if (ps4_->is_pushed_up()) {
-  }
-
-  if (ps4_->is_pushed_right()) {
-  }
-
-  if (ps4_->is_pushed_down()) {
-  }
-
-  if (ps4_->is_pushed_left()) {
-  }
-
-  if (ps4_->is_pushed_triangle()) {
     r2_flift_pos_ref(R2_FLIFT_UP_POS);
     r2_rlift_pos_ref(R2_RLIFT_UP_POS);
   }
 
-  if (ps4_->is_pushed_circle()) {
+  if (ps4_->is_pushed_right()) {
     kfs_fx_pos_ref(KFS_FX_R2_LIFT_POS);
     kfs_fz_pos_ref(KFS_FZ_R2_LIFT_POS);
     kfs_rx_pos_ref(KFS_RX_R2_LIFT_POS);
@@ -2501,9 +2489,32 @@ void R1MainNode::manual_mode6_r2_lift(void)
     });
   }
 
-  if (ps4_->is_pushed_cross()) {
+  if (ps4_->is_pushed_down()) {
     r2_flift_pos_ref(R2_FLIFT_DOWN_POS);
     r2_rlift_pos_ref(R2_RLIFT_DOWN_POS);
+  }
+
+  if (ps4_->is_pushed_left()) {
+    r2_flift_pos_ref(R2_FLIFT_NORMAL_POS);
+    r2_rlift_pos_ref(R2_RLIFT_NORMAL_POS);
+    manual_mode6_r2_lift_timer_ = this->create_wall_timer(500ms, [this]() {
+      kfs_fx_pos_ref(KFS_FX_NORMAL_POS);
+      kfs_fz_pos_ref(KFS_FZ_NORMAL_POS);
+      kfs_rx_pos_ref(KFS_RX_NORMAL_POS);
+      kfs_rz_pos_ref(KFS_RZ_NORMAL_POS);
+      manual_mode6_r2_lift_timer_->cancel();
+      RCLCPP_INFO(this->get_logger(), "r2 lift lock (timer)");
+    });
+  }
+
+  if (ps4_->is_pushed_triangle()) {
+  }
+
+  if (ps4_->is_pushed_circle()) {
+  }
+
+  if (ps4_->is_pushed_cross()) {
+    // 速度のトリガーとして使用
   }
 
   if (ps4_->is_pushed_l1()) {
@@ -3161,7 +3172,9 @@ void R1MainNode::manual_task(void)
                             ps4_->is_pushing_cross() == false;
   bool on_mode3_low_speed = (current_state.operation_mode == OperationMode::MODE3_SPEAR) &&
                             ps4_->is_pushing_cross() == false;
-  if (on_mode2_low_speed || on_mode3_low_speed) {
+  bool on_mode6_low_speed = (current_state.operation_mode == OperationMode::MODE6_R2_LIFT) &&
+                            ps4_->is_pushing_cross() == false;
+  if (on_mode2_low_speed || on_mode3_low_speed || on_mode6_low_speed) {
     vx_max = CHASSIS_MAKE_SPEAR_VELOCITY;
     vy_max = CHASSIS_MAKE_SPEAR_VELOCITY;
     vz_max = CHASSIS_MAKE_SPEAR_OMEGA;
