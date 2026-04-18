@@ -37,6 +37,11 @@ install(PROGRAMS
   RENAME r1_aruco_display_node
 )
 
+install(DIRECTORY
+  ${CMAKE_CURRENT_SOURCE_DIR}/../data/aruco_marker
+  DESTINATION share/${PROJECT_NAME}
+)
+
 install(FILES
   resource/${PROJECT_NAME}
   DESTINATION share/ament_index/resource_index/packages

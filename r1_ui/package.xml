@@ -12,6 +12,7 @@
   <depend>magic_enum</depend>
   <depend>r1_msgs</depend>
   <depend>r1_util</depend>
+  <exec_depend>ament_index_python</exec_depend>
   <depend>rclcpp</depend>
   <depend>rclpy</depend>
   <depend>sensor_msgs</depend>
