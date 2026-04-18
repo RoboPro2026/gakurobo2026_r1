@@ -81,7 +81,7 @@ r1_chassis_control_node:
     # KFS回収時のオフセット（front_kfsかrear_kfsのうち、遠い方に適応する）
     collect_kfs_offset: 0.838
     # 減速時の速度
-    decel_speed: 0.3
+    decel_speed: 0.2
 r1_chassis_velocity_control_node:
   ros__parameters:
     # true のとき input_cmd_vel_topic と /odometry から PID 補正した output_cmd_vel_topic を出す
@@ -270,6 +270,7 @@ r1_main_node:
     # yaw=0 のとき width は map の x 方向、height は map の y 方向の長さになる
     # yaw を与えた場合は、その yaw だけ回転した長方形ローカル座標系での幅と高さになる
     collect_kfs_height: 0.3
+    # collect_kfs_width: 0.6
     collect_kfs_width: 0.6
     # false にすると auto_collect_kfs_task は範囲判定と LED 更新だけ行い、
     # KFS の位置・yaw・ポンプ・バルブ指令は出さない
