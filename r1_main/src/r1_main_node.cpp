@@ -2515,6 +2515,8 @@ void R1MainNode::manual_mode7_spear_attack_task(int n, int m)
   } else if (step == 2) {
     spear_x_pos_ref(SPEAR_X_NORMAL_POS);
     spear_y_pos_ref(SPEAR_Y_NORMAL_POS);
+    spear1_pos_ref(SPEAR1_NORMAL_POS);
+    spear2_pos_ref(SPEAR2_NORMAL_POS);
     if (m == 1) {
       // 下段を狙う
       spear_roll_pos_ref(SPEAR_ROLL_LOW_ATTACK_ANGLE);
