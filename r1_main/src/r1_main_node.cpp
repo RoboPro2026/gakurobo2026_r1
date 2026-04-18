@@ -537,7 +537,7 @@ R1MainNode::R1MainNode() : Node("r1_main_node")
   // 足回り
   declare_and_get_parameter("timer_rate", timer_rate_, 100.0);
   declare_and_get_parameter("ps4_connection_timeout", ps4_connection_timeout_, 0.3);
-  declare_and_get_parameter("share_long_press_sec", share_long_press_sec_, 1.0);
+  declare_and_get_parameter("share_long_press_sec", SHARE_LONG_PRESS_SEC, 1.0);
   declare_and_get_parameter("chassis_make_spear_velocity", CHASSIS_MAKE_SPEAR_VELOCITY);
   declare_and_get_parameter("chassis_make_spear_omega", CHASSIS_MAKE_SPEAR_OMEGA);
   declare_and_get_parameter("chassis_max_velocity", CHASSIS_MAX_VELOCITY);
@@ -2099,8 +2099,17 @@ void R1MainNode::manual_mode4_fkfs(void)
     }
   }
 
-  if (ps4_->is_pushed_triangle()) {
-    // kfs_fyawを90度進める
+  if (ps4_->is_pushed_r1()) {
+    manual_mode4_r1_long_press_triger_ = true;
+  }
+
+  if (ps4_->is_pushing_r1() && ps4_->is_pushed_triangle()) {
+    // R1+△: kfs_fyawの微調整（指令値を増加）
+    manual_mode4_r1_long_press_triger_ = false;
+    kfs_fyaw_pos_ref(kfs_fyaw_position_ref_ + 0.01);
+    RCLCPP_INFO(this->get_logger(), "fyaw fine +0.01: %.3f", kfs_fyaw_position_ref_);
+  } else if (ps4_->is_pushed_triangle()) {
+    // △単押し: kfs_fyawを90度進める
     fyaw_step++;
     if (fyaw_step > 3) {
       fyaw_step = 3;
@@ -2132,8 +2141,13 @@ void R1MainNode::manual_mode4_fkfs(void)
     }
   }
 
-  if (ps4_->is_pushed_cross()) {
-    // kfs_fyawを90度戻す
+  if (ps4_->is_pushing_r1() && ps4_->is_pushed_cross()) {
+    // R1+×: kfs_fyawの微調整（指令値を減少）
+    manual_mode4_r1_long_press_triger_ = false;
+    kfs_fyaw_pos_ref(kfs_fyaw_position_ref_ - 0.01);
+    RCLCPP_INFO(this->get_logger(), "fyaw fine -0.01: %.3f", kfs_fyaw_position_ref_);
+  } else if (ps4_->is_pushed_cross()) {
+    // ×単押し: kfs_fyawを90度戻す
     fyaw_step--;
     if (fyaw_step < 1) {
       fyaw_step = 1;
@@ -2178,9 +2192,9 @@ void R1MainNode::manual_mode4_fkfs(void)
     }
   }
 
-  if (ps4_->is_pushed_r1()) {
-    // kfs_fxの微調整（指令値を増加）
-    // メカロックが有効かつ次の指令値がメカロックしきい値を上回る場合は、メカロックにぶつける。
+  if (ps4_->is_released_r1() && manual_mode4_r1_long_press_triger_) {
+    // R1単押し（コンボなし確定）: kfs_fxの微調整（指令値を増加）
+    manual_mode4_r1_long_press_triger_ = false;
     double next_ref = kfs_fx_position_ref_ + 0.01;
     if (USE_KFS_MECH_LOCK && next_ref > KFS_FX_HIGH_MECH_LOCK_POS) {
       kfs_fx_position_ref_ = KFS_FX_HIGH_MECH_LOCK_POS;
@@ -2285,8 +2299,17 @@ void R1MainNode::manual_mode5_rkfs(void)
     }
   }
 
-  if (ps4_->is_pushed_triangle()) {
-    // kfs_ryawを90度進める
+  if (ps4_->is_pushed_r1()) {
+    manual_mode5_r1_long_press_triger_ = true;
+  }
+
+  if (ps4_->is_pushing_r1() && ps4_->is_pushed_triangle()) {
+    // R1+△: kfs_ryawの微調整（指令値を増加）
+    manual_mode5_r1_long_press_triger_ = false;
+    kfs_ryaw_pos_ref(kfs_ryaw_position_ref_ + 0.01);
+    RCLCPP_INFO(this->get_logger(), "ryaw fine +0.01: %.3f", kfs_ryaw_position_ref_);
+  } else if (ps4_->is_pushed_triangle()) {
+    // △単押し: kfs_ryawを90度進める
     ryaw_step++;
     if (ryaw_step > 3) {
       ryaw_step = 3;
@@ -2318,8 +2341,13 @@ void R1MainNode::manual_mode5_rkfs(void)
     }
   }
 
-  if (ps4_->is_pushed_cross()) {
-    // kfs_ryawを90度戻す
+  if (ps4_->is_pushing_r1() && ps4_->is_pushed_cross()) {
+    // R1+×: kfs_ryawの微調整（指令値を減少）
+    manual_mode5_r1_long_press_triger_ = false;
+    kfs_ryaw_pos_ref(kfs_ryaw_position_ref_ - 0.01);
+    RCLCPP_INFO(this->get_logger(), "ryaw fine -0.01: %.3f", kfs_ryaw_position_ref_);
+  } else if (ps4_->is_pushed_cross()) {
+    // ×単押し: kfs_ryawを90度戻す
     ryaw_step--;
     if (ryaw_step < 1) {
       ryaw_step = 1;
@@ -2364,9 +2392,9 @@ void R1MainNode::manual_mode5_rkfs(void)
     }
   }
 
-  if (ps4_->is_pushed_r1()) {
-    // kfs_rxの微調整（指令値を増加）
-    // メカロックが有効かつ次の指令値がメカロックしきい値を上回る場合は、メカロックにぶつける。
+  if (ps4_->is_released_r1() && manual_mode5_r1_long_press_triger_) {
+    // R1単押し（コンボなし確定）: kfs_rxの微調整（指令値を増加）
+    manual_mode5_r1_long_press_triger_ = false;
     double next_ref = kfs_rx_position_ref_ + 0.01;
     if (USE_KFS_MECH_LOCK && next_ref > KFS_RX_HIGH_MECH_LOCK_POS) {
       kfs_rx_position_ref_ = KFS_RX_HIGH_MECH_LOCK_POS;
@@ -3025,10 +3053,12 @@ void R1MainNode::reset_step(void)
   manual_mode4_fz_step_ = DEFAULT_STEP;
   manual_mode4_fyaw_step_ = DEFAULT_STEP;
   manual_mode4_front_pump_step_ = DEFAULT_STEP;
+  manual_mode4_r1_long_press_triger_ = false;
   manual_mode5_rx_step_ = DEFAULT_STEP;
   manual_mode5_rz_step_ = DEFAULT_STEP;
   manual_mode5_ryaw_step_ = DEFAULT_STEP;
   manual_mode5_rear_pump_step_ = DEFAULT_STEP;
+  manual_mode5_r1_long_press_triger_ = false;
   manual_mode6_front_expand_step_ = DEFAULT_STEP;
   manual_mode6_rear_expand_step_ = DEFAULT_STEP;
   manual_mode6_r2_lift_step_ = DEFAULT_STEP;
@@ -3260,7 +3290,7 @@ void R1MainNode::main_task(void)
     share_long_press_triggered_ = false;
   }
   if (ps4_->is_pushing_share() && !share_long_press_triggered_) {
-    if ((this->now() - share_press_start_time_).seconds() >= share_long_press_sec_) {
+    if ((this->now() - share_press_start_time_).seconds() >= SHARE_LONG_PRESS_SEC) {
       next_state.operation_mode = state_machine_->get_prev_state().operation_mode;
       share_long_press_triggered_ = true;
     }

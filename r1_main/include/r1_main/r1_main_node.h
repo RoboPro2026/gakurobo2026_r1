@@ -255,9 +255,9 @@ public:
   double ps4_connection_timeout_ = 0.3;
 
   // shareボタン長押し判定
-  double share_long_press_sec_ = 1.0;
   rclcpp::Time share_press_start_time_;
   bool share_long_press_triggered_ = false;
+  double SHARE_LONG_PRESS_SEC = 0.5;
 
   // robot_move
   r1_msgs::msg::RobotMove current_robot_move_;
@@ -638,10 +638,12 @@ public:
   int manual_mode4_fz_step_ = DEFAULT_STEP;
   int manual_mode4_fyaw_step_ = DEFAULT_STEP;
   int manual_mode4_front_pump_step_ = DEFAULT_STEP;
+  bool manual_mode4_r1_long_press_triger_ = false;
   int manual_mode5_rx_step_ = DEFAULT_STEP;
   int manual_mode5_rz_step_ = DEFAULT_STEP;
   int manual_mode5_ryaw_step_ = DEFAULT_STEP;
   int manual_mode5_rear_pump_step_ = DEFAULT_STEP;
+  bool manual_mode5_r1_long_press_triger_ = false;
   int manual_mode6_front_expand_step_ = DEFAULT_STEP;
   int manual_mode6_rear_expand_step_ = DEFAULT_STEP;
   int manual_mode6_r2_lift_step_ = DEFAULT_STEP;
