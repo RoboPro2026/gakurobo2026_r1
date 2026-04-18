@@ -134,7 +134,7 @@ r1_main_node:
     kfs_fx_expand_pos: 0.67
     kfs_fx_low_mech_lock_pos: 0.05
     kfs_fx_high_mech_lock_pos: 0.67
-    kfs_fx_r2_lift_pos: 0.45
+    kfs_fx_r2_lift_pos: 0.35
     # fz
     kfs_fz_normal_pos: 0.005
     kfs_fz_low_pos: 0.005
@@ -160,7 +160,7 @@ r1_main_node:
     kfs_rx_expand_pos: 0.67
     kfs_rx_low_mech_lock_pos: 0.05
     kfs_rx_high_mech_lock_pos: 0.67
-    kfs_rx_r2_lift_pos: 0.45
+    kfs_rx_r2_lift_pos: 0.35
     # rz
     kfs_rz_normal_pos: 0.005
     kfs_rz_low_pos: 0.005
@@ -463,8 +463,8 @@ r1_r2_flift_node:
     pos_min: -0.1
     pos_max: 1.0
     normal_pos: 0.025
-    # モータが2回転すると、ギアが1回展して63.66pi mm進むので、半径は63.66mm
-    radius: 0.06366
+    # モータが2回転すると、ギアが1回転して63.66pi/2 mm進むので、半径は15.915mm
+    radius: 0.015915
     inverse_motor: true
     use_low_switch: false
     use_high_switch: false
@@ -559,8 +559,8 @@ r1_r2_rlift_node:
     pos_min: -0.1
     pos_max: 1.0
     normal_pos: 0.025
-    # モータが2回転すると、ギアが1回展して63.66pi mm進むので、半径は63.66mm
-    radius: 0.06366
+    # モータが2回転すると、ギアが1回転して63.66pi/2 mm進むので、半径は15.915mm
+    radius: 0.015915
     inverse_motor: false
     use_low_switch: false
     use_high_switch: false
