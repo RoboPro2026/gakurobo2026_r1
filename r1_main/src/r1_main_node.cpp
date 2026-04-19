@@ -45,30 +45,31 @@ std::optional<RobotState> parse_robot_control_mode_parameter(std::string_view va
 
 std::string robot_control_mode_parameter_help() { return "Accepted values: manual, auto."; }
 
-OperationMode next_operation_mode(OperationMode mode)
+const std::vector<OperationMode> kOperationModeOrder = {
+  OperationMode::MODE1_DETECT_ORIGIN,
+  OperationMode::MODE2_POLE,
+  OperationMode::MODE3_SPEAR,
+  OperationMode::MODE4_FKFS,
+  OperationMode::MODE5_RKFS,
+  OperationMode::MODE6_R2_LIFT,
+  OperationMode::MODE7_SPEAR_ATTACK,
+  OperationMode::MODE8_AUTO_COLLECT_KFS,
+  OperationMode::MODE9_AUTO_CHASSIS,
+};
+
+OperationMode cycle_operation_mode(OperationMode mode, int step)
 {
-  switch (mode) {
-    case OperationMode::MODE1_DETECT_ORIGIN:
-      return OperationMode::MODE2_POLE;
-    case OperationMode::MODE2_POLE:
-      return OperationMode::MODE3_SPEAR;
-    case OperationMode::MODE3_SPEAR:
-      return OperationMode::MODE4_FKFS;
-    case OperationMode::MODE4_FKFS:
-      return OperationMode::MODE5_RKFS;
-    case OperationMode::MODE5_RKFS:
-      return OperationMode::MODE6_R2_LIFT;
-    case OperationMode::MODE6_R2_LIFT:
-      return OperationMode::MODE7_SPEAR_ATTACK;
-    case OperationMode::MODE7_SPEAR_ATTACK:
-      return OperationMode::MODE8_AUTO_COLLECT_KFS;
-    case OperationMode::MODE8_AUTO_COLLECT_KFS:
-      return OperationMode::MODE9_AUTO_CHASSIS;
-    case OperationMode::MODE9_AUTO_CHASSIS:
-    default:
-      return OperationMode::MODE1_DETECT_ORIGIN;
-  }
+  auto it = std::find(kOperationModeOrder.begin(), kOperationModeOrder.end(), mode);
+  if (it == kOperationModeOrder.end()) return OperationMode::MODE1_DETECT_ORIGIN;
+
+  const int n = static_cast<int>(kOperationModeOrder.size());
+  const int current_idx = static_cast<int>(std::distance(kOperationModeOrder.begin(), it));
+  const int next_idx = (current_idx + step + n) % n;
+  return kOperationModeOrder[next_idx];
 }
+
+OperationMode next_operation_mode(OperationMode mode) { return cycle_operation_mode(mode, +1); }
+OperationMode prev_operation_mode(OperationMode mode) { return cycle_operation_mode(mode, -1); }
 
 std::string kfs_auto_collect_status_name(R1MainNode::KfsAutoCollectStatus status)
 {
@@ -3449,7 +3450,7 @@ void R1MainNode::main_task(void)
   }
   if (ps4_->is_pushing_share() && !share_long_press_triggered_) {
     if ((this->now() - share_press_start_time_).seconds() >= SHARE_LONG_PRESS_SEC) {
-      next_state.operation_mode = state_machine_->get_prev_state().operation_mode;
+      next_state.operation_mode = prev_operation_mode(current_state.operation_mode);
       share_long_press_triggered_ = true;
     }
   }
