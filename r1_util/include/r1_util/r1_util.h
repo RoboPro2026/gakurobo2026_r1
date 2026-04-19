@@ -16,7 +16,7 @@
 #include <vector>
 
 constexpr int FOREST_N = 12;
-constexpr int ACT_N = 5;
+constexpr int ACT_N = 6;
 
 enum class ChassisAct
 {
@@ -35,7 +35,10 @@ enum class ChassisAct
   ACT3_FINISH = 33,
   ACT4_START = 41,
   ACT4 = 42,
-  ACT4_FINISH = 43
+  ACT4_FINISH = 43,
+  ACT5_START = 51,
+  ACT5 = 52,
+  ACT5_FINISH = 53
 };
 
 // MainStateの定義

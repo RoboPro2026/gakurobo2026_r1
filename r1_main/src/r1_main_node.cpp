@@ -45,30 +45,31 @@ std::optional<RobotState> parse_robot_control_mode_parameter(std::string_view va
 
 std::string robot_control_mode_parameter_help() { return "Accepted values: manual, auto."; }
 
-OperationMode next_operation_mode(OperationMode mode)
+const std::vector<OperationMode> kOperationModeOrder = {
+  OperationMode::MODE1_DETECT_ORIGIN,
+  OperationMode::MODE2_POLE,
+  OperationMode::MODE3_SPEAR,
+  OperationMode::MODE4_FKFS,
+  OperationMode::MODE5_RKFS,
+  OperationMode::MODE6_R2_LIFT,
+  OperationMode::MODE7_SPEAR_ATTACK,
+  OperationMode::MODE8_AUTO_COLLECT_KFS,
+  OperationMode::MODE9_AUTO_CHASSIS,
+};
+
+OperationMode cycle_operation_mode(OperationMode mode, int step)
 {
-  switch (mode) {
-    case OperationMode::MODE1_DETECT_ORIGIN:
-      return OperationMode::MODE2_POLE;
-    case OperationMode::MODE2_POLE:
-      return OperationMode::MODE3_SPEAR;
-    case OperationMode::MODE3_SPEAR:
-      return OperationMode::MODE4_FKFS;
-    case OperationMode::MODE4_FKFS:
-      return OperationMode::MODE5_RKFS;
-    case OperationMode::MODE5_RKFS:
-      return OperationMode::MODE6_R2_LIFT;
-    case OperationMode::MODE6_R2_LIFT:
-      return OperationMode::MODE7_SPEAR_ATTACK;
-    case OperationMode::MODE7_SPEAR_ATTACK:
-      return OperationMode::MODE8_AUTO_COLLECT_KFS;
-    case OperationMode::MODE8_AUTO_COLLECT_KFS:
-      return OperationMode::MODE9_AUTO_CHASSIS;
-    case OperationMode::MODE9_AUTO_CHASSIS:
-    default:
-      return OperationMode::MODE1_DETECT_ORIGIN;
-  }
+  auto it = std::find(kOperationModeOrder.begin(), kOperationModeOrder.end(), mode);
+  if (it == kOperationModeOrder.end()) return OperationMode::MODE1_DETECT_ORIGIN;
+
+  const int n = static_cast<int>(kOperationModeOrder.size());
+  const int current_idx = static_cast<int>(std::distance(kOperationModeOrder.begin(), it));
+  const int next_idx = (current_idx + step + n) % n;
+  return kOperationModeOrder[next_idx];
 }
+
+OperationMode next_operation_mode(OperationMode mode) { return cycle_operation_mode(mode, +1); }
+OperationMode prev_operation_mode(OperationMode mode) { return cycle_operation_mode(mode, -1); }
 
 std::string kfs_auto_collect_status_name(R1MainNode::KfsAutoCollectStatus status)
 {
@@ -902,10 +903,50 @@ void R1MainNode::spear_pitch2_move_mech_lock(int direction)
   move_mech_lock_position_axis("spear_pitch2", direction);
 }
 
-void R1MainNode::kfs_fyaw_move_front_mech_lock(void) { kfs_fyaw_move_mech_lock(1); }
-void R1MainNode::kfs_fyaw_move_rear_mech_lock(void) { kfs_fyaw_move_mech_lock(-1); }
-void R1MainNode::kfs_ryaw_move_front_mech_lock(void) { kfs_ryaw_move_mech_lock(1); }
-void R1MainNode::kfs_ryaw_move_rear_mech_lock(void) { kfs_ryaw_move_mech_lock(-1); }
+void R1MainNode::r2_flift_move_down_mech_lock(void)
+{
+  r2_flift_move_mech_lock(-1);
+  r2_flift_position_ref_ = R2_FLIFT_DOWN_POS;
+}
+
+void R1MainNode::r2_flift_move_up_mech_lock(void)
+{
+  r2_flift_move_mech_lock(1);
+  r2_flift_position_ref_ = R2_FLIFT_UP_POS;
+}
+
+void R1MainNode::r2_rlift_move_down_mech_lock(void)
+{
+  r2_rlift_move_mech_lock(-1);
+  r2_rlift_position_ref_ = R2_RLIFT_DOWN_POS;
+}
+
+void R1MainNode::r2_rlift_move_up_mech_lock(void)
+{
+  r2_rlift_move_mech_lock(1);
+  r2_rlift_position_ref_ = R2_RLIFT_UP_POS;
+}
+
+void R1MainNode::kfs_fyaw_move_front_mech_lock(void)
+{
+  kfs_fyaw_move_mech_lock(1);
+  kfs_fyaw_position_ref_ = KFS_FYAW_FRONT_ANGLE;
+}
+void R1MainNode::kfs_fyaw_move_rear_mech_lock(void)
+{
+  kfs_fyaw_move_mech_lock(-1);
+  kfs_fyaw_position_ref_ = KFS_FYAW_REAR_ANGLE;
+}
+void R1MainNode::kfs_ryaw_move_front_mech_lock(void)
+{
+  kfs_ryaw_move_mech_lock(1);
+  kfs_ryaw_position_ref_ = KFS_RYAW_FRONT_ANGLE;
+}
+void R1MainNode::kfs_ryaw_move_rear_mech_lock(void)
+{
+  kfs_ryaw_move_mech_lock(-1);
+  kfs_ryaw_position_ref_ = KFS_RYAW_REAR_ANGLE;
+}
 
 // --- コールバック関数 ---
 void R1MainNode::joy_callback(const sensor_msgs::msg::Joy::SharedPtr msg)
@@ -1213,11 +1254,16 @@ void R1MainNode::publish_chassis_act_stop(void)
     case ChassisAct::ACT4:
       stop_ref = ChassisAct::ACT4_FINISH;
       break;
+    case ChassisAct::ACT5_START:
+    case ChassisAct::ACT5:
+      stop_ref = ChassisAct::ACT5_FINISH;
+      break;
     case ChassisAct::ACT0_FINISH:
     case ChassisAct::ACT1_FINISH:
     case ChassisAct::ACT2_FINISH:
     case ChassisAct::ACT3_FINISH:
     case ChassisAct::ACT4_FINISH:
+    case ChassisAct::ACT5_FINISH:
     case ChassisAct::NONE:
     default:
       stop_ref = ChassisAct::NONE;
@@ -1736,19 +1782,22 @@ void R1MainNode::kfs_init_pos(void)
     kfs_rx_pos_ref(KFS_RX_START_POS);
     kfs_fz_pos_ref(KFS_FZ_STORAGE_POS);
     kfs_rz_pos_ref(KFS_RZ_STORAGE_POS);
-    if (zone_ == "blue" && chassis_act_status_ == ChassisAct::ACT2) {
+    bool is_inner =
+      (chassis_act_status_ == ChassisAct::ACT2 || chassis_act_status_ == ChassisAct::ACT3);
+    bool is_outer = chassis_act_status_ == ChassisAct::ACT4;
+    if (zone_ == "blue" && is_inner) {
       // front
       kfs_fyaw_move_front_mech_lock();
       kfs_ryaw_move_front_mech_lock();
-    } else if (zone_ == "blue" && chassis_act_status_ == ChassisAct::ACT3) {
+    } else if (zone_ == "blue" && is_outer) {
       // rear
       kfs_fyaw_move_rear_mech_lock();
       kfs_ryaw_move_rear_mech_lock();
-    } else if (zone_ == "red" && chassis_act_status_ == ChassisAct::ACT2) {
+    } else if (zone_ == "red" && is_inner) {
       // rear
       kfs_fyaw_move_rear_mech_lock();
       kfs_ryaw_move_rear_mech_lock();
-    } else if (zone_ == "red" && chassis_act_status_ == ChassisAct::ACT3) {
+    } else if (zone_ == "red" && is_outer) {
       // front
       kfs_fyaw_move_front_mech_lock();
       kfs_ryaw_move_front_mech_lock();
@@ -3071,7 +3120,7 @@ void R1MainNode::manual_mode9_auto_chassis(void)
     std::vector<int> forest_order;
     std::vector<std::string> collect_kfs_type;
     if (build_outer_kfs_auto_collect_plan(forest_order, collect_kfs_type)) {
-      start_auto_chassis(ChassisAct::ACT3_START, forest_order, collect_kfs_type);
+      start_auto_chassis(ChassisAct::ACT4_START, forest_order, collect_kfs_type);
       start_kfs_auto_collect(
         KfsAutoCollectStatus::OUTER_ACTIVE, std::move(forest_order), std::move(collect_kfs_type));
     }
@@ -3101,9 +3150,12 @@ void R1MainNode::update_auto_chassis_task(void)
 
   if (
     step == ChassisAct::ACT0_FINISH || step == ChassisAct::ACT1_FINISH ||
-    step == ChassisAct::ACT2_FINISH || step == ChassisAct::ACT3_FINISH ||
-    step == ChassisAct::ACT4_FINISH) {
-    if (step == ChassisAct::ACT2_FINISH || step == ChassisAct::ACT3_FINISH) {
+    step == ChassisAct::ACT2_FINISH || step == ChassisAct::ACT4_FINISH ||
+    step == ChassisAct::ACT3_FINISH || step == ChassisAct::ACT5_FINISH) {
+    // KFS回収動作のACTの場合は、回収動作も止める。
+    if (
+      step == ChassisAct::ACT2_FINISH || step == ChassisAct::ACT3_FINISH ||
+      step == ChassisAct::ACT4_FINISH) {
       stop_kfs_auto_collect();
     }
     publish_chassis_act_ref(ChassisAct::NONE);
@@ -3127,6 +3179,9 @@ void R1MainNode::update_auto_chassis_task(void)
       stop_kfs_auto_collect();
     } else if (step == ChassisAct::ACT4) {
       publish_robot_move(ChassisAct::ACT4_FINISH, std::vector<int>{}, std::vector<std::string>{});
+      stop_kfs_auto_collect();
+    } else if (step == ChassisAct::ACT5) {
+      publish_robot_move(ChassisAct::ACT5_FINISH, std::vector<int>{}, std::vector<std::string>{});
     } else if (pending_auto_robot_move_valid_) {
       clear_auto_chassis_state(true);
     }
@@ -3335,7 +3390,7 @@ void R1MainNode::main_task(void)
         manual_mode3_make_spear_task(2);
 
       } else if (current_state.operation_mode == OperationMode::MODE3_SPEAR) {
-        // MODE3のときはOUTER_ACTIVEのときはACT3_STARTを、INNER_ACTIVEのときはACT2_STARTを開始する
+        // MODE3のときはOUTER_ACTIVEのときはACT4_STARTを、INNER_ACTIVEのときはACT2_STARTを開始する
         std::vector<int> forest_order;
         std::vector<std::string> collect_kfs_type;
         KfsAutoCollectStatus mode3_collect_status = kfs_auto_collect_plan_.status;
@@ -3348,7 +3403,7 @@ void R1MainNode::main_task(void)
         }
         if (mode3_collect_status == KfsAutoCollectStatus::OUTER_ACTIVE) {
           if (build_outer_kfs_auto_collect_plan(forest_order, collect_kfs_type)) {
-            start_auto_chassis(ChassisAct::ACT3_START, forest_order, collect_kfs_type);
+            start_auto_chassis(ChassisAct::ACT4_START, forest_order, collect_kfs_type);
             start_kfs_auto_collect(
               KfsAutoCollectStatus::OUTER_ACTIVE, std::move(forest_order),
               std::move(collect_kfs_type));
@@ -3356,7 +3411,20 @@ void R1MainNode::main_task(void)
           }
         } else if (mode3_collect_status == KfsAutoCollectStatus::INNER_ACTIVE) {
           if (build_inner_kfs_auto_collect_plan(forest_order, collect_kfs_type)) {
-            start_auto_chassis(ChassisAct::ACT2_START, forest_order, collect_kfs_type);
+            bool is_contain_1_or_2 = false;
+            for (int forest_number : forest_order) {
+              if (forest_number == 1 || forest_number == 2) {
+                is_contain_1_or_2 = true;
+                break;
+              }
+            }
+            if (is_contain_1_or_2) {
+              start_auto_chassis(ChassisAct::ACT2_START, forest_order, collect_kfs_type);
+            } else {
+              // デバッグのため、どちらもACT2_STARTで開始するようにする。ACT3_STARTは調整中でうまく行かないので
+              start_auto_chassis(ChassisAct::ACT2_START, forest_order, collect_kfs_type);
+              // start_auto_chassis(ChassisAct::ACT3_START, forest_order, collect_kfs_type);
+            }
             start_kfs_auto_collect(
               KfsAutoCollectStatus::INNER_ACTIVE, std::move(forest_order),
               std::move(collect_kfs_type));
@@ -3382,7 +3450,7 @@ void R1MainNode::main_task(void)
   }
   if (ps4_->is_pushing_share() && !share_long_press_triggered_) {
     if ((this->now() - share_press_start_time_).seconds() >= SHARE_LONG_PRESS_SEC) {
-      next_state.operation_mode = state_machine_->get_prev_state().operation_mode;
+      next_state.operation_mode = prev_operation_mode(current_state.operation_mode);
       share_long_press_triggered_ = true;
     }
   }
