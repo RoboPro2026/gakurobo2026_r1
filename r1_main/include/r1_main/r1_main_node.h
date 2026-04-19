@@ -576,6 +576,10 @@ public:
   // R2昇降
   void r2_flift_move_mech_lock(int direction);
   void r2_rlift_move_mech_lock(int direction);
+  void r2_flift_move_down_mech_lock(void);
+  void r2_flift_move_up_mech_lock(void);
+  void r2_rlift_move_down_mech_lock(void);
+  void r2_rlift_move_up_mech_lock(void);
   // やり
   void spear1_move_mech_lock(int direction);
   void spear2_move_mech_lock(int direction);

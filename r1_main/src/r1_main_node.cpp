@@ -902,10 +902,50 @@ void R1MainNode::spear_pitch2_move_mech_lock(int direction)
   move_mech_lock_position_axis("spear_pitch2", direction);
 }
 
-void R1MainNode::kfs_fyaw_move_front_mech_lock(void) { kfs_fyaw_move_mech_lock(1); }
-void R1MainNode::kfs_fyaw_move_rear_mech_lock(void) { kfs_fyaw_move_mech_lock(-1); }
-void R1MainNode::kfs_ryaw_move_front_mech_lock(void) { kfs_ryaw_move_mech_lock(1); }
-void R1MainNode::kfs_ryaw_move_rear_mech_lock(void) { kfs_ryaw_move_mech_lock(-1); }
+void R1MainNode::r2_flift_move_down_mech_lock(void)
+{
+  r2_flift_move_mech_lock(-1);
+  r2_flift_position_ref_ = R2_FLIFT_DOWN_POS;
+}
+
+void R1MainNode::r2_flift_move_up_mech_lock(void)
+{
+  r2_flift_move_mech_lock(1);
+  r2_flift_position_ref_ = R2_FLIFT_UP_POS;
+}
+
+void R1MainNode::r2_rlift_move_down_mech_lock(void)
+{
+  r2_rlift_move_mech_lock(-1);
+  r2_rlift_position_ref_ = R2_RLIFT_DOWN_POS;
+}
+
+void R1MainNode::r2_rlift_move_up_mech_lock(void)
+{
+  r2_rlift_move_mech_lock(1);
+  r2_rlift_position_ref_ = R2_RLIFT_UP_POS;
+}
+
+void R1MainNode::kfs_fyaw_move_front_mech_lock(void)
+{
+  kfs_fyaw_move_mech_lock(1);
+  kfs_fyaw_position_ref_ = KFS_FYAW_FRONT_ANGLE;
+}
+void R1MainNode::kfs_fyaw_move_rear_mech_lock(void)
+{
+  kfs_fyaw_move_mech_lock(-1);
+  kfs_fyaw_position_ref_ = KFS_FYAW_REAR_ANGLE;
+}
+void R1MainNode::kfs_ryaw_move_front_mech_lock(void)
+{
+  kfs_ryaw_move_mech_lock(1);
+  kfs_ryaw_position_ref_ = KFS_RYAW_FRONT_ANGLE;
+}
+void R1MainNode::kfs_ryaw_move_rear_mech_lock(void)
+{
+  kfs_ryaw_move_mech_lock(-1);
+  kfs_ryaw_position_ref_ = KFS_RYAW_REAR_ANGLE;
+}
 
 // --- コールバック関数 ---
 void R1MainNode::joy_callback(const sensor_msgs::msg::Joy::SharedPtr msg)
