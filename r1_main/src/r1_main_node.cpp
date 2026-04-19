@@ -3380,7 +3380,9 @@ void R1MainNode::main_task(void)
             if (is_contain_1_or_2) {
               start_auto_chassis(ChassisAct::ACT2_START, forest_order, collect_kfs_type);
             } else {
-              start_auto_chassis(ChassisAct::ACT3_START, forest_order, collect_kfs_type);
+              // デバッグのため、どちらもACT2_STARTで開始するようにする。ACT3_STARTは調整中でうまく行かないので
+              start_auto_chassis(ChassisAct::ACT2_START, forest_order, collect_kfs_type);
+              // start_auto_chassis(ChassisAct::ACT3_START, forest_order, collect_kfs_type);
             }
             start_kfs_auto_collect(
               KfsAutoCollectStatus::INNER_ACTIVE, std::move(forest_order),
