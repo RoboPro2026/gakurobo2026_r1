@@ -368,8 +368,8 @@ public:
       RCLCPP_ERROR(this->get_logger(), "Invalid act in RobotMove: %d", msg->act);
       return;
     }
-    bool is_inner = index == 2;
-    bool is_outer = index == 3;
+    bool is_inner = (index == 2 || index == 3);
+    bool is_outer = index == 4;
     std::vector<int> forest_order(msg->forest_order.begin(), msg->forest_order.end());
     // パラメータを読み込み
     if (load_trajectory_csv(index) != 0) {
@@ -706,8 +706,8 @@ public:
     }
 
     RCLCPP_INFO(
-      this->get_logger(), "Current map: x = %.3f, y = %.3f, yaw = %.3f",
-      pose_map.pose.position.x, pose_map.pose.position.y, tf2::getYaw(pose_map.pose.orientation));
+      this->get_logger(), "Current map: x = %.3f, y = %.3f, yaw = %.3f", pose_map.pose.position.x,
+      pose_map.pose.position.y, tf2::getYaw(pose_map.pose.orientation));
     RCLCPP_INFO(
       this->get_logger(), "Current odom: x = %.3f, y = %.3f, yaw = %.3f",
       odometry_.pose.pose.position.x, odometry_.pose.pose.position.y,
