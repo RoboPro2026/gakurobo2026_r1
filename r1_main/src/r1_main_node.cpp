@@ -46,14 +46,10 @@ std::optional<RobotState> parse_robot_control_mode_parameter(std::string_view va
 std::string robot_control_mode_parameter_help() { return "Accepted values: manual, auto."; }
 
 const std::vector<OperationMode> kOperationModeOrder = {
-  OperationMode::MODE1_DETECT_ORIGIN,
-  OperationMode::MODE2_POLE,
-  OperationMode::MODE3_SPEAR,
-  OperationMode::MODE4_FKFS,
-  OperationMode::MODE5_RKFS,
-  OperationMode::MODE6_R2_LIFT,
-  OperationMode::MODE7_SPEAR_ATTACK,
-  OperationMode::MODE8_AUTO_COLLECT_KFS,
+  OperationMode::MODE1_DETECT_ORIGIN, OperationMode::MODE2_POLE,
+  OperationMode::MODE3_SPEAR,         OperationMode::MODE4_FKFS,
+  OperationMode::MODE5_RKFS,          OperationMode::MODE6_R2_LIFT,
+  OperationMode::MODE7_SPEAR_ATTACK,  OperationMode::MODE8_AUTO_COLLECT_KFS,
   OperationMode::MODE9_AUTO_CHASSIS,
 };
 
@@ -2684,9 +2680,27 @@ void R1MainNode::manual_mode7_spear_attack_task(int n, int m)
     } else if (n == 4) {
       spear4_pos_ref(SPEAR4_NORMAL_POS);
     }
+    spear_roll_pos_ref(SPEAR_ROLL_VERTICAL_ANGLE);
+    step = 1;
+    RCLCPP_INFO(this->get_logger(), "spear attack task completed");
+  }
+}
+
+void R1MainNode::manual_mode7_spear_throw_away_task(int n)
+{
+  int & step = manual_mode7_spear_throw_away_task_step_;
+  if (step == 1) {
+    kfs_fx_pos_ref(KFS_FX_NORMAL_POS);
+    kfs_fz_pos_ref(KFS_FZ_NORMAL_POS);
+    kfs_fyaw_pos_ref(KFS_FYAW_NORMAL_ANGLE);
+    kfs_rx_pos_ref(KFS_RX_NORMAL_POS);
+    kfs_rz_pos_ref(KFS_RZ_NORMAL_POS);
+    kfs_ryaw_pos_ref(KFS_RYAW_NORMAL_ANGLE);
+    step++;
+  } else if (step == 2) {
     spear_roll_pos_ref(SPEAR_ROLL_NORMAL_ANGLE);
     step++;
-  } else if (step == 5) {
+  } else if (step == 3) {
     if (n == 1) {
       spear_u1_valve(true);
       spear_d1_valve(true);
@@ -2697,19 +2711,10 @@ void R1MainNode::manual_mode7_spear_attack_task(int n, int m)
     } else if (n == 4) {
     }
     step++;
-  } else if (step == 6) {
-    if (n == 1) {
-      spear_u1_valve(false);
-      spear_d1_valve(false);
-    } else if (n == 2) {
-      spear_u2_valve(false);
-      spear_d2_valve(false);
-    } else if (n == 3) {
-    } else if (n == 4) {
-    }
+  } else if (step == 4) {
     spear_roll_pos_ref(SPEAR_ROLL_VERTICAL_ANGLE);
     step = 1;
-    RCLCPP_INFO(this->get_logger(), "spear attack task completed");
+    RCLCPP_INFO(this->get_logger(), "spear throw away task completed");
   }
 }
 
@@ -2740,6 +2745,7 @@ void R1MainNode::manual_mode7_spear_attack(void)
   }
 
   if (ps4_->is_pushed_cross()) {
+    manual_mode7_spear_throw_away_task(2);
   }
 
   if (ps4_->is_pushed_square()) {
@@ -3208,7 +3214,7 @@ void R1MainNode::reset_step(void)
   manual_mode6_rear_expand_step_ = DEFAULT_STEP;
   manual_mode6_r2_lift_step_ = DEFAULT_STEP;
   manual_mode7_spear_attack_task_step_ = DEFAULT_STEP;
-  manual_mode7_spear_hand_valve1_step_ = DEFAULT_STEP;
+  manual_mode7_spear_throw_away_task_step_ = DEFAULT_STEP;
   chassis_rotate90 = false;
   stop_kfs_auto_collect();
   clear_auto_chassis_state(false);

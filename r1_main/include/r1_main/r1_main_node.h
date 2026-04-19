@@ -653,6 +653,7 @@ public:
   void manual_mode6_r2_lift(void);
   void manual_mode7_spear_attack(void);
   void manual_mode7_spear_attack_task(int n, int m);
+  void manual_mode7_spear_throw_away_task(int n);
   void manual_mode8_auto_collect_kfs(void);
   void manual_mode9_auto_chassis(void);
   static constexpr int DEFAULT_STEP = 1;
@@ -673,7 +674,7 @@ public:
   int manual_mode6_rear_expand_step_ = DEFAULT_STEP;
   int manual_mode6_r2_lift_step_ = DEFAULT_STEP;
   int manual_mode7_spear_attack_task_step_ = DEFAULT_STEP;
-  int manual_mode7_spear_hand_valve1_step_ = DEFAULT_STEP;
+  int manual_mode7_spear_throw_away_task_step_ = DEFAULT_STEP;
   rclcpp::TimerBase::SharedPtr manual_mode4_front_valve_timer_;
   rclcpp::TimerBase::SharedPtr manual_mode5_rear_valve_timer_;
   rclcpp::TimerBase::SharedPtr manual_mode6_r2_lift_timer_;
