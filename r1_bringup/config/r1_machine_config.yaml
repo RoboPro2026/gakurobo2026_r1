@@ -114,7 +114,7 @@ r1_main_node:
     cmd_vel_topic: "/cmd_vel_target"
     timer_rate: 100.0
     ps4_connection_timeout: 1.0
-    share_long_press_sec: 0.6  # shareボタン長押し判定秒数 [s]
+    share_long_press_sec: 0.4  # shareボタン長押し判定秒数 [s]
     # ========== 足回り ==========
 
     chassis_make_spear_velocity: 0.2
