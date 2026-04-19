@@ -14,6 +14,7 @@
 - `MainState` はライフサイクルと安全状態、`OperationMode` は操作モード、`ChassisControlMode` は足回りの制御権を表します。
 - これとは別に、シャーシ自動シーケンスは内部状態 `auto_chassis_status_`、KFS 自動回収は `kfs_auto_collect_status` で独立管理します。
 - `PS` ボタンで `reset_robot(true)` と `/r1_machine_initialize` publish を行った後は、`/r1_machine_initialize_done` を受け取るまで `is_initialized_ == false` のため各ページの実動作は走りません。
+- この待機中は、`PS` 押下後に右スティックで自動 ACT を再開することもできません。`r1_machine_initialize_done` を受け取ってから再度入力を受け付けます。
 - `MODE2_POLE` / `MODE3_SPEAR` / `MODE7_SPEAR_ATTACK` は、現状ほとんどの処理がコメントアウトされています。
 - LED 指令は timer 周期ごとに `sabacan_led_update()` で 1 回だけ publish します。各処理は直接 publish せず、LED の要求状態を更新します。
 
@@ -25,6 +26,7 @@
 - 各機構へ位置指令、速度指令、GPIO 指令、原点検出指令を publish する。
 - `/set_mecanum_yaw`、`/set_swerve_drive_yaw`、`/set_odometry`、`/initialpose` を publish して姿勢・自己位置を初期化する。
 - `PS` ボタン押下時に `/r1_machine_initialize` を publish して、`r1_machine_manage_node` 側の復帰処理を開始する。
+- `PS` 初期化の開始時に、内部の auto chassis 状態と KFS 自動回収状態を破棄し、`r1_chassis_control_node` 側も `/r1_machine_initialize` を受けて追従内部状態を明示的にリセットする。
 - KFS 自動回収中は `map -> base_link` TF を用いて KFS 回収範囲への進入判定を行う。
 - KFS 自動回収の有効/無効は内部状態 `kfs_auto_collect_status` で管理し、`chassis_act_status_` とは独立に動作する。
 - シャーシ自動開始要求は `map -> base_link` TF がまだ無い場合に即時 publish せず、自己位置推定が立ち上がるまで待機します。
@@ -442,12 +444,12 @@ LED は timer callback の最後に 1 回だけ更新されます。
 - 速度制御系とポンプ・バルブを停止
 - 初期 state に戻します
 - LED に 1 秒間の青点滅イベントを設定します
-- `is_initialized_ = true`
+- この時点では `is_initialized_` を `true` に戻しません
 
 `is_start_zone == false` の分岐は現状まだ TODO で、今は start zone と同じ開始姿勢を使います。
 
 `/r1_machine_initialize` publish 自体は `reset_robot()` の外で行っており、`PS` ボタン押下時にセットで実行されます。
-`PS` ボタン押下時には別途 `is_initialized_ = false` に戻し、`/r1_machine_initialize_done` を受け取ったタイミングで `is_initialized_ = true` へ復帰します。この完了通知では LED の再送キャッシュも無効化し、sabacan 初期化後に現在状態の LED 指令を再送できるようにしています。
+`PS` ボタン押下時には先に `is_initialized_ = false` に戻し、そのまま `reset_robot(true)` を実行します。`reset_robot()` の中では自己位置や state は初期値へ戻しますが、`is_initialized_` は復帰させません。`/r1_machine_initialize_done` を受け取ったタイミングでだけ `is_initialized_ = true` へ復帰します。この完了通知では LED の再送キャッシュも無効化し、sabacan 初期化後に現在状態の LED 指令を再送できるようにしています。
 
 ## パラメータ
 

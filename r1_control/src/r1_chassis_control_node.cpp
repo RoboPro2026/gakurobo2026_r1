@@ -28,6 +28,7 @@
 #include "rcl_interfaces/msg/floating_point_range.hpp"
 #include "rcl_interfaces/msg/parameter_descriptor.hpp"
 #include "rclcpp/rclcpp.hpp"
+#include "std_msgs/msg/empty.hpp"
 #include "std_msgs/msg/float64.hpp"
 #include "std_msgs/msg/float64_multi_array.hpp"
 #include "std_msgs/msg/int32.hpp"
@@ -128,6 +129,13 @@ public:
     robot_move_subscription_ = this->create_subscription<r1_msgs::msg::RobotMove>(
       "/robot_move", 10,
       std::bind(&R1ChassisControlNode::robot_move_callback, this, std::placeholders::_1));
+    machine_initialize_subscription_ = this->create_subscription<std_msgs::msg::Empty>(
+      "/r1_machine_initialize", 10,
+      std::bind(&R1ChassisControlNode::machine_initialize_callback, this, std::placeholders::_1));
+    machine_initialize_done_subscription_ = this->create_subscription<std_msgs::msg::Empty>(
+      "/r1_machine_initialize_done", 10,
+      std::bind(
+        &R1ChassisControlNode::machine_initialize_done_callback, this, std::placeholders::_1));
 
     // chassis_error_tangentのPublisher
     chassis_error_tangent_publisher_ =
@@ -290,6 +298,13 @@ public:
 
   void act_callback(const std_msgs::msg::Int32::SharedPtr msg)
   {
+    if (!is_machine_initialized_) {
+      std::string act_name{magic_enum::enum_name(static_cast<ChassisAct>(msg->data))};
+      RCLCPP_WARN(
+        this->get_logger(), "Ignored act ref %s while waiting for /r1_machine_initialize_done.",
+        act_name.c_str());
+      return;
+    }
     act_step_ = static_cast<ChassisAct>(msg->data);
     std::string act_name{magic_enum::enum_name(act_step_)};
     // RCLCPP_INFO(this->get_logger(), "Received act step: %s", act_name.c_str());
@@ -326,6 +341,14 @@ public:
 
   void robot_move_callback(const r1_msgs::msg::RobotMove::SharedPtr msg)
   {
+    if (!is_machine_initialized_) {
+      std::string act_name{magic_enum::enum_name(static_cast<ChassisAct>(msg->act))};
+      RCLCPP_WARN(
+        this->get_logger(),
+        "Ignored RobotMove for %s while waiting for /r1_machine_initialize_done.",
+        act_name.c_str());
+      return;
+    }
     ChassisAct act = static_cast<ChassisAct>(msg->act);
     std::string act_name{magic_enum::enum_name(act)};
     const int index = act_to_trajectory_index(act);
@@ -431,6 +454,41 @@ public:
     }
     log_msg += "]";
     RCLCPP_INFO(this->get_logger(), "%s", log_msg.c_str());
+  }
+
+  void reset_chassis_control_state(const char * reason)
+  {
+    act_step_ = ChassisAct::NONE;
+    prev_act_step_ = ChassisAct::NONE;
+    cmd_vel_ = geometry_msgs::msg::Twist();
+    has_target_pose_ = false;
+    latest_target_pose_ = geometry_msgs::msg::PoseStamped();
+    reset_robot_trajectory();
+    for (auto & follower : traj_follower_) {
+      if (follower) {
+        follower->reset();
+      }
+    }
+    if (pos_follower_) {
+      pos_follower_->reset();
+    }
+    publish_cmd_vel(geometry_msgs::msg::Twist());
+    std_msgs::msg::Int32 act_status_msg;
+    act_status_msg.data = static_cast<int>(ChassisAct::NONE);
+    act_publisher_->publish(act_status_msg);
+    RCLCPP_INFO(this->get_logger(), "Reset chassis control state: %s", reason);
+  }
+
+  void machine_initialize_callback(const std_msgs::msg::Empty::SharedPtr)
+  {
+    is_machine_initialized_ = false;
+    reset_chassis_control_state("/r1_machine_initialize");
+  }
+
+  void machine_initialize_done_callback(const std_msgs::msg::Empty::SharedPtr)
+  {
+    is_machine_initialized_ = true;
+    RCLCPP_INFO(this->get_logger(), "Received /r1_machine_initialize_done");
   }
 
   void publish_path(int n)
@@ -1006,6 +1064,8 @@ public:
   rclcpp::Subscription<std_msgs::msg::Int32>::SharedPtr act_subscription_;
   // robot_moveのSubscription
   rclcpp::Subscription<r1_msgs::msg::RobotMove>::SharedPtr robot_move_subscription_;
+  rclcpp::Subscription<std_msgs::msg::Empty>::SharedPtr machine_initialize_subscription_;
+  rclcpp::Subscription<std_msgs::msg::Empty>::SharedPtr machine_initialize_done_subscription_;
   // chassis_error_tangentのPublisher
   rclcpp::Publisher<std_msgs::msg::Float64>::SharedPtr chassis_error_tangent_publisher_;
   // chassis_error_lateralのPublisher
@@ -1025,6 +1085,7 @@ public:
   std::string cmd_vel_topic_;
   bool has_target_pose_ = false;
   bool has_seen_map_transform_ = false;
+  bool is_machine_initialized_ = true;
   ChassisAct act_step_ = ChassisAct::NONE;
   ChassisAct prev_act_step_ = ChassisAct::NONE;
   // ロボットの軌道保管用

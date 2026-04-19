@@ -3200,7 +3200,6 @@ void R1MainNode::reset_robot(bool is_start_zone)
   // initial_stateにする
   state_machine_->set_next_state(initial_state_);
   state_machine_->print_state(initial_state_, "Reset to initial state: ");
-  is_initialized_ = true;
   set_led_event(0, 0, 50, 0.2, 1.0);
 }
 
