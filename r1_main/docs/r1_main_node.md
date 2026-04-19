@@ -60,6 +60,7 @@
 - `ACT2_START` / `ACT2` / `ACT2_FINISH`
 - `ACT3_START` / `ACT3` / `ACT3_FINISH`
 - `ACT4_START` / `ACT4` / `ACT4_FINISH`
+- `ACT5_START` / `ACT5` / `ACT5_FINISH`
 
 ### ChassisControlMode
 
@@ -388,7 +389,7 @@ LED は timer callback の最後に 1 回だけ更新されます。
   - 併せて内回り KFS 自動回収を開始
 - `square`
   - 外回り KFS 回収用の `RobotMove` を publish
-  - `start_auto_chassis(ChassisAct::ACT3_START, forest_order, collect_kfs_type)`
+  - `start_auto_chassis(ChassisAct::ACT4_START, forest_order, collect_kfs_type)`
   - 併せて外回り KFS 自動回収を開始
 - `down`
   - `start_auto_chassis(ChassisAct::ACT1_START, {}, {})`
@@ -401,7 +402,7 @@ LED は timer callback の最後に 1 回だけ更新されます。
 - TF が利用可能になった周期で、その pending 要求を 1 回だけ publish します。
 - `MODE3_SPEAR` の pending 開始要求は `kfs_auto_collect_plan_.status` に応じて切り替わります。
   - `INNER_ACTIVE` のときは `ACT2_START`
-  - `OUTER_ACTIVE` のときは `ACT3_START`
+  - `OUTER_ACTIVE` のときは `ACT4_START`
 - `reset_robot()` 実行時は pending 要求を破棄します。
 - `r2`
   - 実行中の `ACT*` を中断し、対応する `*_FINISH` を要求します。
@@ -421,8 +422,8 @@ LED は timer callback の最後に 1 回だけ更新されます。
   - 複数の対象を見ている場合でも、どれか 1 つでも範囲内なら緑を優先
   - 範囲外なら赤
   - `base` 色は `OperationMode` に従います。
-- `ACT1` と `ACT4` は KFS 自動回収を起動せず、通常の軌道追従だけを行います。
-- `ACT2` / `ACT3` が終了または中断されたときは、対応する KFS 自動回収も停止します。
+- `ACT1` / `ACT3` / `ACT5` は KFS 自動回収を起動せず、通常の軌道追従だけを行います。
+- `ACT2` / `ACT4` が終了または中断されたときは、対応する KFS 自動回収も停止します。
 
 ### 制約
 

@@ -44,6 +44,14 @@ using namespace std::chrono_literals;
 class R1ChassisControlNode : public rclcpp::Node
 {
 public:
+  struct ActSpec
+  {
+    ChassisAct start;
+    ChassisAct running;
+    ChassisAct finish;
+    int trajectory_index;
+  };
+
   void declare_and_get_parameter(const std::string & name, double & value, double default_value)
   {
     this->declare_parameter<double>(name, default_value);
@@ -333,6 +341,10 @@ public:
       case ChassisAct::ACT4:
       case ChassisAct::ACT4_FINISH:
         return 4;
+      case ChassisAct::ACT5_START:
+      case ChassisAct::ACT5:
+      case ChassisAct::ACT5_FINISH:
+        return 5;
       case ChassisAct::NONE:
       default:
         return -1;
@@ -659,6 +671,49 @@ public:
     robot_trajectory_.poses.clear();
   }
 
+  void start_act(const ActSpec & spec)
+  {
+    act_step_ = spec.running;
+    traj_follower_[spec.trajectory_index]->reset();
+    if (spec.start == ChassisAct::ACT0_START && pos_follower_) {
+      pos_follower_->reset();
+    }
+    reset_robot_trajectory();
+    publish_path(spec.trajectory_index);
+  }
+
+  void update_running_act(const ActSpec & spec)
+  {
+    std::pair<WayPoint, geometry_msgs::msg::Twist> ret =
+      traj_follower_[spec.trajectory_index]->update(odometry_);
+    update_target_pose(ret.first);
+    publish_cmd_vel(ret.second);
+    publish_error(traj_follower_[spec.trajectory_index]->get_error());
+    if (traj_follower_[spec.trajectory_index]->is_finished()) {
+      act_step_ = spec.finish;
+    }
+  }
+
+  void finish_act(const ActSpec & spec)
+  {
+    if (prev_act_step_ == spec.finish) {
+      return;
+    }
+
+    geometry_msgs::msg::PoseStamped pose_map;
+    if (!try_get_current_map_pose(pose_map)) {
+      return;
+    }
+
+    RCLCPP_INFO(
+      this->get_logger(), "Current map: x = %.3f, y = %.3f, yaw = %.3f",
+      pose_map.pose.position.x, pose_map.pose.position.y, tf2::getYaw(pose_map.pose.orientation));
+    RCLCPP_INFO(
+      this->get_logger(), "Current odom: x = %.3f, y = %.3f, yaw = %.3f",
+      odometry_.pose.pose.position.x, odometry_.pose.pose.position.y,
+      tf2::getYaw(odometry_.pose.pose.orientation));
+  }
+
   /**
    * @brief ロボットの軌道（map座標系）をpublishする。
    * 
@@ -715,97 +770,28 @@ public:
 
   void timer_callback()
   {
-    if (act_step_ == ChassisAct::ACT0_START) {
-      act_step_ = ChassisAct::ACT0;
-      traj_follower_[0]->reset();
-      pos_follower_->reset();
-      reset_robot_trajectory();
-      // act0のpathをpublishする
-      publish_path(0);
-    } else if (act_step_ == ChassisAct::ACT0) {
-      // 軌道追従の計算を行う
-      std::pair<WayPoint, geometry_msgs::msg::Twist> ret = traj_follower_[0]->update(odometry_);
-      // 指令値と目標のwaypointをpublishする
-      update_target_pose(ret.first);
-      publish_cmd_vel(ret.second);
-      publish_error(traj_follower_[0]->get_error());
-      // goal_range_以内に到達したらFINISHに遷移する
-      if (traj_follower_[0]->is_finished()) {
-        act_step_ = ChassisAct::ACT0_FINISH;
+    const std::vector<ActSpec> act_specs{
+      {ChassisAct::ACT0_START, ChassisAct::ACT0, ChassisAct::ACT0_FINISH, 0},
+      {ChassisAct::ACT1_START, ChassisAct::ACT1, ChassisAct::ACT1_FINISH, 1},
+      {ChassisAct::ACT2_START, ChassisAct::ACT2, ChassisAct::ACT2_FINISH, 2},
+      {ChassisAct::ACT3_START, ChassisAct::ACT3, ChassisAct::ACT3_FINISH, 3},
+      {ChassisAct::ACT4_START, ChassisAct::ACT4, ChassisAct::ACT4_FINISH, 4},
+      {ChassisAct::ACT5_START, ChassisAct::ACT5, ChassisAct::ACT5_FINISH, 5},
+    };
+
+    for (const auto & spec : act_specs) {
+      if (act_step_ == spec.start) {
+        start_act(spec);
+        break;
       }
-    } else if (act_step_ == ChassisAct::ACT0_FINISH) {
-    } else if (act_step_ == ChassisAct::ACT1_START) {
-      act_step_ = ChassisAct::ACT1;
-      traj_follower_[1]->reset();
-      reset_robot_trajectory();
-      // act1のpathをpublishする
-      publish_path(1);
-    } else if (act_step_ == ChassisAct::ACT1) {
-      // 軌道追従の計算を行う
-      std::pair<WayPoint, geometry_msgs::msg::Twist> ret = traj_follower_[1]->update(odometry_);
-      // 指令値と目標のwaypointをpublishする
-      update_target_pose(ret.first);
-      publish_cmd_vel(ret.second);
-      publish_error(traj_follower_[1]->get_error());
-      // goal_range_以内に到達したらROTATEに遷移する
-      if (traj_follower_[1]->is_finished()) {
-        act_step_ = ChassisAct::ACT1_FINISH;
+      if (act_step_ == spec.running) {
+        update_running_act(spec);
+        break;
       }
-    } else if (act_step_ == ChassisAct::ACT1_FINISH) {
-    } else if (act_step_ == ChassisAct::ACT2_START) {
-      act_step_ = ChassisAct::ACT2;
-      traj_follower_[2]->reset();
-      reset_robot_trajectory();
-      // act2のpathをpublishする
-      publish_path(2);
-    } else if (act_step_ == ChassisAct::ACT2) {
-      // 軌道追従の計算を行う
-      std::pair<WayPoint, geometry_msgs::msg::Twist> ret = traj_follower_[2]->update(odometry_);
-      // 指令値と目標のwaypointをpublishする
-      update_target_pose(ret.first);
-      publish_cmd_vel(ret.second);
-      publish_error(traj_follower_[2]->get_error());
-      // goal_range_以内に到達したらROTATEに遷移する
-      if (traj_follower_[2]->is_finished()) {
-        act_step_ = ChassisAct::ACT2_FINISH;
+      if (act_step_ == spec.finish) {
+        finish_act(spec);
+        break;
       }
-    } else if (act_step_ == ChassisAct::ACT2_FINISH) {
-    } else if (act_step_ == ChassisAct::ACT3_START) {
-      act_step_ = ChassisAct::ACT3;
-      traj_follower_[3]->reset();
-      reset_robot_trajectory();
-      // act3のpathをpublishする
-      publish_path(3);
-    } else if (act_step_ == ChassisAct::ACT3) {
-      // 軌道追従の計算を行う
-      std::pair<WayPoint, geometry_msgs::msg::Twist> ret = traj_follower_[3]->update(odometry_);
-      // 指令値と目標のwaypointをpublishする
-      update_target_pose(ret.first);
-      publish_cmd_vel(ret.second);
-      publish_error(traj_follower_[3]->get_error());
-      // goal_range_以内に到達したらROTATEに遷移する
-      if (traj_follower_[3]->is_finished()) {
-        act_step_ = ChassisAct::ACT3_FINISH;
-      }
-    } else if (act_step_ == ChassisAct::ACT3_FINISH) {
-    } else if (act_step_ == ChassisAct::ACT4_START) {
-      act_step_ = ChassisAct::ACT4;
-      traj_follower_[4]->reset();
-      reset_robot_trajectory();
-      // act4のpathをpublishする
-      publish_path(4);
-    } else if (act_step_ == ChassisAct::ACT4) {
-      // 軌道追従の計算を行う
-      std::pair<WayPoint, geometry_msgs::msg::Twist> ret = traj_follower_[4]->update(odometry_);
-      // 指令値と目標のwaypointをpublishする
-      update_target_pose(ret.first);
-      publish_cmd_vel(ret.second);
-      publish_error(traj_follower_[4]->get_error());
-      // goal_range_以内に到達したらROTATEに遷移する
-      if (traj_follower_[4]->is_finished()) {
-        act_step_ = ChassisAct::ACT4_FINISH;
-      }
-    } else if (act_step_ == ChassisAct::ACT4_FINISH) {
     }
     // 現在のact_step_をpublishする
     std_msgs::msg::Int32 act_status_msg;
@@ -816,22 +802,6 @@ public:
     if (act_step_ != prev_act_step_) {
       std::string act_name{magic_enum::enum_name(act_step_)};
       RCLCPP_INFO(this->get_logger(), "Current act step: %s", act_name.c_str());
-      // act_stepにFINISHという文字が含まれていた場合は現在の位置も出力する
-      if (act_name.find("FINISH") != std::string::npos) {
-        geometry_msgs::msg::PoseStamped pose_map;
-        if (!try_get_current_map_pose(pose_map)) {
-          return;
-        }
-        // 現在の位置をログに出力する
-        RCLCPP_INFO(
-          this->get_logger(), "Current map: x = %.3f, y = %.3f, yaw = %.3f",
-          pose_map.pose.position.x, pose_map.pose.position.y,
-          tf2::getYaw(pose_map.pose.orientation));
-        RCLCPP_INFO(
-          this->get_logger(), "Current odom: x = %.3f, y = %.3f, yaw = %.3f",
-          odometry_.pose.pose.position.x, odometry_.pose.pose.position.y,
-          tf2::getYaw(odometry_.pose.pose.orientation));
-      }
       // 前回の値を更新
       prev_act_step_ = act_step_;
     }
