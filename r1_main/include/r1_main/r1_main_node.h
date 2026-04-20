@@ -56,6 +56,7 @@ public:
   struct PositionAxisInterface
   {
     rclcpp::Publisher<std_msgs::msg::Float64>::SharedPtr position_ref_publisher;
+    rclcpp::Publisher<std_msgs::msg::Float64>::SharedPtr set_position_publisher;
     rclcpp::Publisher<std_msgs::msg::Float64>::SharedPtr speed_ref_publisher;
     rclcpp::Publisher<std_msgs::msg::Bool>::SharedPtr detect_origin_publisher;
     rclcpp::Publisher<std_msgs::msg::Empty>::SharedPtr speed_mode_stop_publisher;
@@ -419,7 +420,7 @@ public:
     bool * switch_status);
   void register_position_axis(
     const std::string & name, double * position_ref_alias = nullptr,
-    double * speed_ref_alias = nullptr);
+    double * speed_ref_alias = nullptr, bool use_set_angle_topic = false);
   void register_velocity_axis(
     const std::string & name, const std::string & topic_name,
     double * velocity_ref_alias = nullptr);
@@ -428,6 +429,7 @@ public:
   void register_gpio_servo_output(const std::string & name, int * ref_alias = nullptr);
   void register_gpio_input(const std::string & name, bool * switch_status);
   void publish_position_axis(const std::string & name, double pos);
+  void set_position_axis(const std::string & name, double pos);
   void publish_position_axis_speed_ref(const std::string & name, double speed);
   void detect_origin_position_axis(const std::string & name);
   void stop_position_axis_speed_mode(const std::string & name);
@@ -505,6 +507,12 @@ public:
   void kfs_rx_pos_ref(double pos);
   void kfs_rz_pos_ref(double pos);
   void kfs_ryaw_pos_ref(double pos);
+  void kfs_fx_set_pos(double pos);
+  void kfs_fz_set_pos(double pos);
+  void kfs_fyaw_set_angle(double angle);
+  void kfs_rx_set_pos(double pos);
+  void kfs_rz_set_pos(double pos);
+  void kfs_ryaw_set_angle(double angle);
   // 速度指令
   void kfs_fx_speed_ref(double speed);
   void kfs_fz_speed_ref(double speed);
@@ -523,6 +531,8 @@ public:
   // 位置指令
   void r2_flift_pos_ref(double pos);
   void r2_rlift_pos_ref(double pos);
+  void r2_flift_set_pos(double pos);
+  void r2_rlift_set_pos(double pos);
   // 速度指令
   void r2_flift_speed_ref(double speed);
   void r2_rlift_speed_ref(double speed);
@@ -540,6 +550,15 @@ public:
   void spear_roll_pos_ref(double angle);
   void spear_pitch1_pos_ref(double angle);
   void spear_pitch2_pos_ref(double angle);
+  void spear1_set_pos(double pos);
+  void spear2_set_pos(double pos);
+  void spear3_set_pos(double pos);
+  void spear4_set_pos(double pos);
+  void spear_x_set_pos(double pos);
+  void spear_y_set_pos(double pos);
+  void spear_roll_set_angle(double angle);
+  void spear_pitch1_set_angle(double angle);
+  void spear_pitch2_set_angle(double angle);
   // 速度指令
   void spear1_speed_ref(double speed);
   void spear2_speed_ref(double speed);

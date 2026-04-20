@@ -68,6 +68,9 @@ public:
     initialize_subscription_ = this->create_subscription<std_msgs::msg::Empty>(
       "/linear_motion_initialize", 10,
       std::bind(&MyNode::initialize_callback, this, std::placeholders::_1));
+    set_pos_subscription_ = this->create_subscription<std_msgs::msg::Float64>(
+      "/linear_motion_set_pos", 10,
+      std::bind(&MyNode::set_pos_callback, this, std::placeholders::_1));
 
     mode_status_publisher_ =
       this->create_publisher<std_msgs::msg::Int32>("/linear_motion_mode_status", 10);
@@ -343,15 +346,23 @@ public:
 
   void initialize_callback(const std_msgs::msg::Empty::SharedPtr)
   {
-    mode_ = MODE_POSITON;
-    speed_mode_reason_ = SPEED_MODE_NONE;
-    pos_offset_ = radius_ * current_pos_;
-    publish_active_torque_limit();
-    publish_hold_current_position();
-    RCLCPP_INFO(
-      this->get_logger(),
-      "Received initialize signal. Updated position offset to %.6f so current position becomes zero.",
-      pos_offset_);
+    set_current_position_as(0.0, "Received initialize signal");
+  }
+
+  void set_pos_callback(const std_msgs::msg::Float64::SharedPtr msg)
+  {
+    double target_pos = msg->data;
+    if (msg->data < pos_min_) {
+      target_pos = pos_min_;
+      RCLCPP_WARN(
+        this->get_logger(), "Set position below minimum. Clamping to %.3f", target_pos);
+    } else if (msg->data > pos_max_) {
+      target_pos = pos_max_;
+      RCLCPP_WARN(
+        this->get_logger(), "Set position above maximum. Clamping to %.3f", target_pos);
+    }
+
+    set_current_position_as(target_pos, "Received set_pos signal");
   }
 
   double active_torque_limit() const
@@ -382,6 +393,14 @@ public:
     linear_motion_ref_publisher_->publish(motor_ref_msg);
   }
 
+  void publish_hold_target_position(double target_pos)
+  {
+    auto motor_ref_msg = r1_msgs::msg::MotorRef();
+    motor_ref_msg.control_type = "POSITION";
+    motor_ref_msg.ref = (motor_dir_ * target_pos + pos_offset_) / radius_;
+    linear_motion_ref_publisher_->publish(motor_ref_msg);
+  }
+
   void stop_and_hold_current_position(const char * log_message)
   {
     mode_ = MODE_POSITON;
@@ -389,6 +408,19 @@ public:
     publish_active_torque_limit();
     publish_hold_current_position();
     RCLCPP_INFO(this->get_logger(), "%s", log_message);
+  }
+
+  void set_current_position_as(double target_pos, const char * log_prefix)
+  {
+    mode_ = MODE_POSITON;
+    speed_mode_reason_ = SPEED_MODE_NONE;
+    pos_offset_ = radius_ * current_pos_ - motor_dir_ * target_pos;
+    publish_active_torque_limit();
+    publish_hold_target_position(target_pos);
+    RCLCPP_INFO(
+      this->get_logger(),
+      "%s. Updated position offset to %.6f so current position becomes %.6f.",
+      log_prefix, pos_offset_, target_pos);
   }
 
   bool is_contact_detection_enabled_in_speed_mode() const
@@ -485,6 +517,7 @@ private:
   rclcpp::Subscription<std_msgs::msg::Bool>::SharedPtr detect_origin_subscription_;
   rclcpp::Subscription<std_msgs::msg::Int32>::SharedPtr move_mech_lock_subscription_;
   rclcpp::Subscription<std_msgs::msg::Empty>::SharedPtr initialize_subscription_;
+  rclcpp::Subscription<std_msgs::msg::Float64>::SharedPtr set_pos_subscription_;
   rclcpp::Publisher<std_msgs::msg::Int32>::SharedPtr mode_status_publisher_;
   rclcpp::Publisher<std_msgs::msg::Float64>::SharedPtr torque_limit_ref_publisher_;
   rclcpp::node_interfaces::OnSetParametersCallbackHandle::SharedPtr parameter_callback_handler_;

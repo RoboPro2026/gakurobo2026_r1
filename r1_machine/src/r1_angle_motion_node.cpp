@@ -68,6 +68,9 @@ public:
     initialize_subscription_ = this->create_subscription<std_msgs::msg::Empty>(
       "/angle_motion_initialize", 10,
       std::bind(&MyNode::initialize_callback, this, std::placeholders::_1));
+    set_angle_subscription_ = this->create_subscription<std_msgs::msg::Float64>(
+      "/angle_motion_set_angle", 10,
+      std::bind(&MyNode::set_angle_callback, this, std::placeholders::_1));
 
     mode_status_publisher_ =
       this->create_publisher<std_msgs::msg::Int32>("/angle_motion_mode_status", 10);
@@ -344,15 +347,21 @@ private:
 
   void initialize_callback(const std_msgs::msg::Empty::SharedPtr)
   {
-    mode_ = MODE_POSITION;
-    speed_mode_reason_ = SPEED_MODE_NONE;
-    angle_offset_ = gear_ratio_ * current_angle_;
-    publish_active_torque_limit();
-    publish_hold_current_angle();
-    RCLCPP_INFO(
-      this->get_logger(),
-      "Received initialize signal. Updated angle offset to %.6f so current angle becomes zero.",
-      angle_offset_);
+    set_current_angle_as(0.0, "Received initialize signal");
+  }
+
+  void set_angle_callback(const std_msgs::msg::Float64::SharedPtr msg)
+  {
+    double target_angle = msg->data;
+    if (msg->data < angle_min_) {
+      target_angle = angle_min_;
+      RCLCPP_WARN(this->get_logger(), "Set angle below minimum. Clamping to %.3f", target_angle);
+    } else if (msg->data > angle_max_) {
+      target_angle = angle_max_;
+      RCLCPP_WARN(this->get_logger(), "Set angle above maximum. Clamping to %.3f", target_angle);
+    }
+
+    set_current_angle_as(target_angle, "Received set_angle signal");
   }
 
   double active_torque_limit() const
@@ -383,6 +392,14 @@ private:
     angle_motion_ref_publisher_->publish(motor_ref_msg);
   }
 
+  void publish_hold_target_angle(double target_angle)
+  {
+    auto motor_ref_msg = r1_msgs::msg::MotorRef();
+    motor_ref_msg.control_type = "POSITION";
+    motor_ref_msg.ref = (motor_dir_ * target_angle + angle_offset_) / gear_ratio_;
+    angle_motion_ref_publisher_->publish(motor_ref_msg);
+  }
+
   void stop_and_hold_current_angle(const char * log_message)
   {
     mode_ = MODE_POSITION;
@@ -390,6 +407,19 @@ private:
     publish_active_torque_limit();
     publish_hold_current_angle();
     RCLCPP_INFO(this->get_logger(), "%s", log_message);
+  }
+
+  void set_current_angle_as(double target_angle, const char * log_prefix)
+  {
+    mode_ = MODE_POSITION;
+    speed_mode_reason_ = SPEED_MODE_NONE;
+    angle_offset_ = gear_ratio_ * current_angle_ - motor_dir_ * target_angle;
+    publish_active_torque_limit();
+    publish_hold_target_angle(target_angle);
+    RCLCPP_INFO(
+      this->get_logger(),
+      "%s. Updated angle offset to %.6f so current angle becomes %.6f.",
+      log_prefix, angle_offset_, target_angle);
   }
 
   bool is_contact_detection_enabled_in_speed_mode() const
@@ -486,6 +516,7 @@ private:
   rclcpp::Subscription<std_msgs::msg::Bool>::SharedPtr detect_origin_subscription_;
   rclcpp::Subscription<std_msgs::msg::Int32>::SharedPtr move_mech_lock_subscription_;
   rclcpp::Subscription<std_msgs::msg::Empty>::SharedPtr initialize_subscription_;
+  rclcpp::Subscription<std_msgs::msg::Float64>::SharedPtr set_angle_subscription_;
   rclcpp::Publisher<std_msgs::msg::Int32>::SharedPtr mode_status_publisher_;
   rclcpp::Publisher<std_msgs::msg::Float64>::SharedPtr torque_limit_ref_publisher_;
   rclcpp::node_interfaces::OnSetParametersCallbackHandle::SharedPtr parameter_callback_handler_;

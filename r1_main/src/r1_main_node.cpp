@@ -160,7 +160,8 @@ R1MainNode::create_switch_status_callback(bool * switch_status)
  * @param position_ref_alias 最新の指令値を同期する既存変数。不要なら nullptr。
  */
 void R1MainNode::register_position_axis(
-  const std::string & name, double * position_ref_alias, double * speed_ref_alias)
+  const std::string & name, double * position_ref_alias, double * speed_ref_alias,
+  bool use_set_angle_topic)
 {
   auto [it, inserted] = position_axes_.try_emplace(name);
   (void)inserted;
@@ -176,6 +177,8 @@ void R1MainNode::register_position_axis(
 
   axis.position_ref_publisher =
     this->create_publisher<std_msgs::msg::Float64>("/" + name + "_position_ref", 10);
+  axis.set_position_publisher = this->create_publisher<std_msgs::msg::Float64>(
+    "/" + name + (use_set_angle_topic ? "_set_angle" : "_set_pos"), 10);
   axis.speed_ref_publisher =
     this->create_publisher<std_msgs::msg::Float64>("/" + name + "_speed_ref", 10);
   axis.detect_origin_publisher =
@@ -276,6 +279,29 @@ void R1MainNode::publish_position_axis(const std::string & name, double pos)
   msg.data = pos;
   it->second.position_ref_publisher->publish(msg);
   RCLCPP_INFO(this->get_logger(), "%s pos %f", name.c_str(), pos);
+  it->second.position_ref = pos;
+  if (it->second.position_ref_alias != nullptr) {
+    *it->second.position_ref_alias = pos;
+  }
+}
+
+/**
+ * @brief 指定した位置制御軸へ set_pos / set_angle 指令を publish する。
+ * @param name 軸名。
+ * @param pos 設定したい論理位置・角度。
+ */
+void R1MainNode::set_position_axis(const std::string & name, double pos)
+{
+  const auto it = position_axes_.find(name);
+  if (it == position_axes_.end() || !it->second.set_position_publisher) {
+    RCLCPP_ERROR(this->get_logger(), "%s set position axis is not initialized", name.c_str());
+    return;
+  }
+
+  std_msgs::msg::Float64 msg;
+  msg.data = pos;
+  it->second.set_position_publisher->publish(msg);
+  RCLCPP_INFO(this->get_logger(), "%s set_pos %f", name.c_str(), pos);
   it->second.position_ref = pos;
   if (it->second.position_ref_alias != nullptr) {
     *it->second.position_ref_alias = pos;
@@ -443,10 +469,10 @@ R1MainNode::R1MainNode() : Node("r1_main_node")
   // ========== 位置制御軸 ==========
   register_position_axis("kfs_fx", &kfs_fx_position_ref_);
   register_position_axis("kfs_fz", &kfs_fz_position_ref_);
-  register_position_axis("kfs_fyaw", &kfs_fyaw_position_ref_);
+  register_position_axis("kfs_fyaw", &kfs_fyaw_position_ref_, nullptr, true);
   register_position_axis("kfs_rx", &kfs_rx_position_ref_);
   register_position_axis("kfs_rz", &kfs_rz_position_ref_);
-  register_position_axis("kfs_ryaw", &kfs_ryaw_position_ref_);
+  register_position_axis("kfs_ryaw", &kfs_ryaw_position_ref_, nullptr, true);
   register_position_axis("r2_flift", &r2_flift_position_ref_);
   register_position_axis("r2_rlift", &r2_rlift_position_ref_);
   register_position_axis("spear1", &spear1_position_ref_);
@@ -455,9 +481,9 @@ R1MainNode::R1MainNode() : Node("r1_main_node")
   register_position_axis("spear4", &spear4_position_ref_);
   register_position_axis("spear_x", &spear_x_position_ref_);
   register_position_axis("spear_y", &spear_y_position_ref_);
-  register_position_axis("spear_roll", &spear_roll_position_ref_);
-  register_position_axis("spear_pitch1", &spear_pitch1_position_ref_);
-  register_position_axis("spear_pitch2", &spear_pitch2_position_ref_);
+  register_position_axis("spear_roll", &spear_roll_position_ref_, nullptr, true);
+  register_position_axis("spear_pitch1", &spear_pitch1_position_ref_, nullptr, true);
+  register_position_axis("spear_pitch2", &spear_pitch2_position_ref_, nullptr, true);
 
   // // ========== R2昇降指令値 ==========
   // register_velocity_axis("r2_flift", "/r2_flift_motor_ref", &r2_flift_velocity_ref_);
@@ -1573,9 +1599,25 @@ void R1MainNode::kfs_rz_pos_ref(double pos) { publish_position_axis("kfs_rz", po
 
 void R1MainNode::kfs_ryaw_pos_ref(double pos) { publish_position_axis("kfs_ryaw", pos); }
 
+void R1MainNode::kfs_fx_set_pos(double pos) { set_position_axis("kfs_fx", pos); }
+
+void R1MainNode::kfs_fz_set_pos(double pos) { set_position_axis("kfs_fz", pos); }
+
+void R1MainNode::kfs_fyaw_set_angle(double angle) { set_position_axis("kfs_fyaw", angle); }
+
+void R1MainNode::kfs_rx_set_pos(double pos) { set_position_axis("kfs_rx", pos); }
+
+void R1MainNode::kfs_rz_set_pos(double pos) { set_position_axis("kfs_rz", pos); }
+
+void R1MainNode::kfs_ryaw_set_angle(double angle) { set_position_axis("kfs_ryaw", angle); }
+
 void R1MainNode::r2_flift_pos_ref(double pos) { publish_position_axis("r2_flift", pos); }
 
 void R1MainNode::r2_rlift_pos_ref(double pos) { publish_position_axis("r2_rlift", pos); }
+
+void R1MainNode::r2_flift_set_pos(double pos) { set_position_axis("r2_flift", pos); }
+
+void R1MainNode::r2_rlift_set_pos(double pos) { set_position_axis("r2_rlift", pos); }
 
 void R1MainNode::kfs_fx_speed_ref(double speed)
 {
@@ -1656,6 +1698,24 @@ void R1MainNode::spear_pitch2_pos_ref(double angle)
 {
   publish_position_axis("spear_pitch2", angle);
 }
+
+void R1MainNode::spear1_set_pos(double pos) { set_position_axis("spear1", pos); }
+
+void R1MainNode::spear2_set_pos(double pos) { set_position_axis("spear2", pos); }
+
+void R1MainNode::spear3_set_pos(double pos) { set_position_axis("spear3", pos); }
+
+void R1MainNode::spear4_set_pos(double pos) { set_position_axis("spear4", pos); }
+
+void R1MainNode::spear_x_set_pos(double pos) { set_position_axis("spear_x", pos); }
+
+void R1MainNode::spear_y_set_pos(double pos) { set_position_axis("spear_y", pos); }
+
+void R1MainNode::spear_roll_set_angle(double angle) { set_position_axis("spear_roll", angle); }
+
+void R1MainNode::spear_pitch1_set_angle(double angle) { set_position_axis("spear_pitch1", angle); }
+
+void R1MainNode::spear_pitch2_set_angle(double angle) { set_position_axis("spear_pitch2", angle); }
 
 void R1MainNode::spear1_speed_ref(double speed)
 {
@@ -1877,6 +1937,10 @@ void R1MainNode::manual_mode1_detect_origin(void)
 
   if (ps4_->is_pushed_r1()) {
     spear2_detect_origin();
+    // spear_x, spear_y, spear_rollは原点検出ができないので、角度を設定する
+    spear_x_set_pos(0.0);
+    spear_y_set_pos(0.0);
+    spear_roll_set_angle(0.0);
   }
 
   if (ps4_->is_pushed_l2()) {

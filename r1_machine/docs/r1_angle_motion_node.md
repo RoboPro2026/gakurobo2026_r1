@@ -14,6 +14,7 @@
   - `/angle_motion_detect_origin` (`std_msgs/msg/Bool`): `true` で原点検出モードへ移行し、`false` で位置モードに戻します。
   - `/angle_motion_move_mech_lock` (`std_msgs/msg/Int32`): 機械端まで押し当てる移動要求。`data > 0` で正方向、`data < 0` で逆方向、`data == 0` で停止して位置モードに戻ります。
   - `/angle_motion_initialize` (`std_msgs/msg/Empty`): 特殊モードを中断して位置モードへ戻し、その時点のモータ角度が論理上 0 rad になるよう `angle_offset` を更新してから保持します。`r1_machine_manage_node` から中継されます。
+  - `/angle_motion_set_angle` (`std_msgs/msg/Float64`): 特殊モードを中断して位置モードへ戻し、その時点のモータ角度が指定した論理角度 [rad] になるよう `angle_offset` を更新してから、その角度を目標値として保持します。
 - **Publish**
   - `/angle_motion_motor_ref` (`r1_msgs/msg/MotorRef`): `r1_machine_manage_node` へ渡す制御指令。`control_type` は `"POSITION"` または `"VELOCITY"`、`ref` は角度 [rad] もしくは角速度 [rad/s]。
   - `/angle_motion_mode_status` (`std_msgs/msg/Int32`): モードを送信。mode=0のとき、通常動作（位置制御モード）。mode=1のとき、原点復帰中、機械端移動中、またはユーザ速度モード中（速度制御モード）。
@@ -54,6 +55,7 @@
 6. 検出条件を満たすと、現在の `pos` から `angle_offset = gear_ratio * pos` を設定し、その場の角度で `"POSITION"` 指令を出して位置モードへ復帰します。`/angle_motion_detect_origin` に `false` を送った場合も、その時点の角度を保持して位置モードへ戻ります。
 7. `/angle_motion_move_mech_lock` に `1` または `-1` を送ると、指定方向へ `"VELOCITY"` 指令 `move_mech_lock_speed` を流し続けます。このときの `/angle_motion_torque_limit_ref` は `normal_torque_limit` のままです。停止判定は原点検出と同じで、トルク上昇またはスイッチ反応が `origin_detect_threshold_time` 以上続いたときです。停止後はオフセットを更新せず、その時点のモータ位置を `"POSITION"` 指令で保持します。`data == 0` を送った場合も現在角度保持で停止します。
 8. `/angle_motion_initialize` を受けると、原点検出中、`move_mech_lock` 中、ユーザ速度モード中であっても速度モードを中断し、`angle_offset = gear_ratio * pos` を再計算してその時点のモータ角度が論理上 0 rad になるようにします。その後、現在のモータ角度を `"POSITION"` で保持します。このときトルク制限も `normal_torque_limit` に戻します。
+9. `/angle_motion_set_angle` を受けると、速度モードを中断して位置モードへ戻し、`angle_offset = gear_ratio * pos - target_angle`（`inverse_motor` 有効時は符号反転込み）となるようオフセットを再計算します。その後、受信した論理角度 [rad] を目標値とする `"POSITION"` 指令を publish するため、見かけ上その場の角度を指定値へ再定義して保持できます。
 
 ## 起動と利用例
 
