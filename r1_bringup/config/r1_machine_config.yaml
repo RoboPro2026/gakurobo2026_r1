@@ -127,7 +127,7 @@ r1_main_node:
     # normal_torqueをもう少し低くできれば、trueにする予定
     use_kfs_mech_lock: false
     # fx
-    kfs_fx_normal_pos: 0.05
+    kfs_fx_normal_pos: 0.005
     kfs_fx_storage_pos: 0.2
     kfs_fx_start_pos: 0.3
     kfs_fx_put_pos: 0.3
@@ -153,7 +153,7 @@ r1_main_node:
     kfs_fyaw_low_mech_lock_angle: 0.05
     kfs_fyaw_high_mech_lock_angle: 3.1
     # rx
-    kfs_rx_normal_pos: 0.05
+    kfs_rx_normal_pos: 0.005
     kfs_rx_storage_pos: 0.2
     kfs_rx_start_pos: 0.3
     kfs_rx_put_pos: 0.3
@@ -242,11 +242,11 @@ r1_main_node:
     spear4_push_vel: 10.0
     # spear_x
     spear_x_normal_pos: 0.0
-    spear_x_middle_pos: 0.25
-    spear_x_make_spear1_pos: 0.25
+    spear_x_middle_pos: 0.125
+    spear_x_make_spear1_pos: 0.125
     # spear_x_make_spear1_pos: 0.15
     # spear_x_make_spear2_pos: 0.405
-    spear_x_make_spear2_pos: 0.51
+    spear_x_make_spear2_pos: 0.3
     spear_x_make_spear3_pos: 0.0
     spear_x_make_spear4_pos: 0.0
     # spear_y
@@ -391,7 +391,7 @@ r1_kfs_fx_node:
     move_mech_lock_speed: 10.0 # rad/s
     pos_min: -0.1
     pos_max: 1.0
-    normal_pos: 0.05
+    normal_pos: 0.005
     # ギアが一周すると2*pi*15mm進むので、半径は15mm
     radius: 0.015
     inverse_motor: true
@@ -487,7 +487,7 @@ r1_kfs_rx_node:
     move_mech_lock_speed: 10.0 # rad/s
     pos_min: -0.1
     pos_max: 1.0
-    normal_pos: 0.05
+    normal_pos: 0.005
     # ギアが一周すると2*pi*15mm進むので、半径は15mm
     radius: 0.015
     inverse_motor: false
