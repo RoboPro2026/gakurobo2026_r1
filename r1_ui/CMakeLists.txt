@@ -17,17 +17,38 @@ find_package(sensor_msgs REQUIRED)
 find_package(std_msgs REQUIRED)
 
 add_executable(r1_controller_gateway_node src/r1_controller_gateway_node.cpp)
+add_executable(r1_aruco_serial_node src/r1_aruco_serial_node.cpp)
+
+target_include_directories(r1_controller_gateway_node PRIVATE include)
+target_include_directories(r1_aruco_serial_node PRIVATE include)
+
 ament_target_dependencies(r1_controller_gateway_node
   r1_msgs
   rclcpp
   sensor_msgs
   std_msgs
 )
+
+ament_target_dependencies(r1_aruco_serial_node
+  r1_msgs
+  rclcpp
+  sensor_msgs
+  std_msgs
+)
+
 target_link_libraries(r1_controller_gateway_node magic_enum::magic_enum)
 target_link_libraries(r1_controller_gateway_node r1_util::r1_util)
 
+target_link_libraries(r1_aruco_serial_node magic_enum::magic_enum)
+target_link_libraries(r1_aruco_serial_node r1_util::r1_util)
+
 install(TARGETS
   r1_controller_gateway_node
+  DESTINATION lib/${PROJECT_NAME}
+)
+
+install(TARGETS
+  r1_aruco_serial_node
   DESTINATION lib/${PROJECT_NAME}
 )
 
