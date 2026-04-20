@@ -1059,8 +1059,7 @@ void R1MainNode::update_kfs_led_status(void)
   const bool rear_kfs_pump_active = (kfs_rear_pump_ref_ > 0.0);
   const double front_kfs_blink_period =
     front_kfs_pump_active ? KFS_PUMP_ACTIVE_BLINK_PERIOD_S : 0.0;
-  const double rear_kfs_blink_period =
-    rear_kfs_pump_active ? KFS_PUMP_ACTIVE_BLINK_PERIOD_S : 0.0;
+  const double rear_kfs_blink_period = rear_kfs_pump_active ? KFS_PUMP_ACTIVE_BLINK_PERIOD_S : 0.0;
 
   if (front_kfs_assigned) {
     if (front_kfs_within) {
@@ -2674,6 +2673,7 @@ void R1MainNode::manual_mode6_r2_lift(void)
     kfs_fz_pos_ref(KFS_FZ_R2_LIFT_POS);
     kfs_rx_pos_ref(KFS_RX_R2_LIFT_POS);
     kfs_rz_pos_ref(KFS_RZ_R2_LIFT_POS);
+    spear_y_pos_ref(SPEAR_Y_EXPAND_POS);
     RCLCPP_INFO(this->get_logger(), "moved to r2_lift position");
     if (manual_mode6_r2_lift_timer_ != nullptr) {
       manual_mode6_r2_lift_timer_->cancel();
@@ -2704,6 +2704,7 @@ void R1MainNode::manual_mode6_r2_lift(void)
       kfs_fz_pos_ref(KFS_FZ_NORMAL_POS);
       kfs_rx_pos_ref(KFS_RX_NORMAL_POS);
       kfs_rz_pos_ref(KFS_RZ_NORMAL_POS);
+      spear_y_pos_ref(SPEAR_Y_NORMAL_POS);
       if (manual_mode6_r2_lift_timer_ != nullptr) {
         manual_mode6_r2_lift_timer_->cancel();
       }
@@ -3108,7 +3109,6 @@ void R1MainNode::auto_collect_kfs_task(void)
     // 最後に前回値を更新する
     prev_within = within;
   }
-
 }
 
 void R1MainNode::manual_mode8_auto_collect_kfs(void)
