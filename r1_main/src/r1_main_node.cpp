@@ -3058,23 +3058,41 @@ void R1MainNode::auto_collect_kfs_task(void)
     prev_within = within;
   }
 
+  constexpr double KFS_PUMP_ACTIVE_BLINK_PERIOD_S = 0.25;
+  bool front_kfs_pump_active = (kfs_front_pump_ref_ > 0.0);
+  bool rear_kfs_pump_active = (kfs_rear_pump_ref_ > 0.0);
+  double front_kfs_blink_period = front_kfs_pump_active ? KFS_PUMP_ACTIVE_BLINK_PERIOD_S : 0.0;
+  double rear_kfs_blink_period = rear_kfs_pump_active ? KFS_PUMP_ACTIVE_BLINK_PERIOD_S : 0.0;
+
   if (front_kfs_assigned) {
     if (front_kfs_within) {
-      // FKFS が担当範囲内に入ったら緑固定
-      set_fkfs_led_status(0, 50, 0, 0.0);
+      // FKFS が担当範囲内に入ったら緑。ポンプ動作中は点滅。
+      set_fkfs_led_status(0, 50, 0, front_kfs_blink_period);
     } else {
-      // FKFS が担当中だが範囲外なら赤固定
-      set_fkfs_led_status(50, 0, 0, 0.0);
+      // FKFS が担当中だが範囲外なら赤。ポンプ動作中は点滅。
+      set_fkfs_led_status(50, 0, 0, front_kfs_blink_period);
+    }
+  } else {
+    if (front_kfs_pump_active) {
+      set_fkfs_led_status(50, 0, 0, front_kfs_blink_period);
+    } else {
+      set_fkfs_led_status(0, 0, 0, 0.0);
     }
   }
 
   if (rear_kfs_assigned) {
     if (rear_kfs_within) {
-      // RKFS が担当範囲内に入ったら緑固定
-      set_rkfs_led_status(0, 50, 0, 0.0);
+      // RKFS が担当範囲内に入ったら緑。ポンプ動作中は点滅。
+      set_rkfs_led_status(0, 50, 0, rear_kfs_blink_period);
     } else {
-      // RKFS が担当中だが範囲外なら赤固定
-      set_rkfs_led_status(50, 0, 0, 0.0);
+      // RKFS が担当中だが範囲外なら赤。ポンプ動作中は点滅。
+      set_rkfs_led_status(50, 0, 0, rear_kfs_blink_period);
+    }
+  } else {
+    if (rear_kfs_pump_active) {
+      set_rkfs_led_status(50, 0, 0, rear_kfs_blink_period);
+    } else {
+      set_rkfs_led_status(0, 0, 0, 0.0);
     }
   }
 }
