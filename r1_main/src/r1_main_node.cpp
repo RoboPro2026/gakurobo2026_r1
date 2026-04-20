@@ -1033,6 +1033,68 @@ void R1MainNode::clear_led_status(void)
   led_rkfs_status_pattern_.blink_period_s = 0.0;
 }
 
+void R1MainNode::update_kfs_led_status(void)
+{
+  constexpr int FKFS = 0;
+  constexpr int RKFS = 1;
+  constexpr double KFS_PUMP_ACTIVE_BLINK_PERIOD_S = 0.25;
+
+  bool front_kfs_assigned = false;
+  bool rear_kfs_assigned = false;
+  if (kfs_auto_collect_plan_.status != KfsAutoCollectStatus::NONE) {
+    for (const auto & mechanism_type : kfs_auto_collect_plan_.kfs_mechanism_type) {
+      front_kfs_assigned |= (mechanism_type == "front_kfs");
+      rear_kfs_assigned |= (mechanism_type == "rear_kfs");
+    }
+  }
+
+  bool front_kfs_within = false;
+  bool rear_kfs_within = false;
+  for (const auto & within : kfs_auto_collect_within_) {
+    front_kfs_within |= within[FKFS];
+    rear_kfs_within |= within[RKFS];
+  }
+
+  const bool front_kfs_pump_active = (kfs_front_pump_ref_ > 0.0);
+  const bool rear_kfs_pump_active = (kfs_rear_pump_ref_ > 0.0);
+  const double front_kfs_blink_period =
+    front_kfs_pump_active ? KFS_PUMP_ACTIVE_BLINK_PERIOD_S : 0.0;
+  const double rear_kfs_blink_period =
+    rear_kfs_pump_active ? KFS_PUMP_ACTIVE_BLINK_PERIOD_S : 0.0;
+
+  if (front_kfs_assigned) {
+    if (front_kfs_within) {
+      // FKFS が担当範囲内に入ったら緑。ポンプ動作中は点滅。
+      set_fkfs_led_status(0, 50, 0, front_kfs_blink_period);
+    } else {
+      // FKFS が担当中だが範囲外なら赤。ポンプ動作中は点滅。
+      set_fkfs_led_status(50, 0, 0, front_kfs_blink_period);
+    }
+  } else {
+    if (front_kfs_pump_active) {
+      set_fkfs_led_status(50, 0, 0, front_kfs_blink_period);
+    } else {
+      set_fkfs_led_status(0, 0, 0, 0.0);
+    }
+  }
+
+  if (rear_kfs_assigned) {
+    if (rear_kfs_within) {
+      // RKFS が担当範囲内に入ったら緑。ポンプ動作中は点滅。
+      set_rkfs_led_status(0, 50, 0, rear_kfs_blink_period);
+    } else {
+      // RKFS が担当中だが範囲外なら赤。ポンプ動作中は点滅。
+      set_rkfs_led_status(50, 0, 0, rear_kfs_blink_period);
+    }
+  } else {
+    if (rear_kfs_pump_active) {
+      set_rkfs_led_status(50, 0, 0, rear_kfs_blink_period);
+    } else {
+      set_rkfs_led_status(0, 0, 0, 0.0);
+    }
+  }
+}
+
 void R1MainNode::set_led_event(
   uint8_t r, uint8_t g, uint8_t b, double blink_period_s, double duration_sec)
 {
@@ -1575,6 +1637,7 @@ void R1MainNode::timer_callback(void)
   // タスクを実行
   // ps4_->print_data();
   main_task();
+  update_kfs_led_status();
   sabacan_led_update();
 }
 
@@ -2865,10 +2928,6 @@ void R1MainNode::auto_collect_kfs_task(void)
   // TODO: 進行方向と使用する回収機構の順番に応じて、OFFSETをいい感じに適応する
   geometry_msgs::msg::PoseStamped map_pos = get_map_pos();
   int n = kfs_auto_collect_plan_.forest_order.size();
-  bool front_kfs_assigned = false;
-  bool rear_kfs_assigned = false;
-  bool front_kfs_within = false;
-  bool rear_kfs_within = false;
   for (int i = 0; i < n; i++) {
     int target_forest_number = kfs_auto_collect_plan_.forest_order[i];
     if (target_forest_number < 1 || target_forest_number > 12) {
@@ -2888,8 +2947,6 @@ void R1MainNode::auto_collect_kfs_task(void)
 
     // within関連はメンバー変数。名前が長いので、参照として短い名前で扱う。
     int within_index = (mechanism_type == "front_kfs") ? FKFS : RKFS;
-    front_kfs_assigned |= (within_index == FKFS);
-    rear_kfs_assigned |= (within_index == RKFS);
     std::vector<bool>::reference within =
       kfs_auto_collect_within_[target_forest_number - 1][within_index];
     std::vector<bool>::reference prev_within =
@@ -2935,12 +2992,6 @@ void R1MainNode::auto_collect_kfs_task(void)
         map_x, map_y, center_x, center_y, rect_yaw, COLLECT_KFS_WIDTH, COLLECT_KFS_HEIGHT)) {
       within = true;
     }
-    if (within_index == FKFS) {
-      front_kfs_within = front_kfs_within || within;
-    } else {
-      rear_kfs_within = rear_kfs_within || within;
-    }
-
     if (within == false) {
       // trueからfalseに変わったら、収納動作を行う。
       if (prev_within == true) {
@@ -3058,43 +3109,6 @@ void R1MainNode::auto_collect_kfs_task(void)
     prev_within = within;
   }
 
-  constexpr double KFS_PUMP_ACTIVE_BLINK_PERIOD_S = 0.25;
-  bool front_kfs_pump_active = (kfs_front_pump_ref_ > 0.0);
-  bool rear_kfs_pump_active = (kfs_rear_pump_ref_ > 0.0);
-  double front_kfs_blink_period = front_kfs_pump_active ? KFS_PUMP_ACTIVE_BLINK_PERIOD_S : 0.0;
-  double rear_kfs_blink_period = rear_kfs_pump_active ? KFS_PUMP_ACTIVE_BLINK_PERIOD_S : 0.0;
-
-  if (front_kfs_assigned) {
-    if (front_kfs_within) {
-      // FKFS が担当範囲内に入ったら緑。ポンプ動作中は点滅。
-      set_fkfs_led_status(0, 50, 0, front_kfs_blink_period);
-    } else {
-      // FKFS が担当中だが範囲外なら赤。ポンプ動作中は点滅。
-      set_fkfs_led_status(50, 0, 0, front_kfs_blink_period);
-    }
-  } else {
-    if (front_kfs_pump_active) {
-      set_fkfs_led_status(50, 0, 0, front_kfs_blink_period);
-    } else {
-      set_fkfs_led_status(0, 0, 0, 0.0);
-    }
-  }
-
-  if (rear_kfs_assigned) {
-    if (rear_kfs_within) {
-      // RKFS が担当範囲内に入ったら緑。ポンプ動作中は点滅。
-      set_rkfs_led_status(0, 50, 0, rear_kfs_blink_period);
-    } else {
-      // RKFS が担当中だが範囲外なら赤。ポンプ動作中は点滅。
-      set_rkfs_led_status(50, 0, 0, rear_kfs_blink_period);
-    }
-  } else {
-    if (rear_kfs_pump_active) {
-      set_rkfs_led_status(50, 0, 0, rear_kfs_blink_period);
-    } else {
-      set_rkfs_led_status(0, 0, 0, 0.0);
-    }
-  }
 }
 
 void R1MainNode::manual_mode8_auto_collect_kfs(void)

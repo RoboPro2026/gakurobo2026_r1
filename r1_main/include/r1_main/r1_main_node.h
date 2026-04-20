@@ -454,6 +454,7 @@ public:
   void set_fkfs_led_status(uint8_t r, uint8_t g, uint8_t b, double blink_period_s = 0.0);
   void set_rkfs_led_status(uint8_t r, uint8_t g, uint8_t b, double blink_period_s = 0.0);
   void clear_led_status(void);
+  void update_kfs_led_status(void);
   void set_led_event(uint8_t r, uint8_t g, uint8_t b, double blink_period_s, double duration_sec);
   LedPattern resolve_base_led_pattern(void);
   LedColor resolve_led_output_color(const LedPattern & pattern, const rclcpp::Time & now) const;
