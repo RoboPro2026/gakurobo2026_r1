@@ -2130,8 +2130,6 @@ void R1MainNode::manual_mode3_make_spear_task(int n)
     // TODO: ゾーンによって向きを変える
     // spear_roll_pos_ref(SPEAR_ROLL_NORMAL_ANGLE);
     spear_roll_pos_ref(SPEAR_ROLL_INV_NORMAL_ANGLE);
-    step++;
-  } else if (step == 2) {
     if (n == 1) {
       spear_x_pos_ref(SPEAR_X_MAKE_SPEAR1_POS);
     } else if (n == 2) {
@@ -2141,10 +2139,7 @@ void R1MainNode::manual_mode3_make_spear_task(int n)
     } else if (n == 4) {
       spear_x_pos_ref(SPEAR_X_MAKE_SPEAR4_POS);
     }
-    spear_pitch1_pos_ref(SPEAR_PITCH1_VERTICAL_ANGLE);
-    spear_pitch2_pos_ref(SPEAR_PITCH2_VERTICAL_ANGLE);
-    step++;
-  } else if (step == 3) {
+
     if (n == 1) {
       spear1_pos_ref(SPEAR1_MAKE_SPEAR_START_POS);
     } else if (n == 2) {
@@ -2154,8 +2149,10 @@ void R1MainNode::manual_mode3_make_spear_task(int n)
     } else if (n == 4) {
       spear4_pos_ref(SPEAR4_MAKE_SPEAR_START_POS);
     }
+    spear_pitch1_pos_ref(SPEAR_PITCH1_VERTICAL_ANGLE);
+    spear_pitch2_pos_ref(SPEAR_PITCH2_VERTICAL_ANGLE);
     step++;
-  } else if (step == 4) {
+  } else if (step == 2) {
     // 押し込む
     if (n == 1) {
       spear1_speed_ref(SPEAR1_PUSH_VEL);
@@ -2167,7 +2164,7 @@ void R1MainNode::manual_mode3_make_spear_task(int n)
       spear4_speed_ref(SPEAR4_PUSH_VEL);
     }
     step++;
-  } else if (step == 5) {
+  } else if (step == 3) {
     // 現在位置で停止
     if (n == 1) {
       spear1_speed_mode_stop();
@@ -2179,7 +2176,7 @@ void R1MainNode::manual_mode3_make_spear_task(int n)
       spear4_speed_mode_stop();
     }
     step++;
-  } else if (step == 6) {
+  } else if (step == 4) {
     // 位置を戻す
     if (n == 1) {
       spear1_pos_ref(SPEAR1_NORMAL_POS);
@@ -2191,7 +2188,7 @@ void R1MainNode::manual_mode3_make_spear_task(int n)
       spear4_pos_ref(SPEAR4_NORMAL_POS);
     }
     step++;
-  } else if (step == 7) {
+  } else if (step == 5) {
     spear_roll_pos_ref(SPEAR_ROLL_VERTICAL_ANGLE);
     spear_y_pos_ref(SPEAR_Y_NORMAL_POS);
     RCLCPP_INFO(this->get_logger(), "make spear task completed");
