@@ -65,7 +65,8 @@ public:
   void aruco_marker_id_callback(const std_msgs::msg::Int32::SharedPtr msg)
   {
     int marker_id = msg->data;
-    std::string send_str = std::to_string(marker_id) + "\n";
+    // 改行文字は送信しない
+    std::string send_str = std::to_string(marker_id);
     std::vector<uint8_t> tx_buff(send_str.begin(), send_str.end());
     serial_->write_buff(tx_buff);
   }
