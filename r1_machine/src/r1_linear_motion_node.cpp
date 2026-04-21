@@ -346,7 +346,7 @@ public:
 
   void initialize_callback(const std_msgs::msg::Empty::SharedPtr)
   {
-    set_current_position_as(0.0, "Received initialize signal");
+    stop_and_hold_current_position("Received initialize signal. Holding current position.");
   }
 
   void set_pos_callback(const std_msgs::msg::Float64::SharedPtr msg)

@@ -347,7 +347,7 @@ private:
 
   void initialize_callback(const std_msgs::msg::Empty::SharedPtr)
   {
-    set_current_angle_as(0.0, "Received initialize signal");
+    stop_and_hold_current_angle("Received initialize signal. Holding current angle.");
   }
 
   void set_angle_callback(const std_msgs::msg::Float64::SharedPtr msg)
