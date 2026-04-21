@@ -2126,10 +2126,10 @@ void R1MainNode::manual_mode3_make_spear_task(int n)
   int & step = manual_mode3_make_spear_task_step_;
   RCLCPP_INFO(this->get_logger(), "manual_mode3_make_spear_task step: %d", step);
   if (step == 1) {
-    // rollを逆横向きにする
+    // rollを横向きにする
     // TODO: ゾーンによって向きを変える
-    // spear_roll_pos_ref(SPEAR_ROLL_NORMAL_ANGLE);
-    spear_roll_pos_ref(SPEAR_ROLL_INV_NORMAL_ANGLE);
+    spear_roll_pos_ref(SPEAR_ROLL_NORMAL_ANGLE);
+    // spear_roll_pos_ref(SPEAR_ROLL_INV_NORMAL_ANGLE);
     if (n == 1) {
       spear_x_pos_ref(SPEAR_X_MAKE_SPEAR1_POS);
     } else if (n == 2) {
