@@ -3208,9 +3208,7 @@ void R1MainNode::manual_mode9_auto_chassis(void)
     spear_roll_pos_ref(SPEAR_ROLL_VERTICAL_ANGLE);
     start_auto_chassis(ChassisAct::ACT0_START, std::vector<int>{}, std::vector<std::string>{});
   } else if (ps4_->is_pushed_circle()) {
-    set_mecanum_yaw(0.0);
-    set_odometry(-5.5, 0.5, 0.0);
-    set_initialpose(-5.5, 0.5, 0.0);
+    reset_position(true);
   } else if (ps4_->is_pushed_cross()) {
     std::vector<int> forest_order;
     std::vector<std::string> collect_kfs_type;
@@ -3332,10 +3330,10 @@ void R1MainNode::reset_position(bool is_start_zone)
   double start_yaw = 0.0;
   if (zone_ == "blue") {
     start_x = -5.5;
-    start_yaw = 0.0;
+    start_yaw = -M_PI / 2.0;
   } else {
     start_x = 5.5;
-    start_yaw = 0.0;
+    start_yaw = -M_PI / 2.0;
   }
   if (!is_start_zone) {
     // TODO: start zone 以外の初期位置が確定したらここで切り替える。
