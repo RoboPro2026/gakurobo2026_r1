@@ -9,7 +9,7 @@ from typing import Optional
 import rclpy
 from ament_index_python.packages import get_package_share_directory
 from PyQt6.QtCore import QTimer, Qt
-from PyQt6.QtGui import QPixmap
+from PyQt6.QtGui import QPixmap, QTransform
 from PyQt6.QtWidgets import QApplication, QLabel, QMainWindow, QVBoxLayout, QWidget
 from rclpy.node import Node
 from std_msgs.msg import Int32
@@ -25,10 +25,12 @@ class ArucoDisplayWindow(QMainWindow):
         marker_id: int,
         marker_image_path: Path,
         window_title: str,
+        image_rotation_degrees: int,
     ) -> None:
         super().__init__()
         self.current_marker_id = marker_id
         self.current_marker_image_path = marker_image_path
+        self.image_rotation_degrees = image_rotation_degrees % 360
         self._base_pixmap: Optional[QPixmap] = None
 
         self.setWindowTitle(window_title)
@@ -64,7 +66,12 @@ class ArucoDisplayWindow(QMainWindow):
     def _refresh_pixmap(self) -> None:
         if self._base_pixmap is None:
             return
-        scaled = self._base_pixmap.scaled(
+        transform = QTransform().rotate(self.image_rotation_degrees)
+        rotated_pixmap = self._base_pixmap.transformed(
+            transform,
+            Qt.TransformationMode.SmoothTransformation,
+        )
+        scaled = rotated_pixmap.scaled(
             self.marker_label.size(),
             Qt.AspectRatioMode.KeepAspectRatio,
             Qt.TransformationMode.SmoothTransformation,
@@ -81,6 +88,7 @@ class ArucoDisplayNode(Node):
         self.declare_parameter("initial_marker_id", 0)
         self.declare_parameter("fullscreen", False)
         self.declare_parameter("screen_name", "")
+        self.declare_parameter("image_rotation_degrees", 0)
         self.declare_parameter("spin_rate_hz", 100.0)
         default_marker_dir = str(
             Path(get_package_share_directory("r1_ui")) / "aruco_marker"
@@ -94,6 +102,9 @@ class ArucoDisplayNode(Node):
         )
         self.fullscreen = self.get_parameter("fullscreen").get_parameter_value().bool_value
         self.screen_name = self.get_parameter("screen_name").get_parameter_value().string_value
+        self.image_rotation_degrees = (
+            self.get_parameter("image_rotation_degrees").get_parameter_value().integer_value
+        )
         self.spin_rate_hz = (
             self.get_parameter("spin_rate_hz").get_parameter_value().double_value
         )
@@ -110,6 +121,7 @@ class ArucoDisplayNode(Node):
             marker_id=self.current_marker_id,
             marker_image_path=initial_marker_path,
             window_title=self.window_title,
+            image_rotation_degrees=self.image_rotation_degrees,
         )
         self._move_window_to_screen()
         if self.fullscreen:
@@ -126,6 +138,7 @@ class ArucoDisplayNode(Node):
 
         self.get_logger().info(
             f"Displaying marker image {initial_marker_path.name} "
+            f"with image_rotation_degrees={self.image_rotation_degrees % 360} "
             f"and subscribing to '{self.topic_name}' with spin_rate_hz={self.spin_rate_hz}."
         )
 

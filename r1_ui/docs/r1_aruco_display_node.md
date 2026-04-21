@@ -22,6 +22,7 @@ GUI ライブラリは `gakurobo2026_r1` 内の既存 GUI に合わせて `PyQt6
 | `marker_image_dir` | string | `share/r1_ui/aruco_marker` | `marker_<marker_id>.png` を探すディレクトリです。 |
 | `fullscreen` | bool | `false` | `true` のとき全画面表示します。 |
 | `screen_name` | string | `""` | 表示先画面の名前です。空文字のときはQtのデフォルト画面を使います。 |
+| `image_rotation_degrees` | integer | `0` | 表示画像の回転角度 [deg] です。モニターを上下逆に取り付けた場合は `180` を指定します。 |
 | `spin_rate_hz` | double | `100.0` | ROS コールバック処理のために `rclpy.spin_once()` を回す周期 [Hz] です。 |
 
 ## 動作概要
@@ -120,6 +121,16 @@ source ~/ros2_ws/install/setup.bash
 ros2 run r1_ui r1_aruco_display_node --ros-args \
   -p fullscreen:=true \
   -p screen_name:=HDMI-1
+```
+
+画像を180度回転して表示:
+
+```bash
+source ~/ros2_ws/install/setup.bash
+ros2 run r1_ui r1_aruco_display_node --ros-args \
+  -p fullscreen:=true \
+  -p screen_name:=HDMI-1 \
+  -p image_rotation_degrees:=180
 ```
 
 初期 ID や画像ディレクトリを変える例:
