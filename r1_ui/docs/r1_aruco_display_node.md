@@ -146,6 +146,18 @@ ros2 topic pub --once /aruco_marker_id std_msgs/msg/Int32 "{data: 12}"
 ros2 topic pub /aruco_marker_id std_msgs/msg/Int32 "{data: 3}" -r 1
 ```
 
+# ssh経由でGUIを起動したいときは
+接続先でターミナルを起動しておけば、次のおまじないを入力すれば行ける
+```bash
+source ~/ros2_ws/.venv/bin/activate
+source ~/ros2_ws/install/setup.bash
+
+export XDG_RUNTIME_DIR=/run/user/$(id -u)
+export WAYLAND_DISPLAY=wayland-0
+export QT_QPA_PLATFORM=wayland
+export DBUS_SESSION_BUS_ADDRESS=unix:path=$XDG_RUNTIME_DIR/bus
+```
+
 ## 注意点
 
 - 対応する `marker_<marker_id>.png` がない場合、表示は更新されません。
