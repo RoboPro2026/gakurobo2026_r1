@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 
 from pathlib import Path
+import os
 import signal
 import sys
 from typing import Optional
@@ -174,6 +175,11 @@ class ArucoDisplayNode(Node):
 
 def main(args: list[str] | None = None) -> None:
     rclpy.init(args=args)
+
+    # Wayland セッションでは Qt が xcb を選ぶと libxcb-cursor0 不足で落ちるため、
+    # 明示指定がない場合だけ Wayland backend を優先する。
+    if "QT_QPA_PLATFORM" not in os.environ and "WAYLAND_DISPLAY" in os.environ:
+        os.environ["QT_QPA_PLATFORM"] = "wayland"
 
     app = QApplication.instance() or QApplication(sys.argv[:1])
     node = ArucoDisplayNode()

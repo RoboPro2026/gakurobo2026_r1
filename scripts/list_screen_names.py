@@ -1,11 +1,17 @@
 #!/usr/bin/env python3
 
+import os
 import sys
 
 from PyQt6.QtWidgets import QApplication
 
 
 def main() -> int:
+    # Wayland セッションでは Qt が xcb を選ぶと libxcb-cursor0 不足で落ちるため、
+    # 明示指定がない場合だけ Wayland backend を優先する。
+    if "QT_QPA_PLATFORM" not in os.environ and "WAYLAND_DISPLAY" in os.environ:
+        os.environ["QT_QPA_PLATFORM"] = "wayland"
+
     app = QApplication.instance() or QApplication(sys.argv[:1])
     screens = app.screens()
     primary_screen = app.primaryScreen()
