@@ -2049,7 +2049,8 @@ void R1MainNode::manual_mode2_collect_pole_task(void)
     spear_y_pos_ref(SPEAR_Y_NORMAL_POS);
     step++;
   } else if (step == 5) {
-    spear_roll_pos_ref(SPEAR_ROLL_NORMAL_ANGLE);
+    // TODO: ここはゾーンによって回転方向を変えたほうがいいかも
+    spear_roll_pos_ref(SPEAR_ROLL_INV_NORMAL_ANGLE);
     step++;
   } else if (step == 6) {
     spear_d1_valve(true);
@@ -2128,8 +2129,8 @@ void R1MainNode::manual_mode3_make_spear_task(int n)
   if (step == 1) {
     // rollを横向きにする
     // TODO: ゾーンによって向きを変える
-    spear_roll_pos_ref(SPEAR_ROLL_NORMAL_ANGLE);
-    // spear_roll_pos_ref(SPEAR_ROLL_INV_NORMAL_ANGLE);
+    // spear_roll_pos_ref(SPEAR_ROLL_NORMAL_ANGLE);
+    spear_roll_pos_ref(SPEAR_ROLL_INV_NORMAL_ANGLE);
     if (n == 1) {
       spear_x_pos_ref(SPEAR_X_MAKE_SPEAR1_POS);
     } else if (n == 2) {
