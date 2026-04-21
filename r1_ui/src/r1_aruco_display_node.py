@@ -75,6 +75,7 @@ class ArucoDisplayNode(Node):
         self.declare_parameter("window_title", "R1 ArUco Display")
         self.declare_parameter("initial_marker_id", 0)
         self.declare_parameter("fullscreen", False)
+        self.declare_parameter("screen_name", "")
         self.declare_parameter("spin_rate_hz", 100.0)
         default_marker_dir = str(
             Path(get_package_share_directory("r1_ui")) / "aruco_marker"
@@ -87,6 +88,7 @@ class ArucoDisplayNode(Node):
             self.get_parameter("initial_marker_id").get_parameter_value().integer_value
         )
         self.fullscreen = self.get_parameter("fullscreen").get_parameter_value().bool_value
+        self.screen_name = self.get_parameter("screen_name").get_parameter_value().string_value
         self.spin_rate_hz = (
             self.get_parameter("spin_rate_hz").get_parameter_value().double_value
         )
@@ -104,6 +106,7 @@ class ArucoDisplayNode(Node):
             marker_image_path=initial_marker_path,
             window_title=self.window_title,
         )
+        self._move_window_to_screen()
         if self.fullscreen:
             self.window.showFullScreen()
         else:
@@ -119,6 +122,29 @@ class ArucoDisplayNode(Node):
         self.get_logger().info(
             f"Displaying marker image {initial_marker_path.name} "
             f"and subscribing to '{self.topic_name}' with spin_rate_hz={self.spin_rate_hz}."
+        )
+
+    def _move_window_to_screen(self) -> None:
+        if self.screen_name == "":
+            return
+
+        screens = QApplication.screens()
+        for screen in screens:
+            if screen.name() == self.screen_name:
+                self.window.setGeometry(screen.geometry())
+                self.window.createWinId()
+                window_handle = self.window.windowHandle()
+                if window_handle is not None:
+                    window_handle.setScreen(screen)
+                self.get_logger().info(
+                    f"Using screen '{screen.name()}' with geometry {screen.geometry()}."
+                )
+                return
+
+        available_screen_names = ", ".join(screen.name() for screen in screens)
+        self.get_logger().warning(
+            f"screen_name '{self.screen_name}' was not found. "
+            f"Available screens: {available_screen_names}"
         )
 
     def _marker_id_callback(self, msg: Int32) -> None:

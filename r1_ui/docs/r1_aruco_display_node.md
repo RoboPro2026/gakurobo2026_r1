@@ -21,6 +21,7 @@ GUI ライブラリは `gakurobo2026_r1` 内の既存 GUI に合わせて `PyQt6
 | `initial_marker_id` | integer | `0` | 起動直後に表示するマーカ ID です。 |
 | `marker_image_dir` | string | `share/r1_ui/aruco_marker` | `marker_<marker_id>.png` を探すディレクトリです。 |
 | `fullscreen` | bool | `false` | `true` のとき全画面表示します。 |
+| `screen_name` | string | `""` | 表示先画面の名前です。空文字のときはQtのデフォルト画面を使います。 |
 | `spin_rate_hz` | double | `100.0` | ROS コールバック処理のために `rclpy.spin_once()` を回す周期 [Hz] です。 |
 
 ## 動作概要
@@ -74,6 +75,22 @@ source ~/ros2_ws/install/setup.bash
 ros2 run r1_ui r1_aruco_display_node --ros-args -p fullscreen:=true
 ```
 
+画面名を確認:
+
+```bash
+source ~/ros2_ws/.venv/bin/activate
+~/ros2_ws/src/gakurobo2026_r1/scripts/list_screen_names.py
+```
+
+特定画面に全画面表示:
+
+```bash
+source ~/ros2_ws/install/setup.bash
+ros2 run r1_ui r1_aruco_display_node --ros-args \
+  -p fullscreen:=true \
+  -p screen_name:=HDMI-1
+```
+
 初期 ID や画像ディレクトリを変える例:
 
 ```bash
@@ -101,6 +118,7 @@ ros2 topic pub /aruco_marker_id std_msgs/msg/Int32 "{data: 3}" -r 1
 ## 注意点
 
 - 対応する `marker_<marker_id>.png` がない場合、表示は更新されません。
+- `screen_name` は `scripts/list_screen_names.py` に表示される `name=...` の値を指定してください。存在しない名前を指定した場合は warning を出し、Qt のデフォルト画面で表示します。
 - このノードは `std_msgs/msg/Int32` を入力としているため、将来「画像種類」と「マーカ ID」を別管理したくなったら、専用 message に拡張したほうが扱いやすくなります。
 - 実行環境に `PyQt6` がないと GUI は起動できません。
 - `.venv` に依存を追加したあとで `ros2 run r1_ui r1_aruco_display_node` が失敗する場合は、`source ~/ros2_ws/.venv/bin/activate` を行ってから再実行してください。
