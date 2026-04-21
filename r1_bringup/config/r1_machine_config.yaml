@@ -803,11 +803,18 @@ r1_aruco_display_node:
   ros__parameters:
     spin_rate_hz: 25.0
     marker_image_dir: "src/gakurobo2026_r1/data/aruco_marker"
+    fullscreen: true
+    screen_name: "DP-1"
+    initial_marker_id: 0
+
+r1_aruco_serial_node:
+  ros__parameters:
+    port: "/dev/serial/by-path/pci-0000:00:14.0-usb-0:1.2.1:1.0-port0"
 
 # IMU
 bno086_node:
   ros__parameters:
-    port: "/dev/serial/by-id/usb-FTDI_FT231X_USB_UART_D30FJEIM-if00-port0"
+    port: "/dev/serial/by-path/pci-0000:00:14.0-usb-0:1.2.4:1.0-port0"
 
 # 足回り メカナム
 sabacan_robomasv2_node_id1:

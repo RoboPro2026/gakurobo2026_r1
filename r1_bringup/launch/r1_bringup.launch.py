@@ -507,7 +507,16 @@ def generate_launch_description():
         executable="r1_aruco_display_node",
         name="r1_aruco_display_node",
         parameters=[param_file],
-        arguments=["--ros-args", "--log-level", "info"],
+        arguments=["--ros-args", "--log-level", "warn"],
+        condition=IfCondition(use_aruco_display),
+    )
+
+    r1_aruco_serial_node = Node(
+        package="r1_ui",
+        executable="r1_aruco_serial_node",
+        name="r1_aruco_serial_node",
+        parameters=[param_file],
+        arguments=["--ros-args", "--log-level", "warn"],
         condition=IfCondition(use_aruco_display),
     )
 
@@ -536,6 +545,7 @@ def generate_launch_description():
         # r1_swerve_drive_node,
         ps4_node,
         r1_aruco_display_node,
+        r1_aruco_serial_node,
         r1_kfs_fx_node,
         r1_kfs_fz_node,
         r1_kfs_fyaw_node,

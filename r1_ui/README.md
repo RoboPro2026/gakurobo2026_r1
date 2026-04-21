@@ -20,3 +20,6 @@ Python 依存は [`../requirements.txt`](../requirements.txt) にまとめてい
 
 `r1_aruco_display_node` は Python スクリプトとして install しています。  
 `.venv` の `PyQt6` を使う場合は、実行時にその環境を有効化してください。
+
+`r1_aruco_display_node` の表示先画面名は、リポジトリ直下の `scripts/list_screen_names.py` で確認できます。  
+GUI 表示には `DISPLAY` または `WAYLAND_DISPLAY` が必要なため、通常の SSH シェルからはそのまま起動できません。

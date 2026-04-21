@@ -23,6 +23,7 @@
 - `use_aruco_display`
   - `false` で `r1_aruco_display_node` を起動しない
   - `true` で `r1_aruco_display_node` を起動する
+  - GUI 表示には `DISPLAY` または `WAYLAND_DISPLAY` が必要なため、通常の SSH シェルからはそのまま起動できません
 
 ## 主に起動するノード
 
@@ -90,6 +91,8 @@ ros2 launch r1_bringup r1_bringup.launch.py use_sim:=true
 
 - ArUco 表示ノードも同時に起動する
   - `r1_ui` の `r1_aruco_display_node` を追加で立ち上げたいときに使います。
+  - `fullscreen` や `screen_name` などの表示設定は parameter file 側の `r1_aruco_display_node` 設定を使います。
+  - 表示先画面名は `~/ros2_ws/src/gakurobo2026_r1/scripts/list_screen_names.py` で確認できます。
 
 ```bash
 cd ~/ros2_ws

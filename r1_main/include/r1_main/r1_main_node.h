@@ -200,6 +200,8 @@ public:
   nav_msgs::msg::Odometry odometry_;
   // chassis_act
   ChassisAct chassis_act_status_ = ChassisAct::NONE;
+  // arucoマーカ
+  rclcpp::Publisher<std_msgs::msg::Int32>::SharedPtr aruco_marker_id_publisher_;
 
   // zone
   std::string zone_;
@@ -478,6 +480,8 @@ public:
   // robot_move
   void publish_robot_move(
     ChassisAct act, std::vector<int> forest_order, std::vector<std::string> kfs_mechanism_type);
+  // arucoマーカ
+  void publish_aruco_marker_id(int id);
   bool is_localization_ready(void);
   void request_auto_robot_move(
     ChassisAct act, std::vector<int> forest_order, std::vector<std::string> kfs_mechanism_type);
@@ -690,8 +694,7 @@ public:
   int manual_mode5_ryaw_step_ = DEFAULT_STEP;
   int manual_mode5_rear_pump_step_ = DEFAULT_STEP;
   bool manual_mode5_r1_long_press_triger_ = false;
-  int manual_mode6_front_expand_step_ = DEFAULT_STEP;
-  int manual_mode6_rear_expand_step_ = DEFAULT_STEP;
+  int manual_mode6_aruco_marker_step_ = DEFAULT_STEP;
   int manual_mode6_r2_lift_step_ = DEFAULT_STEP;
   int manual_mode7_spear_attack_task_step_ = DEFAULT_STEP;
   int manual_mode7_spear_throw_away_task_step_ = DEFAULT_STEP;

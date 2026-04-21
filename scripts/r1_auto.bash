@@ -5,4 +5,4 @@ source .venv/bin/activate
 # その後にinstall/setup.bashを実行
 source install/setup.bash
 echo "========== R1 bringup start =========="
-ros2 launch r1_bringup r1_bringup.launch.py use_sim:=false use_lidar:=true robot_control_mode:=auto
+ros2 launch r1_bringup r1_bringup.launch.py use_sim:=false use_lidar:=true robot_control_mode:=auto use_aruco_display:=true

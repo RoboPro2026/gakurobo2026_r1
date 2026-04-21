@@ -547,6 +547,9 @@ R1MainNode::R1MainNode() : Node("r1_main_node")
     "/r1_machine_initialize_done", 10,
     std::bind(&R1MainNode::r1_machine_initialize_done_callback, this, std::placeholders::_1));
 
+  // arucoマーカ
+  aruco_marker_id_publisher_ = this->create_publisher<std_msgs::msg::Int32>("/aruco_marker_id", 10);
+
   // tf関連
   tf_buffer_ = std::make_shared<tf2_ros::Buffer>(this->get_clock());
   tf_listener_ = std::make_shared<tf2_ros::TransformListener>(*tf_buffer_);
@@ -1386,6 +1389,14 @@ void R1MainNode::publish_robot_move(
   current_robot_move_ = msg;
 }
 
+void R1MainNode::publish_aruco_marker_id(int id)
+{
+  std_msgs::msg::Int32 msg;
+  msg.data = id;
+  aruco_marker_id_publisher_->publish(msg);
+  RCLCPP_INFO(this->get_logger(), "publish aruco marker id: %d", id);
+}
+
 bool R1MainNode::is_localization_ready(void)
 {
   if (!tf_buffer_->_frameExists("map") || !tf_buffer_->_frameExists("base_link")) {
@@ -1891,6 +1902,8 @@ void R1MainNode::kfs_init_pos(void)
   spear_roll_pos_ref(SPEAR_ROLL_VERTICAL_ANGLE);
   spear1_pos_ref(SPEAR1_KFS_COLLECT_POS);
   spear2_pos_ref(SPEAR2_KFS_COLLECT_POS);
+  // arucoマーカをもとに戻す
+  publish_aruco_marker_id(0);
   // 一定時間経過後にKFS回収機構を動かす
   if (kfs_init_pos_roll_timer_) {
     kfs_init_pos_roll_timer_->cancel();
@@ -2154,47 +2167,52 @@ void R1MainNode::manual_mode3_make_spear_task(int n)
     spear_pitch2_pos_ref(SPEAR_PITCH2_VERTICAL_ANGLE);
     step++;
   } else if (step == 2) {
-    // 押し込む
-    if (n == 1) {
-      spear1_speed_ref(SPEAR1_PUSH_VEL);
-    } else if (n == 2) {
-      spear2_speed_ref(SPEAR2_PUSH_VEL);
-    } else if (n == 3) {
-      spear3_speed_ref(SPEAR3_PUSH_VEL);
-    } else if (n == 4) {
-      spear4_speed_ref(SPEAR4_PUSH_VEL);
-    }
-    step++;
-  } else if (step == 3) {
-    // 現在位置で停止
-    if (n == 1) {
-      spear1_speed_mode_stop();
-    } else if (n == 2) {
-      spear2_speed_mode_stop();
-    } else if (n == 3) {
-      spear3_speed_mode_stop();
-    } else if (n == 4) {
-      spear4_speed_mode_stop();
-    }
-    step++;
-  } else if (step == 4) {
-    // 位置を戻す
-    if (n == 1) {
-      spear1_pos_ref(SPEAR1_NORMAL_POS);
-    } else if (n == 2) {
-      spear2_pos_ref(SPEAR2_NORMAL_POS);
-    } else if (n == 3) {
-      spear3_pos_ref(SPEAR3_NORMAL_POS);
-    } else if (n == 4) {
-      spear4_pos_ref(SPEAR4_NORMAL_POS);
-    }
-    step++;
-  } else if (step == 5) {
-    spear_roll_pos_ref(SPEAR_ROLL_VERTICAL_ANGLE);
-    spear_y_pos_ref(SPEAR_Y_NORMAL_POS);
+    publish_aruco_marker_id(1);
     RCLCPP_INFO(this->get_logger(), "make spear task completed");
     step = 1;
   }
+  // } else if (step == 2) {
+  //   // 押し込む
+  //   if (n == 1) {
+  //     spear1_speed_ref(SPEAR1_PUSH_VEL);
+  //   } else if (n == 2) {
+  //     spear2_speed_ref(SPEAR2_PUSH_VEL);
+  //   } else if (n == 3) {
+  //     spear3_speed_ref(SPEAR3_PUSH_VEL);
+  //   } else if (n == 4) {
+  //     spear4_speed_ref(SPEAR4_PUSH_VEL);
+  //   }
+  //   step++;
+  // } else if (step == 3) {
+  //   // 現在位置で停止
+  //   if (n == 1) {
+  //     spear1_speed_mode_stop();
+  //   } else if (n == 2) {
+  //     spear2_speed_mode_stop();
+  //   } else if (n == 3) {
+  //     spear3_speed_mode_stop();
+  //   } else if (n == 4) {
+  //     spear4_speed_mode_stop();
+  //   }
+  //   step++;
+  // } else if (step == 4) {
+  //   // 位置を戻す
+  //   if (n == 1) {
+  //     spear1_pos_ref(SPEAR1_NORMAL_POS);
+  //   } else if (n == 2) {
+  //     spear2_pos_ref(SPEAR2_NORMAL_POS);
+  //   } else if (n == 3) {
+  //     spear3_pos_ref(SPEAR3_NORMAL_POS);
+  //   } else if (n == 4) {
+  //     spear4_pos_ref(SPEAR4_NORMAL_POS);
+  //   }
+  //   step++;
+  // } else if (step == 5) {
+  //   spear_roll_pos_ref(SPEAR_ROLL_VERTICAL_ANGLE);
+  //   spear_y_pos_ref(SPEAR_Y_NORMAL_POS);
+  //   RCLCPP_INFO(this->get_logger(), "make spear task completed");
+  //   step = 1;
+  // }
 }
 
 void R1MainNode::manual_mode3_spear(void)
@@ -2661,6 +2679,7 @@ void R1MainNode::manual_mode5_rkfs(void)
 
 void R1MainNode::manual_mode6_r2_lift(void)
 {
+  int & aruco_step = manual_mode6_aruco_marker_step_;
   if (ps4_->is_pushed_up()) {
     r2_flift_pos_ref(R2_FLIFT_UP_POS);
     r2_rlift_pos_ref(R2_RLIFT_UP_POS);
@@ -2714,6 +2733,13 @@ void R1MainNode::manual_mode6_r2_lift(void)
   }
 
   if (ps4_->is_pushed_circle()) {
+    if (aruco_step == 1) {
+      publish_aruco_marker_id(2);
+      aruco_step++;
+    } else if (aruco_step == 2) {
+      publish_aruco_marker_id(0);
+      aruco_step = 1;
+    }
   }
 
   if (ps4_->is_pushed_cross()) {
@@ -3305,8 +3331,7 @@ void R1MainNode::reset_step(void)
   manual_mode5_ryaw_step_ = DEFAULT_STEP;
   manual_mode5_rear_pump_step_ = DEFAULT_STEP;
   manual_mode5_r1_long_press_triger_ = false;
-  manual_mode6_front_expand_step_ = DEFAULT_STEP;
-  manual_mode6_rear_expand_step_ = DEFAULT_STEP;
+  manual_mode6_aruco_marker_step_ = DEFAULT_STEP;
   manual_mode6_r2_lift_step_ = DEFAULT_STEP;
   manual_mode7_spear_attack_task_step_ = DEFAULT_STEP;
   manual_mode7_spear_throw_away_task_step_ = DEFAULT_STEP;
@@ -3357,6 +3382,8 @@ void R1MainNode::reset_robot(bool is_start_zone)
   state_machine_->set_next_state(initial_state_);
   state_machine_->print_state(initial_state_, "Reset to initial state: ");
   set_led_event(0, 0, 50, 0.2, 1.0);
+  // arucoマーカをリセットする
+  publish_aruco_marker_id(0);
 }
 
 void R1MainNode::manual_task(void)

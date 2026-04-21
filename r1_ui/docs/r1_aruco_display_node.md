@@ -49,6 +49,9 @@ python -m pip install -r ~/ros2_ws/src/gakurobo2026_r1/requirements.txt
 `r1_aruco_display_node` は Python スクリプトとして install しています。  
 `.venv` の `PyQt6` を使う場合は、実行時に `.venv` を有効化してください。
 
+画面名確認用の `scripts/list_screen_names.py` も `PyQt6` を使います。  
+`r1_aruco_display_node` と同じ Qt の画面情報を確認するため、実行時は `.venv` を有効化してください。
+
 ## ビルド
 
 ```bash
@@ -57,6 +60,34 @@ source ~/ros2_ws/.venv/bin/activate
 cd ~/ros2_ws
 colcon build --packages-select r1_ui
 source install/setup.bash
+```
+
+## 表示環境
+
+このノードは GUI を表示するため、実行環境に `DISPLAY` または `WAYLAND_DISPLAY` が必要です。  
+ロボット PC に SSH で入っただけのシェルでは、通常これらが設定されていないため起動できません。
+
+まず以下で表示環境を確認してください。
+
+```bash
+echo $DISPLAY
+echo $WAYLAND_DISPLAY
+echo $XDG_SESSION_TYPE
+```
+
+空の場合は、ログイン済みのデスクトップ端末から起動してください。  
+Wayland セッションでは、`QT_QPA_PLATFORM` が未指定の場合にノード側で `wayland` backend を優先します。
+
+X11 環境で以下のような `xcb` 関連エラーが出る場合は、OS パッケージが不足しています。
+
+```text
+Could not load the Qt platform plugin "xcb"
+```
+
+Ubuntu 22.04 では以下を入れてください。
+
+```bash
+sudo apt install libxcb-cursor0
 ```
 
 ## 起動例
@@ -119,6 +150,7 @@ ros2 topic pub /aruco_marker_id std_msgs/msg/Int32 "{data: 3}" -r 1
 
 - 対応する `marker_<marker_id>.png` がない場合、表示は更新されません。
 - `screen_name` は `scripts/list_screen_names.py` に表示される `name=...` の値を指定してください。存在しない名前を指定した場合は warning を出し、Qt のデフォルト画面で表示します。
+- SSH から直接起動する場合でも、ロボット PC 側の GUI セッションへ接続できる `DISPLAY` または `WAYLAND_DISPLAY` が必要です。
 - このノードは `std_msgs/msg/Int32` を入力としているため、将来「画像種類」と「マーカ ID」を別管理したくなったら、専用 message に拡張したほうが扱いやすくなります。
 - 実行環境に `PyQt6` がないと GUI は起動できません。
 - `.venv` に依存を追加したあとで `ros2 run r1_ui r1_aruco_display_node` が失敗する場合は、`source ~/ros2_ws/.venv/bin/activate` を行ってから再実行してください。
