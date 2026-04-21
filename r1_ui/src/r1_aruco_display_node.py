@@ -15,6 +15,10 @@ from rclpy.node import Node
 from std_msgs.msg import Int32
 
 
+def has_display_environment() -> bool:
+    return "DISPLAY" in os.environ or "WAYLAND_DISPLAY" in os.environ
+
+
 class ArucoDisplayWindow(QMainWindow):
     def __init__(
         self,
@@ -133,7 +137,7 @@ class ArucoDisplayNode(Node):
         for screen in screens:
             if screen.name() == self.screen_name:
                 self.window.setGeometry(screen.geometry())
-                self.window.createWinId()
+                self.window.winId()
                 window_handle = self.window.windowHandle()
                 if window_handle is not None:
                     window_handle.setScreen(screen)
@@ -175,6 +179,14 @@ class ArucoDisplayNode(Node):
 
 def main(args: list[str] | None = None) -> None:
     rclpy.init(args=args)
+
+    if not has_display_environment():
+        print("No display server environment found.", file=sys.stderr)
+        print("Run this node from a logged-in desktop terminal.", file=sys.stderr)
+        print("Expected DISPLAY or WAYLAND_DISPLAY to be set.", file=sys.stderr)
+        if rclpy.ok():
+            rclpy.shutdown()
+        raise SystemExit(1)
 
     # Wayland セッションでは Qt が xcb を選ぶと libxcb-cursor0 不足で落ちるため、
     # 明示指定がない場合だけ Wayland backend を優先する。
