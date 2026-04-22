@@ -11,6 +11,7 @@
 
 #include "r1_main/r1_main_node.h"
 
+#include <algorithm>
 #include <cctype>
 #include <chrono>
 #include <optional>
@@ -568,6 +569,7 @@ R1MainNode::R1MainNode() : Node("r1_main_node")
   declare_and_get_parameter("ps4_connection_timeout", ps4_connection_timeout_, 0.3);
   declare_and_get_parameter("activate_lidar_on_ps", activate_lidar_on_ps_, true);
   declare_and_get_parameter("share_long_press_sec", SHARE_LONG_PRESS_SEC, 1.0);
+  declare_and_get_parameter("initialpose_tf_log_delay_sec", initialpose_tf_log_delay_sec_, 1.0);
   declare_and_get_parameter("chassis_make_spear_velocity", CHASSIS_MAKE_SPEAR_VELOCITY);
   declare_and_get_parameter("chassis_make_spear_omega", CHASSIS_MAKE_SPEAR_OMEGA);
   declare_and_get_parameter("chassis_max_velocity", CHASSIS_MAX_VELOCITY);
@@ -1357,11 +1359,58 @@ void R1MainNode::set_initialpose(double x, double y, double yaw, double delay_se
       msg.pose.pose.orientation.w = q.w();
       initialpose_publisher_->publish(msg);
       RCLCPP_INFO(this->get_logger(), "publish initialpose x: %f, y: %f, yaw: %f", x, y, yaw);
+      schedule_initialpose_tf_log();
       // タイマーは1回だけ実行するので、初期化する
       if (initialpose_publish_timer_) {
         initialpose_publish_timer_->cancel();
       }
     });
+}
+
+void R1MainNode::schedule_initialpose_tf_log(void)
+{
+  if (initialpose_tf_log_timer_) {
+    initialpose_tf_log_timer_->cancel();
+  }
+
+  const double delay_sec = std::max(0.0, initialpose_tf_log_delay_sec_);
+  initialpose_tf_log_timer_ =
+    this->create_wall_timer(std::chrono::duration<double>(delay_sec), [this]() {
+      log_initialpose_tf_once();
+      if (initialpose_tf_log_timer_) {
+        initialpose_tf_log_timer_->cancel();
+      }
+    });
+}
+
+void R1MainNode::log_initialpose_tf_once(void)
+{
+  RCLCPP_INFO(
+    this->get_logger(), "Logging TF %.3f sec after initialpose", initialpose_tf_log_delay_sec_);
+  log_transform_once("map", "odom");
+  log_transform_once("map", "base_link");
+}
+
+void R1MainNode::log_transform_once(
+  const std::string & target_frame, const std::string & source_frame)
+{
+  try {
+    const auto transform =
+      tf_buffer_->lookupTransform(target_frame, source_frame, tf2::TimePointZero);
+    const auto & translation = transform.transform.translation;
+    const double yaw = tf2::getYaw(transform.transform.rotation);
+    constexpr double rad_to_deg = 180.0 / 3.14159265358979323846;
+    RCLCPP_INFO(
+      this->get_logger(),
+      "Current TF %s->%s: stamp=%d.%09u, x=%.3f, y=%.3f, z=%.3f, yaw=%.3f rad (%.2f deg)",
+      target_frame.c_str(), source_frame.c_str(), transform.header.stamp.sec,
+      transform.header.stamp.nanosec, translation.x, translation.y, translation.z, yaw,
+      yaw * rad_to_deg);
+  } catch (tf2::TransformException & ex) {
+    RCLCPP_WARN(
+      this->get_logger(), "Could not log TF %s->%s after initialpose: %s", target_frame.c_str(),
+      source_frame.c_str(), ex.what());
+  }
 }
 
 void R1MainNode::publish_chassis_act_ref(ChassisAct ref)

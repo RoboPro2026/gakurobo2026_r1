@@ -553,6 +553,7 @@ bringup 起動時は [`r1_bringup.launch.py`](../../r1_bringup/launch/r1_bringup
 - `register_velocity_axis()` は `MotorRef` を `control_type = "VELOCITY"` で publish します。
 - `publish_*` helper は publish と同時に内部の ref 値も更新します。
 - `set_initialpose()` は既定で 0.2 秒遅延してから `/initialpose` を 1 回だけ publish します。
+- `/initialpose` publish 後、`initialpose_tf_log_delay_sec` 秒待ってから `map->odom` と `map->base_link` の現在 TF を 1 回だけログします。既定値は `1.0` 秒です。
 - `ps4_->is_connected() == false` の間は、`auto_chassis_status_` や KFS 自動回収状態に関係なく危険側のアクチュエータを停止します。
 
 ## Launch

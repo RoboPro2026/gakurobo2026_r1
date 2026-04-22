@@ -184,6 +184,7 @@ public:
     initialpose_publisher_;
   // initialposeをPublish時に、遅延させる用のtimer
   rclcpp::TimerBase::SharedPtr initialpose_publish_timer_;
+  rclcpp::TimerBase::SharedPtr initialpose_tf_log_timer_;
   // chassis_actのPublisher
   rclcpp::Publisher<std_msgs::msg::Int32>::SharedPtr chassis_act_ref_publisher_;
   // chassis_actのSubscription
@@ -198,6 +199,7 @@ public:
   rclcpp::TimerBase::SharedPtr timer_publisher_;
   rclcpp::node_interfaces::OnSetParametersCallbackHandle::SharedPtr parameter_callback_handle_;
   double timer_rate_ = 100.0;
+  double initialpose_tf_log_delay_sec_ = 1.0;
   // tf関連
   std::shared_ptr<tf2_ros::Buffer> tf_buffer_;
   std::shared_ptr<tf2_ros::TransformListener> tf_listener_;
@@ -489,6 +491,9 @@ public:
   void odometry_callback(const nav_msgs::msg::Odometry::SharedPtr msg);
   void set_odometry(double x, double y, double yaw);
   void set_initialpose(double x, double y, double yaw, double delay_sec = 0.2);
+  void schedule_initialpose_tf_log(void);
+  void log_initialpose_tf_once(void);
+  void log_transform_once(const std::string & target_frame, const std::string & source_frame);
   // chassis_act
   void chassis_act_status_callback(const std_msgs::msg::Int32::SharedPtr msg);
   void publish_chassis_act_ref(ChassisAct ref);
