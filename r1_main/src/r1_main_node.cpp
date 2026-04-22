@@ -2166,6 +2166,8 @@ void R1MainNode::manual_mode2_collect_pole_task(void)
     step++;
   } else if (step == 5) {
     // TODO: ここはゾーンによって回転方向を変えたほうがいいかも
+
+    // step5以降は操作ミス防止のためコメントアウト
     // spear_roll_pos_ref(SPEAR_ROLL_INV_NORMAL_ANGLE);
     step++;
   } else if (step == 6) {
