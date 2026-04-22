@@ -1237,9 +1237,8 @@ void R1MainNode::request_lidar_lifecycle_activation(void)
     auto request = std::make_shared<lifecycle_msgs::srv::ChangeState::Request>();
     request->transition.id = lifecycle_msgs::msg::Transition::TRANSITION_ACTIVATE;
     client.change_state_client->async_send_request(
-      request,
-      [this, node_name = client.node_name](
-        rclcpp::Client<lifecycle_msgs::srv::ChangeState>::SharedFuture result) {
+      request, [this, node_name = client.node_name](
+                 rclcpp::Client<lifecycle_msgs::srv::ChangeState>::SharedFuture result) {
         handle_lidar_activate_response(node_name, result);
       });
     RCLCPP_INFO(this->get_logger(), "Sent LiDAR activate request to %s", client.node_name.c_str());
@@ -1386,12 +1385,10 @@ void R1MainNode::schedule_initialpose_tf_log(void)
 
 void R1MainNode::log_initialpose_tf_once(void)
 {
-  const double elapsed_sec =
-    initialize_done_time_.nanoseconds() > 0
-      ? (this->now() - initialize_done_time_).seconds()
-      : -1.0;
-  RCLCPP_INFO(
-    this->get_logger(), "Logging TF %.3f sec after r1_initialize_done", elapsed_sec);
+  const double elapsed_sec = initialize_done_time_.nanoseconds() > 0
+                               ? (this->now() - initialize_done_time_).seconds()
+                               : -1.0;
+  RCLCPP_INFO(this->get_logger(), "Logging TF %.3f sec after r1_initialize_done", elapsed_sec);
   log_transform_once("map", "odom");
   log_transform_once("map", "base_link");
 }
@@ -2158,10 +2155,6 @@ void R1MainNode::manual_mode2_collect_pole_task(void)
     spear_d1_valve(false);
     spear_d2_valve(false);
     step++;
-    // } else if (step == 3) {
-    //   spear1_pos_ref(SPEAR1_COLLECT2_POS);
-    //   spear2_pos_ref(SPEAR2_COLLECT2_POS);
-    //   step++;
   } else if (step == 3) {
     spear1_pos_ref(SPEAR1_COLLECT3_POS);
     spear2_pos_ref(SPEAR2_COLLECT3_POS);
@@ -2173,21 +2166,21 @@ void R1MainNode::manual_mode2_collect_pole_task(void)
     step++;
   } else if (step == 5) {
     // TODO: ここはゾーンによって回転方向を変えたほうがいいかも
-    spear_roll_pos_ref(SPEAR_ROLL_INV_NORMAL_ANGLE);
+    // spear_roll_pos_ref(SPEAR_ROLL_INV_NORMAL_ANGLE);
     step++;
   } else if (step == 6) {
-    spear_d1_valve(true);
-    spear_d2_valve(true);
+    // spear_d1_valve(true);
+    // spear_d2_valve(true);
     step++;
   } else if (step == 7) {
-    spear1_pos_ref(SPEAR1_NORMAL_POS);
-    spear2_pos_ref(SPEAR2_NORMAL_POS);
-    spear_pitch1_pos_ref(SPEAR_PITCH1_NORMAL_ANGLE);
-    spear_pitch2_pos_ref(SPEAR_PITCH2_NORMAL_ANGLE);
+    // spear1_pos_ref(SPEAR1_NORMAL_POS);
+    // spear2_pos_ref(SPEAR2_NORMAL_POS);
+    // spear_pitch1_pos_ref(SPEAR_PITCH1_NORMAL_ANGLE);
+    // spear_pitch2_pos_ref(SPEAR_PITCH2_NORMAL_ANGLE);
     step++;
   } else if (step == 8) {
-    spear_d1_valve(false);
-    spear_d2_valve(false);
+    // spear_d1_valve(false);
+    // spear_d2_valve(false);
     RCLCPP_INFO(this->get_logger(), "pole collect task completed");
     step = 1;
   }
@@ -2243,6 +2236,72 @@ void R1MainNode::manual_mode2_pole(void)
   if (ps4_->is_pushed_r2()) {
     spear_pitch2_pos_ref(spear_pitch2_position_ref_ + 0.05);
   }
+}
+
+void R1MainNode::manual_mode3_init_move_task(void)
+{
+  auto VALVE_DELAY_TIME = 300ms;
+  auto SPEAR_MOVE_TIME = 3000ms;
+  auto & timer1 = manual_mode3_timer1_;
+  auto & timer2 = manual_mode3_timer2_;
+  auto & timer3 = manual_mode3_timer3_;
+  auto & timer4 = manual_mode3_timer4_;
+  if (timer1) {
+    timer1->cancel();
+  }
+  if (timer2) {
+    timer2->cancel();
+  }
+  if (timer3) {
+    timer3->cancel();
+  }
+  if (timer4) {
+    timer4->cancel();
+  }
+  // 1. rollを回転する。電磁弁をONにする
+  spear_roll_pos_ref(SPEAR_ROLL_INV_NORMAL_ANGLE);
+  spear_d1_valve(true);
+  spear_d2_valve(true);
+  // 2. 0.3sくらいしたら、spear1とspear2をnormal_posに動かす
+  auto t1 = VALVE_DELAY_TIME;
+  timer1 = this->create_wall_timer(t1, [this]() {
+    spear1_pos_ref(SPEAR1_NORMAL_POS);
+    spear2_pos_ref(SPEAR2_NORMAL_POS);
+    if (manual_mode3_timer1_) {
+      manual_mode3_timer1_->cancel();
+    }
+  });
+
+  // 3. さらに3.0sくらいしたら、電磁弁をすべてoffにする
+  auto t2 = t1 + VALVE_DELAY_TIME;
+  timer2 = this->create_wall_timer(t2, [this]() {
+    spear_u1_valve(false);
+    spear_d1_valve(false);
+    spear_u2_valve(false);
+    spear_d2_valve(false);
+    if (manual_mode3_timer2_) {
+      manual_mode3_timer2_->cancel();
+    }
+  });
+  // 4. 0.3sくらいしたら、電磁弁を片側だけONにする
+  auto t3 = t2 + VALVE_DELAY_TIME;
+  timer3 = this->create_wall_timer(t3, [this]() {
+    spear_d1_valve(true);
+    spear_d2_valve(true);
+    if (manual_mode3_timer3_) {
+      manual_mode3_timer3_->cancel();
+    }
+  });
+  // これは本来manual_mode3_make_spear_taskの内容
+  // 5. 0.3sくらいしたら、spear1とspear2をkfs_collect_posに動かす
+  auto t4 = t3 + VALVE_DELAY_TIME;
+  timer4 = this->create_wall_timer(t4, [this]() {
+    spear1_pos_ref(SPEAR1_KFS_COLLECT_POS);
+    spear2_pos_ref(SPEAR2_KFS_COLLECT_POS);
+    if (manual_mode3_timer4_) {
+      manual_mode3_timer4_->cancel();
+    }
+  });
 }
 
 void R1MainNode::manual_mode3_make_spear_task(int n)
@@ -3438,7 +3497,6 @@ void R1MainNode::reset_step(void)
   // 各手順のステップをリセット
   manual_mode2_collect_pole_task_step_ = DEFAULT_STEP;
   manual_mode3_make_spear_task_step_ = DEFAULT_STEP;
-  manual_mode3_brake_valve_step_ = DEFAULT_STEP;
   manual_mode4_fx_step_ = DEFAULT_STEP;
   manual_mode4_fz_step_ = DEFAULT_STEP;
   manual_mode4_fyaw_step_ = DEFAULT_STEP;
@@ -3633,10 +3691,11 @@ void R1MainNode::main_task(void)
         // MODE2のときはACT1_STARTを開始する
         start_auto_chassis(ChassisAct::ACT1_START, std::vector<int>{}, std::vector<std::string>{});
         started_auto = true;
-        // MODE3のステップをリセットする
-        manual_mode3_make_spear_task_step_ = DEFAULT_STEP;
-        // 最初のタスクを実行する
-        manual_mode3_make_spear_task(2);
+        // ここだけは特例でステップを他よりも1つ進める
+        manual_mode3_make_spear_task_step_ = DEFAULT_STEP + 1;
+        // mode2の終わりとmode3の最初のタスクを合体して実行する
+        manual_mode3_init_move_task();
+        // manual_mode3_make_spear_task(2);
 
       } else if (current_state.operation_mode == OperationMode::MODE3_SPEAR) {
         // MODE3のときはOUTER_ACTIVEのときはACT4_STARTを、INNER_ACTIVEのときはACT2_STARTを開始する
