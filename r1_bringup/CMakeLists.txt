@@ -7,9 +7,17 @@ endif()
 
 # find dependencies
 find_package(ament_cmake REQUIRED)
+find_package(lifecycle_msgs REQUIRED)
+find_package(rclcpp REQUIRED)
 # uncomment the following section in order to fill in
 # further dependencies manually.
 # find_package(<dependency> REQUIRED)
+
+add_executable(lidar_lifecycle_watchdog_node src/lidar_lifecycle_watchdog_node.cpp)
+ament_target_dependencies(lidar_lifecycle_watchdog_node
+  lifecycle_msgs
+  rclcpp
+)
 
 # launchディレクトリとその中の全ファイルをインストール
 install(
@@ -21,6 +29,11 @@ install(
 install(
   DIRECTORY config
   DESTINATION share/${PROJECT_NAME}
+)
+
+install(
+  TARGETS lidar_lifecycle_watchdog_node
+  DESTINATION lib/${PROJECT_NAME}
 )
 
 if(BUILD_TESTING)

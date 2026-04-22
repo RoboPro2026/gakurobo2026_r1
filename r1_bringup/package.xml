@@ -9,6 +9,9 @@
 
   <buildtool_depend>ament_cmake</buildtool_depend>
 
+  <depend>lifecycle_msgs</depend>
+  <depend>rclcpp</depend>
+
   <exec_depend>sabacan</exec_depend>
   <exec_depend>joy</exec_depend>
   <exec_depend>r1_main</exec_depend>

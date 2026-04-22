@@ -13,6 +13,8 @@
   - 通常の実機起動とシミュレーション起動をまとめるメイン launch
 - [`r1_slam.launch.py`](./docs/r1_slam.launch.md)
   - LiDAR と自己位置推定まわりを起動する launch
+- [`lidar_lifecycle_watchdog_node`](./docs/lidar_lifecycle_watchdog_node.md)
+  - 実機 LiDAR の lifecycle state を監視して `inactive` 取り残しを復帰するノード
 - [`r1_sim.launch.py`](./docs/r1_sim.launch.md)
   - ダミー map / odometry を使うシミュレーション用 launch
 - [`test_bringup.launch.py`](./docs/test_bringup.launch.md)

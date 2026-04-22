@@ -1,10 +1,10 @@
 import os
 import sys
-import yaml
 
+import yaml
 from ament_index_python.packages import get_package_share_directory
 from launch import LaunchDescription
-from launch.actions import EmitEvent, RegisterEventHandler
+from launch.actions import EmitEvent, RegisterEventHandler, TimerAction
 from launch.conditions import IfCondition
 from launch.event_handlers import OnProcessStart
 from launch.events import matches_action
@@ -35,8 +35,8 @@ def generate_launch_description():
     # 理由: URG が連続スキャン中のまま前セッションが終了した場合、
     #        urg_open() 内の clear_urg_communication_buffer() がデータを
     #        読み続けて無限ループに陥るため、事前に停止させる
-    reset_lidar(lidar1_port)
-    reset_lidar(lidar2_port)
+    # reset_lidar(lidar1_port)
+    # reset_lidar(lidar2_port)
 
     # urg_node2をライフサイクルノードとして起動
     urg_node2_1 = LifecycleNode(
@@ -123,6 +123,39 @@ def generate_launch_description():
             ],
         ),
         condition=IfCondition("true"),
+    )
+
+    delayed_lidar_activate = TimerAction(
+        period=2.0,
+        actions=[
+            EmitEvent(
+                event=ChangeState(
+                    lifecycle_node_matcher=matches_action(urg_node2_1),
+                    transition_id=Transition.TRANSITION_ACTIVATE,
+                ),
+            ),
+            EmitEvent(
+                event=ChangeState(
+                    lifecycle_node_matcher=matches_action(urg_node2_2),
+                    transition_id=Transition.TRANSITION_ACTIVATE,
+                ),
+            ),
+        ],
+    )
+
+    lidar_lifecycle_watchdog = Node(
+        package="r1_bringup",
+        executable="lidar_lifecycle_watchdog_node",
+        name="lidar_lifecycle_watchdog_node",
+        output="screen",
+        parameters=[
+            {
+                "node_names": ["urg_node2_1", "urg_node2_2"],
+                "check_period": 0.2,
+                "service_timeout": 0.2,
+                "retry_interval": 0.4,
+            }
+        ],
     )
 
     lidar1_tf_node = Node(
@@ -238,6 +271,8 @@ def generate_launch_description():
             urg_node2_2_configure_event_handler,
             urg_node2_1_activate_event_handler,
             urg_node2_2_activate_event_handler,
+            delayed_lidar_activate,
+            lidar_lifecycle_watchdog,
             lidar1_tf_node,
             lidar2_tf_node,
             # slam_toolbox,
