@@ -2240,7 +2240,7 @@ void R1MainNode::manual_mode2_pole(void)
   }
 }
 
-void R1MainNode::manual_mode3_init_move_task(void)
+void R1MainNode::manual_mode3_init_move_task(int n)
 {
   auto VALVE_DELAY_TIME = 300ms;
   auto SPEAR_MOVE_TIME = 2500ms;
@@ -3700,7 +3700,7 @@ void R1MainNode::main_task(void)
         // ここだけは特例でステップを他よりも1つ進める
         manual_mode3_make_spear_task_step_ = DEFAULT_STEP + 1;
         // mode2の終わりとmode3の最初のタスクを合体して実行する
-        manual_mode3_init_move_task();
+        manual_mode3_init_move_task(2);
         // manual_mode3_make_spear_task(2);
 
       } else if (current_state.operation_mode == OperationMode::MODE3_SPEAR) {
