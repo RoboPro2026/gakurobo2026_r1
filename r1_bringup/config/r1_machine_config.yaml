@@ -118,7 +118,7 @@ r1_main_node:
     activate_lidar_on_ps: false
     share_long_press_sec: 0.4  # shareボタン長押し判定秒数 [s]
     # /initialpose publish後に現在のTFをログするまでの遅延 [s]
-    initialpose_tf_log_delay_sec: 1.0
+    initialpose_tf_log_delay_sec: 5.0
     # ========== 足回り ==========
 
     chassis_make_spear_velocity: 0.2
