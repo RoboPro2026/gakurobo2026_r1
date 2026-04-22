@@ -2275,7 +2275,7 @@ void R1MainNode::manual_mode3_init_move_task(void)
   });
 
   // 3. さらに3.0sくらいしたら、電磁弁をすべてoffにする
-  auto t2 = t1 + VALVE_DELAY_TIME;
+  auto t2 = t1 + SPEAR_MOVE_TIME;
   timer2 = this->create_wall_timer(t2, [this]() {
     spear_u1_valve(false);
     spear_d1_valve(false);
