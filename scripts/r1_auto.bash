@@ -4,5 +4,11 @@ cd "$HOME/ros2_ws"
 source .venv/bin/activate
 # その後にinstall/setup.bashを実行
 source install/setup.bash
+
+# arucoマーカをssh経由でGUIを起動に必要なおまじない
+export XDG_RUNTIME_DIR=/run/user/$(id -u)
+export WAYLAND_DISPLAY=wayland-0
+export QT_QPA_PLATFORM=wayland
+export DBUS_SESSION_BUS_ADDRESS=unix:path=$XDG_RUNTIME_DIR/bus
 echo "========== R1 bringup start =========="
 ros2 launch r1_bringup r1_bringup.launch.py use_sim:=false use_lidar:=true robot_control_mode:=auto use_aruco_display:=true
