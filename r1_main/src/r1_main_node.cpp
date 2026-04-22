@@ -3177,6 +3177,10 @@ void R1MainNode::auto_collect_kfs_task(void)
         if (ENABLE_AUTO_COLLECT_KFS_ACTUATOR) {
           // 回収位置に移動
           if (within_index == FKFS) {
+            // 収納yawタイマーが残っている場合はキャンセルする
+            if (auto_collect_front_storage_yaw_timer_) {
+              auto_collect_front_storage_yaw_timer_->cancel();
+            }
             // 回収機構を動かす
             kfs_fx_pos_ref(KFS_FX_EXPAND_POS);
             if (zone_ == "blue" && is_inner) {
@@ -3202,6 +3206,10 @@ void R1MainNode::auto_collect_kfs_task(void)
               kfs_fz_pos_ref(KFS_FZ_HIGH_POS);
             }
           } else {
+            // 収納yawタイマーが残っている場合はキャンセルする
+            if (auto_collect_rear_storage_yaw_timer_) {
+              auto_collect_rear_storage_yaw_timer_->cancel();
+            }
             // 回収機構を動かす
             kfs_rx_pos_ref(KFS_RX_EXPAND_POS);
             if (zone_ == "blue" && is_inner) {
