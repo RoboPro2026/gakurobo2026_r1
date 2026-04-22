@@ -2243,7 +2243,7 @@ void R1MainNode::manual_mode2_pole(void)
 void R1MainNode::manual_mode3_init_move_task(int n)
 {
   auto VALVE_DELAY_TIME = 300ms;
-  auto SPEAR_MOVE_TIME = 2500ms;
+  auto SPEAR_MOVE_TIME = 2000ms;
   auto & timer1 = manual_mode3_timer1_;
   auto & timer2 = manual_mode3_timer2_;
   auto & timer3 = manual_mode3_timer3_;
