@@ -6,6 +6,12 @@ source .venv/bin/activate
 # その後にinstall/setup.bashを実行
 source install/setup.bash
 
+# arucoマーカをssh経由でGUIを起動に必要なおまじない
+export XDG_RUNTIME_DIR=/run/user/$(id -u)
+export WAYLAND_DISPLAY=wayland-0
+export QT_QPA_PLATFORM=wayland
+export DBUS_SESSION_BUS_ADDRESS=unix:path=$XDG_RUNTIME_DIR/bus
+
 sudo cpupower frequency-set -g performance
 
 IMU_DEV="/dev/serial/by-path/pci-0000:00:14.0-usb-0:1.2.4:1.0-port0"
