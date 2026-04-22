@@ -254,7 +254,7 @@ def generate_launch_description():
             urg_node2_2_configure_event_handler,
             urg_node2_1_activate_event_handler,
             urg_node2_2_activate_event_handler,
-            lidar_lifecycle_watchdog,
+            # lidar_lifecycle_watchdog,
             lidar1_tf_node,
             lidar2_tf_node,
             # slam_toolbox,
