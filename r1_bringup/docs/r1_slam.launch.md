@@ -32,8 +32,8 @@
 
 起動タイミングによって片方だけ `inactive` に残る場合があるため、追加対策として以下を入れています。
 
-- 起動 2 秒後に `urg_node2_1` / `urg_node2_2` へ `activate` を再要求する
 - [`lidar_lifecycle_watchdog_node`](./lidar_lifecycle_watchdog_node.md) が周期的に lifecycle state を確認し、`inactive` なら `activate`、`unconfigured` なら `configure` を要求する
+- `configuring` や `activating` などの遷移中 state では追加遷移を要求せず、起動時の通常遷移と競合しないようにする
 
 これにより `/scan1` は出るが `/scan2` が出ず、結果として `/scan` や `map -> odom` が出ない状態からの自動復帰を狙います。
 

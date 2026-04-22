@@ -23,8 +23,9 @@
 | --- | --- | --- | --- |
 | `node_names` | string array | `["urg_node2_1", "urg_node2_2"]` | 監視対象の lifecycle node 名です。先頭 `/` は省略できます。 |
 | `check_period` | double | `1.0` | 状態確認周期 [s] です。 |
-| `service_timeout` | double | `0.2` | lifecycle service 応答待ちタイムアウト [s] です。 |
+| `service_timeout` | double | `3.0` | lifecycle service 応答待ちタイムアウト [s] です。 |
 | `retry_interval` | double | `2.0` | 同じ node に復帰遷移を再要求する最短間隔 [s] です。 |
+| `startup_grace_period` | double | `3.0` | 起動直後に lifecycle service が未準備でも警告を出さない猶予時間 [s] です。 |
 | `configure_unconfigured` | bool | `true` | `unconfigured` を検出したときに `configure` を要求するかを指定します。 |
 | `activate_inactive` | bool | `true` | `inactive` を検出したときに `activate` を要求するかを指定します。 |
 
@@ -62,4 +63,5 @@ ros2 topic hz /scan
 ## 注意
 
 - このノードは lifecycle state の復帰要求だけを行います。LiDAR の電源断、USB断線、serial port 不一致など、service 自体が存在しない場合は復帰できません。
+- `configuring` や `activating` などの遷移中 state では追加遷移を要求せず、次周期まで待ちます。
 - `activate` が成功しても `/scan2` が出ない場合は、`urg_node2` のログ、デバイスパス、ケーブル、電源を確認してください。

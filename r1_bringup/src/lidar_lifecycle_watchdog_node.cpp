@@ -20,10 +20,12 @@ public:
     node_names_ = this->declare_parameter<std::vector<std::string>>(
       "node_names", {"urg_node2_1", "urg_node2_2"});
     check_period_ = this->declare_parameter<double>("check_period", 1.0);
-    service_timeout_ = this->declare_parameter<double>("service_timeout", 0.2);
+    service_timeout_ = this->declare_parameter<double>("service_timeout", 3.0);
     retry_interval_ = this->declare_parameter<double>("retry_interval", 2.0);
+    startup_grace_period_ = this->declare_parameter<double>("startup_grace_period", 3.0);
     configure_unconfigured_ = this->declare_parameter<bool>("configure_unconfigured", true);
     activate_inactive_ = this->declare_parameter<bool>("activate_inactive", true);
+    start_time_ = this->now();
 
     for (auto & name : node_names_) {
       name = normalize_node_name(name);
@@ -90,7 +92,9 @@ private:
       }
 
       if (!context->get_state_client->service_is_ready()) {
-        warn_service_unavailable(name, *context, "get_state");
+        if (is_startup_grace_period_finished()) {
+          warn_service_unavailable(name, *context, "get_state");
+        }
         continue;
       }
 
@@ -154,6 +158,10 @@ private:
       return;
     }
 
+    if (is_transition_state(state.id)) {
+      return;
+    }
+
     if (!can_retry(context)) {
       return;
     }
@@ -186,6 +194,17 @@ private:
       return true;
     }
     return (this->now() - context.last_attempt_time).seconds() >= retry_interval_;
+  }
+
+  bool is_startup_grace_period_finished() const
+  {
+    return (this->now() - start_time_).seconds() >= startup_grace_period_;
+  }
+
+  static bool is_transition_state(uint8_t state_id)
+  {
+    return state_id >= lifecycle_msgs::msg::State::TRANSITION_STATE_CONFIGURING &&
+           state_id <= lifecycle_msgs::msg::State::TRANSITION_STATE_ERRORPROCESSING;
   }
 
   void request_transition(
@@ -224,10 +243,12 @@ private:
 
   std::vector<std::string> node_names_;
   double check_period_ = 1.0;
-  double service_timeout_ = 0.2;
+  double service_timeout_ = 3.0;
   double retry_interval_ = 2.0;
+  double startup_grace_period_ = 3.0;
   bool configure_unconfigured_ = true;
   bool activate_inactive_ = true;
+  rclcpp::Time start_time_;
   std::unordered_map<std::string, std::shared_ptr<NodeContext>> contexts_;
   rclcpp::TimerBase::SharedPtr timer_;
 };

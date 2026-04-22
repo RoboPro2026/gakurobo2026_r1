@@ -4,7 +4,7 @@ import sys
 import yaml
 from ament_index_python.packages import get_package_share_directory
 from launch import LaunchDescription
-from launch.actions import EmitEvent, RegisterEventHandler, TimerAction
+from launch.actions import EmitEvent, RegisterEventHandler
 from launch.conditions import IfCondition
 from launch.event_handlers import OnProcessStart
 from launch.events import matches_action
@@ -125,24 +125,6 @@ def generate_launch_description():
         condition=IfCondition("true"),
     )
 
-    delayed_lidar_activate = TimerAction(
-        period=2.0,
-        actions=[
-            EmitEvent(
-                event=ChangeState(
-                    lifecycle_node_matcher=matches_action(urg_node2_1),
-                    transition_id=Transition.TRANSITION_ACTIVATE,
-                ),
-            ),
-            EmitEvent(
-                event=ChangeState(
-                    lifecycle_node_matcher=matches_action(urg_node2_2),
-                    transition_id=Transition.TRANSITION_ACTIVATE,
-                ),
-            ),
-        ],
-    )
-
     lidar_lifecycle_watchdog = Node(
         package="r1_bringup",
         executable="lidar_lifecycle_watchdog_node",
@@ -151,9 +133,10 @@ def generate_launch_description():
         parameters=[
             {
                 "node_names": ["urg_node2_1", "urg_node2_2"],
-                "check_period": 0.2,
-                "service_timeout": 0.2,
-                "retry_interval": 0.4,
+                "check_period": 1.0,
+                "service_timeout": 3.0,
+                "retry_interval": 2.0,
+                "startup_grace_period": 3.0,
             }
         ],
     )
@@ -271,7 +254,6 @@ def generate_launch_description():
             urg_node2_2_configure_event_handler,
             urg_node2_1_activate_event_handler,
             urg_node2_2_activate_event_handler,
-            delayed_lidar_activate,
             lidar_lifecycle_watchdog,
             lidar1_tf_node,
             lidar2_tf_node,
