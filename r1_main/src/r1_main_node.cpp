@@ -553,6 +553,7 @@ R1MainNode::R1MainNode() : Node("r1_main_node")
   // tf関連
   tf_buffer_ = std::make_shared<tf2_ros::Buffer>(this->get_clock());
   tf_listener_ = std::make_shared<tf2_ros::TransformListener>(*tf_buffer_);
+  initialize_lidar_lifecycle_clients();
 
   // ========== パラメータ ==========
   // ゾーン
@@ -1197,6 +1198,60 @@ void R1MainNode::publish_r1_machine_initialize(void)
   std_msgs::msg::Empty msg;
   r1_machine_initialize_publisher_->publish(msg);
   RCLCPP_INFO(this->get_logger(), "publish /r1_machine_initialize");
+}
+
+void R1MainNode::initialize_lidar_lifecycle_clients(void)
+{
+  const auto node_names = this->declare_parameter<std::vector<std::string>>(
+    "lidar_lifecycle_node_names", {"urg_node2_1", "urg_node2_2"});
+
+  for (auto node_name : node_names) {
+    if (node_name.empty()) {
+      continue;
+    }
+    if (node_name.front() != '/') {
+      node_name = "/" + node_name;
+    }
+
+    LifecycleClientInterface client;
+    client.node_name = node_name;
+    client.change_state_client =
+      this->create_client<lifecycle_msgs::srv::ChangeState>(node_name + "/change_state");
+    lidar_lifecycle_clients_.push_back(client);
+  }
+}
+
+void R1MainNode::request_lidar_lifecycle_activation(void)
+{
+  for (const auto & client : lidar_lifecycle_clients_) {
+    if (!client.change_state_client->service_is_ready()) {
+      RCLCPP_WARN(
+        this->get_logger(), "LiDAR lifecycle service is not ready: %s/change_state",
+        client.node_name.c_str());
+      continue;
+    }
+
+    auto request = std::make_shared<lifecycle_msgs::srv::ChangeState::Request>();
+    request->transition.id = lifecycle_msgs::msg::Transition::TRANSITION_ACTIVATE;
+    client.change_state_client->async_send_request(
+      request,
+      [this, node_name = client.node_name](
+        rclcpp::Client<lifecycle_msgs::srv::ChangeState>::SharedFuture result) {
+        handle_lidar_activate_response(node_name, result);
+      });
+    RCLCPP_INFO(this->get_logger(), "Sent LiDAR activate request to %s", client.node_name.c_str());
+  }
+}
+
+void R1MainNode::handle_lidar_activate_response(
+  const std::string & node_name,
+  rclcpp::Client<lifecycle_msgs::srv::ChangeState>::SharedFuture future)
+{
+  if (future.get()->success) {
+    RCLCPP_INFO(this->get_logger(), "Requested LiDAR activate for %s", node_name.c_str());
+  } else {
+    RCLCPP_WARN(this->get_logger(), "LiDAR activate request was rejected by %s", node_name.c_str());
+  }
 }
 
 void R1MainNode::invalidate_led_cache(void)
@@ -3486,6 +3541,7 @@ void R1MainNode::main_task(void)
   }
   if (ps4_->is_pushed_ps()) {
     is_initialized_ = false;
+    request_lidar_lifecycle_activation();
     reset_robot(true);
     publish_r1_machine_initialize();
     return;

@@ -22,6 +22,7 @@ endif()
 # find dependencies
 find_package(ament_cmake REQUIRED)
 find_package(geometry_msgs REQUIRED)
+find_package(lifecycle_msgs REQUIRED)
 # for C++ enum
 find_package(magic_enum CONFIG REQUIRED)
 find_package(nav_msgs REQUIRED)
@@ -46,6 +47,7 @@ add_executable(test_node src/test_node.cpp)
 
 ament_target_dependencies(r1_main_node
   geometry_msgs
+  lifecycle_msgs
   nav_msgs
   rclcpp
   sabacan_msgs

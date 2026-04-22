@@ -22,6 +22,8 @@
 #include "geometry_msgs/msg/pose_stamped.hpp"
 #include "geometry_msgs/msg/pose_with_covariance_stamped.hpp"
 #include "geometry_msgs/msg/twist.hpp"
+#include "lifecycle_msgs/msg/transition.hpp"
+#include "lifecycle_msgs/srv/change_state.hpp"
 #include "magic_enum.hpp"
 #include "nav_msgs/msg/odometry.hpp"
 #include "r1_main/ps4.h"
@@ -94,6 +96,12 @@ public:
   struct GpioInputInterface
   {
     rclcpp::Subscription<r1_msgs::msg::GpioInput>::SharedPtr subscription;
+  };
+
+  struct LifecycleClientInterface
+  {
+    std::string node_name;
+    rclcpp::Client<lifecycle_msgs::srv::ChangeState>::SharedPtr change_state_client;
   };
 
   struct LedColor
@@ -193,6 +201,7 @@ public:
   // tf関連
   std::shared_ptr<tf2_ros::Buffer> tf_buffer_;
   std::shared_ptr<tf2_ros::TransformListener> tf_listener_;
+  std::vector<LifecycleClientInterface> lidar_lifecycle_clients_;
   // 速度指令値
   geometry_msgs::msg::Twist target_vel_;
   std::string cmd_vel_topic_ = "/cmd_vel";
@@ -463,6 +472,11 @@ public:
   void publish_r1_machine_initialize(void);
   void r1_machine_initialize_done_callback(const std_msgs::msg::Empty::SharedPtr msg);
   void invalidate_led_cache(void);
+  void initialize_lidar_lifecycle_clients(void);
+  void request_lidar_lifecycle_activation(void);
+  void handle_lidar_activate_response(
+    const std::string & node_name,
+    rclcpp::Client<lifecycle_msgs::srv::ChangeState>::SharedFuture future);
   // 現在の状態に応じて、LEDを光らせる。
   void sabacan_led_update(void);
   // IMU

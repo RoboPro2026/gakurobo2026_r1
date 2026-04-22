@@ -10,6 +10,7 @@
   <buildtool_depend>ament_cmake</buildtool_depend>
 
   <depend>geometry_msgs</depend>
+  <depend>lifecycle_msgs</depend>
   <!-- for c++ enum -->
   <depend>magic_enum</depend>
   <depend>nav_msgs</depend>
