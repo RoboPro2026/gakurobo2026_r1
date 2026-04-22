@@ -1267,6 +1267,7 @@ void R1MainNode::invalidate_led_cache(void)
 void R1MainNode::r1_machine_initialize_done_callback(const std_msgs::msg::Empty::SharedPtr)
 {
   is_initialized_ = true;
+  initialize_done_time_ = this->now();
   // initialize 完了直後に LED を再送できるよう、出力キャッシュを無効化する。
   // 将来的にここへ原点検出後処理や初期姿勢への指令を追加する場合も、この callback を
   // sabacan 初期化完了後の集約ポイントとして拡張する。
@@ -1385,8 +1386,12 @@ void R1MainNode::schedule_initialpose_tf_log(void)
 
 void R1MainNode::log_initialpose_tf_once(void)
 {
+  const double elapsed_sec =
+    initialize_done_time_.nanoseconds() > 0
+      ? (this->now() - initialize_done_time_).seconds()
+      : -1.0;
   RCLCPP_INFO(
-    this->get_logger(), "Logging TF %.3f sec after initialpose", initialpose_tf_log_delay_sec_);
+    this->get_logger(), "Logging TF %.3f sec after r1_initialize_done", elapsed_sec);
   log_transform_once("map", "odom");
   log_transform_once("map", "base_link");
 }

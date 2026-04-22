@@ -200,6 +200,7 @@ public:
   rclcpp::node_interfaces::OnSetParametersCallbackHandle::SharedPtr parameter_callback_handle_;
   double timer_rate_ = 100.0;
   double initialpose_tf_log_delay_sec_ = 1.0;
+  rclcpp::Time initialize_done_time_;
   // tf関連
   std::shared_ptr<tf2_ros::Buffer> tf_buffer_;
   std::shared_ptr<tf2_ros::TransformListener> tf_listener_;
