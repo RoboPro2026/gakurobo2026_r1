@@ -265,6 +265,7 @@ public:
   bool has_last_led_rkfs_color_ = false;
 
   double ps4_connection_timeout_ = 0.3;
+  bool activate_lidar_on_ps_ = true;
 
   // shareボタン長押し判定
   rclcpp::Time share_press_start_time_;

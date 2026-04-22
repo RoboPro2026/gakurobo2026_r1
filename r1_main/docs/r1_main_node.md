@@ -262,7 +262,7 @@ LED は timer callback の最後に 1 回だけ更新されます。
 - `options`
   - `sabacan_power_ref(!sabacan_is_ems_)` を送り、電源基板の EMS をトグルします。
 - `ps`
-  - `urg_node2_1` / `urg_node2_2` へ lifecycle `activate` を要求します。
+  - `activate_lidar_on_ps == true` のとき、`urg_node2_1` / `urg_node2_2` へ lifecycle `activate` を要求します。
   - `reset_robot(true)` を実行します。
   - `/r1_machine_initialize` を publish します。
 - `share`
@@ -451,7 +451,7 @@ LED は timer callback の最後に 1 回だけ更新されます。
 `is_start_zone == false` の分岐は現状まだ TODO で、今は start zone と同じ開始姿勢を使います。
 
 `/r1_machine_initialize` publish 自体は `reset_robot()` の外で行っており、`PS` ボタン押下時にセットで実行されます。
-`PS` ボタン押下時には先に `is_initialized_ = false` に戻し、LiDAR lifecycle node へ `activate` を要求してから `reset_robot(true)` を実行します。`reset_robot()` の中では自己位置や state は初期値へ戻しますが、`is_initialized_` は復帰させません。`/r1_machine_initialize_done` を受け取ったタイミングでだけ `is_initialized_ = true` へ復帰します。この完了通知では LED の再送キャッシュも無効化し、sabacan 初期化後に現在状態の LED 指令を再送できるようにしています。
+`PS` ボタン押下時には先に `is_initialized_ = false` に戻し、`activate_lidar_on_ps == true` なら LiDAR lifecycle node へ `activate` を要求してから `reset_robot(true)` を実行します。`reset_robot()` の中では自己位置や state は初期値へ戻しますが、`is_initialized_` は復帰させません。`/r1_machine_initialize_done` を受け取ったタイミングでだけ `is_initialized_ = true` へ復帰します。この完了通知では LED の再送キャッシュも無効化し、sabacan 初期化後に現在状態の LED 指令を再送できるようにしています。
 
 LiDAR lifecycle の `activate` 要求は現在 state を確認せず、`urg_node2_1` / `urg_node2_2` の `/change_state` service へ送信します。すでに `active` の場合や `unconfigured` の場合、ROS 2 lifecycle の仕様上は要求が reject されることがあります。
 
@@ -459,6 +459,13 @@ LiDAR lifecycle の `activate` 要求は現在 state を確認せず、`urg_node
 
 実際の bringup 設定は [`r1_machine_config.yaml`](../../r1_bringup/config/r1_machine_config.yaml) の `r1_main_node` セクションにあります。
 bringup 起動時は [`r1_bringup.launch.py`](../../r1_bringup/launch/r1_bringup.launch.py) の `robot_control_mode` 引数を `r1_main_node` に渡します。
+
+- `activate_lidar_on_ps`
+  - `true` のとき、PS ボタン押下時に `lidar_lifecycle_node_names` の各 lifecycle node へ `activate` を要求します。
+  - 既定値は `true` です。
+- `lidar_lifecycle_node_names`
+  - PS ボタン押下時の `activate` 要求対象です。
+  - 既定値は `["urg_node2_1", "urg_node2_2"]` です。
 
 ### 基本
 

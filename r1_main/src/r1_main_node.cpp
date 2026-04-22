@@ -566,6 +566,7 @@ R1MainNode::R1MainNode() : Node("r1_main_node")
   // 足回り
   declare_and_get_parameter("timer_rate", timer_rate_, 100.0);
   declare_and_get_parameter("ps4_connection_timeout", ps4_connection_timeout_, 0.3);
+  declare_and_get_parameter("activate_lidar_on_ps", activate_lidar_on_ps_, true);
   declare_and_get_parameter("share_long_press_sec", SHARE_LONG_PRESS_SEC, 1.0);
   declare_and_get_parameter("chassis_make_spear_velocity", CHASSIS_MAKE_SPEAR_VELOCITY);
   declare_and_get_parameter("chassis_make_spear_omega", CHASSIS_MAKE_SPEAR_OMEGA);
@@ -3541,7 +3542,9 @@ void R1MainNode::main_task(void)
   }
   if (ps4_->is_pushed_ps()) {
     is_initialized_ = false;
-    request_lidar_lifecycle_activation();
+    if (activate_lidar_on_ps_) {
+      request_lidar_lifecycle_activation();
+    }
     reset_robot(true);
     publish_r1_machine_initialize();
     return;
