@@ -2247,6 +2247,8 @@ void R1MainNode::manual_mode3_init_move_task(int n)
   auto & timer1 = manual_mode3_timer1_;
   auto & timer2 = manual_mode3_timer2_;
   auto & timer3 = manual_mode3_timer3_;
+  static int _n = 0;
+  _n = n;
   if (timer1) {
     timer1->cancel();
   }
@@ -2285,23 +2287,23 @@ void R1MainNode::manual_mode3_init_move_task(int n)
   // 5. 0.3sくらいしたら、spear1とspear2をkfs_collect_posに動かす
   auto t3 = t2 + VALVE_DELAY_TIME;
   timer3 = this->create_wall_timer(t3, [this]() {
-    if (n == 1) {
+    if (_n == 1) {
       spear_x_pos_ref(SPEAR_X_MAKE_SPEAR1_POS);
-    } else if (n == 2) {
+    } else if (_n == 2) {
       spear_x_pos_ref(SPEAR_X_MAKE_SPEAR2_POS);
-    } else if (n == 3) {
+    } else if (_n == 3) {
       spear_x_pos_ref(SPEAR_X_MAKE_SPEAR3_POS);
-    } else if (n == 4) {
+    } else if (_n == 4) {
       spear_x_pos_ref(SPEAR_X_MAKE_SPEAR4_POS);
     }
 
-    if (n == 1) {
+    if (_n == 1) {
       spear1_pos_ref(SPEAR1_MAKE_SPEAR_START_POS);
-    } else if (n == 2) {
+    } else if (_n == 2) {
       spear2_pos_ref(SPEAR2_MAKE_SPEAR_START_POS);
-    } else if (n == 3) {
+    } else if (_n == 3) {
       spear3_pos_ref(SPEAR3_MAKE_SPEAR_START_POS);
-    } else if (n == 4) {
+    } else if (_n == 4) {
       spear4_pos_ref(SPEAR4_MAKE_SPEAR_START_POS);
     }
     if (manual_mode3_timer4_) {

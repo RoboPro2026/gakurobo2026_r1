@@ -692,7 +692,7 @@ public:
   void manual_mode2_pole(void);
   void manual_mode2_collect_pole_task(void);
   void manual_mode3_spear(void);
-  void manual_mode3_init_move_task(void);
+  void manual_mode3_init_move_task(int n);
   void manual_mode3_make_spear_task(int n);
   void manual_mode4_fkfs(void);
   void manual_mode5_rkfs(void);
