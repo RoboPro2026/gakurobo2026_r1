@@ -810,10 +810,10 @@ r1_aruco_display_node:
     fullscreen: true
     screen_name: "DP-1"
     image_rotation_degrees: 180
-    marker_x: -1
-    marker_y: -1
-    marker_width: -1
-    marker_height: -1
+    marker_x: 250
+    marker_y: 30
+    marker_width: 150
+    marker_height: 150
     initial_marker_id: 0
 
 r1_aruco_serial_node:
