@@ -23,7 +23,14 @@ GUI ライブラリは `gakurobo2026_r1` 内の既存 GUI に合わせて `PyQt6
 | `fullscreen` | bool | `false` | `true` のとき全画面表示します。 |
 | `screen_name` | string | `""` | 表示先画面の名前です。空文字のときはQtのデフォルト画面を使います。 |
 | `image_rotation_degrees` | integer | `0` | 表示画像の回転角度 [deg] です。モニターを上下逆に取り付けた場合は `180` を指定します。 |
+| `marker_x` | integer | `-1` | マーカ表示矩形の左上 X 座標 [px] です。`-1` のときは従来どおり中央表示します。 |
+| `marker_y` | integer | `-1` | マーカ表示矩形の左上 Y 座標 [px] です。`-1` のときは従来どおり中央表示します。 |
+| `marker_width` | integer | `-1` | マーカ表示矩形の幅 [px] です。`-1` のときは従来どおり中央表示します。 |
+| `marker_height` | integer | `-1` | マーカ表示矩形の高さ [px] です。`-1` のときは従来どおり中央表示します。 |
 | `spin_rate_hz` | double | `100.0` | ROS コールバック処理のために `rclpy.spin_once()` を回す周期 [Hz] です。 |
+
+`marker_x` / `marker_y` / `marker_width` / `marker_height` は4つすべて指定したときだけ有効です。
+座標は表示ウィンドウ左上基準です。`fullscreen:=true` かつ `screen_name` 指定時は、その画面の左上が基準になります。
 
 ## 動作概要
 
@@ -133,6 +140,19 @@ ros2 run r1_ui r1_aruco_display_node --ros-args \
   -p image_rotation_degrees:=180
 ```
 
+全画面内の位置と大きさを指定して表示:
+
+```bash
+source ~/ros2_ws/install/setup.bash
+ros2 run r1_ui r1_aruco_display_node --ros-args \
+  -p fullscreen:=true \
+  -p screen_name:=HDMI-1 \
+  -p marker_x:=80 \
+  -p marker_y:=120 \
+  -p marker_width:=480 \
+  -p marker_height:=480
+```
+
 初期 ID や画像ディレクトリを変える例:
 
 ```bash
@@ -173,6 +193,7 @@ export DBUS_SESSION_BUS_ADDRESS=unix:path=$XDG_RUNTIME_DIR/bus
 
 - 対応する `marker_<marker_id>.png` がない場合、表示は更新されません。
 - `screen_name` は `scripts/list_screen_names.py` に表示される `name=...` の値を指定してください。存在しない名前を指定した場合は warning を出し、Qt のデフォルト画面で表示します。
+- `marker_x` / `marker_y` / `marker_width` / `marker_height` は全画面内でのマーカ表示位置を固定したいときに使います。4つのうち一部だけ指定した場合や、負の座標、0以下の幅・高さはエラーになります。
 - SSH から直接起動する場合でも、ロボット PC 側の GUI セッションへ接続できる `DISPLAY` または `WAYLAND_DISPLAY` が必要です。
 - このノードは `std_msgs/msg/Int32` を入力としているため、将来「画像種類」と「マーカ ID」を別管理したくなったら、専用 message に拡張したほうが扱いやすくなります。
 - 実行環境に `PyQt6` がないと GUI は起動できません。

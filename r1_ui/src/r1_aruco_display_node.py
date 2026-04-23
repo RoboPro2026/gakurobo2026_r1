@@ -8,7 +8,7 @@ from typing import Optional
 
 import rclpy
 from ament_index_python.packages import get_package_share_directory
-from PyQt6.QtCore import QTimer, Qt
+from PyQt6.QtCore import QRect, QTimer, Qt
 from PyQt6.QtGui import QPixmap, QTransform
 from PyQt6.QtWidgets import QApplication, QLabel, QMainWindow, QVBoxLayout, QWidget
 from rclpy.node import Node
@@ -26,29 +26,36 @@ class ArucoDisplayWindow(QMainWindow):
         marker_image_path: Path,
         window_title: str,
         image_rotation_degrees: int,
+        marker_geometry: Optional[QRect],
     ) -> None:
         super().__init__()
         self.current_marker_id = marker_id
         self.current_marker_image_path = marker_image_path
         self.image_rotation_degrees = image_rotation_degrees % 360
+        self.marker_geometry = marker_geometry
         self._base_pixmap: Optional[QPixmap] = None
 
         self.setWindowTitle(window_title)
         self.resize(600, 680)
 
         central_widget = QWidget(self)
-        layout = QVBoxLayout(central_widget)
 
-        self.marker_label = QLabel()
+        self.marker_label = QLabel(central_widget)
         self.marker_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
         self.marker_label.setMinimumSize(320, 320)
 
-        self.info_label = QLabel()
+        self.info_label = QLabel(central_widget)
         self.info_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
 
-        layout.addWidget(self.marker_label, stretch=1)
-        layout.addWidget(self.info_label)
         self.setCentralWidget(central_widget)
+
+        if self.marker_geometry is None:
+            layout = QVBoxLayout(central_widget)
+            layout.addWidget(self.marker_label, stretch=1)
+            layout.addWidget(self.info_label)
+        else:
+            self.marker_label.setMinimumSize(1, 1)
+            self._apply_marker_geometry()
 
         self.update_marker(marker_id, marker_image_path)
 
@@ -61,7 +68,20 @@ class ArucoDisplayWindow(QMainWindow):
 
     def resizeEvent(self, event) -> None:  # type: ignore[override]
         super().resizeEvent(event)
+        self._apply_marker_geometry()
         self._refresh_pixmap()
+
+    def _apply_marker_geometry(self) -> None:
+        if self.marker_geometry is None:
+            return
+        self.marker_label.setGeometry(self.marker_geometry)
+        central_rect = self.centralWidget().rect()
+        self.info_label.setGeometry(
+            0,
+            max(0, central_rect.height() - 24),
+            central_rect.width(),
+            24,
+        )
 
     def _refresh_pixmap(self) -> None:
         if self._base_pixmap is None:
@@ -89,6 +109,10 @@ class ArucoDisplayNode(Node):
         self.declare_parameter("fullscreen", False)
         self.declare_parameter("screen_name", "")
         self.declare_parameter("image_rotation_degrees", 0)
+        self.declare_parameter("marker_x", -1)
+        self.declare_parameter("marker_y", -1)
+        self.declare_parameter("marker_width", -1)
+        self.declare_parameter("marker_height", -1)
         self.declare_parameter("spin_rate_hz", 100.0)
         default_marker_dir = str(
             Path(get_package_share_directory("r1_ui")) / "aruco_marker"
@@ -105,6 +129,7 @@ class ArucoDisplayNode(Node):
         self.image_rotation_degrees = (
             self.get_parameter("image_rotation_degrees").get_parameter_value().integer_value
         )
+        self.marker_geometry = self._get_marker_geometry()
         self.spin_rate_hz = (
             self.get_parameter("spin_rate_hz").get_parameter_value().double_value
         )
@@ -122,6 +147,7 @@ class ArucoDisplayNode(Node):
             marker_image_path=initial_marker_path,
             window_title=self.window_title,
             image_rotation_degrees=self.image_rotation_degrees,
+            marker_geometry=self.marker_geometry,
         )
         self._move_window_to_screen()
         if self.fullscreen:
@@ -139,7 +165,40 @@ class ArucoDisplayNode(Node):
         self.get_logger().info(
             f"Displaying marker image {initial_marker_path.name} "
             f"with image_rotation_degrees={self.image_rotation_degrees % 360} "
+            f"and marker_geometry={self._marker_geometry_text()} "
             f"and subscribing to '{self.topic_name}' with spin_rate_hz={self.spin_rate_hz}."
+        )
+
+    def _get_marker_geometry(self) -> Optional[QRect]:
+        marker_x = self.get_parameter("marker_x").get_parameter_value().integer_value
+        marker_y = self.get_parameter("marker_y").get_parameter_value().integer_value
+        marker_width = (
+            self.get_parameter("marker_width").get_parameter_value().integer_value
+        )
+        marker_height = (
+            self.get_parameter("marker_height").get_parameter_value().integer_value
+        )
+        geometry_values = (marker_x, marker_y, marker_width, marker_height)
+        if all(value == -1 for value in geometry_values):
+            return None
+        if marker_x < 0 or marker_y < 0:
+            raise ValueError(
+                "marker_x and marker_y must be non-negative when marker geometry is specified"
+            )
+        if marker_width <= 0 or marker_height <= 0:
+            raise ValueError(
+                "marker_width and marker_height must be greater than zero "
+                "when marker geometry is specified"
+            )
+        return QRect(marker_x, marker_y, marker_width, marker_height)
+
+    def _marker_geometry_text(self) -> str:
+        if self.marker_geometry is None:
+            return "default"
+        return (
+            f"x={self.marker_geometry.x()}, y={self.marker_geometry.y()}, "
+            f"width={self.marker_geometry.width()}, "
+            f"height={self.marker_geometry.height()}"
         )
 
     def _move_window_to_screen(self) -> None:
