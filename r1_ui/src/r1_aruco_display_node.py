@@ -214,7 +214,11 @@ class ArucoDisplayNode(Node):
                 if window_handle is not None:
                     window_handle.setScreen(screen)
                 if self.fullscreen:
-                    self.window.setGeometry(screen.geometry())
+                    self.get_logger().info(
+                        f"Using screen '{screen.name()}' for fullscreen display "
+                        f"with geometry {screen.geometry()}."
+                    )
+                    return
                 else:
                     screen_geometry = screen.availableGeometry()
                     window_size = self.window.size()
@@ -229,9 +233,10 @@ class ArucoDisplayNode(Node):
                         window_height,
                     )
                     self.window.setGeometry(window_geometry)
-                self.get_logger().info(
-                    f"Using screen '{screen.name()}' with geometry {screen.geometry()}."
-                )
+                    self.get_logger().info(
+                        f"Using screen '{screen.name()}' with window geometry "
+                        f"{window_geometry}."
+                    )
                 return
 
         available_screen_names = ", ".join(screen.name() for screen in screens)

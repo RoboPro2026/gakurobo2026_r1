@@ -30,7 +30,7 @@ GUI ライブラリは `gakurobo2026_r1` 内の既存 GUI に合わせて `PyQt6
 | `spin_rate_hz` | double | `100.0` | ROS コールバック処理のために `rclpy.spin_once()` を回す周期 [Hz] です。 |
 
 `marker_x` / `marker_y` / `marker_width` / `marker_height` は4つすべて指定したときだけ有効です。
-座標は表示ウィンドウ左上基準です。`fullscreen:=true` かつ `screen_name` 指定時は、その画面の左上が基準になります。
+座標は表示ウィンドウ左上基準です。`fullscreen:=true` のときは、全画面表示されたウィンドウ内で画像の表示位置と大きさを指定します。
 
 ## 動作概要
 
@@ -149,7 +149,7 @@ ros2 run r1_ui r1_aruco_display_node --ros-args \
   -p image_rotation_degrees:=180
 ```
 
-全画面内の位置と大きさを指定して表示:
+全画面内で画像の位置と大きさを指定して表示:
 
 ```bash
 source ~/ros2_ws/install/setup.bash
