@@ -2858,11 +2858,17 @@ void R1MainNode::manual_mode6_r2_lift(void)
 {
   int & aruco_step = manual_mode6_aruco_marker_step_;
   if (ps4_->is_pushed_up()) {
+    // arucoマーカを万が一変更し忘れたとき用に自動で変わる
+    publish_aruco_marker_id(2);
+    aruco_step = 2;
     r2_flift_pos_ref(R2_FLIFT_UP_POS);
     r2_rlift_pos_ref(R2_RLIFT_UP_POS);
   }
 
   if (ps4_->is_pushed_right()) {
+    // 間違えてボタン押したときのために、aroco_marker_id=0に設定
+    publish_aruco_marker_id(0);
+    aruco_step = 1;
     kfs_fx_pos_ref(KFS_FX_R2_LIFT_POS);
     kfs_fz_pos_ref(KFS_FZ_R2_LIFT_POS);
     kfs_rx_pos_ref(KFS_RX_R2_LIFT_POS);
@@ -2888,6 +2894,9 @@ void R1MainNode::manual_mode6_r2_lift(void)
   }
 
   if (ps4_->is_pushed_left()) {
+    // 間違えてボタン押したときのために、aroco_marker_id=0に設定
+    publish_aruco_marker_id(0);
+    aruco_step = 1;
     r2_flift_pos_ref(R2_FLIFT_NORMAL_POS);
     r2_rlift_pos_ref(R2_RLIFT_NORMAL_POS);
     if (manual_mode6_r2_lift_timer_ != nullptr) {
@@ -2912,7 +2921,7 @@ void R1MainNode::manual_mode6_r2_lift(void)
   if (ps4_->is_pushed_circle()) {
     if (aruco_step == 1) {
       publish_aruco_marker_id(2);
-      aruco_step++;
+      aruco_step = 2;
     } else if (aruco_step == 2) {
       publish_aruco_marker_id(0);
       aruco_step = 1;
