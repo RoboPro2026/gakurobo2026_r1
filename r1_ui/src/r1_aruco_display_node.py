@@ -208,11 +208,21 @@ class ArucoDisplayNode(Node):
         screens = QApplication.screens()
         for screen in screens:
             if screen.name() == self.screen_name:
-                self.window.setGeometry(screen.geometry())
                 self.window.winId()
                 window_handle = self.window.windowHandle()
                 if window_handle is not None:
                     window_handle.setScreen(screen)
+                if self.fullscreen:
+                    self.window.setGeometry(screen.geometry())
+                else:
+                    screen_geometry = screen.availableGeometry()
+                    window_geometry = self.window.geometry()
+                    self.window.move(
+                        screen_geometry.x()
+                        + (screen_geometry.width() - window_geometry.width()) // 2,
+                        screen_geometry.y()
+                        + (screen_geometry.height() - window_geometry.height()) // 2,
+                    )
                 self.get_logger().info(
                     f"Using screen '{screen.name()}' with geometry {screen.geometry()}."
                 )

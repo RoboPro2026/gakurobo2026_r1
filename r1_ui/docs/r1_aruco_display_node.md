@@ -21,7 +21,7 @@ GUI ライブラリは `gakurobo2026_r1` 内の既存 GUI に合わせて `PyQt6
 | `initial_marker_id` | integer | `0` | 起動直後に表示するマーカ ID です。 |
 | `marker_image_dir` | string | `share/r1_ui/aruco_marker` | `marker_<marker_id>.png` を探すディレクトリです。 |
 | `fullscreen` | bool | `false` | `true` のとき全画面表示します。 |
-| `screen_name` | string | `""` | 表示先画面の名前です。空文字のときはQtのデフォルト画面を使います。 |
+| `screen_name` | string | `""` | 表示先画面の名前です。空文字のときはQtのデフォルト画面を使います。非全画面表示でも指定できます。 |
 | `image_rotation_degrees` | integer | `0` | 表示画像の回転角度 [deg] です。モニターを上下逆に取り付けた場合は `180` を指定します。 |
 | `marker_x` | integer | `-1` | マーカ表示矩形の左上 X 座標 [px] です。`-1` のときは従来どおり中央表示します。 |
 | `marker_y` | integer | `-1` | マーカ表示矩形の左上 Y 座標 [px] です。`-1` のときは従来どおり中央表示します。 |
@@ -127,6 +127,15 @@ source ~/ros2_ws/.venv/bin/activate
 source ~/ros2_ws/install/setup.bash
 ros2 run r1_ui r1_aruco_display_node --ros-args \
   -p fullscreen:=true \
+  -p screen_name:=HDMI-1
+```
+
+特定画面に通常ウィンドウ表示:
+
+```bash
+source ~/ros2_ws/install/setup.bash
+ros2 run r1_ui r1_aruco_display_node --ros-args \
+  -p fullscreen:=false \
   -p screen_name:=HDMI-1
 ```
 
