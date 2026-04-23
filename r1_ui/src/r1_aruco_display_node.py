@@ -154,6 +154,7 @@ class ArucoDisplayNode(Node):
             self.window.showFullScreen()
         else:
             self.window.show()
+            QTimer.singleShot(0, self._move_window_to_screen)
 
         self.subscription = self.create_subscription(
             Int32,
@@ -216,13 +217,18 @@ class ArucoDisplayNode(Node):
                     self.window.setGeometry(screen.geometry())
                 else:
                     screen_geometry = screen.availableGeometry()
-                    window_geometry = self.window.geometry()
-                    self.window.move(
+                    window_size = self.window.size()
+                    window_width = min(window_size.width(), screen_geometry.width())
+                    window_height = min(window_size.height(), screen_geometry.height())
+                    window_geometry = QRect(
                         screen_geometry.x()
-                        + (screen_geometry.width() - window_geometry.width()) // 2,
+                        + (screen_geometry.width() - window_width) // 2,
                         screen_geometry.y()
-                        + (screen_geometry.height() - window_geometry.height()) // 2,
+                        + (screen_geometry.height() - window_height) // 2,
+                        window_width,
+                        window_height,
                     )
+                    self.window.setGeometry(window_geometry)
                 self.get_logger().info(
                     f"Using screen '{screen.name()}' with geometry {screen.geometry()}."
                 )
