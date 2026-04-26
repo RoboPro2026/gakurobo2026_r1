@@ -11,4 +11,5 @@ export WAYLAND_DISPLAY=wayland-0
 export QT_QPA_PLATFORM=wayland
 export DBUS_SESSION_BUS_ADDRESS=unix:path=$XDG_RUNTIME_DIR/bus
 echo "========== R1 bringup start =========="
-ros2 launch r1_bringup r1_bringup.launch.py use_sim:=false use_lidar:=true
+USE_PHONE=${1:-false}
+ros2 launch r1_bringup r1_bringup.launch.py use_sim:=false use_lidar:=true use_phone:=$USE_PHONE
