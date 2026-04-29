@@ -655,12 +655,18 @@ R1MainNode::R1MainNode() : Node("r1_main_node")
   declare_and_get_parameter("spear_y_collect1_pos", SPEAR_Y_COLLECT1_POS);
   declare_and_get_parameter("spear_y_collect2_pos", SPEAR_Y_COLLECT2_POS);
   declare_and_get_parameter("spear_y_make_spear_pos", SPEAR_Y_MAKE_SPEAR_POS);
+  declare_and_get_parameter("sear_y_low_attack_pos", SPEAR_Y_LOW_ATTACK_POS);
+  declare_and_get_parameter("spear_y_middle_attack_pos", SPEAR_Y_MIDDLE_ATTACK_POS);
+  declare_and_get_parameter("spear_y_high_attack_pos", SPEAR_Y_HIGH_ATTACK_POS);
+  declare_and_get_parameter("spear_y_throw_away_pos", SPEAR_Y_THROW_AWAY_POS);
   // spear_roll
   declare_and_get_parameter("spear_roll_normal_angle", SPEAR_ROLL_NORMAL_ANGLE);
   declare_and_get_parameter("spear_roll_vertical_angle", SPEAR_ROLL_VERTICAL_ANGLE);
   declare_and_get_parameter("spear_roll_horizontal_angle", SPEAR_ROLL_HORIZONTAL_ANGLE);
   declare_and_get_parameter("spear_roll_inv_horizontal_angle", SPEAR_ROLL_INV_HORIZONTAL_ANGLE);
-// 千田機構
+  declare_and_get_parameter("spear_roll_low_attack_angle", SPEAR_ROLL_LOW_ATTACK_ANGLE);
+  declare_and_get_parameter("spear_roll_middle_attack_angle", SPEAR_ROLL_MIDDLE_ATTACK_ANGLE);
+  declare_and_get_parameter("spear_roll_high_attack_angle", SPEAR_ROLL_HIGH_ATTACK_ANGLE);
 #elif SPEAR_MECHANISM == SPEAR_MECHANISM_CHIDA
   // spear1
   declare_and_get_parameter("spear1_normal_pos", SPEAR1_NORMAL_POS);
@@ -3079,7 +3085,44 @@ void R1MainNode::manual_mode7_spear_attack_task(int n, int m)
   (void)n;
   int & step = manual_mode7_spear_attack_task_step_;
   RCLCPP_INFO(this->get_logger(), "manual_mode7_spear_attack_task step: %d", step);
-#if SPEAR_MECHANISM == SPEAR_MECHANISM_CHIDA
+#if SPEAR_MECHANISM == SPEAR_MECHANISM_OTSUKI
+  if (step == 1) {
+    kfs_fx_pos_ref(KFS_FX_NORMAL_POS);
+    kfs_fz_pos_ref(KFS_FZ_NORMAL_POS);
+    kfs_fyaw_pos_ref(KFS_FYAW_SIDE_ANGLE);
+    kfs_rx_pos_ref(KFS_RX_NORMAL_POS);
+    kfs_rz_pos_ref(KFS_RZ_NORMAL_POS);
+    kfs_ryaw_pos_ref(KFS_RYAW_SIDE_ANGLE);
+    if (m == 1) {
+      // 下段を狙う
+      spear_y_pos_ref(SPEAR_Y_LOW_ATTACK_POS);
+    } else if (m == 2) {
+      // 中段を狙う
+      spear_y_pos_ref(SPEAR_Y_MIDDLE_ATTACK_POS);
+    } else if (m == 3) {
+      // 上段を狙う
+      spear_y_pos_ref(SPEAR_Y_HIGH_ATTACK_POS);
+    }
+    step++;
+  } else if (step == 2) {
+    if (m == 1) {
+      // 下段を狙う
+      spear_roll_pos_ref(SPEAR_ROLL_LOW_ATTACK_ANGLE);
+    } else if (m == 2) {
+      // 中段を狙う
+      spear_roll_pos_ref(SPEAR_ROLL_MIDDLE_ATTACK_ANGLE);
+    } else if (m == 3) {
+      // 上段を狙う
+      spear_roll_pos_ref(SPEAR_ROLL_HIGH_ATTACK_ANGLE);
+    }
+    step++;
+  } else if (step == 3) {
+    spear_y_pos_ref(SPEAR_Y_NORMAL_POS);
+    spear_roll_pos_ref(SPEAR_ROLL_VERTICAL_ANGLE);
+    step = 1;
+    RCLCPP_INFO(this->get_logger(), "spear attack task completed");
+  }
+#elif SPEAR_MECHANISM == SPEAR_MECHANISM_CHIDA
   if (step == 1) {
     kfs_fx_pos_ref(KFS_FX_NORMAL_POS);
     kfs_fz_pos_ref(KFS_FZ_NORMAL_POS);
@@ -3151,7 +3194,35 @@ void R1MainNode::manual_mode7_spear_attack_task(int n, int m)
 void R1MainNode::manual_mode7_spear_throw_away_task(int n)
 {
   int & step = manual_mode7_spear_throw_away_task_step_;
-#if SPEAR_MECHANISM == SPEAR_MECHANISM_CHIDA
+#if SPEAR_MECHANISM == SPEAR_MECHANISM_OTSUKI
+  if (step == 1) {
+    // KFS回収機構はスタート時の高い位置に移動させる
+    kfs_fx_pos_ref(KFS_FX_START_POS);
+    kfs_fz_pos_ref(KFS_FZ_START_POS);
+    kfs_fyaw_pos_ref(KFS_FYAW_START_ANGLE);
+    kfs_rx_pos_ref(KFS_RX_START_POS);
+    kfs_rz_pos_ref(KFS_RZ_START_POS);
+    kfs_ryaw_pos_ref(KFS_RYAW_START_ANGLE);
+    step++;
+  } else if (step == 2) {
+    spear_y_pos_ref(SPEAR_Y_THROW_AWAY_POS);
+    spear_roll_pos_ref(SPEAR_ROLL_HORIZONTAL_ANGLE);
+    spear_hand_push_valve(true);
+    step++;
+  } else if (step == 3) {
+    spear_hand_push_valve(false);
+    step++;
+  } else if (step == 4) {
+    spear_hand1_valve(false);
+    spear_hand2_valve(false);
+    step++;
+  } else if (step == 5) {
+    spear_y_pos_ref(SPEAR_Y_NORMAL_POS);
+    spear_roll_pos_ref(SPEAR_ROLL_VERTICAL_ANGLE);
+    step = 1;
+    RCLCPP_INFO(this->get_logger(), "spear throw away task completed");
+  }
+#elif SPEAR_MECHANISM == SPEAR_MECHANISM_CHIDA
   if (step == 1) {
     kfs_fx_pos_ref(KFS_FX_NORMAL_POS);
     kfs_fz_pos_ref(KFS_FZ_NORMAL_POS);
@@ -3185,27 +3256,28 @@ void R1MainNode::manual_mode7_spear_throw_away_task(int n)
 void R1MainNode::manual_mode7_spear_attack(void)
 {
   if (ps4_->is_pushed_up()) {
-    spear_roll_pos_ref(spear_roll_position_ref_ + 0.05);
+    spear_y_pos_ref(spear_y_position_ref_ + 0.01);
   }
 
   if (ps4_->is_pushed_right()) {
-    manual_mode7_spear_attack_task(2, 2);
+    spear_roll_pos_ref(spear_roll_position_ref_ + 0.01);
   }
 
   if (ps4_->is_pushed_down()) {
-    spear_roll_pos_ref(spear_roll_position_ref_ - 0.05);
+    spear_y_pos_ref(spear_y_position_ref_ - 0.01);
   }
 
   if (ps4_->is_pushed_left()) {
-    manual_mode7_spear_attack_task(2, 3);
+    spear_roll_pos_ref(spear_roll_position_ref_ - 0.01);
   }
 
   if (ps4_->is_pushed_triangle()) {
-    manual_mode7_spear_attack_task(2, 1);
+    manual_mode7_spear_attack_task(2, 2);
   }
 
   if (ps4_->is_pushed_circle()) {
-    spear2_pos_ref(spear2_position_ref_ + 0.01);
+    manual_mode7_spear_attack_task(2, 1);
+    // spear2_pos_ref(spear2_position_ref_ + 0.01);
   }
 
   if (ps4_->is_pushed_cross()) {
@@ -3213,7 +3285,8 @@ void R1MainNode::manual_mode7_spear_attack(void)
   }
 
   if (ps4_->is_pushed_square()) {
-    spear2_pos_ref(spear2_position_ref_ - 0.01);
+    manual_mode7_spear_attack_task(2, 3);
+    // spear2_pos_ref(spear2_position_ref_ - 0.01);
   }
 
   if (ps4_->is_pushed_l1()) {
