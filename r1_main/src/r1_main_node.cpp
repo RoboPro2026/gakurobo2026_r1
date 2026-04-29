@@ -655,7 +655,7 @@ R1MainNode::R1MainNode() : Node("r1_main_node")
   declare_and_get_parameter("spear_y_collect1_pos", SPEAR_Y_COLLECT1_POS);
   declare_and_get_parameter("spear_y_collect2_pos", SPEAR_Y_COLLECT2_POS);
   declare_and_get_parameter("spear_y_make_spear_pos", SPEAR_Y_MAKE_SPEAR_POS);
-  declare_and_get_parameter("sear_y_low_attack_pos", SPEAR_Y_LOW_ATTACK_POS);
+  declare_and_get_parameter("spear_y_low_attack_pos", SPEAR_Y_LOW_ATTACK_POS);
   declare_and_get_parameter("spear_y_middle_attack_pos", SPEAR_Y_MIDDLE_ATTACK_POS);
   declare_and_get_parameter("spear_y_high_attack_pos", SPEAR_Y_HIGH_ATTACK_POS);
   declare_and_get_parameter("spear_y_throw_away_pos", SPEAR_Y_THROW_AWAY_POS);
