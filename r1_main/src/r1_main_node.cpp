@@ -2184,7 +2184,8 @@ void R1MainNode::manual_mode1_detect_origin(void)
     // spear_x, spear_y, spear_rollは原点検出ができないので、角度を設定する
     // spear_x_set_pos(0.0);
     // spear_y_set_pos(0.0);
-    spear_y_set_pos(0.0);
+    // spear_y_set_pos(0.0);
+    spear_y_detect_origin();
     spear_roll_set_angle(0.0);
   }
 
