@@ -242,10 +242,15 @@ public:
   double kfs_rear_pump_ref_ = 0.0;
   bool kfs_front_valve_ref_ = false;
   bool kfs_rear_valve_ref_ = false;
+  // 千田機構
   bool spear_u1_valve_ref_ = false;
   bool spear_d1_valve_ref_ = false;
   bool spear_u2_valve_ref_ = false;
   bool spear_d2_valve_ref_ = false;
+  // 大槻機構
+  bool spear_hand1_valve_ref_ = false;
+  bool spear_hand2_valve_ref_ = false;
+  bool spear_hand_push_valve_ref_ = false;
 
   // sabacan
   bool sabacan_is_ems_ = false;
@@ -641,6 +646,11 @@ public:
   void kfs_front_valve(bool on);
   void kfs_rear_valve(bool on);
   // やり電磁弁
+  // 大槻機構
+  void spear_hand1_valve(bool on);
+  void spear_hand2_valve(bool on);
+  void spear_hand_push_valve(bool on);
+  // 千田機構
   void spear_u1_valve(bool on);
   void spear_d1_valve(bool on);
   void spear_u2_valve(bool on);

@@ -496,6 +496,11 @@ R1MainNode::R1MainNode() : Node("r1_main_node")
   register_gpio_pwm_output("kfs_front_valve", nullptr, &kfs_front_valve_ref_);
   register_gpio_pwm_output("kfs_rear_valve", nullptr, &kfs_rear_valve_ref_);
   // 槍電磁弁
+  // 大槻機構
+  register_gpio_pwm_output("spear_hand1_valve", nullptr, &spear_hand1_valve_ref_);
+  register_gpio_pwm_output("spear_hand2_valve", nullptr, &spear_hand2_valve_ref_);
+  register_gpio_pwm_output("spear_hand_push_valve", nullptr, &spear_hand_push_valve_ref_);
+  // 千田機構
   register_gpio_pwm_output("spear_u1_valve", nullptr, &spear_u1_valve_ref_);
   register_gpio_pwm_output("spear_d1_valve", nullptr, &spear_d1_valve_ref_);
   register_gpio_pwm_output("spear_u2_valve", nullptr, &spear_u2_valve_ref_);
@@ -1980,6 +1985,24 @@ void R1MainNode::kfs_rear_valve(bool on)
   publish_gpio_pwm_output("kfs_rear_valve", on ? 1.0 : 0.0);
 }
 
+// 大槻機構
+void R1MainNode::spear_hand1_valve(bool on)
+{
+  publish_gpio_pwm_output("spear_hand1_valve", on ? 1.0 : 0.0);
+}
+
+void R1MainNode::spear_hand2_valve(bool on)
+{
+  publish_gpio_pwm_output("spear_hand2_valve", on ? 1.0 : 0.0);
+}
+
+void spear_hand_push_valve(bool on)
+{
+  publish_gpio_pwm_output("spear_hand_push_valve", on ? 1.0 : 0.0);
+}
+
+// 千田機構
+
 void R1MainNode::spear_u1_valve(bool on)
 {
   publish_gpio_pwm_output("spear_u1_valve", on ? 1.0 : 0.0);
@@ -2139,53 +2162,67 @@ void R1MainNode::manual_mode2_collect_pole_task(void)
   int & step = manual_mode2_collect_pole_task_step_;
   RCLCPP_INFO(this->get_logger(), "manual_mode2_collect_pole_task step: %d", step);
   if (step == 1) {
-    spear_roll_pos_ref(SPEAR_ROLL_VERTICAL_ANGLE);
-    spear_x_pos_ref(SPEAR_X_MIDDLE_POS);
-    spear_pitch1_pos_ref(SPEAR_PITCH1_VERTICAL_ANGLE);
-    spear_pitch2_pos_ref(SPEAR_PITCH2_VERTICAL_ANGLE);
-    spear_y_pos_ref(SPEAR_Y_EXPAND_POS);
-    spear_u1_valve(true);
-    spear_d1_valve(true);
-    spear_u2_valve(true);
-    spear_d2_valve(true);
-    spear1_pos_ref(SPEAR1_COLLECT1_POS);
-    spear2_pos_ref(SPEAR2_COLLECT1_POS);
-    step++;
+    spear_hand1_valve(true);
+    spear_hand2_valve(true);
+    spear_hand_push_valve(true);
   } else if (step == 2) {
-    spear_d1_valve(false);
-    spear_d2_valve(false);
+    spear_hand1_valve(false);
+    spear_hand2_valve(false);
     step++;
   } else if (step == 3) {
-    spear1_pos_ref(SPEAR1_COLLECT3_POS);
-    spear2_pos_ref(SPEAR2_COLLECT3_POS);
-    step++;
-  } else if (step == 4) {
-    spear_u1_valve(false);
-    spear_u2_valve(false);
-    spear_y_pos_ref(SPEAR_Y_NORMAL_POS);
-    step++;
-  } else if (step == 5) {
-    // TODO: ここはゾーンによって回転方向を変えたほうがいいかも
-
-    // step5以降は操作ミス防止のためコメントアウト
-    // spear_roll_pos_ref(SPEAR_ROLL_INV_NORMAL_ANGLE);
-    step++;
-  } else if (step == 6) {
-    // spear_d1_valve(true);
-    // spear_d2_valve(true);
-    step++;
-  } else if (step == 7) {
-    // spear1_pos_ref(SPEAR1_NORMAL_POS);
-    // spear2_pos_ref(SPEAR2_NORMAL_POS);
-    // spear_pitch1_pos_ref(SPEAR_PITCH1_NORMAL_ANGLE);
-    // spear_pitch2_pos_ref(SPEAR_PITCH2_NORMAL_ANGLE);
-    step++;
-  } else if (step == 8) {
-    // spear_d1_valve(false);
-    // spear_d2_valve(false);
+    spear_hand_push_valve(false);
     RCLCPP_INFO(this->get_logger(), "pole collect task completed");
+
     step = 1;
   }
+  // if (step == 1) {
+  //   spear_roll_pos_ref(SPEAR_ROLL_VERTICAL_ANGLE);
+  //   spear_x_pos_ref(SPEAR_X_MIDDLE_POS);
+  //   spear_pitch1_pos_ref(SPEAR_PITCH1_VERTICAL_ANGLE);
+  //   spear_pitch2_pos_ref(SPEAR_PITCH2_VERTICAL_ANGLE);
+  //   spear_y_pos_ref(SPEAR_Y_EXPAND_POS);
+  //   spear_u1_valve(true);
+  //   spear_d1_valve(true);
+  //   spear_u2_valve(true);
+  //   spear_d2_valve(true);
+  //   spear1_pos_ref(SPEAR1_COLLECT1_POS);
+  //   spear2_pos_ref(SPEAR2_COLLECT1_POS);
+  //   step++;
+  // } else if (step == 2) {
+  //   spear_d1_valve(false);
+  //   spear_d2_valve(false);
+  //   step++;
+  // } else if (step == 3) {
+  //   spear1_pos_ref(SPEAR1_COLLECT3_POS);
+  //   spear2_pos_ref(SPEAR2_COLLECT3_POS);
+  //   step++;
+  // } else if (step == 4) {
+  //   spear_u1_valve(false);
+  //   spear_u2_valve(false);
+  //   spear_y_pos_ref(SPEAR_Y_NORMAL_POS);
+  //   step++;
+  // } else if (step == 5) {
+  //   // TODO: ここはゾーンによって回転方向を変えたほうがいいかも
+
+  //   // step5以降は操作ミス防止のためコメントアウト
+  //   // spear_roll_pos_ref(SPEAR_ROLL_INV_NORMAL_ANGLE);
+  //   step++;
+  // } else if (step == 6) {
+  //   // spear_d1_valve(true);
+  //   // spear_d2_valve(true);
+  //   step++;
+  // } else if (step == 7) {
+  //   // spear1_pos_ref(SPEAR1_NORMAL_POS);
+  //   // spear2_pos_ref(SPEAR2_NORMAL_POS);
+  //   // spear_pitch1_pos_ref(SPEAR_PITCH1_NORMAL_ANGLE);
+  //   // spear_pitch2_pos_ref(SPEAR_PITCH2_NORMAL_ANGLE);
+  //   step++;
+  // } else if (step == 8) {
+  //   // spear_d1_valve(false);
+  //   // spear_d2_valve(false);
+  //   RCLCPP_INFO(this->get_logger(), "pole collect task completed");
+  //   step = 1;
+  // }
 }
 
 void R1MainNode::manual_mode2_pole(void)
@@ -2212,7 +2249,7 @@ void R1MainNode::manual_mode2_pole(void)
   }
 
   if (ps4_->is_pushed_circle()) {
-    spear2_pos_ref(spear2_position_ref_ + 0.01);
+    // spear2_pos_ref(spear2_position_ref_ + 0.01);
   }
 
   if (ps4_->is_pushed_cross()) {
@@ -2220,23 +2257,23 @@ void R1MainNode::manual_mode2_pole(void)
   }
 
   if (ps4_->is_pushed_square()) {
-    spear2_pos_ref(spear2_position_ref_ - 0.01);
+    // spear2_pos_ref(spear2_position_ref_ - 0.01);
   }
 
   if (ps4_->is_pushed_l1()) {
-    spear_pitch1_pos_ref(spear_pitch1_position_ref_ - 0.05);
+    // spear_pitch1_pos_ref(spear_pitch1_position_ref_ - 0.05);
   }
 
   if (ps4_->is_pushed_r1()) {
-    spear_pitch1_pos_ref(spear_pitch1_position_ref_ + 0.05);
+    // spear_pitch1_pos_ref(spear_pitch1_position_ref_ + 0.05);
   }
 
   if (ps4_->is_pushed_l2()) {
-    spear_pitch2_pos_ref(spear_pitch2_position_ref_ - 0.05);
+    // spear_pitch2_pos_ref(spear_pitch2_position_ref_ - 0.05);
   }
 
   if (ps4_->is_pushed_r2()) {
-    spear_pitch2_pos_ref(spear_pitch2_position_ref_ + 0.05);
+    // spear_pitch2_pos_ref(spear_pitch2_position_ref_ + 0.05);
   }
 }
 

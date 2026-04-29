@@ -571,137 +571,17 @@ r1_r2_rlift_node:
     inverse_low_switch_logic: false
     inverse_high_switch_logic: false
 # ---------- やり ----------
-# linear motion node
-# C610
-r1_spear1_node:
-  ros__parameters:
-    timer_rate: 10.0
-    # トルク検出時のしきい値
-    torque_threshold: 0.5 # Nm
-    # 通常位置モード時に Robomas の torque_lim として使う値
-    normal_torque_limit: 1.0 # Nm
-    # 原点検出・メカロック移動中に Robomas の torque_lim として使う値
-    contact_torque_limit: 0.75 # Nm
-    origin_detect_threshold_time: 0.5 # 秒
-    # 原点検出のときは、0の方向に戻るので、負の速度にする
-    origin_detect_speed: -6.28 # rad/s
-    pos_min: -0.1
-    pos_max: 1.0
-    normal_pos: 0.05
-    # モータが1回転すると100mm進むので、半径は15.9mm
-    radius: 0.015915494309189534
-    inverse_motor: false
-    use_low_switch: false
-    use_high_switch: false
-    inverse_low_switch_logic: false
-    inverse_high_switch_logic: false
-# linear motion node
-# C610
-r1_spear2_node:
-  ros__parameters:
-    timer_rate: 10.0
-    # トルク検出時のしきい値
-    torque_threshold: 0.5 # Nm
-    # 通常位置モード時に Robomas の torque_lim として使う値
-    normal_torque_limit: 1.0 # Nm
-    # 原点検出・メカロック移動中に Robomas の torque_lim として使う値
-    contact_torque_limit: 0.75 # Nm
-    origin_detect_threshold_time: 0.5 # 秒
-    # 原点検出のときは、0の方向に戻るので、負の速度にする
-    origin_detect_speed: -6.28 # rad/s
-    pos_min: -0.1
-    pos_max: 1.0
-    normal_pos: 0.05
-    # モータが1回転すると100mm進むので、半径は15.9mm
-    radius: 0.015915494309189534
-    inverse_motor: false
-    use_low_switch: false
-    use_high_switch: false
-    inverse_low_switch_logic: false
-    inverse_high_switch_logic: false
-# linear motion node
-# C610
-r1_spear3_node:
-  ros__parameters:
-    timer_rate: 10.0
-    # トルク検出時のしきい値
-    torque_threshold: 0.5 # Nm
-    # 通常位置モード時に Robomas の torque_lim として使う値
-    normal_torque_limit: 1.0 # Nm
-    # 原点検出・メカロック移動中に Robomas の torque_lim として使う値
-    contact_torque_limit: 1.0 # Nm
-    origin_detect_threshold_time: 0.5 # 秒
-    # 原点検出のときは、0の方向に戻るので、負の速度にする
-    origin_detect_speed: -6.28 # rad/s
-    pos_min: -0.1
-    pos_max: 1.0
-    normal_pos: 0.05
-    # モータが1回転すると100mm進むので、半径は15.9mm
-    radius: 0.015915494309189534
-    inverse_motor: false
-    use_low_switch: false
-    use_high_switch: false
-    inverse_low_switch_logic: false
-    inverse_high_switch_logic: false
-# linear motion node
-# C610
-r1_spear4_node:
-  ros__parameters:
-    timer_rate: 10.0
-    # トルク検出時のしきい値
-    torque_threshold: 0.5 # Nm
-    # 通常位置モード時に Robomas の torque_lim として使う値
-    normal_torque_limit: 1.0 # Nm
-    # 原点検出・メカロック移動中に Robomas の torque_lim として使う値
-    contact_torque_limit: 1.0 # Nm
-    origin_detect_threshold_time: 0.5 # 秒
-    # 原点検出のときは、0の方向に戻るので、負の速度にする
-    origin_detect_speed: -6.28 # rad/s
-    pos_min: -0.1
-    pos_max: 1.0
-    normal_pos: 0.05
-    # モータが1回転すると100mm進むので、半径は15.9mm
-    radius: 0.015915494309189534
-    inverse_motor: false
-    use_low_switch: false
-    use_high_switch: false
-    inverse_low_switch_logic: false
-    inverse_high_switch_logic: false
-# linear motion node
-# C620
-r1_spear_x_node:
-  ros__parameters:
-    timer_rate: 10.0
-    # トルク検出時のしきい値
-    torque_threshold: 0.5 # Nm
-    # 通常位置モード時に Robomas の torque_lim として使う値
-    normal_torque_limit: 4.0 # Nm
-    # 原点検出・メカロック移動中に Robomas の torque_lim として使う値
-    contact_torque_limit: 4.0 # Nm
-    origin_detect_threshold_time: 0.5 # 秒
-    # 原点検出のときは、0の方向に戻るので、負の速度にする
-    origin_detect_speed: -6.28 # rad/s
-    pos_min: -1.0
-    pos_max: 1.0
-    normal_pos: 0.05
-    # モータが1回転すると36pi mm進むので、半径は18.0mm
-    radius: 0.018
-    inverse_motor: true
-    use_low_switch: false
-    use_high_switch: false
-    inverse_low_switch_logic: false
-    inverse_high_switch_logic: false
-# linear motion node
-# C620
+# ----- 大槻機構 -----
+# # C610
 r1_spear_y_node:
   ros__parameters:
     timer_rate: 10.0
     # トルク検出時のしきい値
     torque_threshold: 0.5 # Nm
     # 通常位置モード時に Robomas の torque_lim として使う値
-    normal_torque_limit: 4.0 # Nm
+    normal_torque_limit: 0.7 # Nm
     # 原点検出・メカロック移動中に Robomas の torque_lim として使う値
-    contact_torque_limit: 4.0 # Nm
+    contact_torque_limit: 0.7 # Nm
     origin_detect_threshold_time: 0.5 # 秒
     # 原点検出のときは、0の方向に戻るので、負の速度にする
     origin_detect_speed: -6.28 # rad/s
@@ -721,57 +601,10 @@ r1_spear_roll_node:
     timer_rate: 10.0
     # トルク検出時のしきい値
     torque_threshold: 0.5 # Nm
-    # NOTE: robstrideなので、トルクしきい値は無効化
     # 通常位置モード時に Robomas の torque_lim として使う値
-    normal_torque_limit: 1.5 # Nm
+    normal_torque_limit: 0.7 # Nm
     # 原点検出・メカロック移動中に Robomas の torque_lim として使う値
-    contact_torque_limit: 1.5 # Nm
-    origin_detect_threshold_time: 0.5 # 秒
-    origin_detect_speed: -3.14 # rad/s
-    angle_min: -5.0
-    angle_max: 5.0
-    normal_angle: 0.0
-    # ギア比で割った値がモーターの角度指令値となる
-    # 1.0 / 5.0 = 0.2
-    gear_ratio: 0.2
-    inverse_motor: true
-    use_low_switch: false
-    use_high_switch: false
-    inverse_low_switch_logic: false
-    inverse_high_switch_logic: false
-# angle motion node
-r1_spear_pitch1_node:
-  ros__parameters:
-    timer_rate: 10.0
-    # トルク検出時のしきい値
-    torque_threshold: 0.5 # Nm
-    # 通常位置モード時に Robomas の torque_lim として使う値
-    normal_torque_limit: 4.0 # Nm
-    # 原点検出・メカロック移動中に Robomas の torque_lim として使う値
-    contact_torque_limit: 4.0 # Nm
-    origin_detect_threshold_time: 0.5 # 秒
-    origin_detect_speed: -3.14 # rad/s
-    angle_min: -5.0
-    angle_max: 5.0
-    normal_angle: 0.1
-    # ギア比で割った値がモーターの角度指令値となる
-    # 1.0 / 5.0 = 0.2
-    gear_ratio: 0.2
-    inverse_motor: true
-    use_low_switch: false
-    use_high_switch: false
-    inverse_low_switch_logic: false
-    inverse_high_switch_logic: false
-# angle motion node
-r1_spear_pitch2_node:
-  ros__parameters:
-    timer_rate: 10.0
-    # トルク検出時のしきい値
-    torque_threshold: 0.5 # Nm
-    # 通常位置モード時に Robomas の torque_lim として使う値
-    normal_torque_limit: 4.0 # Nm
-    # 原点検出・メカロック移動中に Robomas の torque_lim として使う値
-    contact_torque_limit: 4.0 # Nm
+    contact_torque_limit: 0.7 # Nm
     origin_detect_threshold_time: 0.5 # 秒
     origin_detect_speed: -3.14 # rad/s
     angle_min: -5.0
@@ -785,6 +618,221 @@ r1_spear_pitch2_node:
     use_high_switch: false
     inverse_low_switch_logic: false
     inverse_high_switch_logic: false
+# ----- 千田機構 -----
+# # linear motion node
+# # C610
+# r1_spear1_node:
+#   ros__parameters:
+#     timer_rate: 10.0
+#     # トルク検出時のしきい値
+#     torque_threshold: 0.5 # Nm
+#     # 通常位置モード時に Robomas の torque_lim として使う値
+#     normal_torque_limit: 1.0 # Nm
+#     # 原点検出・メカロック移動中に Robomas の torque_lim として使う値
+#     contact_torque_limit: 0.75 # Nm
+#     origin_detect_threshold_time: 0.5 # 秒
+#     # 原点検出のときは、0の方向に戻るので、負の速度にする
+#     origin_detect_speed: -6.28 # rad/s
+#     pos_min: -0.1
+#     pos_max: 1.0
+#     normal_pos: 0.05
+#     # モータが1回転すると100mm進むので、半径は15.9mm
+#     radius: 0.015915494309189534
+#     inverse_motor: false
+#     use_low_switch: false
+#     use_high_switch: false
+#     inverse_low_switch_logic: false
+#     inverse_high_switch_logic: false
+# # linear motion node
+# # C610
+# r1_spear2_node:
+#   ros__parameters:
+#     timer_rate: 10.0
+#     # トルク検出時のしきい値
+#     torque_threshold: 0.5 # Nm
+#     # 通常位置モード時に Robomas の torque_lim として使う値
+#     normal_torque_limit: 1.0 # Nm
+#     # 原点検出・メカロック移動中に Robomas の torque_lim として使う値
+#     contact_torque_limit: 0.75 # Nm
+#     origin_detect_threshold_time: 0.5 # 秒
+#     # 原点検出のときは、0の方向に戻るので、負の速度にする
+#     origin_detect_speed: -6.28 # rad/s
+#     pos_min: -0.1
+#     pos_max: 1.0
+#     normal_pos: 0.05
+#     # モータが1回転すると100mm進むので、半径は15.9mm
+#     radius: 0.015915494309189534
+#     inverse_motor: false
+#     use_low_switch: false
+#     use_high_switch: false
+#     inverse_low_switch_logic: false
+#     inverse_high_switch_logic: false
+# # linear motion node
+# # C610
+# r1_spear3_node:
+#   ros__parameters:
+#     timer_rate: 10.0
+#     # トルク検出時のしきい値
+#     torque_threshold: 0.5 # Nm
+#     # 通常位置モード時に Robomas の torque_lim として使う値
+#     normal_torque_limit: 1.0 # Nm
+#     # 原点検出・メカロック移動中に Robomas の torque_lim として使う値
+#     contact_torque_limit: 1.0 # Nm
+#     origin_detect_threshold_time: 0.5 # 秒
+#     # 原点検出のときは、0の方向に戻るので、負の速度にする
+#     origin_detect_speed: -6.28 # rad/s
+#     pos_min: -0.1
+#     pos_max: 1.0
+#     normal_pos: 0.05
+#     # モータが1回転すると100mm進むので、半径は15.9mm
+#     radius: 0.015915494309189534
+#     inverse_motor: false
+#     use_low_switch: false
+#     use_high_switch: false
+#     inverse_low_switch_logic: false
+#     inverse_high_switch_logic: false
+# # linear motion node
+# # C610
+# r1_spear4_node:
+#   ros__parameters:
+#     timer_rate: 10.0
+#     # トルク検出時のしきい値
+#     torque_threshold: 0.5 # Nm
+#     # 通常位置モード時に Robomas の torque_lim として使う値
+#     normal_torque_limit: 1.0 # Nm
+#     # 原点検出・メカロック移動中に Robomas の torque_lim として使う値
+#     contact_torque_limit: 1.0 # Nm
+#     origin_detect_threshold_time: 0.5 # 秒
+#     # 原点検出のときは、0の方向に戻るので、負の速度にする
+#     origin_detect_speed: -6.28 # rad/s
+#     pos_min: -0.1
+#     pos_max: 1.0
+#     normal_pos: 0.05
+#     # モータが1回転すると100mm進むので、半径は15.9mm
+#     radius: 0.015915494309189534
+#     inverse_motor: false
+#     use_low_switch: false
+#     use_high_switch: false
+#     inverse_low_switch_logic: false
+#     inverse_high_switch_logic: false
+# # linear motion node
+# # C620
+# r1_spear_x_node:
+#   ros__parameters:
+#     timer_rate: 10.0
+#     # トルク検出時のしきい値
+#     torque_threshold: 0.5 # Nm
+#     # 通常位置モード時に Robomas の torque_lim として使う値
+#     normal_torque_limit: 4.0 # Nm
+#     # 原点検出・メカロック移動中に Robomas の torque_lim として使う値
+#     contact_torque_limit: 4.0 # Nm
+#     origin_detect_threshold_time: 0.5 # 秒
+#     # 原点検出のときは、0の方向に戻るので、負の速度にする
+#     origin_detect_speed: -6.28 # rad/s
+#     pos_min: -1.0
+#     pos_max: 1.0
+#     normal_pos: 0.05
+#     # モータが1回転すると36pi mm進むので、半径は18.0mm
+#     radius: 0.018
+#     inverse_motor: true
+#     use_low_switch: false
+#     use_high_switch: false
+#     inverse_low_switch_logic: false
+#     inverse_high_switch_logic: false
+# # linear motion node
+# # C620
+# r1_spear_y_node:
+#   ros__parameters:
+#     timer_rate: 10.0
+#     # トルク検出時のしきい値
+#     torque_threshold: 0.5 # Nm
+#     # 通常位置モード時に Robomas の torque_lim として使う値
+#     normal_torque_limit: 4.0 # Nm
+#     # 原点検出・メカロック移動中に Robomas の torque_lim として使う値
+#     contact_torque_limit: 4.0 # Nm
+#     origin_detect_threshold_time: 0.5 # 秒
+#     # 原点検出のときは、0の方向に戻るので、負の速度にする
+#     origin_detect_speed: -6.28 # rad/s
+#     pos_min: -0.1
+#     pos_max: 1.0
+#     normal_pos: 0.05
+#     # モータが1回転すると110mm進むので、半径は17.5mm
+#     radius: 0.01750704374010849
+#     inverse_motor: false
+#     use_low_switch: false
+#     use_high_switch: false
+#     inverse_low_switch_logic: false
+#     inverse_high_switch_logic: false
+# # angle motion node
+# r1_spear_roll_node:
+#   ros__parameters:
+#     timer_rate: 10.0
+#     # トルク検出時のしきい値
+#     torque_threshold: 0.5 # Nm
+#     # NOTE: robstrideなので、トルクしきい値は無効化
+#     # 通常位置モード時に Robomas の torque_lim として使う値
+#     normal_torque_limit: 1.5 # Nm
+#     # 原点検出・メカロック移動中に Robomas の torque_lim として使う値
+#     contact_torque_limit: 1.5 # Nm
+#     origin_detect_threshold_time: 0.5 # 秒
+#     origin_detect_speed: -3.14 # rad/s
+#     angle_min: -5.0
+#     angle_max: 5.0
+#     normal_angle: 0.0
+#     # ギア比で割った値がモーターの角度指令値となる
+#     # 1.0 / 5.0 = 0.2
+#     gear_ratio: 0.2
+#     inverse_motor: true
+#     use_low_switch: false
+#     use_high_switch: false
+#     inverse_low_switch_logic: false
+#     inverse_high_switch_logic: false
+# # angle motion node
+# r1_spear_pitch1_node:
+#   ros__parameters:
+#     timer_rate: 10.0
+#     # トルク検出時のしきい値
+#     torque_threshold: 0.5 # Nm
+#     # 通常位置モード時に Robomas の torque_lim として使う値
+#     normal_torque_limit: 4.0 # Nm
+#     # 原点検出・メカロック移動中に Robomas の torque_lim として使う値
+#     contact_torque_limit: 4.0 # Nm
+#     origin_detect_threshold_time: 0.5 # 秒
+#     origin_detect_speed: -3.14 # rad/s
+#     angle_min: -5.0
+#     angle_max: 5.0
+#     normal_angle: 0.1
+#     # ギア比で割った値がモーターの角度指令値となる
+#     # 1.0 / 5.0 = 0.2
+#     gear_ratio: 0.2
+#     inverse_motor: true
+#     use_low_switch: false
+#     use_high_switch: false
+#     inverse_low_switch_logic: false
+#     inverse_high_switch_logic: false
+# # angle motion node
+# r1_spear_pitch2_node:
+#   ros__parameters:
+#     timer_rate: 10.0
+#     # トルク検出時のしきい値
+#     torque_threshold: 0.5 # Nm
+#     # 通常位置モード時に Robomas の torque_lim として使う値
+#     normal_torque_limit: 4.0 # Nm
+#     # 原点検出・メカロック移動中に Robomas の torque_lim として使う値
+#     contact_torque_limit: 4.0 # Nm
+#     origin_detect_threshold_time: 0.5 # 秒
+#     origin_detect_speed: -3.14 # rad/s
+#     angle_min: -5.0
+#     angle_max: 5.0
+#     normal_angle: 0.1
+#     # ギア比で割った値がモーターの角度指令値となる
+#     # 1.0 / 5.0 = 0.2
+#     gear_ratio: 0.2
+#     inverse_motor: false
+#     use_low_switch: false
+#     use_high_switch: false
+#     inverse_low_switch_logic: false
+#     inverse_high_switch_logic: false
 r1_machine_manage_node:
   ros__parameters:
     # 足回りの制御方式。"mecanum" または "swerve"
@@ -1018,6 +1066,30 @@ sabacan_robomasv2_node_id7:
     monitor_reg1: [0x0, 0x0, 0x0C00000000000000,0x0C00000000000000]
     monitor_reg2: [0x0, 0x0, 0x0, 0x0]
     monitor_period: 10
+sabacan_robomasv2_node_id8:
+  ros__parameters:
+    board_id: 8
+    enable_initialize: false
+    publish_timer_rate: 10.0
+    # spear_y, spear_roll
+    motor_type: ["C610", "C620", "C610", "C610"]
+    control_type: ["TORQUE", "TORQUE", "TORQUE", "TORQUE"]
+    speed_gain_p: [0.5, 0.5, 0.5, 0.5]
+    speed_gain_i: [0.1, 0.1, 0.1, 0.1]
+    speed_gain_d: [0.0, 0.0, 0.0, 0.0]
+    # 位置制御のときはここのトルクリミットは適応されない。r1_linear_motion_nodeかr1_angle_motion_nodeのtorque_limitが適応される。
+    torque_lim: [1.0, 1.0, 1.0, 1.0]
+    pos_gain_p: [5.0, 5.0, 5.0, 5.0]
+    pos_gain_i: [0.0, 0.0, 0.0, 0.0]
+    pos_gain_d: [0.0, 0.0, 0.0, 0.0]
+    speed_lim: [10.0, 10.0, 10.0, 10.0]
+    # TRQ+SPD+POSをフィードバック
+    monitor_reg1: [0x0001000100010000, 0x0001000100010000, 0x0001000100010000, 0x0001000100010000]
+    # TRQ+SPD+POS+MOTOR_STATEをフィードバック
+    # monitor_reg1: [0x0001000100010002, 0x0001000100010002, 0x0001000100010002, 0x0001000100010002]
+    # VESCのフィードバックは無効化
+    monitor_reg2: [0, 0, 0, 0]
+    monitor_period: 100
 sabacan_gpio_node_id1:
   ros__parameters:
     board_id: 1

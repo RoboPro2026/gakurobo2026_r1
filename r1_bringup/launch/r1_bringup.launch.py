@@ -190,43 +190,53 @@ def generate_launch_description():
     r1_kfs_ryaw_node = create_r1_angle_motion_node("r1_kfs_ryaw_node", "kfs_ryaw")
 
     # ========== やり ==========
-    r1_spear1_node = create_r1_linear_motion_node(
-        "r1_spear1_node",
-        "spear1",
-        extra_remappings=[("low_switch_status", "spear1_low_switch_status")],
-    )
-    r1_spear2_node = create_r1_linear_motion_node(
-        "r1_spear2_node",
-        "spear2",
-        extra_remappings=[("low_switch_status", "spear2_low_switch_status")],
-    )
-    r1_spear3_node = create_r1_linear_motion_node(
-        "r1_spear3_node",
-        "spear3",
-        extra_remappings=[("low_switch_status", "spear3_low_switch_status")],
-    )
-    r1_spear4_node = create_r1_linear_motion_node(
-        "r1_spear4_node",
-        "spear4",
-        extra_remappings=[("low_switch_status", "spear4_low_switch_status")],
-    )
-    r1_spear_x_node = create_r1_linear_motion_node(
-        "r1_spear_x_node",
-        "spear_x",
-        extra_remappings=[("low_switch_status", "spear_x_low_switch_status")],
-    )
+    # 大槻機構
     r1_spear_y_node = create_r1_linear_motion_node(
         "r1_spear_y_node",
         "spear_y",
         extra_remappings=[("low_switch_status", "spear_y_low_switch_status")],
     )
+
     r1_spear_roll_node = create_r1_angle_motion_node("r1_spear_roll_node", "spear_roll")
-    r1_spear_pitch1_node = create_r1_angle_motion_node(
-        "r1_spear_pitch1_node", "spear_pitch1"
-    )
-    r1_spear_pitch2_node = create_r1_angle_motion_node(
-        "r1_spear_pitch2_node", "spear_pitch2"
-    )
+
+    # 千田機構
+    # r1_spear1_node = create_r1_linear_motion_node(
+    #     "r1_spear1_node",
+    #     "spear1",
+    #     extra_remappings=[("low_switch_status", "spear1_low_switch_status")],
+    # )
+    # r1_spear2_node = create_r1_linear_motion_node(
+    #     "r1_spear2_node",
+    #     "spear2",
+    #     extra_remappings=[("low_switch_status", "spear2_low_switch_status")],
+    # )
+    # r1_spear3_node = create_r1_linear_motion_node(
+    #     "r1_spear3_node",
+    #     "spear3",
+    #     extra_remappings=[("low_switch_status", "spear3_low_switch_status")],
+    # )
+    # r1_spear4_node = create_r1_linear_motion_node(
+    #     "r1_spear4_node",
+    #     "spear4",
+    #     extra_remappings=[("low_switch_status", "spear4_low_switch_status")],
+    # )
+    # r1_spear_x_node = create_r1_linear_motion_node(
+    #     "r1_spear_x_node",
+    #     "spear_x",
+    #     extra_remappings=[("low_switch_status", "spear_x_low_switch_status")],
+    # )
+    # r1_spear_y_node = create_r1_linear_motion_node(
+    #     "r1_spear_y_node",
+    #     "spear_y",
+    #     extra_remappings=[("low_switch_status", "spear_y_low_switch_status")],
+    # )
+    # r1_spear_roll_node = create_r1_angle_motion_node("r1_spear_roll_node", "spear_roll")
+    # r1_spear_pitch1_node = create_r1_angle_motion_node(
+    #     "r1_spear_pitch1_node", "spear_pitch1"
+    # )
+    # r1_spear_pitch2_node = create_r1_angle_motion_node(
+    #     "r1_spear_pitch2_node", "spear_pitch2"
+    # )
 
     def create_sabacan_robomasv2_node(
         board_id: int,
@@ -255,6 +265,7 @@ def generate_launch_description():
     sabacan_robomasv2_node_id5 = create_sabacan_robomasv2_node(5)
     sabacan_robomasv2_node_id6 = create_sabacan_robomasv2_node(6)
     sabacan_robomasv2_node_id7 = create_sabacan_robomasv2_node(7)
+    sabacan_robomasv2_node_id8 = create_sabacan_robomasv2_node(8)
 
     def create_sabacan_single_control_node(
         board_id: int,
@@ -362,6 +373,18 @@ def generate_launch_description():
         6, 3, 25.0, "TORQUE", 0.0
     )
     # id7は計測輪のみなので不要
+    sabacan_single_control_id8_motor0 = create_sabacan_single_control_node(
+        8, 0, 25.0, "TORQUE", 0.0
+    )
+    sabacan_single_control_id8_motor1 = create_sabacan_single_control_node(
+        8, 1, 25.0, "TORQUE", 0.0
+    )
+    sabacan_single_control_id8_motor2 = create_sabacan_single_control_node(
+        8, 2, 25.0, "TORQUE", 0.0
+    )
+    sabacan_single_control_id8_motor3 = create_sabacan_single_control_node(
+        8, 3, 25.0, "TORQUE", 0.0
+    )
 
     def create_sabacan_gpio_node(
         board_id: int,
@@ -531,6 +554,7 @@ def generate_launch_description():
         sabacan_robomasv2_node_id5,
         sabacan_robomasv2_node_id6,
         sabacan_robomasv2_node_id7,
+        sabacan_robomasv2_node_id8,
         sabacan_gpio_node_id1,
         sabacan_gpio_node_id2,
         sabacan_gpio_node_id3,
@@ -554,15 +578,19 @@ def generate_launch_description():
         r1_kfs_rz_node,
         r1_kfs_ryaw_node,
         r1_r2_rlift_node,
-        r1_spear1_node,
-        r1_spear2_node,
-        r1_spear3_node,
-        r1_spear4_node,
-        r1_spear_x_node,
+        # 大槻機構
         r1_spear_y_node,
         r1_spear_roll_node,
-        r1_spear_pitch1_node,
-        r1_spear_pitch2_node,
+        # 千田機構
+        # r1_spear1_node,
+        # r1_spear2_node,
+        # r1_spear3_node,
+        # r1_spear4_node,
+        # r1_spear_x_node,
+        # r1_spear_y_node,
+        # r1_spear_roll_node,
+        # r1_spear_pitch1_node,
+        # r1_spear_pitch2_node,
         # 最後にsabacan_single_controlを起動
         sabacan_single_control_id1_motor0,
         sabacan_single_control_id1_motor1,
@@ -588,6 +616,11 @@ def generate_launch_description():
         sabacan_single_control_id6_motor1,
         sabacan_single_control_id6_motor2,
         sabacan_single_control_id6_motor3,
+        # sabacan id7は計測輪のみなので不要
+        sabacan_single_control_id8_motor0,
+        sabacan_single_control_id8_motor1,
+        sabacan_single_control_id8_motor2,
+        sabacan_single_control_id8_motor3,
     ]
 
     real_nodes = [
