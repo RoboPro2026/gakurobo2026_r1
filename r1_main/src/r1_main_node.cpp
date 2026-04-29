@@ -2167,6 +2167,7 @@ void R1MainNode::manual_mode2_collect_pole_task(void)
     spear_hand1_valve(true);
     spear_hand2_valve(true);
     spear_hand_push_valve(true);
+    step++;
   } else if (step == 2) {
     spear_hand1_valve(false);
     spear_hand2_valve(false);
