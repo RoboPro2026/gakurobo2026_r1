@@ -2162,7 +2162,7 @@ void R1MainNode::manual_mode2_collect_pole_task(void)
   int & step = manual_mode2_collect_pole_task_step_;
   RCLCPP_INFO(this->get_logger(), "manual_mode2_collect_pole_task step: %d", step);
   if (step == 1) {
-    spear_y_pos_ref(0.0);
+    spear_y_pos_ref(0.2);
     spear_roll_pos_ref(0.0);
     spear_hand1_valve(true);
     spear_hand2_valve(true);
