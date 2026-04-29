@@ -208,7 +208,7 @@ r1_main_node:
     spear_y_low_attack_pos: 0.6
     spear_y_middle_attack_pos: 0.6
     spear_y_high_attack_pos: 0.6
-    spear_y_throw_away_pos: 0.1
+    spear_y_throw_away_pos: 0.2
     spear_roll_normal_angle: 0.0
     spear_roll_vertical_angle: 0.0
     spear_roll_horizontal_angle: 1.5707963267948966

@@ -3117,7 +3117,7 @@ void R1MainNode::manual_mode7_spear_attack_task(int n, int m)
     }
     step++;
   } else if (step == 3) {
-    spear_y_pos_ref(SPEAR_Y_NORMAL_POS);
+    // spear_y_pos_ref(SPEAR_Y_NORMAL_POS);
     spear_roll_pos_ref(SPEAR_ROLL_VERTICAL_ANGLE);
     step = 1;
     RCLCPP_INFO(this->get_logger(), "spear attack task completed");
@@ -3217,7 +3217,7 @@ void R1MainNode::manual_mode7_spear_throw_away_task(int n)
     spear_hand2_valve(false);
     step++;
   } else if (step == 5) {
-    spear_y_pos_ref(SPEAR_Y_NORMAL_POS);
+    // spear_y_pos_ref(SPEAR_Y_NORMAL_POS);
     spear_roll_pos_ref(SPEAR_ROLL_VERTICAL_ANGLE);
     step = 1;
     RCLCPP_INFO(this->get_logger(), "spear throw away task completed");
