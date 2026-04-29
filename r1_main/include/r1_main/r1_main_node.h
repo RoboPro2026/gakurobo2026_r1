@@ -52,10 +52,13 @@
 #include "tf2_ros/buffer.h"
 #include "tf2_ros/transform_listener.h"
 
+#ifndef SPEAR_MECHANISM
+
 #define SPEAR_CHIDA_MECHANISM 0
 #define SPEAR_OTSUKI_MECHANISM 1
 #define SPEAR_MECHANISM SPEAR_OTSUKI_MECHANISM
 
+#endif
 class R1MainNode : public rclcpp::Node
 {
 public:
