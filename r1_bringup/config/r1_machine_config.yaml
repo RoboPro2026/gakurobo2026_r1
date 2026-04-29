@@ -205,9 +205,9 @@ r1_main_node:
     spear_y_collect1_pos: 0.10
     spear_y_collect2_pos: 0.20
     spear_y_make_spear_pos: 0.44
-    spear_y_low_attack_pos: 0.6
-    spear_y_middle_attack_pos: 0.6
-    spear_y_high_attack_pos: 0.6
+    spear_y_low_attack_pos: 0.65
+    spear_y_middle_attack_pos: 0.65
+    spear_y_high_attack_pos: 0.74
     spear_y_throw_away_pos: 0.2
     spear_roll_normal_angle: 0.0
     spear_roll_vertical_angle: 0.0
@@ -215,7 +215,7 @@ r1_main_node:
     spear_roll_inv_horozontal_angle: -1.5707963267948966
     spear_roll_low_attack_angle: 1.5707963267948966
     spear_roll_middle_attack_angle: 1.0
-    spear_roll_high_attack_angle: 0.5
+    spear_roll_high_attack_angle: 0.8
     # 千田機構
     # # spear1
     # spear1_normal_pos: 0.05
