@@ -3209,10 +3209,12 @@ void R1MainNode::manual_mode7_spear_throw_away_task(int n)
     spear_hand_push_valve(false);
     step++;
   } else if (step == 4) {
-    spear_hand1_valve(false);
-    spear_hand2_valve(false);
+    spear_hand1_valve(true);
+    spear_hand2_valve(true);
     step++;
   } else if (step == 5) {
+    spear_hand1_valve(false);
+    spear_hand2_valve(false);
     spear_roll_pos_ref(SPEAR_ROLL_VERTICAL_ANGLE);
     step = 1;
     RCLCPP_INFO(this->get_logger(), "spear throw away task completed");
