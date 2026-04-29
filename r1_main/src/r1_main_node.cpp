@@ -649,7 +649,7 @@ R1MainNode::R1MainNode() : Node("r1_main_node")
   declare_and_get_parameter("r2_rlift_down_pos", R2_RLIFT_DOWN_POS);
 // ========== やり ==========
 // 大槻機構
-#if SPEAR_MECHANISM == SPEAR_OTUKI_MECHANISM
+#if SPEAR_MECHANISM == SPEAR_MECHANISM_OTSUKI
   // spear_y
   declare_and_get_parameter("spear_y_normal_pos", SPEAR_Y_NORMAL_POS);
   declare_and_get_parameter("spear_y_collect1_pos", SPEAR_Y_COLLECT1_POS);
@@ -661,7 +661,7 @@ R1MainNode::R1MainNode() : Node("r1_main_node")
   declare_and_get_parameter("spear_roll_horizontal_angle", SPEAR_ROLL_HORIZONTAL_ANGLE);
   declare_and_get_parameter("spear_roll_inv_horizontal_angle", SPEAR_ROLL_INV_HORIZONTAL_ANGLE);
 // 千田機構
-#elif SPEAR_MECHANISM == SPEAR_CHIDA_MECHANISM
+#elif SPEAR_MECHANISM == SPEAR_MECHANISM_CHIDA
   // spear1
   declare_and_get_parameter("spear1_normal_pos", SPEAR1_NORMAL_POS);
   declare_and_get_parameter("spear1_collect1_pos", SPEAR1_COLLECT1_POS);
@@ -2411,20 +2411,20 @@ void R1MainNode::manual_mode3_make_spear_task(int n)
   if (step == 1) {
     spear_roll_pos_ref(SPEAR_ROLL_HORIZONTAL_ANGLE);
     spear_y_pos_ref(SPEAR_Y_MAKE_SPEAR_POS);
-    spear_push_valve(true);
+    spear_hand_push_valve(true);
     step++;
   } else if (step == 2) {
-    spear_push_valve(false);
+    spear_hand_push_valve(false);
     step++;
   } else if (step == 3) {
     publish_aruco_marker_id(1);
     step++;
   } else if (step == 4) {
     spear_roll_pos_ref(SPEAR_ROLL_VERTICAL_ANGLE);
-    spear_push_valve(true);
+    spear_hand_push_valve(true);
     step++;
   } else if (step == 5) {
-    spear_push_valve(false);
+    spear_hand_push_valve(false);
     RCLCPP_INFO(this->get_logger(), "make spear task completed");
     step = 1;
   }
