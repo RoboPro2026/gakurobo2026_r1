@@ -1996,7 +1996,7 @@ void R1MainNode::spear_hand2_valve(bool on)
   publish_gpio_pwm_output("spear_hand2_valve", on ? 1.0 : 0.0);
 }
 
-void spear_hand_push_valve(bool on)
+void R1MainNode::spear_hand_push_valve(bool on)
 {
   publish_gpio_pwm_output("spear_hand_push_valve", on ? 1.0 : 0.0);
 }
