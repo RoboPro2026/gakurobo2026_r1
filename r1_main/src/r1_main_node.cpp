@@ -2411,6 +2411,7 @@ void R1MainNode::manual_mode3_make_spear_task(int n)
     spear_roll_pos_ref(SPEAR_ROLL_HORIZONTAL_ANGLE);
     spear_y_pos_ref(SPEAR_Y_MAKE_SPEAR_POS);
     spear_hand_push_valve(true);
+    publish_aruco_marker_id(0);
     step++;
   } else if (step == 2) {
     spear_hand_push_valve(false);
@@ -3022,7 +3023,9 @@ void R1MainNode::manual_mode6_r2_lift(void)
       kfs_fz_pos_ref(KFS_FZ_NORMAL_POS);
       kfs_rx_pos_ref(KFS_RX_NORMAL_POS);
       kfs_rz_pos_ref(KFS_RZ_NORMAL_POS);
+#if SPEAR_MECHANISM == SPEAR_MECHANISM_CHIDA
       spear_y_pos_ref(SPEAR_Y_NORMAL_POS);
+#endif
       if (manual_mode6_r2_lift_timer_ != nullptr) {
         manual_mode6_r2_lift_timer_->cancel();
       }
