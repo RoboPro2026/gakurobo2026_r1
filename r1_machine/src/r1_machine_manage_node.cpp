@@ -59,7 +59,7 @@ constexpr const char * kRobstridePositionControlType = "PP";
 // 使用するデバイスの数
 // Robomas / GPIO は board_id 1..N を使用する。
 // Power / LED はそれぞれ 1 台だけを単独で扱う。
-constexpr int kSabacanRobomasNumber = 7;
+constexpr int kSabacanRobomasNumber = 8;
 constexpr int kSabacanGpioNumber = 3;
 constexpr int kSabacanRobstrideNumber = 1;
 constexpr int kSabacanPowerNumber = 1;
