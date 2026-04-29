@@ -202,9 +202,9 @@ r1_main_node:
     # ========== やり ==========
     # 大槻機構
     spear_y_normal_pos: 0.0
-    spear_y_collect1_pos: 0.05
-    spear_y_collect2_pos: 0.15
-    spear_y_make_spear_pos: 0.3
+    spear_y_collect1_pos: 0.25
+    spear_y_collect2_pos: 0.35
+    spear_y_make_spear_pos: 0.44
     spear_roll_normal_angle: 0.0
     spear_roll_vertical_angle: 0.0
     spear_roll_horizontal_angle: 1.5707963267948966
