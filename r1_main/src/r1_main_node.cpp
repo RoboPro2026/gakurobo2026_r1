@@ -598,6 +598,7 @@ R1MainNode::R1MainNode() : Node("r1_main_node")
   declare_and_get_parameter("kfs_fz_high_pos", KFS_FZ_HIGH_POS);
   declare_and_get_parameter("kfs_fz_put_pos", KFS_FZ_PUT_POS);
   declare_and_get_parameter("kfs_fz_storage_pos", KFS_FZ_STORAGE_POS);
+  declare_and_get_parameter("kfs_fz_start_pos", KFS_FZ_START_POS);
   declare_and_get_parameter("kfs_fz_low_mech_lock_pos", KFS_FZ_LOW_MECH_LOCK_POS);
   declare_and_get_parameter("kfs_fz_high_mech_lock_pos", KFS_FZ_HIGH_MECH_LOCK_POS);
   declare_and_get_parameter("kfs_fz_r2_lift_pos", KFS_FZ_R2_LIFT_POS);
@@ -606,6 +607,7 @@ R1MainNode::R1MainNode() : Node("r1_main_node")
   declare_and_get_parameter("kfs_fyaw_front_angle", KFS_FYAW_FRONT_ANGLE);
   declare_and_get_parameter("kfs_fyaw_side_angle", KFS_FYAW_SIDE_ANGLE);
   declare_and_get_parameter("kfs_fyaw_rear_angle", KFS_FYAW_REAR_ANGLE);
+  declare_and_get_parameter("kfs_fyaw_start_angle", KFS_FYAW_START_ANGLE);
   declare_and_get_parameter("kfs_fyaw_low_mech_lock_angle", KFS_FYAW_LOW_MECH_LOCK_ANGLE);
   declare_and_get_parameter("kfs_fyaw_high_mech_lock_angle", KFS_FYAW_HIGH_MECH_LOCK_ANGLE);
   // rx
@@ -624,6 +626,7 @@ R1MainNode::R1MainNode() : Node("r1_main_node")
   declare_and_get_parameter("kfs_rz_high_pos", KFS_RZ_HIGH_POS);
   declare_and_get_parameter("kfs_rz_put_pos", KFS_RZ_PUT_POS);
   declare_and_get_parameter("kfs_rz_storage_pos", KFS_RZ_STORAGE_POS);
+  declare_and_get_parameter("kfs_rz_start_pos", KFS_RZ_START_POS);
   declare_and_get_parameter("kfs_rz_low_mech_lock_pos", KFS_RZ_LOW_MECH_LOCK_POS);
   declare_and_get_parameter("kfs_rz_high_mech_lock_pos", KFS_RZ_HIGH_MECH_LOCK_POS);
   declare_and_get_parameter("kfs_rz_r2_lift_pos", KFS_RZ_R2_LIFT_POS);
@@ -632,6 +635,7 @@ R1MainNode::R1MainNode() : Node("r1_main_node")
   declare_and_get_parameter("kfs_ryaw_front_angle", KFS_RYAW_FRONT_ANGLE);
   declare_and_get_parameter("kfs_ryaw_side_angle", KFS_RYAW_SIDE_ANGLE);
   declare_and_get_parameter("kfs_ryaw_rear_angle", KFS_RYAW_REAR_ANGLE);
+  declare_and_get_parameter("kfs_ryaw_start_angle", KFS_RYAW_START_ANGLE);
   declare_and_get_parameter("kfs_ryaw_low_mech_lock_angle", KFS_RYAW_LOW_MECH_LOCK_ANGLE);
   declare_and_get_parameter("kfs_ryaw_high_mech_lock_angle", KFS_RYAW_HIGH_MECH_LOCK_ANGLE);
 
@@ -643,7 +647,21 @@ R1MainNode::R1MainNode() : Node("r1_main_node")
   declare_and_get_parameter("r2_rlift_normal_pos", R2_RLIFT_NORMAL_POS);
   declare_and_get_parameter("r2_rlift_up_pos", R2_RLIFT_UP_POS);
   declare_and_get_parameter("r2_rlift_down_pos", R2_RLIFT_DOWN_POS);
-  // ========== やり ==========
+// ========== やり ==========
+// 大槻機構
+#if SPEAR_MECHANISM == SPEAR_OTUKI_MECHANISM
+  // spear_y
+  declare_and_get_parameter("spear_y_normal_pos", SPEAR_Y_NORMAL_POS);
+  declare_and_get_parameter("spear_y_collect1_pos", SPEAR_Y_COLLECT1_POS);
+  declare_and_get_parameter("spear_y_collect2_pos", SPEAR_Y_COLLECT2_POS);
+  declare_and_get_parameter("spear_y_make_spear_pos", SPEAR_Y_MAKE_SPEAR_POS);
+  // spear_roll
+  declare_and_get_parameter("spear_roll_normal_angle", SPEAR_ROLL_NORMAL_ANGLE);
+  declare_and_get_parameter("spear_roll_vertical_angle", SPEAR_ROLL_VERTICAL_ANGLE);
+  declare_and_get_parameter("spear_roll_horizontal_angle", SPEAR_ROLL_HORIZONTAL_ANGLE);
+  declare_and_get_parameter("spear_roll_inv_horizontal_angle", SPEAR_ROLL_INV_HORIZONTAL_ANGLE);
+// 千田機構
+#elif SPEAR_MECHANISM == SPEAR_CHIDA_MECHANISM
   // spear1
   declare_and_get_parameter("spear1_normal_pos", SPEAR1_NORMAL_POS);
   declare_and_get_parameter("spear1_collect1_pos", SPEAR1_COLLECT1_POS);
@@ -701,6 +719,7 @@ R1MainNode::R1MainNode() : Node("r1_main_node")
   // spear_pitch2
   declare_and_get_parameter("spear_pitch2_normal_angle", SPEAR_PITCH2_NORMAL_ANGLE);
   declare_and_get_parameter("spear_pitch2_vertical_angle", SPEAR_PITCH2_VERTICAL_ANGLE);
+#endif
 
   // FOREST関連
   this->declare_parameter<std::vector<int64_t>>("kfs_forest_number", std::vector<int64_t>{});
@@ -1708,7 +1727,7 @@ void R1MainNode::start_kfs_auto_collect(
   kfs_auto_collect_plan_.kfs_mechanism_type = std::move(kfs_mechanism_type);
 
   // if (ENABLE_AUTO_COLLECT_KFS_ACTUATOR) {
-  kfs_init_pos();
+  kfs_collect_start_act();
   // }
 
   RCLCPP_INFO(
@@ -2023,22 +2042,42 @@ void R1MainNode::spear_d2_valve(bool on)
   publish_gpio_pwm_output("spear_d2_valve", on ? 1.0 : 0.0);
 }
 
-void R1MainNode::kfs_init_pos(void)
+void R1MainNode::kfs_robot_start_act(void)
 {
-  // spear_xを動かす
-  spear_x_pos_ref(SPEAR_X_MIDDLE_POS);
-  spear_y_pos_ref(SPEAR_Y_NORMAL_POS);
-  // まずrollを動かす
+  kfs_fx_pos_ref(KFS_FX_START_POS);
+  kfs_rx_pos_ref(KFS_RX_START_POS);
+  kfs_fz_pos_ref(KFS_FZ_START_POS);
+  kfs_rz_pos_ref(KFS_RZ_START_POS);
+  kfs_fyaw_pos_ref(KFS_FYAW_START_ANGLE);
+  kfs_ryaw_pos_ref(KFS_RYAW_START_ANGLE);
+}
+
+void R1MainNode::kfs_collect_start_act(void)
+{
+// 千田機構
+#if SPEAR_MECHANISM == SPEAR_MECHANISM_OTSUKI
+  spear_hand_push_valve(true);
   spear_roll_pos_ref(SPEAR_ROLL_VERTICAL_ANGLE);
-  spear1_pos_ref(SPEAR1_KFS_COLLECT_POS);
-  spear2_pos_ref(SPEAR2_KFS_COLLECT_POS);
+#elif SPEAR_MECHANISM == SPEAR_MECHANISM_CHIDA
+// // spear_xを動かす
+// spear_x_pos_ref(SPEAR_X_MIDDLE_POS);
+// spear_y_pos_ref(SPEAR_Y_NORMAL_POS);
+// // まずrollを動かす
+// spear_roll_pos_ref(SPEAR_ROLL_VERTICAL_ANGLE);
+// spear1_pos_ref(SPEAR1_KFS_COLLECT_POS);
+// spear2_pos_ref(SPEAR2_KFS_COLLECT_POS);
+#endif
   // arucoマーカをもとに戻す
   publish_aruco_marker_id(0);
   // 一定時間経過後にKFS回収機構を動かす
-  if (kfs_init_pos_roll_timer_) {
-    kfs_init_pos_roll_timer_->cancel();
+  if (kfs_collect_start_act_roll_timer_) {
+    kfs_collect_start_act_roll_timer_->cancel();
   }
-  kfs_init_pos_roll_timer_ = this->create_wall_timer(1000ms, [this]() {
+  kfs_collect_start_act_roll_timer_ = this->create_wall_timer(1000ms, [this]() {
+  // hand_push_valveをoffにする
+#if SPEAR_MECHANISM == SPEAR_MECHANISM_OTSUKI
+    spear_hand_push_valve(false);
+#endif
     // デバッグ用にKFS回収用アクチュエータを回収位置位置に移動
     kfs_fx_pos_ref(KFS_FX_START_POS);
     kfs_rx_pos_ref(KFS_RX_START_POS);
@@ -2066,8 +2105,8 @@ void R1MainNode::kfs_init_pos(void)
     }
     kfs_front_pump(0.0);
     kfs_rear_pump(0.0);
-    if (kfs_init_pos_roll_timer_) {
-      kfs_init_pos_roll_timer_->cancel();
+    if (kfs_collect_start_act_roll_timer_) {
+      kfs_collect_start_act_roll_timer_->cancel();
     }
   });
 }
@@ -2137,13 +2176,14 @@ void R1MainNode::manual_mode1_detect_origin(void)
   // }
 
   if (ps4_->is_pushed_l1()) {
-    spear1_detect_origin();
+    // spear1_detect_origin();
   }
 
   if (ps4_->is_pushed_r1()) {
-    spear2_detect_origin();
+    // spear2_detect_origin();
     // spear_x, spear_y, spear_rollは原点検出ができないので、角度を設定する
-    spear_x_set_pos(0.0);
+    // spear_x_set_pos(0.0);
+    // spear_y_set_pos(0.0);
     spear_y_set_pos(0.0);
     spear_roll_set_angle(0.0);
   }
@@ -2161,9 +2201,11 @@ void R1MainNode::manual_mode2_collect_pole_task(void)
 {
   int & step = manual_mode2_collect_pole_task_step_;
   RCLCPP_INFO(this->get_logger(), "manual_mode2_collect_pole_task step: %d", step);
+#if SPEAR_MECHANISM == SPEAR_MECHANISM_OTSUKI
   if (step == 1) {
-    spear_y_pos_ref(0.2);
-    spear_roll_pos_ref(0.0);
+    kfs_robot_start_act();
+    spear_y_pos_ref(SPEAR_Y_COLLECT1_POS);
+    spear_roll_pos_ref(SPEAR_ROLL_NORMAL_ANGLE);
     spear_hand1_valve(true);
     spear_hand2_valve(true);
     spear_hand_push_valve(true);
@@ -2173,77 +2215,81 @@ void R1MainNode::manual_mode2_collect_pole_task(void)
     spear_hand2_valve(false);
     step++;
   } else if (step == 3) {
+    spear_y_pos_ref(SPEAR_Y_COLLECT2_POS);
+    step++;
+  } else if (step == 4) {
     spear_hand_push_valve(false);
     RCLCPP_INFO(this->get_logger(), "pole collect task completed");
-
     step = 1;
   }
-  // if (step == 1) {
-  //   spear_roll_pos_ref(SPEAR_ROLL_VERTICAL_ANGLE);
-  //   spear_x_pos_ref(SPEAR_X_MIDDLE_POS);
-  //   spear_pitch1_pos_ref(SPEAR_PITCH1_VERTICAL_ANGLE);
-  //   spear_pitch2_pos_ref(SPEAR_PITCH2_VERTICAL_ANGLE);
-  //   spear_y_pos_ref(SPEAR_Y_EXPAND_POS);
-  //   spear_u1_valve(true);
-  //   spear_d1_valve(true);
-  //   spear_u2_valve(true);
-  //   spear_d2_valve(true);
-  //   spear1_pos_ref(SPEAR1_COLLECT1_POS);
-  //   spear2_pos_ref(SPEAR2_COLLECT1_POS);
-  //   step++;
-  // } else if (step == 2) {
-  //   spear_d1_valve(false);
-  //   spear_d2_valve(false);
-  //   step++;
-  // } else if (step == 3) {
-  //   spear1_pos_ref(SPEAR1_COLLECT3_POS);
-  //   spear2_pos_ref(SPEAR2_COLLECT3_POS);
-  //   step++;
-  // } else if (step == 4) {
-  //   spear_u1_valve(false);
-  //   spear_u2_valve(false);
-  //   spear_y_pos_ref(SPEAR_Y_NORMAL_POS);
-  //   step++;
-  // } else if (step == 5) {
-  //   // TODO: ここはゾーンによって回転方向を変えたほうがいいかも
+#elif SPEAR_MECHANISM == SPEAR_MECHANISM_CHIDA
+// if (step == 1) {
+//   spear_roll_pos_ref(SPEAR_ROLL_VERTICAL_ANGLE);
+//   spear_x_pos_ref(SPEAR_X_MIDDLE_POS);
+//   spear_pitch1_pos_ref(SPEAR_PITCH1_VERTICAL_ANGLE);
+//   spear_pitch2_pos_ref(SPEAR_PITCH2_VERTICAL_ANGLE);
+//   spear_y_pos_ref(SPEAR_Y_EXPAND_POS);
+//   spear_u1_valve(true);
+//   spear_d1_valve(true);
+//   spear_u2_valve(true);
+//   spear_d2_valve(true);
+//   spear1_pos_ref(SPEAR1_COLLECT1_POS);
+//   spear2_pos_ref(SPEAR2_COLLECT1_POS);
+//   step++;
+// } else if (step == 2) {
+//   spear_d1_valve(false);
+//   spear_d2_valve(false);
+//   step++;
+// } else if (step == 3) {
+//   spear1_pos_ref(SPEAR1_COLLECT3_POS);
+//   spear2_pos_ref(SPEAR2_COLLECT3_POS);
+//   step++;
+// } else if (step == 4) {
+//   spear_u1_valve(false);
+//   spear_u2_valve(false);
+//   spear_y_pos_ref(SPEAR_Y_NORMAL_POS);
+//   step++;
+// } else if (step == 5) {
+//   // TODO: ここはゾーンによって回転方向を変えたほうがいいかも
 
-  //   // step5以降は操作ミス防止のためコメントアウト
-  //   // spear_roll_pos_ref(SPEAR_ROLL_INV_NORMAL_ANGLE);
-  //   step++;
-  // } else if (step == 6) {
-  //   // spear_d1_valve(true);
-  //   // spear_d2_valve(true);
-  //   step++;
-  // } else if (step == 7) {
-  //   // spear1_pos_ref(SPEAR1_NORMAL_POS);
-  //   // spear2_pos_ref(SPEAR2_NORMAL_POS);
-  //   // spear_pitch1_pos_ref(SPEAR_PITCH1_NORMAL_ANGLE);
-  //   // spear_pitch2_pos_ref(SPEAR_PITCH2_NORMAL_ANGLE);
-  //   step++;
-  // } else if (step == 8) {
-  //   // spear_d1_valve(false);
-  //   // spear_d2_valve(false);
-  //   RCLCPP_INFO(this->get_logger(), "pole collect task completed");
-  //   step = 1;
-  // }
+//   // step5以降は操作ミス防止のためコメントアウト
+//   // spear_roll_pos_ref(SPEAR_ROLL_INV_NORMAL_ANGLE);
+//   step++;
+// } else if (step == 6) {
+//   // spear_d1_valve(true);
+//   // spear_d2_valve(true);
+//   step++;
+// } else if (step == 7) {
+//   // spear1_pos_ref(SPEAR1_NORMAL_POS);
+//   // spear2_pos_ref(SPEAR2_NORMAL_POS);
+//   // spear_pitch1_pos_ref(SPEAR_PITCH1_NORMAL_ANGLE);
+//   // spear_pitch2_pos_ref(SPEAR_PITCH2_NORMAL_ANGLE);
+//   step++;
+// } else if (step == 8) {
+//   // spear_d1_valve(false);
+//   // spear_d2_valve(false);
+//   RCLCPP_INFO(this->get_logger(), "pole collect task completed");
+//   step = 1;
+// }
+#endif
 }
 
 void R1MainNode::manual_mode2_pole(void)
 {
   if (ps4_->is_pushed_up()) {
-    spear_roll_pos_ref(spear_roll_position_ref_ + 0.025);
-  }
-
-  if (ps4_->is_pushed_right()) {
     spear_y_pos_ref(spear_y_position_ref_ + 0.01);
   }
 
+  if (ps4_->is_pushed_right()) {
+    spear_roll_pos_ref(spear_roll_position_ref_ + 0.025);
+  }
+
   if (ps4_->is_pushed_down()) {
-    spear_roll_pos_ref(spear_roll_position_ref_ - 0.025);
+    spear_y_pos_ref(spear_y_position_ref_ - 0.01);
   }
 
   if (ps4_->is_pushed_left()) {
-    spear_y_pos_ref(spear_y_position_ref_ - 0.01);
+    spear_roll_pos_ref(spear_roll_position_ref_ - 0.025);
   }
 
   if (ps4_->is_pushed_triangle()) {
@@ -2282,13 +2328,16 @@ void R1MainNode::manual_mode2_pole(void)
 
 void R1MainNode::manual_mode3_init_move_task(int n)
 {
-  auto VALVE_DELAY_TIME = 300ms;
-  auto SPEAR_MOVE_TIME = 2000ms;
   auto & timer1 = manual_mode3_timer1_;
   auto & timer2 = manual_mode3_timer2_;
   auto & timer3 = manual_mode3_timer3_;
   static int _n = 0;
   _n = n;
+#if SPEAR_MECHANISM == SPEAR_MECHANISM_OTSUKI
+// 一旦何もしない
+#elif SPEAR_MECHANISM == SPEAR_MECHANISM_CHIDA
+  auto VALVE_DELAY_TIME = 300ms;
+  auto SPEAR_MOVE_TIME = 2000ms;
   if (timer1) {
     timer1->cancel();
   }
@@ -2350,12 +2399,35 @@ void R1MainNode::manual_mode3_init_move_task(int n)
       manual_mode3_timer4_->cancel();
     }
   });
+#endif
 }
 
 void R1MainNode::manual_mode3_make_spear_task(int n)
 {
   int & step = manual_mode3_make_spear_task_step_;
   RCLCPP_INFO(this->get_logger(), "manual_mode3_make_spear_task step: %d", step);
+#if SPEAR_MECHANISM == SPEAR_MECHANISM_OTSUKI
+  if (step == 1) {
+    spear_roll_pos_ref(SPEAR_ROLL_HORIZONTAL_ANGLE);
+    spear_y_pos_ref(SPEAR_Y_MAKE_SPEAR_POS);
+    spear_push_valve(true);
+    step++;
+  } else if (step == 2) {
+    spear_push_valve(false);
+    step++;
+  } else if (step == 3) {
+    publish_aruco_marker_id(1);
+    step++;
+  } else if (step == 4) {
+    spear_roll_pos_ref(SPEAR_ROLL_VERTICAL_ANGLE);
+    spear_push_valve(true);
+    step++;
+  } else if (step == 5) {
+    spear_push_valve(false);
+    RCLCPP_INFO(this->get_logger(), "make spear task completed");
+    step = 1;
+  }
+#elif SPEAR_MECHANISM == SPEAR_MECHANISM_CHIDA
   if (step == 1) {
     // rollを横向きにする
     // TODO: ゾーンによって向きを変える
@@ -2430,24 +2502,25 @@ void R1MainNode::manual_mode3_make_spear_task(int n)
   //   RCLCPP_INFO(this->get_logger(), "make spear task completed");
   //   step = 1;
   // }
+#endif
 }
 
 void R1MainNode::manual_mode3_spear(void)
 {
   if (ps4_->is_pushed_up()) {
-    spear_roll_pos_ref(spear_roll_position_ref_ + 0.01);
+    spear_y_pos_ref(spear_y_position_ref_ + 0.0025);
   }
 
   if (ps4_->is_pushed_right()) {
-    spear_x_pos_ref(spear_x_position_ref_ + 0.0025);
+    spear_roll_pos_ref(spear_roll_position_ref_ + 0.01);
   }
 
   if (ps4_->is_pushed_down()) {
-    spear_roll_pos_ref(spear_roll_position_ref_ - 0.01);
+    spear_y_pos_ref(spear_y_position_ref_ - 0.0025);
   }
 
   if (ps4_->is_pushed_left()) {
-    spear_x_pos_ref(spear_x_position_ref_ - 0.0025);
+    spear_roll_pos_ref(spear_roll_position_ref_ - 0.01);
   }
 
   if (ps4_->is_pushed_triangle()) {
@@ -2456,7 +2529,7 @@ void R1MainNode::manual_mode3_spear(void)
   }
 
   if (ps4_->is_pushed_circle()) {
-    spear2_pos_ref(spear2_position_ref_ + 0.01);
+    // spear2_pos_ref(spear2_position_ref_ + 0.01);
   }
 
   if (ps4_->is_pushed_cross()) {
@@ -2464,23 +2537,23 @@ void R1MainNode::manual_mode3_spear(void)
   }
 
   if (ps4_->is_pushed_square()) {
-    spear2_pos_ref(spear2_position_ref_ - 0.01);
+    // spear2_pos_ref(spear2_position_ref_ - 0.01);
   }
 
   if (ps4_->is_pushed_l1()) {
-    spear_pitch1_pos_ref(spear_pitch1_position_ref_ - 0.05);
+    // spear_pitch1_pos_ref(spear_pitch1_position_ref_ - 0.05);
   }
 
   if (ps4_->is_pushed_r1()) {
-    spear_pitch1_pos_ref(spear_pitch1_position_ref_ + 0.05);
+    // spear_pitch1_pos_ref(spear_pitch1_position_ref_ + 0.05);
   }
 
   if (ps4_->is_pushed_l2()) {
-    spear_pitch2_pos_ref(spear_pitch2_position_ref_ - 0.05);
+    // spear_pitch2_pos_ref(spear_pitch2_position_ref_ - 0.05);
   }
 
   if (ps4_->is_pushed_r2()) {
-    spear_pitch2_pos_ref(spear_pitch2_position_ref_ + 0.05);
+    // spear_pitch2_pos_ref(spear_pitch2_position_ref_ + 0.05);
   }
 }
 
@@ -2913,7 +2986,9 @@ void R1MainNode::manual_mode6_r2_lift(void)
     kfs_fz_pos_ref(KFS_FZ_R2_LIFT_POS);
     kfs_rx_pos_ref(KFS_RX_R2_LIFT_POS);
     kfs_rz_pos_ref(KFS_RZ_R2_LIFT_POS);
+#if SPEAR_MECHANISM == SPEAR_MECHANISM_CHIDA
     spear_y_pos_ref(SPEAR_Y_EXPAND_POS);
+#endif
     RCLCPP_INFO(this->get_logger(), "moved to r2_lift position");
     if (manual_mode6_r2_lift_timer_ != nullptr) {
       manual_mode6_r2_lift_timer_->cancel();
@@ -3000,6 +3075,7 @@ void R1MainNode::manual_mode7_spear_attack_task(int n, int m)
   (void)n;
   int & step = manual_mode7_spear_attack_task_step_;
   RCLCPP_INFO(this->get_logger(), "manual_mode7_spear_attack_task step: %d", step);
+#if SPEAR_MECHANISM == SPEAR_MECHANISM_CHIDA
   if (step == 1) {
     kfs_fx_pos_ref(KFS_FX_NORMAL_POS);
     kfs_fz_pos_ref(KFS_FZ_NORMAL_POS);
@@ -3065,11 +3141,13 @@ void R1MainNode::manual_mode7_spear_attack_task(int n, int m)
     step = 1;
     RCLCPP_INFO(this->get_logger(), "spear attack task completed");
   }
+#endif
 }
 
 void R1MainNode::manual_mode7_spear_throw_away_task(int n)
 {
   int & step = manual_mode7_spear_throw_away_task_step_;
+#if SPEAR_MECHANISM == SPEAR_MECHANISM_CHIDA
   if (step == 1) {
     kfs_fx_pos_ref(KFS_FX_NORMAL_POS);
     kfs_fz_pos_ref(KFS_FZ_NORMAL_POS);
@@ -3097,6 +3175,7 @@ void R1MainNode::manual_mode7_spear_throw_away_task(int n)
     step = 1;
     RCLCPP_INFO(this->get_logger(), "spear throw away task completed");
   }
+#endif
 }
 
 void R1MainNode::manual_mode7_spear_attack(void)
@@ -3134,19 +3213,19 @@ void R1MainNode::manual_mode7_spear_attack(void)
   }
 
   if (ps4_->is_pushed_l1()) {
-    spear_pitch1_pos_ref(spear_pitch1_position_ref_ - 0.05);
+    // spear_pitch1_pos_ref(spear_pitch1_position_ref_ - 0.05);
   }
 
   if (ps4_->is_pushed_r1()) {
-    spear_pitch1_pos_ref(spear_pitch1_position_ref_ + 0.05);
+    // spear_pitch1_pos_ref(spear_pitch1_position_ref_ + 0.05);
   }
 
   if (ps4_->is_pushed_l2()) {
-    spear_pitch2_pos_ref(spear_pitch2_position_ref_ - 0.05);
+    // spear_pitch2_pos_ref(spear_pitch2_position_ref_ - 0.05);
   }
 
   if (ps4_->is_pushed_r2()) {
-    spear_pitch2_pos_ref(spear_pitch2_position_ref_ + 0.05);
+    // spear_pitch2_pos_ref(spear_pitch2_position_ref_ + 0.05);
   }
 }
 
@@ -3464,8 +3543,10 @@ void R1MainNode::manual_mode9_auto_chassis(void)
   }
 
   if (ps4_->is_pushed_triangle()) {
+#if SPEAR_MECHANISM == SPEAR_MECHANISM_CHIDA
     spear_x_pos_ref(SPEAR_X_MIDDLE_POS);
     spear_roll_pos_ref(SPEAR_ROLL_VERTICAL_ANGLE);
+#endif
     start_auto_chassis(ChassisAct::ACT0_START, std::vector<int>{}, std::vector<std::string>{});
   } else if (ps4_->is_pushed_circle()) {
     reset_position(true);

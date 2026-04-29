@@ -52,6 +52,10 @@
 #include "tf2_ros/buffer.h"
 #include "tf2_ros/transform_listener.h"
 
+#define SPEAR_CHIDA_MECHANISM 0
+#define SPEAR_OTSUKI_MECHANISM 1
+#define SPEAR_MECHANISM SPEAR_OTSUKI_MECHANISM
+
 class R1MainNode : public rclcpp::Node
 {
 public:
@@ -311,6 +315,7 @@ public:
   double KFS_FZ_HIGH_POS = 0.0;
   double KFS_FZ_PUT_POS = 0.0;
   double KFS_FZ_STORAGE_POS = 0.0;
+  double KFS_FZ_START_POS = 0.0;
   double KFS_FZ_LOW_MECH_LOCK_POS = 0.0;
   double KFS_FZ_HIGH_MECH_LOCK_POS = 0.0;
   double KFS_FZ_R2_LIFT_POS = 0.0;
@@ -319,6 +324,7 @@ public:
   double KFS_FYAW_FRONT_ANGLE = 0.0;
   double KFS_FYAW_SIDE_ANGLE = 0.0;
   double KFS_FYAW_REAR_ANGLE = 0.0;
+  double KFS_FYAW_START_ANGLE = 0.0;
   double KFS_FYAW_LOW_MECH_LOCK_ANGLE = 0.0;
   double KFS_FYAW_HIGH_MECH_LOCK_ANGLE = 0.0;
   // rx
@@ -337,6 +343,7 @@ public:
   double KFS_RZ_HIGH_POS = 0.0;
   double KFS_RZ_PUT_POS = 0.0;
   double KFS_RZ_STORAGE_POS = 0.0;
+  double KFS_RZ_START_POS = 0.0;
   double KFS_RZ_LOW_MECH_LOCK_POS = 0.0;
   double KFS_RZ_HIGH_MECH_LOCK_POS = 0.0;
   double KFS_RZ_R2_LIFT_POS = 0.0;
@@ -345,6 +352,7 @@ public:
   double KFS_RYAW_FRONT_ANGLE = 0.0;
   double KFS_RYAW_SIDE_ANGLE = 0.0;
   double KFS_RYAW_REAR_ANGLE = 0.0;
+  double KFS_RYAW_START_ANGLE = 0.0;
   double KFS_RYAW_LOW_MECH_LOCK_ANGLE = 0.0;
   double KFS_RYAW_HIGH_MECH_LOCK_ANGLE = 0.0;
   // R2昇降
@@ -355,7 +363,21 @@ public:
   double R2_RLIFT_UP_POS = 0.0;
   double R2_RLIFT_DOWN_POS = 0.0;
 
-  // ========== やり ==========
+// ========== やり ==========
+// 大槻機構
+#if SPEAR_MECHANISM == SPEAR_OTSUKI_MECHANISM
+  // spear y
+  double SPEAR_Y_NORMAL_POS = 0.0;
+  double SPEAR_Y_COLLECT1_POS = 0.0;
+  double SPEAR_Y_COLLECT2_POS = 0.0;
+  double SPEAR_Y_MAKE_SPEAR_POS = 0.0;
+  // spear roll
+  double SPEAR_ROLL_NORMAL_ANGLE = 0.0;
+  double SPEAR_ROLL_VERTICAL_ANGLE = 0.0;
+  double SPEAR_ROLL_HORIZONTAL_ANGLE = 0.0;
+  double SPEAR_ROLL_INV_HORIZONTAL_ANGLE = 0.0;
+#elif SPEAR_MECHANISM == SPEAR_CHIDA_MECHANISM
+  // 千田機構
   // spear1
   double SPEAR1_NORMAL_POS = 0.0;
   double SPEAR1_COLLECT1_POS = 0.0;
@@ -413,6 +435,7 @@ public:
   // spear_pitch2
   double SPEAR_PITCH2_NORMAL_ANGLE = 0.0;
   double SPEAR_PITCH2_VERTICAL_ANGLE = 0.0;
+#endif
 
   // KFS回収の森林の順番
   std::vector<int> KFS_FOREST_NUMBER;
@@ -658,8 +681,9 @@ public:
 
   // ========== 各動作の関数 ==========
 
-  rclcpp::TimerBase::SharedPtr kfs_init_pos_roll_timer_;
-  void kfs_init_pos(void);
+  void kfs_robot_start_act(void);
+  rclcpp::TimerBase::SharedPtr kfs_collect_start_act_roll_timer_;
+  void kfs_collect_start_act(void);
 
   // 動いていたら危険なアクチュエータは停止する
   // 位置制御は止められないので、そのまま
