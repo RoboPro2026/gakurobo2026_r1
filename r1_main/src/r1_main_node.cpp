@@ -2201,6 +2201,7 @@ void R1MainNode::manual_mode2_collect_pole_task(void)
 {
   int & step = manual_mode2_collect_pole_task_step_;
   RCLCPP_INFO(this->get_logger(), "manual_mode2_collect_pole_task step: %d", step);
+  RCLCPP_INFO(this->get_logger(), "%d", SPEAR_MECHANISM);
 #if SPEAR_MECHANISM == SPEAR_MECHANISM_OTSUKI
   if (step == 1) {
     kfs_robot_start_act();
