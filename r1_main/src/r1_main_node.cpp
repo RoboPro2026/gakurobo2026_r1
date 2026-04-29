@@ -3209,6 +3209,7 @@ void R1MainNode::manual_mode7_spear_throw_away_task(int n)
     spear_hand_push_valve(false);
     step++;
   } else if (step == 4) {
+    spear_hand_push_valve(true);
     spear_hand1_valve(true);
     spear_hand2_valve(true);
     step++;
