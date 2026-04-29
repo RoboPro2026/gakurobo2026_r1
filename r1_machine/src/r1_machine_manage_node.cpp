@@ -2468,9 +2468,9 @@ private:
     make_gpio_float_output_channel({1, 2}, "kfs_front_valve"),
     make_gpio_float_output_channel({1, 3}, "kfs_rear_valve"),
     // 大槻機構
-    make_gpio_float_output_channel({1, 3}, "spear_hand1_valve"),
-    make_gpio_float_output_channel({1, 4}, "spear_hand2_valve"),
-    make_gpio_float_output_channel({1, 5}, "spear_hand_push_valve"),
+    make_gpio_float_output_channel({1, 4}, "spear_hand1_valve"),
+    make_gpio_float_output_channel({1, 5}, "spear_hand2_valve"),
+    make_gpio_float_output_channel({1, 6}, "spear_hand_push_valve"),
     // 千田機構
     // make_gpio_float_output_channel({2, 0}, "spear_u1_valve"),
     // make_gpio_float_output_channel({2, 1}, "spear_d1_valve"),
