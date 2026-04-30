@@ -212,13 +212,20 @@ r1_main_node:
     spear_y_middle_attack_pos: 0.65
     spear_y_high_attack_pos: 0.74
     spear_y_throw_away_pos: 0.05
-    spear_roll_normal_angle: 0.0
-    spear_roll_vertical_angle: 0.0
-    spear_roll_horizontal_angle: 1.5707963267948966
-    spear_roll_inv_horozontal_angle: -1.5707963267948966
-    spear_roll_low_attack_angle: 1.5707963267948966
-    spear_roll_middle_attack_angle: 1.0
-    spear_roll_high_attack_angle: 0.8
+    spear_roll1_normal_angle: 0.0
+    spear_roll1_vertical_angle: 0.0
+    spear_roll1_horizontal_angle: 1.5707963267948966
+    spear_roll1_inv_horozontal_angle: -1.5707963267948966
+    spear_roll1_low_attack_angle: 1.5707963267948966
+    spear_roll1_middle_attack_angle: 1.0
+    spear_roll1_high_attack_angle: 0.8
+    spear_roll2_normal_angle: 0.0
+    spear_roll2_vertical_angle: 0.0
+    spear_roll2_horizontal_angle: 1.5707963267948966
+    spear_roll2_inv_horozontal_angle: -1.5707963267948966
+    spear_roll2_low_attack_angle: 1.5707963267948966
+    spear_roll2_middle_attack_angle: 1.0
+    spear_roll2_high_attack_angle: 0.8
     # 千田機構
     # # spear1
     # spear1_normal_pos: 0.05
@@ -615,7 +622,30 @@ r1_spear_y_node:
     inverse_low_switch_logic: false
     inverse_high_switch_logic: false
 # angle motion node
-r1_spear_roll_node:
+r1_spear_roll1_node:
+  ros__parameters:
+    timer_rate: 10.0
+    # トルク検出時のしきい値
+    torque_threshold: 0.5 # Nm
+    # 通常位置モード時に Robomas の torque_lim として使う値
+    normal_torque_limit: 0.7 # Nm
+    # 原点検出・メカロック移動中に Robomas の torque_lim として使う値
+    contact_torque_limit: 0.7 # Nm
+    origin_detect_threshold_time: 0.5 # 秒
+    origin_detect_speed: -3.14 # rad/s
+    angle_min: -5.0
+    angle_max: 5.0
+    normal_angle: 0.1
+    # ギア比で割った値がモーターの角度指令値となる
+    # 13.0 / 42.0 = 0.30952380952380953
+    gear_ratio: 0.30952380952380953
+    inverse_motor: true
+    use_low_switch: false
+    use_high_switch: false
+    inverse_low_switch_logic: false
+    inverse_high_switch_logic: false
+# angle motion node
+r1_spear_roll2_node:
   ros__parameters:
     timer_rate: 10.0
     # トルク検出時のしきい値
@@ -1090,7 +1120,7 @@ sabacan_robomasv2_node_id8:
     board_id: 8
     enable_initialize: false
     publish_timer_rate: 10.0
-    # spear_y, spear_roll
+    # spear_y, spear_roll1, spear_roll2, none
     motor_type: ["C610", "C610", "C610", "C610"]
     control_type: ["TORQUE", "TORQUE", "TORQUE", "TORQUE"]
     speed_gain_p: [0.5, 0.5, 0.5, 0.5]

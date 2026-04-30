@@ -249,6 +249,24 @@ public:
   double kfs_rx_position_ref_ = 0.0;
   double kfs_rz_position_ref_ = 0.0;
   double kfs_ryaw_position_ref_ = 0.0;
+  double r2_flift_position_ref_ = 0.0;
+  double r2_rlift_position_ref_ = 0.0;
+
+  double kfs_front_pump_ref_ = 0.0;
+  double kfs_rear_pump_ref_ = 0.0;
+  bool kfs_front_valve_ref_ = false;
+  bool kfs_rear_valve_ref_ = false;
+
+#if SPEAR_MECHANISM == SPEAR_MECHANISM_OTSUKI
+  // 大槻機構
+  double spear_y_position_ref_ = 0.0;
+  double spear_roll1_position_ref_ = 0.0;
+  double spear_roll2_position_ref_ = 0.0;
+  bool spear_hand1_valve_ref_ = false;
+  bool spear_hand2_valve_ref_ = false;
+  bool spear_hand_push_valve_ref_ = false;
+#elif SPEAR_MECHANISM == SPEAR_MECHANISM_CHIDA
+  // 千田機構
   double spear1_position_ref_ = 0.0;
   double spear2_position_ref_ = 0.0;
   double spear3_position_ref_ = 0.0;
@@ -258,22 +276,12 @@ public:
   double spear_roll_position_ref_ = 0.0;
   double spear_pitch1_position_ref_ = 0.0;
   double spear_pitch2_position_ref_ = 0.0;
-  double r2_flift_position_ref_ = 0.0;
-  double r2_rlift_position_ref_ = 0.0;
-  double kfs_front_pump_ref_ = 0.0;
-  double kfs_rear_pump_ref_ = 0.0;
-  bool kfs_front_valve_ref_ = false;
-  bool kfs_rear_valve_ref_ = false;
-  // 千田機構
   bool spear_u1_valve_ref_ = false;
   bool spear_d1_valve_ref_ = false;
   bool spear_u2_valve_ref_ = false;
   bool spear_d2_valve_ref_ = false;
-  // 大槻機構
-  bool spear_hand1_valve_ref_ = false;
-  bool spear_hand2_valve_ref_ = false;
-  bool spear_hand_push_valve_ref_ = false;
 
+#endif
   // sabacan
   bool sabacan_is_ems_ = false;
 
@@ -393,14 +401,22 @@ public:
   double SPEAR_Y_MIDDLE_ATTACK_POS = 0.0;
   double SPEAR_Y_HIGH_ATTACK_POS = 0.0;
   double SPEAR_Y_THROW_AWAY_POS = 0.0;
-  // spear roll
-  double SPEAR_ROLL_NORMAL_ANGLE = 0.0;
-  double SPEAR_ROLL_VERTICAL_ANGLE = 0.0;
-  double SPEAR_ROLL_HORIZONTAL_ANGLE = 0.0;
-  double SPEAR_ROLL_INV_HORIZONTAL_ANGLE = 0.0;
-  double SPEAR_ROLL_LOW_ATTACK_ANGLE = 0.0;
-  double SPEAR_ROLL_MIDDLE_ATTACK_ANGLE = 0.0;
-  double SPEAR_ROLL_HIGH_ATTACK_ANGLE = 0.0;
+  // spear roll1
+  double SPEAR_ROLL1_NORMAL_ANGLE = 0.0;
+  double SPEAR_ROLL1_VERTICAL_ANGLE = 0.0;
+  double SPEAR_ROLL1_HORIZONTAL_ANGLE = 0.0;
+  double SPEAR_ROLL1_INV_HORIZONTAL_ANGLE = 0.0;
+  double SPEAR_ROLL1_LOW_ATTACK_ANGLE = 0.0;
+  double SPEAR_ROLL1_MIDDLE_ATTACK_ANGLE = 0.0;
+  double SPEAR_ROLL1_HIGH_ATTACK_ANGLE = 0.0;
+  // spear roll2
+  double SPEAR_ROLL2_NORMAL_ANGLE = 0.0;
+  double SPEAR_ROLL2_VERTICAL_ANGLE = 0.0;
+  double SPEAR_ROLL2_HORIZONTAL_ANGLE = 0.0;
+  double SPEAR_ROLL2_INV_HORIZONTAL_ANGLE = 0.0;
+  double SPEAR_ROLL2_LOW_ATTACK_ANGLE = 0.0;
+  double SPEAR_ROLL2_MIDDLE_ATTACK_ANGLE = 0.0;
+  double SPEAR_ROLL2_HIGH_ATTACK_ANGLE = 0.0;
 #elif SPEAR_MECHANISM == SPEAR_MECHANISM_CHIDA
   // 千田機構
   // spear1
@@ -614,7 +630,27 @@ public:
   // 速度指令停止
   void r2_flift_speed_mode_stop(void);
   void r2_rlift_speed_mode_stop(void);
-  // やり
+// やり
+// 位置指令
+#if SPEAR_MECHANISM == SPEAR_MECHANISM_OTSUKI
+  // 位置指令
+  void spear_y_pos_ref(double pos);
+  void spear_roll1_pos_ref(double angle);
+  void spear_roll2_pos_ref(double angle);
+  // 速度指令
+  void spear_y_speed_ref(double speed);
+  void spear_roll1_speed_ref(double speed);
+  void spear_roll2_speed_ref(double speed);
+  // 速度指令停止
+  void spear_y_speed_mode_stop(void);
+  void spear_roll1_speed_mode_stop(void);
+  void spear_roll2_speed_mode_stop(void);
+  // 角度指定
+  void spear_y_set_pos(double pos);
+  void spear_roll1_set_angle(double angle);
+  void spear_roll2_set_angle(double angle);
+
+#elif SPEAR_MECHANISM == SPEAR_MECHANISM_CHIDA
   // 位置指令
   void spear1_pos_ref(double pos);
   void spear2_pos_ref(double pos);
@@ -654,6 +690,7 @@ public:
   void spear_roll_speed_mode_stop(void);
   void spear_pitch1_speed_mode_stop(void);
   void spear_pitch2_speed_mode_stop(void);
+#endif
   // ========== move_mech_lock関数 ==========
   // KFS回収
   void kfs_fx_move_mech_lock(int direction);
@@ -674,7 +711,12 @@ public:
   void r2_flift_move_up_mech_lock(void);
   void r2_rlift_move_down_mech_lock(void);
   void r2_rlift_move_up_mech_lock(void);
-  // やり
+// やり
+#if SPEAR_MECHANISM == SPEAR_MECHANISM_OTSUKI
+  void spear_y_move_mech_lock(int direction);
+  void spear_roll1_move_mech_lock(int direction);
+  void spear_roll2_move_mech_lock(int direction);
+#elif SPEAR_MECHANISM == SPEAR_MECHANISM_CHIDA
   void spear1_move_mech_lock(int direction);
   void spear2_move_mech_lock(int direction);
   void spear3_move_mech_lock(int direction);
@@ -684,22 +726,25 @@ public:
   void spear_roll_move_mech_lock(int direction);
   void spear_pitch1_move_mech_lock(int direction);
   void spear_pitch2_move_mech_lock(int direction);
+#endif
   // KFS真空ポンプ・電磁弁
   void kfs_front_pump(double pwm);
   void kfs_rear_pump(double pwm);
   void kfs_front_valve(bool on);
   void kfs_rear_valve(bool on);
-  // やり電磁弁
-  // 大槻機構
+// やり電磁弁
+// 大槻機構
+#if SPEAR_MECHANISM == SPEAR_MECHANISM_OTSUKI
   void spear_hand1_valve(bool on);
   void spear_hand2_valve(bool on);
   void spear_hand_push_valve(bool on);
+#elif SPEAR_MECHANISM == SPEAR_MECHANISM_CHIDA
   // 千田機構
   void spear_u1_valve(bool on);
   void spear_d1_valve(bool on);
   void spear_u2_valve(bool on);
   void spear_d2_valve(bool on);
-
+#endif
   // ========== 各動作の関数 ==========
 
   void kfs_robot_start_act(void);
@@ -721,7 +766,12 @@ public:
   // r2昇降
   void r2_flift_detect_origin(void);
   void r2_rlift_detect_origin(void);
-  // やり
+// やり
+#if SPEAR_MECHANISM == SPEAR_MECHANISM_OTSUKI
+  void spear_y_detect_origin(void);
+  void spear_roll1_detect_origin(void);
+  void spear_roll2_detect_origin(void);
+#elif SPEAR_MECHANISM == SPEAR_MECHANISM_CHIDA
   void spear1_detect_origin(void);
   void spear2_detect_origin(void);
   void spear3_detect_origin(void);
@@ -731,6 +781,7 @@ public:
   void spear_roll_detect_origin(void);
   void spear_pitch1_detect_origin(void);
   void spear_pitch2_detect_origin(void);
+#endif
   // ========== センサーの取得 ==========
   bool get_kfs_fz_low_switch_status(void) { return kfs_fz_low_switch_status_; }
   bool get_kfs_rz_low_switch_status(void) { return kfs_rz_low_switch_status_; }

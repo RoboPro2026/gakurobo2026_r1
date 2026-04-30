@@ -197,7 +197,12 @@ def generate_launch_description():
         extra_remappings=[("low_switch_status", "spear_y_low_switch_status")],
     )
 
-    r1_spear_roll_node = create_r1_angle_motion_node("r1_spear_roll_node", "spear_roll")
+    r1_spear_roll1_node = create_r1_angle_motion_node(
+        "r1_spear_roll1_node", "spear_roll1"
+    )
+    r1_spear_roll2_node = create_r1_angle_motion_node(
+        "r1_spear_roll2_node", "spear_roll2"
+    )
 
     # 千田機構
     # r1_spear1_node = create_r1_linear_motion_node(
@@ -580,7 +585,8 @@ def generate_launch_description():
         r1_r2_rlift_node,
         # 大槻機構
         r1_spear_y_node,
-        r1_spear_roll_node,
+        r1_spear_roll1_node,
+        r1_spear_roll2_node,
         # 千田機構
         # r1_spear1_node,
         # r1_spear2_node,

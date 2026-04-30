@@ -2454,7 +2454,8 @@ private:
     make_angle_motion_channel({3, 2}, "kfs_fyaw"),
     make_angle_motion_channel({4, 2}, "kfs_ryaw"),
     // 大槻機構
-    make_angle_motion_channel({8, 1}, "spear_roll"),
+    make_angle_motion_channel({8, 1}, "spear_roll1"),
+    make_angle_motion_channel({8, 2}, "spear_roll2"),
     // 千田機構
     // make_angle_motion_channel({6, 2}, "spear_pitch1"),
     // make_angle_motion_channel({6, 3}, "spear_pitch2"),
