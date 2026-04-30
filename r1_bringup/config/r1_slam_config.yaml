@@ -33,8 +33,8 @@ urg_node2_2:
     diagnostics_tolerance : 0.05
     diagnostics_window_time : 5.0
     time_offset : 0.0
-    angle_min : -1.40
-    angle_max : 1.15
+    angle_min : -1.2
+    angle_max : 1.1
     skip : 0
     cluster : 1
 dual_laser_merger:
