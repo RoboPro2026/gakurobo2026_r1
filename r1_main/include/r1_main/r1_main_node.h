@@ -36,6 +36,8 @@
 #include "r1_msgs/msg/gpio_servo_ref.hpp"
 #include "r1_msgs/msg/linear_motion.hpp"
 #include "r1_msgs/msg/motor_ref.hpp"
+#include "r1_msgs/msg/r1_collect_kfs.hpp"
+#include "r1_msgs/msg/r1_init_parameter.hpp"
 #include "r1_msgs/msg/robot_move.hpp"
 #include "r1_util/r1_util.h"
 #include "rcl_interfaces/msg/set_parameters_result.hpp"
@@ -221,6 +223,14 @@ public:
   ChassisAct chassis_act_status_ = ChassisAct::NONE;
   // arucoマーカ
   rclcpp::Publisher<std_msgs::msg::Int32>::SharedPtr aruco_marker_id_publisher_;
+  // スマホから送られてくる初期化パラメータ
+  rclcpp::Subscription<r1_msgs::msg::R1InitParameter>::SharedPtr r1_init_parameter_subscription_;
+  r1_msgs::msg::R1InitParameter r1_init_parameter_;
+  bool received_r1_init_parameter_ = false;
+  // KFS回収の個別指定
+  rclcpp::Subscription<r1_msgs::msg::R1CollectKfs>::SharedPtr r1_collect_kfs_subscription_;
+  r1_msgs::msg::R1CollectKfs r1_collect_kfs_;
+  bool received_r1_collect_kfs_ = false;
 
   // zone
   std::string zone_;
@@ -447,8 +457,6 @@ public:
   double SPEAR_PITCH2_VERTICAL_ANGLE = 0.0;
 #endif
 
-  // KFS回収の森林の順番
-  std::vector<int> KFS_FOREST_NUMBER;
   // 内回り/外回りでKFS回収の判定に使う長方形中心の座標 [x, y, yaw]
   // yaw=0 のときは map 座標系に平行で、yaw を与えるとその分だけ長方形が回転する
   std::vector<std::vector<double>> INNER_COLLECT_KFS_CENTER_POS;
@@ -549,16 +557,14 @@ public:
     ChassisAct act, std::vector<int> forest_order, std::vector<std::string> kfs_mechanism_type);
   void clear_auto_chassis_state(bool stop_kfs_auto_collect = false);
   geometry_msgs::msg::PoseStamped get_map_pos(void);
-  bool build_inner_kfs_auto_collect_plan(
-    std::vector<int> & forest_order, std::vector<std::string> & collect_kfs_type) const;
-  bool build_outer_kfs_auto_collect_plan(
-    std::vector<int> & forest_order, std::vector<std::string> & collect_kfs_type) const;
-  bool set_mode3_kfs_auto_collect_status(KfsAutoCollectStatus & status);
   void start_kfs_auto_collect(
     KfsAutoCollectStatus status, std::vector<int> forest_order,
     std::vector<std::string> kfs_mechanism_type);
   void stop_kfs_auto_collect(void);
   void reset_kfs_auto_collect_tracking(void);
+  // スマホ関連
+  void r1_init_parameter_callback(const r1_msgs::msg::R1InitParameter::SharedPtr msg);
+  void r1_collect_kfs_callback(const r1_msgs::msg::R1CollectKfs::SharedPtr msg);
   // ========== 各アクチュエータ単体の動作関数 ==========
   bool chassis_rotate90 = false;
   // 足回り

@@ -556,6 +556,14 @@ R1MainNode::R1MainNode() : Node("r1_main_node")
   // arucoマーカ
   aruco_marker_id_publisher_ = this->create_publisher<std_msgs::msg::Int32>("/aruco_marker_id", 10);
 
+  // スマホ関連
+  r1_init_parameter_subscription_ = this->create_subscription<r1_msgs::msg::R1InitParameter>(
+    "/r1_init_parameter", 10,
+    std::bind(&R1MainNode::r1_init_parameter_callback, this, std::placeholders::_1));
+  r1_collect_kfs_subscription_ = this->create_subscription<r1_msgs::msg::R1CollectKfs>(
+    "/r1_collect_kfs", 10,
+    std::bind(&R1MainNode::r1_collect_kfs_callback, this, std::placeholders::_1));
+
   // tf関連
   tf_buffer_ = std::make_shared<tf2_ros::Buffer>(this->get_clock());
   tf_listener_ = std::make_shared<tf2_ros::TransformListener>(*tf_buffer_);
@@ -724,21 +732,6 @@ R1MainNode::R1MainNode() : Node("r1_main_node")
   declare_and_get_parameter("spear_pitch2_normal_angle", SPEAR_PITCH2_NORMAL_ANGLE);
   declare_and_get_parameter("spear_pitch2_vertical_angle", SPEAR_PITCH2_VERTICAL_ANGLE);
 #endif
-
-  // FOREST関連
-  this->declare_parameter<std::vector<int64_t>>("kfs_forest_number", std::vector<int64_t>{});
-  std::vector<int64_t> kfs_forest_number;
-  this->get_parameter("kfs_forest_number", kfs_forest_number);
-  for (int i = 0; i < (int)kfs_forest_number.size(); i++) {
-    if (kfs_forest_number[i] < 1 || kfs_forest_number[i] > 12) {
-      RCLCPP_ERROR(
-        this->get_logger(), "Invalid kfs_forest_number[%d]: %ld. Must be between 1 and 12.", i,
-        static_cast<long>(kfs_forest_number[i]));
-      rclcpp::shutdown();
-    } else {
-      KFS_FOREST_NUMBER.push_back(kfs_forest_number[i]);
-    }
-  }
 
   for (int i = 0; i < 12; i++) {
     std::string inner_center_name = "inner_collect_kfs_center_pos." + std::to_string(i + 1);
@@ -1224,6 +1217,49 @@ R1MainNode::LedColor R1MainNode::resolve_led_output_color(
   return {};
 }
 
+void R1MainNode::r1_init_parameter_callback(const r1_msgs::msg::R1InitParameter::SharedPtr msg)
+{
+  r1_init_parameter_ = *msg;
+  received_r1_init_parameter_ = true;
+  std::string s;
+  s += "zone: " + r1_init_parameter_.zone + "\n";
+  for (int i = 0; i < (int)r1_init_parameter_.r1_kfs_value.size(); i++) {
+    s += "r1_kfs_value[" + std::to_string(i) +
+         "]: " + std::to_string(r1_init_parameter_.r1_kfs_value[i]) + "\n";
+  }
+  for (int i = 0; i < (int)r1_init_parameter_.r2_kfs_value.size(); i++) {
+    s += "r2_kfs_value[" + std::to_string(i) +
+         "]: " + std::to_string(r1_init_parameter_.r2_kfs_value[i]) + "\n";
+  }
+  for (int i = 0; i < (int)r1_init_parameter_.r2_fake_kfs_value.size(); i++) {
+    s += "r2_fake_kfs_value[" + std::to_string(i) +
+         "]: " + std::to_string(r1_init_parameter_.r2_fake_kfs_value[i]) + "\n";
+  }
+  s += std::string("enable_auto_select: ") +
+       (r1_init_parameter_.enable_auto_select ? "true" : "false") + "\n";
+  RCLCPP_INFO(this->get_logger(), "received /r1_init_parameter:\n%s", s.c_str());
+}
+
+void R1MainNode::r1_collect_kfs_callback(const r1_msgs::msg::R1CollectKfs::SharedPtr msg)
+{
+  std::string s;
+  if (msg->kfs_mechanism_type.size() != msg->forest_order.size()) {
+    RCLCPP_ERROR(
+      this->get_logger(),
+      "Size mismatch in /r1_collect_kfs: kfs_mechanism_type has size %zu, but "
+      "forest_order has size %zu.",
+      msg->kfs_mechanism_type.size(), msg->forest_order.size());
+    return;
+  }
+  r1_collect_kfs_ = *msg;
+  received_r1_collect_kfs_ = true;
+  for (int i = 0; i < (int)r1_collect_kfs_.kfs_mechanism_type.size(); i++) {
+    s += r1_collect_kfs_.kfs_mechanism_type[i] + ": " +
+         std::to_string(r1_collect_kfs_.forest_order[i]) + "\n";
+  }
+  RCLCPP_INFO(this->get_logger(), "received /r1_collect_kfs:\n%s", s.c_str());
+}
+
 void R1MainNode::publish_r1_machine_initialize(void)
 {
   std_msgs::msg::Empty msg;
@@ -1596,101 +1632,6 @@ void R1MainNode::clear_auto_chassis_state(bool stop_kfs_auto_collect)
   auto_chassis_status_ = ChassisAct::NONE;
   pending_auto_robot_move_valid_ = false;
   pending_auto_robot_move_ = r1_msgs::msg::RobotMove();
-}
-
-bool R1MainNode::build_inner_kfs_auto_collect_plan(
-  std::vector<int> & forest_order, std::vector<std::string> & collect_kfs_type) const
-{
-  forest_order.clear();
-  collect_kfs_type.clear();
-
-  if (zone_ != "blue") {
-    RCLCPP_ERROR(
-      this->get_logger(), "inner kfs auto collect plan is not implemented for zone=%s",
-      zone_.c_str());
-    return false;
-  }
-
-  int assigned_count = 0;
-  for (const int n : KFS_FOREST_NUMBER) {
-    if (n != 1 && n != 2 && n != 4 && n != 7 && n != 10) {
-      continue;
-    }
-    forest_order.push_back(n);
-    if (assigned_count == 0) {
-      collect_kfs_type.push_back("rear_kfs");
-      assigned_count++;
-    } else if (assigned_count == 1) {
-      collect_kfs_type.push_back("front_kfs");
-    } else {
-      RCLCPP_ERROR(this->get_logger(), "inner kfs collect_kfs_type size error");
-      return false;
-    }
-  }
-
-  return !forest_order.empty() && forest_order.size() == collect_kfs_type.size();
-}
-
-bool R1MainNode::build_outer_kfs_auto_collect_plan(
-  std::vector<int> & forest_order, std::vector<std::string> & collect_kfs_type) const
-{
-  forest_order.clear();
-  collect_kfs_type.clear();
-
-  if (zone_ != "blue") {
-    RCLCPP_ERROR(
-      this->get_logger(), "outer kfs auto collect plan is not implemented for zone=%s",
-      zone_.c_str());
-    return false;
-  }
-
-  int assigned_count = 0;
-  for (const int n : KFS_FOREST_NUMBER) {
-    if (n != 3 && n != 6 && n != 9 && n != 12 && n != 11 && n != 10) {
-      continue;
-    }
-    forest_order.push_back(n);
-    if (assigned_count == 0) {
-      collect_kfs_type.push_back("front_kfs");
-      assigned_count++;
-    } else if (assigned_count == 1) {
-      collect_kfs_type.push_back("rear_kfs");
-    } else {
-      RCLCPP_ERROR(this->get_logger(), "outer kfs collect_kfs_type size error");
-      return false;
-    }
-  }
-
-  return !forest_order.empty() && forest_order.size() == collect_kfs_type.size();
-}
-
-bool R1MainNode::set_mode3_kfs_auto_collect_status(KfsAutoCollectStatus & status)
-{
-  auto is_inner_number = [](int n) { return n == 1 || n == 2 || n == 4 || n == 7 || n == 10; };
-  auto is_outer_number = [](int n) {
-    return n == 3 || n == 6 || n == 9 || n == 10 || n == 11 || n == 12;
-  };
-
-  int inner_count = 0;
-  int outer_count = 0;
-
-  // 回収するKFSの個数を多数決で決定する
-  for (const int n : KFS_FOREST_NUMBER) {
-    if (is_inner_number(n)) inner_count++;
-    if (is_outer_number(n)) outer_count++;
-  }
-
-  if (outer_count > inner_count) {
-    status = KfsAutoCollectStatus::OUTER_ACTIVE;
-  } else {
-    // inner_count >= outer_count (同数の場合はINNERを優先)
-    status = KfsAutoCollectStatus::INNER_ACTIVE;
-  }
-
-  RCLCPP_INFO(
-    this->get_logger(), "Set MODE3_SPEAR status to %s (inner=%d, outer=%d)",
-    kfs_auto_collect_status_name(status).c_str(), inner_count, outer_count);
-  return true;
 }
 
 void R1MainNode::reset_kfs_auto_collect_tracking(void)
@@ -3531,133 +3472,99 @@ void R1MainNode::auto_collect_kfs_task(void)
 
 void R1MainNode::manual_mode8_auto_collect_kfs(void)
 {
-  if (ps4_->is_pushed_triangle()) {
-    std::vector<int> forest_order;
-    std::vector<std::string> collect_kfs_type;
-    if (build_inner_kfs_auto_collect_plan(forest_order, collect_kfs_type)) {
-      start_kfs_auto_collect(
-        KfsAutoCollectStatus::INNER_ACTIVE, std::move(forest_order), std::move(collect_kfs_type));
-    }
-  }
+  // if (ps4_->is_pushed_circle()) {
+  //   reset_position(true);
+  //   stop_kfs_auto_collect();
+  // }
 
-  if (ps4_->is_pushed_cross()) {
-    std::vector<int> forest_order;
-    std::vector<std::string> collect_kfs_type;
-    if (build_outer_kfs_auto_collect_plan(forest_order, collect_kfs_type)) {
-      start_kfs_auto_collect(
-        KfsAutoCollectStatus::OUTER_ACTIVE, std::move(forest_order), std::move(collect_kfs_type));
-    }
-  }
+  // if (ps4_->is_pushed_up()) {
+  //   spear_x_pos_ref(spear_x_position_ref_ + 0.01);
+  // }
 
-  if (ps4_->is_pushed_circle()) {
-    reset_position(true);
-    stop_kfs_auto_collect();
-  }
+  // if (ps4_->is_pushed_down()) {
+  //   spear_x_pos_ref(spear_x_position_ref_ - 0.01);
+  // }
 
-  if (ps4_->is_pushed_up()) {
-    spear_x_pos_ref(spear_x_position_ref_ + 0.01);
-  }
+  // if (ps4_->is_pushed_left()) {
+  //   kfs_front_pump(0.0);
+  //   kfs_front_valve(true);
+  //   // setTimeout風で電磁弁をOFFにする。
+  //   if (manual_mode7_front_valve_timer_) {
+  //     manual_mode7_front_valve_timer_->cancel();
+  //   }
+  //   manual_mode7_front_valve_timer_ = this->create_wall_timer(250ms, [this]() {
+  //     kfs_front_valve(false);
+  //     if (manual_mode7_front_valve_timer_) {
+  //       manual_mode7_front_valve_timer_->cancel();
+  //     }
+  //   });
+  //   kfs_rear_pump(0.0);
+  //   kfs_rear_valve(true);
+  //   // setTimeout風で電磁弁をOFFにする。
+  //   if (manual_mode7_rear_valve_timer_) {
+  //     manual_mode7_rear_valve_timer_->cancel();
+  //   }
+  //   manual_mode7_rear_valve_timer_ = this->create_wall_timer(250ms, [this]() {
+  //     kfs_rear_valve(false);
+  //     if (manual_mode7_rear_valve_timer_) {
+  //       manual_mode7_rear_valve_timer_->cancel();
+  //     }
+  //   });
+  // }
 
-  if (ps4_->is_pushed_down()) {
-    spear_x_pos_ref(spear_x_position_ref_ - 0.01);
-  }
+  // if (ps4_->is_pushed_l1()) {
+  //   // kfs_fxの微調整（指令値を減少）
+  //   kfs_fx_pos_ref(kfs_fx_position_ref_ - 0.01);
+  // }
 
-  if (ps4_->is_pushed_left()) {
-    kfs_front_pump(0.0);
-    kfs_front_valve(true);
-    // setTimeout風で電磁弁をOFFにする。
-    if (manual_mode7_front_valve_timer_) {
-      manual_mode7_front_valve_timer_->cancel();
-    }
-    manual_mode7_front_valve_timer_ = this->create_wall_timer(250ms, [this]() {
-      kfs_front_valve(false);
-      if (manual_mode7_front_valve_timer_) {
-        manual_mode7_front_valve_timer_->cancel();
-      }
-    });
-    kfs_rear_pump(0.0);
-    kfs_rear_valve(true);
-    // setTimeout風で電磁弁をOFFにする。
-    if (manual_mode7_rear_valve_timer_) {
-      manual_mode7_rear_valve_timer_->cancel();
-    }
-    manual_mode7_rear_valve_timer_ = this->create_wall_timer(250ms, [this]() {
-      kfs_rear_valve(false);
-      if (manual_mode7_rear_valve_timer_) {
-        manual_mode7_rear_valve_timer_->cancel();
-      }
-    });
-  }
+  // if (ps4_->is_pushed_r1()) {
+  //   // kfs_fxの微調整（指令値を増加）
+  //   kfs_fx_pos_ref(kfs_fx_position_ref_ + 0.01);
+  // }
 
-  if (ps4_->is_pushed_l1()) {
-    // kfs_fxの微調整（指令値を減少）
-    kfs_fx_pos_ref(kfs_fx_position_ref_ - 0.01);
-  }
+  // if (ps4_->is_pushed_l2()) {
+  //   // kfs_fzの微調整（指令値を減少）
+  //   kfs_fz_pos_ref(kfs_fz_position_ref_ - 0.01);
+  // }
 
-  if (ps4_->is_pushed_r1()) {
-    // kfs_fxの微調整（指令値を増加）
-    kfs_fx_pos_ref(kfs_fx_position_ref_ + 0.01);
-  }
+  // if (ps4_->is_pushed_r2()) {
+  //   // kfs_fzの微調整（指令値を増加）
+  //   kfs_fz_pos_ref(kfs_fz_position_ref_ + 0.01);
+  // }
 
-  if (ps4_->is_pushed_l2()) {
-    // kfs_fzの微調整（指令値を減少）
-    kfs_fz_pos_ref(kfs_fz_position_ref_ - 0.01);
-  }
-
-  if (ps4_->is_pushed_r2()) {
-    // kfs_fzの微調整（指令値を増加）
-    kfs_fz_pos_ref(kfs_fz_position_ref_ + 0.01);
-  }
-
-  if (ps4_->is_pushed_square()) {
-    stop_kfs_auto_collect();
-  }
+  // if (ps4_->is_pushed_square()) {
+  //   stop_kfs_auto_collect();
+  // }
 }
 
 void R1MainNode::manual_mode9_auto_chassis(void)
 {
-  const bool chassis_idle =
-    (chassis_act_status_ == ChassisAct::NONE) && !pending_auto_robot_move_valid_;
+  //   const bool chassis_idle =
+  //     (chassis_act_status_ == ChassisAct::NONE) && !pending_auto_robot_move_valid_;
 
-  if (!chassis_idle) {
-    return;
-  }
+  //   if (!chassis_idle) {
+  //     return;
+  //   }
 
-  if (ps4_->is_pushed_triangle()) {
-#if SPEAR_MECHANISM == SPEAR_MECHANISM_CHIDA
-    spear_x_pos_ref(SPEAR_X_MIDDLE_POS);
-    spear_roll_pos_ref(SPEAR_ROLL_VERTICAL_ANGLE);
-#endif
-    start_auto_chassis(ChassisAct::ACT0_START, std::vector<int>{}, std::vector<std::string>{});
-  } else if (ps4_->is_pushed_circle()) {
-    reset_position(true);
-  } else if (ps4_->is_pushed_cross()) {
-    std::vector<int> forest_order;
-    std::vector<std::string> collect_kfs_type;
-    if (build_inner_kfs_auto_collect_plan(forest_order, collect_kfs_type)) {
-      start_auto_chassis(ChassisAct::ACT2_START, forest_order, collect_kfs_type);
-      start_kfs_auto_collect(
-        KfsAutoCollectStatus::INNER_ACTIVE, std::move(forest_order), std::move(collect_kfs_type));
-    }
-  } else if (ps4_->is_pushed_square()) {
-    std::vector<int> forest_order;
-    std::vector<std::string> collect_kfs_type;
-    if (build_outer_kfs_auto_collect_plan(forest_order, collect_kfs_type)) {
-      start_auto_chassis(ChassisAct::ACT4_START, forest_order, collect_kfs_type);
-      start_kfs_auto_collect(
-        KfsAutoCollectStatus::OUTER_ACTIVE, std::move(forest_order), std::move(collect_kfs_type));
-    }
-  } else if (ps4_->is_pushed_down()) {
-    start_auto_chassis(ChassisAct::ACT1_START, std::vector<int>{}, std::vector<std::string>{});
-  }
-  if (ps4_->is_pushed_right()) {
-    kfs_fx_detect_origin();
-    kfs_fz_detect_origin();
-    kfs_fyaw_detect_origin();
-    kfs_rx_detect_origin();
-    kfs_rz_detect_origin();
-    kfs_ryaw_detect_origin();
-  }
+  //   if (ps4_->is_pushed_triangle()) {
+  // #if SPEAR_MECHANISM == SPEAR_MECHANISM_CHIDA
+  //     spear_x_pos_ref(SPEAR_X_MIDDLE_POS);
+  //     spear_roll_pos_ref(SPEAR_ROLL_VERTICAL_ANGLE);
+  // #endif
+  //     start_auto_chassis(ChassisAct::ACT0_START, std::vector<int>{}, std::vector<std::string>{});
+  //   } else if (ps4_->is_pushed_circle()) {
+  //     reset_position(true);
+  //   } else if (ps4_->is_pushed_down()) {
+  //     start_auto_chassis(ChassisAct::ACT1_START, std::vector<int>{}, std::vector<std::string>{});
+  //   }
+  //   if (ps4_->is_pushed_right()) {
+  //     kfs_fx_detect_origin();
+  //     kfs_fz_detect_origin();
+  //     kfs_fyaw_detect_origin();
+  //     kfs_rx_detect_origin();
+  //     kfs_rz_detect_origin();
+  //     kfs_ryaw_detect_origin();
+  //   }
 }
 
 void R1MainNode::update_auto_chassis_task(void)
@@ -3779,6 +3686,7 @@ void R1MainNode::reset_robot(bool is_start_zone)
   set_led_event(0, 0, 50, 0.2, 1.0);
   // arucoマーカをリセットする
   publish_aruco_marker_id(0);
+  received_r1_collect_kfs_ = false;
 }
 
 void R1MainNode::manual_task(void)
@@ -3924,45 +3832,158 @@ void R1MainNode::main_task(void)
 
       } else if (current_state.operation_mode == OperationMode::MODE3_SPEAR) {
         // MODE3のときはOUTER_ACTIVEのときはACT4_STARTを、INNER_ACTIVEのときはACT2_STARTを開始する
+        // enable_auto_select=true  → r1_init_parameter_.r1_kfs_value（森番号3つ）から経路を決定
+        // enable_auto_select=false → r1_collect_kfsの内容をそのまま経路として使用
         std::vector<int> forest_order;
         std::vector<std::string> collect_kfs_type;
-        KfsAutoCollectStatus mode3_collect_status = kfs_auto_collect_plan_.status;
-        if (mode3_collect_status == KfsAutoCollectStatus::NONE) {
-          if (!set_mode3_kfs_auto_collect_status(mode3_collect_status)) {
+        KfsAutoCollectStatus mode3_collect_status = KfsAutoCollectStatus::NONE;
+
+        auto is_inner_forest = [](int n) {
+          return n == 1 || n == 2 || n == 4 || n == 7 || n == 10;
+        };
+        auto is_outer_forest = [](int n) {
+          return n == 3 || n == 6 || n == 9 || n == 10 || n == 11 || n == 12;
+        };
+        auto is_valid_forest = [](int n) { return n >= 1 && n <= 12 && n != 5 && n != 8; };
+        auto determine_status = [&](const std::vector<int> & forests) {
+          int inner_count = 0, outer_count = 0;
+          for (int n : forests) {
+            if (is_inner_forest(n)) inner_count++;
+            if (is_outer_forest(n)) outer_count++;
+          }
+          RCLCPP_INFO(
+            this->get_logger(), "MODE3 INNER/OUTER vote: inner=%d, outer=%d", inner_count,
+            outer_count);
+          return (outer_count > inner_count) ? KfsAutoCollectStatus::OUTER_ACTIVE
+                                             : KfsAutoCollectStatus::INNER_ACTIVE;
+        };
+
+        if (!received_r1_init_parameter_) {
+          RCLCPP_WARN(
+            this->get_logger(),
+            "MODE3: /r1_init_parameter not yet received. Cannot start auto advance.");
+        } else if (r1_init_parameter_.enable_auto_select) {
+          // --- enable_auto_select=true: r1_kfs_value（森番号3つ）から経路を生成 ---
+          const auto & kfs_val = r1_init_parameter_.r1_kfs_value;
+          bool valid = true;
+          if (kfs_val.size() != 3) {
             RCLCPP_WARN(
               this->get_logger(),
-              "Failed to infer MODE3_SPEAR inner/outer placement for right stick auto advance.");
+              "MODE3 enable_auto_select=true: r1_kfs_value must have 3 elements (got %zu).",
+              kfs_val.size());
+            valid = false;
           }
-        }
-        if (mode3_collect_status == KfsAutoCollectStatus::OUTER_ACTIVE) {
-          if (build_outer_kfs_auto_collect_plan(forest_order, collect_kfs_type)) {
-            start_auto_chassis(ChassisAct::ACT4_START, forest_order, collect_kfs_type);
-            start_kfs_auto_collect(
-              KfsAutoCollectStatus::OUTER_ACTIVE, std::move(forest_order),
-              std::move(collect_kfs_type));
-            started_auto = true;
-          }
-        } else if (mode3_collect_status == KfsAutoCollectStatus::INNER_ACTIVE) {
-          if (build_inner_kfs_auto_collect_plan(forest_order, collect_kfs_type)) {
-            bool is_contain_1_or_2 = false;
-            for (int forest_number : forest_order) {
-              if (forest_number == 1 || forest_number == 2) {
-                is_contain_1_or_2 = true;
+          if (valid) {
+            for (int n : kfs_val) {
+              if (!is_valid_forest(n)) {
+                RCLCPP_WARN(
+                  this->get_logger(),
+                  "MODE3 enable_auto_select=true: r1_kfs_value contains invalid forest number %d.",
+                  n);
+                valid = false;
                 break;
               }
             }
-            if (is_contain_1_or_2) {
-              start_auto_chassis(ChassisAct::ACT2_START, forest_order, collect_kfs_type);
-            } else {
-              // デバッグのため、どちらもACT2_STARTで開始するようにする。ACT3_STARTは調整中でうまく行かないので
-              start_auto_chassis(ChassisAct::ACT2_START, forest_order, collect_kfs_type);
-              // start_auto_chassis(ChassisAct::ACT3_START, forest_order, collect_kfs_type);
-            }
-            start_kfs_auto_collect(
-              KfsAutoCollectStatus::INNER_ACTIVE, std::move(forest_order),
-              std::move(collect_kfs_type));
-            started_auto = true;
           }
+          if (valid) {
+            // まず3つ全部で多数決してINNER/OUTERを決定する
+            std::vector<int> all_forests(kfs_val.begin(), kfs_val.end());
+            mode3_collect_status = determine_status(all_forests);
+            // 決定した側に属する森だけを抽出（最大2つ = front_kfs + rear_kfs）
+            auto matches_status = (mode3_collect_status == KfsAutoCollectStatus::INNER_ACTIVE)
+                                    ? is_inner_forest
+                                    : is_outer_forest;
+            for (int n : kfs_val) {
+              if (matches_status(n) && forest_order.size() < 2) {
+                forest_order.push_back(n);
+              }
+            }
+            if (forest_order.empty()) {
+              RCLCPP_WARN(
+                this->get_logger(),
+                "MODE3 enable_auto_select=true: no forest in r1_kfs_value matches %s.",
+                kfs_auto_collect_status_name(mode3_collect_status).c_str());
+              mode3_collect_status = KfsAutoCollectStatus::NONE;
+            } else {
+              // INNERは先頭rear_kfs・残りfront_kfs、OUTERは先頭front_kfs・残りrear_kfs
+              const std::string first_type =
+                (mode3_collect_status == KfsAutoCollectStatus::INNER_ACTIVE) ? "rear_kfs"
+                                                                             : "front_kfs";
+              const std::string rest_type =
+                (mode3_collect_status == KfsAutoCollectStatus::INNER_ACTIVE) ? "front_kfs"
+                                                                             : "rear_kfs";
+              for (size_t i = 0; i < forest_order.size(); i++) {
+                collect_kfs_type.push_back(i == 0 ? first_type : rest_type);
+              }
+              RCLCPP_INFO(
+                this->get_logger(),
+                "MODE3 enable_auto_select=true: status=%s forests=[%d,%d,%d] -> selected %zu",
+                kfs_auto_collect_status_name(mode3_collect_status).c_str(), kfs_val[0], kfs_val[1],
+                kfs_val[2], forest_order.size());
+            }
+          }
+        } else {
+          // --- enable_auto_select=false: r1_collect_kfsの内容をそのまま使用 ---
+          if (!received_r1_collect_kfs_) {
+            RCLCPP_WARN(
+              this->get_logger(),
+              "MODE3 enable_auto_select=false: /r1_collect_kfs not yet received.");
+          } else if (r1_collect_kfs_.forest_order.empty()) {
+            RCLCPP_WARN(
+              this->get_logger(),
+              "MODE3 enable_auto_select=false: r1_collect_kfs.forest_order is empty.");
+          } else {
+            bool valid = true;
+            for (int n : r1_collect_kfs_.forest_order) {
+              if (!is_valid_forest(n)) {
+                RCLCPP_WARN(
+                  this->get_logger(),
+                  "MODE3 enable_auto_select=false: r1_collect_kfs.forest_order contains invalid "
+                  "forest number %d.",
+                  n);
+                valid = false;
+                break;
+              }
+            }
+            if (valid) {
+              forest_order.assign(
+                r1_collect_kfs_.forest_order.begin(), r1_collect_kfs_.forest_order.end());
+              collect_kfs_type = r1_collect_kfs_.kfs_mechanism_type;
+              mode3_collect_status = determine_status(forest_order);
+              RCLCPP_INFO(
+                this->get_logger(),
+                "MODE3 enable_auto_select=false: using r1_collect_kfs directly, status=%s",
+                kfs_auto_collect_status_name(mode3_collect_status).c_str());
+            }
+          }
+        }
+
+        if (mode3_collect_status == KfsAutoCollectStatus::OUTER_ACTIVE && !forest_order.empty()) {
+          start_auto_chassis(ChassisAct::ACT4_START, forest_order, collect_kfs_type);
+          start_kfs_auto_collect(
+            KfsAutoCollectStatus::OUTER_ACTIVE, std::move(forest_order),
+            std::move(collect_kfs_type));
+          started_auto = true;
+        } else if (
+          mode3_collect_status == KfsAutoCollectStatus::INNER_ACTIVE && !forest_order.empty()) {
+          bool is_contain_1_or_2 = false;
+          for (int fn : forest_order) {
+            if (fn == 1 || fn == 2) {
+              is_contain_1_or_2 = true;
+              break;
+            }
+          }
+          if (is_contain_1_or_2) {
+            start_auto_chassis(ChassisAct::ACT2_START, forest_order, collect_kfs_type);
+          } else {
+            // ACT3_STARTは調整中のためACT2_STARTで代用
+            start_auto_chassis(ChassisAct::ACT2_START, forest_order, collect_kfs_type);
+            // start_auto_chassis(ChassisAct::ACT3_START, forest_order, collect_kfs_type);
+          }
+          start_kfs_auto_collect(
+            KfsAutoCollectStatus::INNER_ACTIVE, std::move(forest_order),
+            std::move(collect_kfs_type));
+          started_auto = true;
         }
       }
 
