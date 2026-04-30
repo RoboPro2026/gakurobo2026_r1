@@ -2180,6 +2180,12 @@ void R1MainNode::manual_mode1_detect_origin(void)
 
   if (ps4_->is_pushed_l1()) {
     // spear1_detect_origin();
+    kfs_robot_start_act();
+    spear_y_pos_ref(SPEAR_Y_COLLECT1_POS);
+    spear_roll_pos_ref(SPEAR_ROLL_NORMAL_ANGLE);
+    spear_hand1_valve(true);
+    spear_hand2_valve(true);
+    spear_hand_push_valve(true);
   }
 
   if (ps4_->is_pushed_r1()) {
@@ -2208,11 +2214,11 @@ void R1MainNode::manual_mode2_collect_pole_task(void)
 #if SPEAR_MECHANISM == SPEAR_MECHANISM_OTSUKI
   if (step == 1) {
     kfs_robot_start_act();
-    spear_y_pos_ref(SPEAR_Y_COLLECT1_POS);
-    spear_roll_pos_ref(SPEAR_ROLL_NORMAL_ANGLE);
-    spear_hand1_valve(true);
-    spear_hand2_valve(true);
-    spear_hand_push_valve(true);
+    // spear_y_pos_ref(SPEAR_Y_COLLECT1_POS);
+    // spear_roll_pos_ref(SPEAR_ROLL_NORMAL_ANGLE);
+    // spear_hand1_valve(true);
+    // spear_hand2_valve(true);
+    // spear_hand_push_valve(true);
     step++;
   } else if (step == 2) {
     spear_hand1_valve(false);
@@ -3904,11 +3910,17 @@ void R1MainNode::main_task(void)
         // MODE2のときはACT1_STARTを開始する
         start_auto_chassis(ChassisAct::ACT1_START, std::vector<int>{}, std::vector<std::string>{});
         started_auto = true;
+#if SPEAR_MECHANISM == SPEAR_MECHANISM_OTSUKI
+        manual_mode3_make_spear_task_step_ = DEFAULT_STEP;
+        // 番号の指定は適当
+        manual_mode3_make_spear_task(2);
+#elif SPEAR_MECHANISM == SPEAR_MECHANISM_CHIDA
         // ここだけは特例でステップを他よりも1つ進める
         manual_mode3_make_spear_task_step_ = DEFAULT_STEP + 1;
         // mode2の終わりとmode3の最初のタスクを合体して実行する
         manual_mode3_init_move_task(2);
-        // manual_mode3_make_spear_task(2);
+        manual_mode3_make_spear_task(2);
+#endif
 
       } else if (current_state.operation_mode == OperationMode::MODE3_SPEAR) {
         // MODE3のときはOUTER_ACTIVEのときはACT4_STARTを、INNER_ACTIVEのときはACT2_STARTを開始する
