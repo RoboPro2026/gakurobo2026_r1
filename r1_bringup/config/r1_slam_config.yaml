@@ -51,7 +51,7 @@ dual_laser_merger:
     laser_2_x_offset: 0.0
     laser_2_y_offset: 0.0
     laser_2_yaw_offset: 0.0
-    range_min: 0.01
+    range_min: 0.0
     range_max: 25.0
     # min_heightとmax_heightは使わないが、念の為設定
     min_height: -1.0
@@ -107,7 +107,7 @@ amcl:
     # alpha4: 0.4   # 回転によって生じる並進誤差
     # alpha5: 0.3   # Omni 専用の並進ノイズ
     alpha1: 0.2   # 回転によって生じる回転誤差
-    alpha2: 0.3   # 並進によって生じる回転誤差
+    alpha2: 0.2   # 並進によって生じる回転誤差
     alpha3: 0.2   # 並進によって生じる並進誤差
     alpha4: 0.2   # 回転によって生じる並進誤差
     alpha5: 0.2   # Omni 専用の並進ノイズ
