@@ -178,14 +178,14 @@ class MainWindow(QMainWindow):
         # ファイル名ベース入力（入出力）
         self.input_prefix_edit = QLineEdit()
         self.output_prefix_edit = QLineEdit()
-        default_prefix = "src/gakurobo2026_r1/data/0"
+        default_prefix = "src/gakurobo2026_r1/data/blue/0"
         self.input_prefix_edit.setText(default_prefix)
         self.output_prefix_edit.setText(default_prefix)
         self.input_prefix_edit.setPlaceholderText(
-            "入力ファイルベース（例: src/gakurobo2026_r1/data/0）"
+            "入力ファイルベース（例: src/gakurobo2026_r1/data/blue/0）"
         )
         self.output_prefix_edit.setPlaceholderText(
-            "出力ファイルベース（例: src/gakurobo2026_r1/data/0）"
+            "出力ファイルベース（例: src/gakurobo2026_r1/data/blue/0）"
         )
 
         # ログ表示エリア
@@ -287,7 +287,7 @@ class MainWindow(QMainWindow):
         """ズーム・パンの状態をリセットし、次回描画で表示範囲も再計算させる"""
         self.base_xlim = None
         self.base_ylim = None
-        # スライダーも初期化（zone が切り替わると座標系が反転するため）
+        # スライダーも初期化
         self.zoom_slider.blockSignals(True)
         self.pan_x_slider.blockSignals(True)
         self.pan_y_slider.blockSignals(True)
@@ -821,15 +821,8 @@ class MainWindow(QMainWindow):
         if event.xdata is None or event.ydata is None:
             return
 
-        # フィールド座標系から基準座標系への変換
-        # 青ゾーンのときは、描画時に x を反転しているので、追加時には逆変換して保存する
-        x_field = float(event.xdata)
-        y_field = float(event.ydata)
-        if self.runner.zone == "blue":
-            x_val = -x_field
-        else:
-            x_val = x_field
-        y_val = y_field
+        x_val = float(event.xdata)
+        y_val = float(event.ydata)
 
         selected_row = self.table.currentRow()
         mode = getattr(self, "_waypoint_click_mode", "edit")
@@ -1131,7 +1124,7 @@ class MainWindow(QMainWindow):
             self.ax.set_ylim(cur_ylim)
             self.ax.set_aspect("equal", adjustable="box")
 
-        # ゾーンに応じて変換した waypoint 座標で描画
+        # waypoint 座標は zone によらず CSV の値をそのまま描画
         x_wp, y_wp, *_ = self.runner._get_zone_adjusted_waypoints()
         if x_wp and y_wp:
             selected_row = self.table.currentRow()

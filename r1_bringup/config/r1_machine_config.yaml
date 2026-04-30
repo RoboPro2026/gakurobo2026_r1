@@ -1,7 +1,8 @@
 r1_chassis_control_node:
   ros__parameters:
     # =========== r1_chassis_control_nodeの基本パラメータ ==========
-    act_filebase: "src/gakurobo2026_r1/data/"
+    act_filebase_red: "src/gakurobo2026_r1/data/red/"
+    act_filebase_blue: "src/gakurobo2026_r1/data/blue/"
     timer_rate: 100.0
     visualize_timer_rate: 10.0
     cmd_vel_topic: "/cmd_vel_target"
