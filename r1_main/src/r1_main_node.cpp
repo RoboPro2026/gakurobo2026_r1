@@ -4016,13 +4016,19 @@ void R1MainNode::main_task(void)
             // まず3つ全部で多数決してINNER/OUTERを決定する
             std::vector<int> all_forests(kfs_val.begin(), kfs_val.end());
             mode3_collect_status = determine_status(all_forests);
-            // 決定した側に属する森だけを抽出（最大2つ = front_kfs + rear_kfs）
-            auto matches_status = (mode3_collect_status == KfsAutoCollectStatus::INNER_ACTIVE)
-                                    ? is_inner_forest
-                                    : is_outer_forest;
-            for (int n : kfs_val) {
-              if (matches_status(n) && forest_order.size() < 2) {
-                forest_order.push_back(n);
+            // 優先順位リストに従って森を抽出（最大2つ = front_kfs + rear_kfs）
+            // INNER: 2,1,4,7,10 の順、OUTER: 3,6,9,12,11,10 の順
+            const std::vector<int> priority_list =
+              (mode3_collect_status == KfsAutoCollectStatus::INNER_ACTIVE)
+                ? std::vector<int>{2, 1, 4, 7, 10}
+                : std::vector<int>{3, 6, 9, 12, 11, 10};
+            for (int prio : priority_list) {
+              if (forest_order.size() >= 2) break;
+              for (int v : kfs_val) {
+                if (v == prio) {
+                  forest_order.push_back(prio);
+                  break;
+                }
               }
             }
             if (forest_order.empty()) {
@@ -4032,21 +4038,21 @@ void R1MainNode::main_task(void)
                 kfs_auto_collect_status_name(mode3_collect_status).c_str());
               mode3_collect_status = KfsAutoCollectStatus::NONE;
             } else {
-              // INNERは先頭rear_kfs・残りfront_kfs、OUTERは先頭front_kfs・残りrear_kfs
-              const std::string first_type =
-                (mode3_collect_status == KfsAutoCollectStatus::INNER_ACTIVE) ? "rear_kfs"
-                                                                             : "front_kfs";
-              const std::string rest_type =
-                (mode3_collect_status == KfsAutoCollectStatus::INNER_ACTIVE) ? "front_kfs"
-                                                                             : "rear_kfs";
+              // 青ゾーン: INNER→[rear, front], OUTER→[front, rear]
+              // 赤ゾーン: INNER→[front, rear], OUTER→[rear, front]（逆）
+              const bool is_blue = (zone_ == "blue");
+              const bool is_inner = (mode3_collect_status == KfsAutoCollectStatus::INNER_ACTIVE);
+              const std::string first_type = (is_blue == is_inner) ? "rear_kfs" : "front_kfs";
+              const std::string rest_type = (is_blue == is_inner) ? "front_kfs" : "rear_kfs";
               for (size_t i = 0; i < forest_order.size(); i++) {
                 collect_kfs_type.push_back(i == 0 ? first_type : rest_type);
               }
               RCLCPP_INFO(
                 this->get_logger(),
-                "MODE3 enable_auto_select=true: status=%s forests=[%d,%d,%d] -> selected %zu",
-                kfs_auto_collect_status_name(mode3_collect_status).c_str(), kfs_val[0], kfs_val[1],
-                kfs_val[2], forest_order.size());
+                "MODE3 enable_auto_select=true: status=%s zone=%s forests=[%d,%d,%d] -> selected "
+                "%zu first=%s",
+                kfs_auto_collect_status_name(mode3_collect_status).c_str(), zone_.c_str(),
+                kfs_val[0], kfs_val[1], kfs_val[2], forest_order.size(), first_type.c_str());
             }
           }
         } else {
