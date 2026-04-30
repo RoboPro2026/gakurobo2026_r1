@@ -3463,7 +3463,8 @@ void R1MainNode::auto_collect_kfs_task(void)
       center_y += offset_y;
     } else {
       // 本当はcenter_xはプラスではなくマイナスのはずだが、何故か動かないので一旦プラス
-      center_x -= offset_x;
+      // おそらく、プラスでいいのはrect_yawが角度を反転させてるからだと思う。
+      center_x += offset_x;
       center_y += offset_y;
     }
     if (
