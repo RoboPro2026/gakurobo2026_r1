@@ -193,6 +193,9 @@ public:
     initialpose_publisher_;
   // initialposeをPublish時に、遅延させる用のtimer
   rclcpp::TimerBase::SharedPtr initialpose_publish_timer_;
+  // LiDAR起動完了後にも確実に届くよう、遅延を変えて再送するタイマー
+  rclcpp::TimerBase::SharedPtr initialpose_retry1_timer_;
+  rclcpp::TimerBase::SharedPtr initialpose_retry2_timer_;
   rclcpp::TimerBase::SharedPtr initialpose_tf_log_timer_;
   // chassis_actのPublisher
   rclcpp::Publisher<std_msgs::msg::Int32>::SharedPtr chassis_act_ref_publisher_;
@@ -209,6 +212,8 @@ public:
   rclcpp::node_interfaces::OnSetParametersCallbackHandle::SharedPtr parameter_callback_handle_;
   double timer_rate_ = 100.0;
   double initialpose_tf_log_delay_sec_ = 1.0;
+  double initialpose_retry1_delay_sec_ = 1.0;
+  double initialpose_retry2_delay_sec_ = 3.0;
   rclcpp::Time initialize_done_time_;
   // tf関連
   std::shared_ptr<tf2_ros::Buffer> tf_buffer_;

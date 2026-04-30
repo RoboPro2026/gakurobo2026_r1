@@ -583,6 +583,8 @@ R1MainNode::R1MainNode() : Node("r1_main_node")
   declare_and_get_parameter("activate_lidar_on_ps", activate_lidar_on_ps_, true);
   declare_and_get_parameter("share_long_press_sec", SHARE_LONG_PRESS_SEC, 1.0);
   declare_and_get_parameter("initialpose_tf_log_delay_sec", initialpose_tf_log_delay_sec_, 1.0);
+  declare_and_get_parameter("initialpose_retry1_delay_sec", initialpose_retry1_delay_sec_, 1.0);
+  declare_and_get_parameter("initialpose_retry2_delay_sec", initialpose_retry2_delay_sec_, 3.0);
   declare_and_get_parameter("chassis_make_spear_velocity", CHASSIS_MAKE_SPEAR_VELOCITY);
   declare_and_get_parameter("chassis_make_spear_omega", CHASSIS_MAKE_SPEAR_OMEGA);
   declare_and_get_parameter("chassis_max_velocity", CHASSIS_MAX_VELOCITY);
@@ -1404,30 +1406,48 @@ void R1MainNode::set_odometry(double x, double y, double yaw)
 
 void R1MainNode::set_initialpose(double x, double y, double yaw, double delay_sec)
 {
-  // setTimeout風でdelay_sec秒後にinitialposeをpublishする
-  if (initialpose_publish_timer_) {
-    initialpose_publish_timer_->cancel();
-  }
-  initialpose_publish_timer_ =
-    this->create_wall_timer(std::chrono::duration<double>(delay_sec), [this, x, y, yaw]() {
-      geometry_msgs::msg::PoseWithCovarianceStamped msg;
-      msg.header.stamp = this->get_clock()->now();
-      msg.header.frame_id = "map";
-      msg.pose.pose.position.x = x;
-      msg.pose.pose.position.y = y;
-      tf2::Quaternion q;
-      q.setRPY(0.0, 0.0, yaw);
-      msg.pose.pose.orientation.x = q.x();
-      msg.pose.pose.orientation.y = q.y();
-      msg.pose.pose.orientation.z = q.z();
-      msg.pose.pose.orientation.w = q.w();
-      initialpose_publisher_->publish(msg);
-      RCLCPP_INFO(this->get_logger(), "publish initialpose x: %f, y: %f, yaw: %f", x, y, yaw);
+  // 前回のタイマーをすべてキャンセル
+  if (initialpose_publish_timer_) initialpose_publish_timer_->cancel();
+  if (initialpose_retry1_timer_) initialpose_retry1_timer_->cancel();
+  if (initialpose_retry2_timer_) initialpose_retry2_timer_->cancel();
+
+  // initialposeをpublishする共通処理
+  auto publish_pose = [this, x, y, yaw]() {
+    geometry_msgs::msg::PoseWithCovarianceStamped msg;
+    msg.header.stamp = this->get_clock()->now();
+    msg.header.frame_id = "map";
+    msg.pose.pose.position.x = x;
+    msg.pose.pose.position.y = y;
+    tf2::Quaternion q;
+    q.setRPY(0.0, 0.0, yaw);
+    msg.pose.pose.orientation.x = q.x();
+    msg.pose.pose.orientation.y = q.y();
+    msg.pose.pose.orientation.z = q.z();
+    msg.pose.pose.orientation.w = q.w();
+    initialpose_publisher_->publish(msg);
+    RCLCPP_INFO(this->get_logger(), "publish initialpose x: %f, y: %f, yaw: %f", x, y, yaw);
+  };
+
+  // 1回目（delay_sec後）: TFログもスケジュール
+  initialpose_publish_timer_ = this->create_wall_timer(
+    std::chrono::duration<double>(delay_sec), [this, publish_pose]() {
+      publish_pose();
       schedule_initialpose_tf_log();
-      // タイマーは1回だけ実行するので、初期化する
-      if (initialpose_publish_timer_) {
-        initialpose_publish_timer_->cancel();
-      }
+      if (initialpose_publish_timer_) initialpose_publish_timer_->cancel();
+    });
+
+  // 2回目（LiDAR起動完了タイミングに合わせた再送）
+  initialpose_retry1_timer_ = this->create_wall_timer(
+    std::chrono::duration<double>(initialpose_retry1_delay_sec_), [this, publish_pose]() {
+      publish_pose();
+      if (initialpose_retry1_timer_) initialpose_retry1_timer_->cancel();
+    });
+
+  // 3回目（より確実に届けるための再送）
+  initialpose_retry2_timer_ = this->create_wall_timer(
+    std::chrono::duration<double>(initialpose_retry2_delay_sec_), [this, publish_pose]() {
+      publish_pose();
+      if (initialpose_retry2_timer_) initialpose_retry2_timer_->cancel();
     });
 }
 

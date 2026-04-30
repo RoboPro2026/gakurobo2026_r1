@@ -119,6 +119,9 @@ r1_main_node:
     share_long_press_sec: 0.4  # shareボタン長押し判定秒数 [s]
     # /initialpose publish後に現在のTFをログするまでの遅延 [s]
     initialpose_tf_log_delay_sec: 5.0
+    # /initialpose の再送遅延 [s]（LiDAR lifecycle 起動の非同期性に対応するため複数回送信する）
+    initialpose_retry1_delay_sec: 1.0
+    initialpose_retry2_delay_sec: 3.0
     # ========== 足回り ==========
 
     chassis_make_spear_velocity: 0.2
@@ -134,7 +137,7 @@ r1_main_node:
     kfs_fx_normal_pos: 0.005
     kfs_fx_storage_pos: 0.2
     kfs_fx_start_pos: 0.005
-    kfs_fx_put_pos: 0.3
+    kfs_fx_put_pos: 0.45
     kfs_fx_expand_pos: 0.67
     kfs_fx_low_mech_lock_pos: 0.05
     kfs_fx_high_mech_lock_pos: 0.67
@@ -144,8 +147,8 @@ r1_main_node:
     kfs_fz_low_pos: 0.005
     kfs_fz_middle_pos: 0.22
     kfs_fz_high_pos: 0.42
-    kfs_fz_put_pos: 0.5
-    kfs_fz_storage_pos: 0.5
+    kfs_fz_put_pos: 0.55
+    kfs_fz_storage_pos: 0.55
     kfs_fz_start_pos: 0.6
     kfs_fz_low_mech_lock_pos: 0.005
     kfs_fz_high_mech_lock_pos: 0.65
@@ -162,7 +165,7 @@ r1_main_node:
     kfs_rx_normal_pos: 0.005
     kfs_rx_storage_pos: 0.2
     kfs_rx_start_pos: 0.005
-    kfs_rx_put_pos: 0.3
+    kfs_rx_put_pos: 0.45
     kfs_rx_expand_pos: 0.67
     kfs_rx_low_mech_lock_pos: 0.05
     kfs_rx_high_mech_lock_pos: 0.67
@@ -173,8 +176,8 @@ r1_main_node:
     kfs_rz_middle_pos: 0.22
     kfs_rz_high_pos: 0.42
     kfs_rz_put_pos: 0.5
-    kfs_rz_storage_pos: 0.5
-    kfs_rz_put_pos: 0.5
+    kfs_rz_storage_pos: 0.55
+    kfs_rz_put_pos: 0.55
     kfs_rz_start_pos: 0.6
     kfs_rz_low_mech_lock_pos: 0.005
     kfs_rz_high_mech_lock_pos: 0.65
