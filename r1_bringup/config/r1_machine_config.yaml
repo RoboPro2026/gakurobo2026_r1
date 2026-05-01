@@ -174,7 +174,7 @@ r1_main_node:
     kfs_fz_low_pos: 0.005
     kfs_fz_middle_pos: 0.22
     kfs_fz_high_pos: 0.42
-    kfs_fz_put_pos: 0.55
+    kfs_fz_put_pos: 0.525
     kfs_fz_storage_pos: 0.5
     kfs_fz_start_pos: 0.6
     kfs_fz_low_mech_lock_pos: 0.005
@@ -202,9 +202,8 @@ r1_main_node:
     kfs_rz_low_pos: 0.005
     kfs_rz_middle_pos: 0.22
     kfs_rz_high_pos: 0.42
-    kfs_rz_put_pos: 0.5
     kfs_rz_storage_pos: 0.5
-    kfs_rz_put_pos: 0.55
+    kfs_rz_put_pos: 0.525
     kfs_rz_start_pos: 0.6
     kfs_rz_low_mech_lock_pos: 0.005
     kfs_rz_high_mech_lock_pos: 0.65
