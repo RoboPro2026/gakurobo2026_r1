@@ -679,29 +679,29 @@ R1MainNode::R1MainNode() : Node("r1_main_node")
   declare_and_get_parameter("spear_roll1_vertical_angle", SPEAR_ROLL1_VERTICAL_ANGLE);
   declare_and_get_parameter("spear_roll1_horizontal_angle", SPEAR_ROLL1_HORIZONTAL_ANGLE);
   declare_and_get_parameter("spear_roll1_inv_horizontal_angle", SPEAR_ROLL1_INV_HORIZONTAL_ANGLE);
-  this->declare_parameter<double>("blue_spear_roll1_low_attack_angle",    0.0);
+  this->declare_parameter<double>("blue_spear_roll1_low_attack_angle", 0.0);
   this->declare_parameter<double>("blue_spear_roll1_middle_attack_angle", 0.0);
-  this->declare_parameter<double>("blue_spear_roll1_high_attack_angle",   0.0);
-  this->declare_parameter<double>("red_spear_roll1_low_attack_angle",     0.0);
-  this->declare_parameter<double>("red_spear_roll1_middle_attack_angle",  0.0);
-  this->declare_parameter<double>("red_spear_roll1_high_attack_angle",    0.0);
-  this->get_parameter(zone_ + "_spear_roll1_low_attack_angle",    SPEAR_ROLL1_LOW_ATTACK_ANGLE);
+  this->declare_parameter<double>("blue_spear_roll1_high_attack_angle", 0.0);
+  this->declare_parameter<double>("red_spear_roll1_low_attack_angle", 0.0);
+  this->declare_parameter<double>("red_spear_roll1_middle_attack_angle", 0.0);
+  this->declare_parameter<double>("red_spear_roll1_high_attack_angle", 0.0);
+  this->get_parameter(zone_ + "_spear_roll1_low_attack_angle", SPEAR_ROLL1_LOW_ATTACK_ANGLE);
   this->get_parameter(zone_ + "_spear_roll1_middle_attack_angle", SPEAR_ROLL1_MIDDLE_ATTACK_ANGLE);
-  this->get_parameter(zone_ + "_spear_roll1_high_attack_angle",   SPEAR_ROLL1_HIGH_ATTACK_ANGLE);
+  this->get_parameter(zone_ + "_spear_roll1_high_attack_angle", SPEAR_ROLL1_HIGH_ATTACK_ANGLE);
   // spear_roll2
   declare_and_get_parameter("spear_roll2_normal_angle", SPEAR_ROLL2_NORMAL_ANGLE);
   declare_and_get_parameter("spear_roll2_vertical_angle", SPEAR_ROLL2_VERTICAL_ANGLE);
   declare_and_get_parameter("spear_roll2_horizontal_angle", SPEAR_ROLL2_HORIZONTAL_ANGLE);
   declare_and_get_parameter("spear_roll2_inv_horizontal_angle", SPEAR_ROLL2_INV_HORIZONTAL_ANGLE);
-  this->declare_parameter<double>("blue_spear_roll2_low_attack_angle",    0.0);
+  this->declare_parameter<double>("blue_spear_roll2_low_attack_angle", 0.0);
   this->declare_parameter<double>("blue_spear_roll2_middle_attack_angle", 0.0);
-  this->declare_parameter<double>("blue_spear_roll2_high_attack_angle",   0.0);
-  this->declare_parameter<double>("red_spear_roll2_low_attack_angle",     0.0);
-  this->declare_parameter<double>("red_spear_roll2_middle_attack_angle",  0.0);
-  this->declare_parameter<double>("red_spear_roll2_high_attack_angle",    0.0);
-  this->get_parameter(zone_ + "_spear_roll2_low_attack_angle",    SPEAR_ROLL2_LOW_ATTACK_ANGLE);
+  this->declare_parameter<double>("blue_spear_roll2_high_attack_angle", 0.0);
+  this->declare_parameter<double>("red_spear_roll2_low_attack_angle", 0.0);
+  this->declare_parameter<double>("red_spear_roll2_middle_attack_angle", 0.0);
+  this->declare_parameter<double>("red_spear_roll2_high_attack_angle", 0.0);
+  this->get_parameter(zone_ + "_spear_roll2_low_attack_angle", SPEAR_ROLL2_LOW_ATTACK_ANGLE);
   this->get_parameter(zone_ + "_spear_roll2_middle_attack_angle", SPEAR_ROLL2_MIDDLE_ATTACK_ANGLE);
-  this->get_parameter(zone_ + "_spear_roll2_high_attack_angle",   SPEAR_ROLL2_HIGH_ATTACK_ANGLE);
+  this->get_parameter(zone_ + "_spear_roll2_high_attack_angle", SPEAR_ROLL2_HIGH_ATTACK_ANGLE);
 #elif SPEAR_MECHANISM == SPEAR_MECHANISM_CHIDA
   // spear1
   declare_and_get_parameter("spear1_normal_pos", SPEAR1_NORMAL_POS);
@@ -3488,22 +3488,20 @@ void R1MainNode::auto_collect_kfs_task(void)
   constexpr int HEIGHT_MIDDLE = 2;
   constexpr int HEIGHT_HIGH = 3;
 
-  auto calc_height =
-    [&](int n) {
-      if (n == 2 || n == 4 || n == 10 || n == 12) {
-        return HEIGHT_LOW;  // 下段
-      } else if (n == 1 || n == 3 || n == 7 || n == 9 || n == 11) {
-        return HEIGHT_MIDDLE;  // 中段
-      } else if (n == 6) {
-        return HEIGHT_HIGH;  // 上段
-      } else {
-        RCLCPP_ERROR(this->get_logger(), "invalid forest number: %d", n);
-        return -1;
-      }
-    };
+  auto calc_height = [&](int n) {
+    if (n == 2 || n == 4 || n == 10 || n == 12) {
+      return HEIGHT_LOW;  // 下段
+    } else if (n == 1 || n == 3 || n == 7 || n == 9 || n == 11) {
+      return HEIGHT_MIDDLE;  // 中段
+    } else if (n == 6) {
+      return HEIGHT_HIGH;  // 上段
+    } else {
+      RCLCPP_ERROR(this->get_logger(), "invalid forest number: %d", n);
+      return -1;
+    }
+  };
 
-  if (kfs_auto_collect_plan_.status == KfsAutoCollectStatus::NONE)
-  {
+  if (kfs_auto_collect_plan_.status == KfsAutoCollectStatus::NONE) {
     return;
   }
   if (!is_localization_ready()) {
@@ -3569,12 +3567,22 @@ void R1MainNode::auto_collect_kfs_task(void)
     }
     // TODO: ココらへんの処理はかなり怪しいので、赤ゾーンに対応するときに見直す。おそらく角度の扱いが怪しい
     // yは進行方向と同じ向きに対してオフセットを適用する
-    if (is_inner && mechanism_type == "rear_kfs") {
-      offset_x = COLLECT_KFS_OFFSET * std::cos(rect_yaw);
-      offset_y = COLLECT_KFS_OFFSET * std::sin(rect_yaw);
-    } else if (!is_inner && mechanism_type == "front_kfs") {
-      offset_x = COLLECT_KFS_OFFSET * std::cos(rect_yaw);
-      offset_y = COLLECT_KFS_OFFSET * std::sin(rect_yaw);
+    if (zone_ == "red") {
+      if (is_inner && mechanism_type == "front_kfs") {
+        offset_x = COLLECT_KFS_OFFSET * std::cos(rect_yaw);
+        offset_y = COLLECT_KFS_OFFSET * std::sin(rect_yaw);
+      } else if (!is_inner && mechanism_type == "rear_kfs") {
+        offset_x = COLLECT_KFS_OFFSET * std::cos(rect_yaw);
+        offset_y = COLLECT_KFS_OFFSET * std::sin(rect_yaw);
+      }
+    } else if (zone_ == "blue") {
+      if (is_inner && mechanism_type == "rear_kfs") {
+        offset_x = COLLECT_KFS_OFFSET * std::cos(rect_yaw);
+        offset_y = COLLECT_KFS_OFFSET * std::sin(rect_yaw);
+      } else if (!is_inner && mechanism_type == "front_kfs") {
+        offset_x = COLLECT_KFS_OFFSET * std::cos(rect_yaw);
+        offset_y = COLLECT_KFS_OFFSET * std::sin(rect_yaw);
+      }
     }
 
     // center_xとcenter_yにオフセットを適用する

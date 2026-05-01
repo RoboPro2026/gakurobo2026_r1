@@ -415,15 +415,33 @@ public:
       // kfs_mechanism_typeに応じてオフセットを適用する
       // rect_yawの方向に沿ってオフセットを加算する
       // TODO: 角度の扱いが怪しい可能性あり
-      if (is_inner && msg->kfs_mechanism_type[i] == "rear_kfs") {
-        offset_x = collect_kfs_offset_ * std::cos(rect_yaw);
-        offset_y = collect_kfs_offset_ * std::sin(rect_yaw);
-      } else if (is_outer && msg->kfs_mechanism_type[i] == "front_kfs") {
-        offset_x = collect_kfs_offset_ * std::cos(rect_yaw);
-        offset_y = collect_kfs_offset_ * std::sin(rect_yaw);
+      if (zone_ == "red") {
+        if (is_inner && msg->kfs_mechanism_type[i] == "front_kfs") {
+          offset_x = collect_kfs_offset_ * std::cos(rect_yaw);
+          offset_y = collect_kfs_offset_ * std::sin(rect_yaw);
+        } else if (is_outer && msg->kfs_mechanism_type[i] == "rear_kfs") {
+          offset_x = collect_kfs_offset_ * std::cos(rect_yaw);
+          offset_y = collect_kfs_offset_ * std::sin(rect_yaw);
+        }
+      } else if (zone_ == "blue") {
+        if (is_inner && msg->kfs_mechanism_type[i] == "rear_kfs") {
+          offset_x = collect_kfs_offset_ * std::cos(rect_yaw);
+          offset_y = collect_kfs_offset_ * std::sin(rect_yaw);
+        } else if (is_outer && msg->kfs_mechanism_type[i] == "front_kfs") {
+          offset_x = collect_kfs_offset_ * std::cos(rect_yaw);
+          offset_y = collect_kfs_offset_ * std::sin(rect_yaw);
+        }
       }
-      center_x += offset_x;
-      center_y += offset_y;
+      // center_xとcenter_yにオフセットを適用する
+      if (zone_ == "red") {
+        center_x += offset_x;
+        center_y += offset_y;
+      } else {
+        // 本当はcenter_xはプラスではなくマイナスのはずだが、何故か動かないので一旦プラス
+        // おそらく、プラスでいいのはrect_yawが角度を反転させてるからだと思う。
+        center_x += offset_x;
+        center_y += offset_y;
+      }
 
       RCLCPP_INFO(
         this->get_logger(), "Decel zone for forest %d in %s: center_x=%f, center_y=%f, rect_yaw=%f",
