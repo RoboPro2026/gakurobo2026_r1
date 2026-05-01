@@ -192,7 +192,7 @@ r1_main_node:
     kfs_ryaw_low_mech_lock_angle: 0.05
     kfs_ryaw_high_mech_lock_angle: 3.1
     # 回収するときの遅延時間
-    kfs_yaw_delay_time: 0.4
+    kfs_yaw_delay_time: 0.25
 
     # ========== 展開 ==========
     # R2昇降
