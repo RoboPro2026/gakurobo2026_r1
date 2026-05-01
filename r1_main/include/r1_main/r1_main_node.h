@@ -810,7 +810,11 @@ public:
   void manual_mode9_auto_chassis(void);
   static constexpr int DEFAULT_STEP = 1;
   int manual_mode2_collect_pole_task_step_ = DEFAULT_STEP;
+  int manual_mode2_hand_valve_step_ = DEFAULT_STEP;
+  int manual_mode2_push_valve_step_ = DEFAULT_STEP;
   int manual_mode3_make_spear_task_step_ = DEFAULT_STEP;
+  int manual_mode3_hand_valve_step_ = DEFAULT_STEP;
+  int manual_mode3_push_valve_step_ = DEFAULT_STEP;
   int manual_mode4_fx_step_ = DEFAULT_STEP;
   int manual_mode4_fz_step_ = DEFAULT_STEP;
   int manual_mode4_fyaw_step_ = DEFAULT_STEP;
@@ -825,10 +829,13 @@ public:
   int manual_mode6_r2_lift_step_ = DEFAULT_STEP;
   int manual_mode7_spear_attack_task_step_ = DEFAULT_STEP;
   int manual_mode7_spear_throw_away_task_step_ = DEFAULT_STEP;
+  int manual_mode7_hand_valve_step_ = DEFAULT_STEP;
+  int manual_mode7_push_valve_step_ = DEFAULT_STEP;
   rclcpp::TimerBase::SharedPtr manual_mode3_timer1_;
   rclcpp::TimerBase::SharedPtr manual_mode3_timer2_;
   rclcpp::TimerBase::SharedPtr manual_mode3_timer3_;
   rclcpp::TimerBase::SharedPtr manual_mode3_timer4_;
+  rclcpp::TimerBase::SharedPtr manual_mode3_push_valve_timer_;
   rclcpp::TimerBase::SharedPtr manual_mode4_front_valve_timer_;
   rclcpp::TimerBase::SharedPtr manual_mode5_rear_valve_timer_;
   rclcpp::TimerBase::SharedPtr manual_mode6_r2_lift_timer_;

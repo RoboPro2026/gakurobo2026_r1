@@ -2339,6 +2339,8 @@ void R1MainNode::manual_mode2_collect_pole_task(void)
 
 void R1MainNode::manual_mode2_pole(void)
 {
+  auto & hand_valve_step = manual_mode2_hand_valve_step_;
+  auto & push_valve_step = manual_mode2_push_valve_step_;
   if (ps4_->is_pushed_up()) {
     spear_y_pos_ref(spear_y_position_ref_ + 0.01);
   }
@@ -2376,10 +2378,26 @@ void R1MainNode::manual_mode2_pole(void)
 
   if (ps4_->is_pushed_l1()) {
     // spear_pitch1_pos_ref(spear_pitch1_position_ref_ - 0.05);
+    if (push_valve_step == 1) {
+      spear_hand_push_valve(true);
+      push_valve_step++;
+    } else if (push_valve_step == 2) {
+      spear_hand_push_valve(false);
+      push_valve_step = 1;
+    }
   }
 
   if (ps4_->is_pushed_r1()) {
     // spear_pitch1_pos_ref(spear_pitch1_position_ref_ + 0.05);
+    if (hand_valve_step == 1) {
+      spear_hand1_valve(true);
+      spear_hand2_valve(true);
+      hand_valve_step++;
+    } else if (hand_valve_step == 2) {
+      spear_hand1_valve(false);
+      spear_hand2_valve(false);
+      hand_valve_step = 1;
+    }
   }
 
   if (ps4_->is_pushed_l2()) {
@@ -2469,32 +2487,48 @@ void R1MainNode::manual_mode3_init_move_task(int n)
 
 void R1MainNode::manual_mode3_make_spear_task(int n)
 {
+  auto PUSH_VALVE_DELAY = 1000ms;
   int & step = manual_mode3_make_spear_task_step_;
   RCLCPP_INFO(this->get_logger(), "manual_mode3_make_spear_task step: %d", step);
 #if SPEAR_MECHANISM == SPEAR_MECHANISM_OTSUKI
   if (step == 1) {
+    if (manual_mode3_push_valve_timer_) {
+      manual_mode3_push_valve_timer_->cancel();
+    }
     spear_roll1_pos_ref(SPEAR_ROLL1_HORIZONTAL_ANGLE);
     spear_roll2_pos_ref(SPEAR_ROLL2_HORIZONTAL_ANGLE);
     spear_y_pos_ref(SPEAR_Y_MAKE_SPEAR_POS);
     spear_hand_push_valve(true);
     publish_aruco_marker_id(0);
+    manual_mode3_push_valve_timer_ = this->create_wall_timer(PUSH_VALVE_DELAY, [this]() {
+      spear_hand_push_valve(false);
+      if (manual_mode3_push_valve_timer_) {
+        manual_mode3_push_valve_timer_->cancel();
+      }
+    });
     step++;
   } else if (step == 2) {
-    spear_hand_push_valve(false);
-    step++;
-  } else if (step == 3) {
     publish_aruco_marker_id(1);
     step++;
+  } else if (step == 3) {
+    // 安全のために何もしないステップを設ける
   } else if (step == 4) {
+    if (manual_mode3_push_valve_timer_) {
+      manual_mode3_push_valve_timer_->cancel();
+    }
     spear_roll1_pos_ref(SPEAR_ROLL1_VERTICAL_ANGLE);
     spear_roll2_pos_ref(SPEAR_ROLL2_VERTICAL_ANGLE);
     spear_hand_push_valve(true);
-    step++;
-  } else if (step == 5) {
-    spear_hand_push_valve(false);
-    RCLCPP_INFO(this->get_logger(), "make spear task completed");
+    manual_mode3_push_valve_timer_ = this->create_wall_timer(PUSH_VALVE_DELAY, [this]() {
+      spear_hand_push_valve(false);
+      if (manual_mode3_push_valve_timer_) {
+        manual_mode3_push_valve_timer_->cancel();
+      }
+    });
     step = 1;
+    RCLCPP_INFO(this->get_logger(), "make spear task completed");
   }
+
 #elif SPEAR_MECHANISM == SPEAR_MECHANISM_CHIDA
   if (step == 1) {
     // rollを横向きにする
@@ -2574,6 +2608,9 @@ void R1MainNode::manual_mode3_make_spear_task(int n)
 
 void R1MainNode::manual_mode3_spear(void)
 {
+  auto & hand_valve_step = manual_mode3_hand_valve_step_;
+  auto & push_valve_step = manual_mode3_push_valve_step_;
+
   if (ps4_->is_pushed_up()) {
     spear_y_pos_ref(spear_y_position_ref_ + 0.0025);
   }
@@ -2611,10 +2648,26 @@ void R1MainNode::manual_mode3_spear(void)
 
   if (ps4_->is_pushed_l1()) {
     // spear_pitch1_pos_ref(spear_pitch1_position_ref_ - 0.05);
+    if (push_valve_step == 1) {
+      spear_hand_push_valve(true);
+      push_valve_step++;
+    } else if (push_valve_step == 2) {
+      spear_hand_push_valve(false);
+      push_valve_step = 1;
+    }
   }
 
   if (ps4_->is_pushed_r1()) {
     // spear_pitch1_pos_ref(spear_pitch1_position_ref_ + 0.05);
+    if (hand_valve_step == 1) {
+      spear_hand1_valve(true);
+      spear_hand2_valve(true);
+      hand_valve_step++;
+    } else if (hand_valve_step == 2) {
+      spear_hand1_valve(false);
+      spear_hand2_valve(false);
+      hand_valve_step = 1;
+    }
   }
 
   if (ps4_->is_pushed_l2()) {
@@ -3325,6 +3378,8 @@ void R1MainNode::manual_mode7_spear_throw_away_task(int n)
 
 void R1MainNode::manual_mode7_spear_attack(void)
 {
+  auto & hand_valve_step = manual_mode7_hand_valve_step_;
+  auto & push_valve_step = manual_mode7_push_valve_step_;
   if (ps4_->is_pushed_up()) {
     spear_y_pos_ref(spear_y_position_ref_ + 0.01);
   }
@@ -3363,10 +3418,26 @@ void R1MainNode::manual_mode7_spear_attack(void)
 
   if (ps4_->is_pushed_l1()) {
     // spear_pitch1_pos_ref(spear_pitch1_position_ref_ - 0.05);
+    if (push_valve_step == 1) {
+      spear_hand_push_valve(true);
+      push_valve_step = 2;
+    } else {
+      spear_hand_push_valve(false);
+      push_valve_step = 1;
+    }
   }
 
   if (ps4_->is_pushed_r1()) {
     // spear_pitch1_pos_ref(spear_pitch1_position_ref_ + 0.05);
+    if (hand_valve_step == 1) {
+      spear_hand1_valve(true);
+      spear_hand2_valve(true);
+      hand_valve_step = 2;
+    } else {
+      spear_hand1_valve(false);
+      spear_hand2_valve(false);
+      hand_valve_step = 1;
+    }
   }
 
   if (ps4_->is_pushed_l2()) {
@@ -3750,7 +3821,11 @@ void R1MainNode::reset_step(void)
 {
   // 各手順のステップをリセット
   manual_mode2_collect_pole_task_step_ = DEFAULT_STEP;
+  manual_mode2_hand_valve_step_ = DEFAULT_STEP;
+  manual_mode2_push_valve_step_ = DEFAULT_STEP;
   manual_mode3_make_spear_task_step_ = DEFAULT_STEP;
+  manual_mode3_hand_valve_step_ = DEFAULT_STEP;
+  manual_mode3_push_valve_step_ = DEFAULT_STEP;
   manual_mode4_fx_step_ = DEFAULT_STEP;
   manual_mode4_fz_step_ = DEFAULT_STEP;
   manual_mode4_fyaw_step_ = DEFAULT_STEP;
@@ -3765,6 +3840,8 @@ void R1MainNode::reset_step(void)
   manual_mode6_r2_lift_step_ = DEFAULT_STEP;
   manual_mode7_spear_attack_task_step_ = DEFAULT_STEP;
   manual_mode7_spear_throw_away_task_step_ = DEFAULT_STEP;
+  manual_mode7_hand_valve_step_ = DEFAULT_STEP;
+  manual_mode7_push_valve_step_ = DEFAULT_STEP;
   chassis_rotate90 = false;
   stop_kfs_auto_collect();
   clear_auto_chassis_state(false);
