@@ -2234,8 +2234,8 @@ void R1MainNode::manual_mode1_detect_origin(void)
     // spear1_detect_origin();
     kfs_robot_start_act();
     spear_y_pos_ref(SPEAR_Y_COLLECT1_POS);
-    spear_roll1_pos_ref(SPEAR_ROLL1_NORMAL_ANGLE);
-    spear_roll2_pos_ref(SPEAR_ROLL2_NORMAL_ANGLE);
+    spear_roll1_pos_ref(SPEAR_ROLL1_VERTICAL_ANGLE);
+    spear_roll2_pos_ref(SPEAR_ROLL2_VERTICAL_ANGLE);
     spear_hand1_valve(true);
     spear_hand2_valve(true);
     spear_hand_push_valve(true);
@@ -2269,8 +2269,8 @@ void R1MainNode::manual_mode2_collect_pole_task(void)
   if (step == 1) {
     kfs_robot_start_act();
     spear_y_pos_ref(SPEAR_Y_COLLECT1_POS);
-    spear_roll1_pos_ref(SPEAR_ROLL1_NORMAL_ANGLE);
-    spear_roll2_pos_ref(SPEAR_ROLL2_NORMAL_ANGLE);
+    spear_roll1_pos_ref(SPEAR_ROLL1_VERTICAL_ANGLE);
+    spear_roll2_pos_ref(SPEAR_ROLL2_VERTICAL_ANGLE);
     spear_hand1_valve(true);
     spear_hand2_valve(true);
     spear_hand_push_valve(true);
@@ -2496,8 +2496,14 @@ void R1MainNode::manual_mode3_make_spear_task(int n)
     if (manual_mode3_push_valve_timer_) {
       manual_mode3_push_valve_timer_->cancel();
     }
-    spear_roll1_pos_ref(SPEAR_ROLL1_HORIZONTAL_ANGLE);
-    spear_roll2_pos_ref(SPEAR_ROLL2_HORIZONTAL_ANGLE);
+    if (zone_ == "red") {
+      spear_roll1_pos_ref(SPEAR_ROLL1_INV_HORIZONTAL_ANGLE);
+      spear_roll2_pos_ref(SPEAR_ROLL2_INV_HORIZONTAL_ANGLE);
+    } else {
+      spear_roll1_pos_ref(SPEAR_ROLL1_HORIZONTAL_ANGLE);
+      spear_roll2_pos_ref(SPEAR_ROLL2_HORIZONTAL_ANGLE);
+    }
+
     spear_y_pos_ref(SPEAR_Y_MAKE_SPEAR_POS);
     spear_hand_push_valve(true);
     publish_aruco_marker_id(0);
@@ -3324,9 +3330,14 @@ void R1MainNode::manual_mode7_spear_throw_away_task(int n)
     step++;
   } else if (step == 2) {
     spear_y_pos_ref(SPEAR_Y_THROW_AWAY_POS);
-    spear_roll1_pos_ref(SPEAR_ROLL1_HORIZONTAL_ANGLE);
-    spear_roll2_pos_ref(SPEAR_ROLL2_HORIZONTAL_ANGLE);
     spear_hand_push_valve(true);
+    if (zone_ == "red") {
+      spear_roll1_pos_ref(SPEAR_ROLL1_INV_HORIZONTAL_ANGLE);
+      spear_roll2_pos_ref(SPEAR_ROLL2_INV_HORIZONTAL_ANGLE);
+    } else {
+      spear_roll1_pos_ref(SPEAR_ROLL1_HORIZONTAL_ANGLE);
+      spear_roll2_pos_ref(SPEAR_ROLL2_HORIZONTAL_ANGLE);
+    }
     step++;
   } else if (step == 3) {
     spear_hand_push_valve(false);
