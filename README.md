@@ -65,8 +65,10 @@ cd ~/ros2_ws/src/gakurobo2026_r1
   - `.venv` と `install/setup.bash` を読み込み、CPU 周波数設定、USB 権限付与、CAN 初期化をまとめて行います。
 - [`scripts/r1_manual.bash`](./scripts/r1_manual.bash)
   - `r1_setup.bash` を実行したあと、実機モード + LiDAR 有効 + 手動モードで `r1_bringup.launch.py` を起動します。
+  - 第 1 引数でゾーンを指定できます（省略時は `blue`）。
 - [`scripts/r1_auto.bash`](./scripts/r1_auto.bash)
   - `r1_setup.bash` を実行したあと、実機モード + LiDAR 有効 + 自動モードで `r1_bringup.launch.py` を起動します。
+  - 第 1 引数でゾーンを指定できます（省略時は `blue`）。
 - [`scripts/record.bash`](./scripts/record.bash)
   - CAN 関連 topic を除外して bag を記録します。
 
@@ -404,29 +406,46 @@ source install/setup.bash
 
 ## ROS 2 の起動
 
-`r1_bringup.launch.py` は `use_sim` 引数で、実機モードとシミュレーションモードを切り替えられます。  
-`robot_control_mode` 引数で `r1_main_node` の起動モードを切り替えられ、既定値は `manual` です。  
-`robot_control_mode:=manual` のとき `READY/MODE1_DETECT_ORIGIN + ChassisControlMode=MANUAL`、`robot_control_mode:=auto` のとき `READY/MODE1_DETECT_ORIGIN + ChassisControlMode=AUTO` で起動します。  
-実機モードではさらに `use_lidar` 引数で、LiDAR を使う構成と使わない構成を切り替えられます。  
-`use_aruco_display` 引数で、`r1_ui` の `r1_aruco_display_node` を起動するかを切り替えられます。既定値は `false` です。  
-`zone` は現在 [`r1_bringup.launch.py`](./r1_bringup/launch/r1_bringup.launch.py) 内で設定しています。
+`r1_bringup.launch.py` は以下の引数で起動設定を切り替えられます。
+
+| 引数 | 既定値 | 説明 |
+|---|---|---|
+| `use_sim` | `false` | `true` でシミュレーションモード |
+| `use_lidar` | `true` | `false` で LiDAR なし構成（`r1_dummy_map_node` が代替） |
+| `robot_control_mode` | `manual` | `auto` で足回り `ChassisControlMode=AUTO` 起動 |
+| `use_aruco_display` | `false` | `true` で `r1_aruco_display_node` を起動 |
+| `zone` | `blue` | `blue` または `red`。フィールドマップ・座標パラメータをゾーン別に切り替えます。`blue` / `red` 以外は `r1_main_node` が異常終了します。 |
 
 ### 基本の起動コマンド（これさえ覚えればOK）
 
 普段の起動はショートカットを使うのが基本です。
 
-- 手動機:
+- 手動機（青ゾーン）:
 
 ```bash
 cd ~/ros2_ws
 ./src/gakurobo2026_r1/scripts/r1_manual.bash
 ```
 
-- 自動機:
+- 手動機（赤ゾーン）:
+
+```bash
+cd ~/ros2_ws
+./src/gakurobo2026_r1/scripts/r1_manual.bash red
+```
+
+- 自動機（青ゾーン）:
 
 ```bash
 cd ~/ros2_ws
 ./src/gakurobo2026_r1/scripts/r1_auto.bash
+```
+
+- 自動機（赤ゾーン）:
+
+```bash
+cd ~/ros2_ws
+./src/gakurobo2026_r1/scripts/r1_auto.bash red
 ```
 
 ### 細かい起動コマンド
@@ -436,10 +455,16 @@ cd ~/ros2_ws
 ./src/gakurobo2026_r1/scripts/r1_setup.bash
 ```
 
-- LiDAR を使う場合:
+- LiDAR を使う場合（青ゾーン）:
 
 ```bash
-ros2 launch r1_bringup r1_bringup.launch.py use_sim:=false use_lidar:=true
+ros2 launch r1_bringup r1_bringup.launch.py use_sim:=false use_lidar:=true zone:=blue
+```
+
+- LiDAR を使う場合（赤ゾーン）:
+
+```bash
+ros2 launch r1_bringup r1_bringup.launch.py use_sim:=false use_lidar:=true zone:=red
 ```
 
 - LiDAR を使わない場合:
@@ -451,10 +476,10 @@ ros2 launch r1_bringup r1_bringup.launch.py use_sim:=false use_lidar:=false
 自動機として起動したい場合は `robot_control_mode:=auto` を付けます。
 
 ```bash
-ros2 launch r1_bringup r1_bringup.launch.py use_sim:=false use_lidar:=true robot_control_mode:=auto
+ros2 launch r1_bringup r1_bringup.launch.py use_sim:=false use_lidar:=true robot_control_mode:=auto zone:=red
 ```
 
-`use_sim:=false` と `use_lidar:=true` と `robot_control_mode:=manual` はデフォルトなので、`r1_manual.bash` の実体は以下です。
+`use_sim:=false`・`use_lidar:=true`・`robot_control_mode:=manual`・`zone:=blue` はすべてデフォルトなので、青ゾーン手動機は引数なしでも起動できます。
 
 ```bash
 ros2 launch r1_bringup r1_bringup.launch.py
@@ -465,8 +490,6 @@ ArUco 表示ノードも同時に起動したい場合は、`use_aruco_display:=
 ```bash
 ros2 launch r1_bringup r1_bringup.launch.py use_aruco_display:=true
 ```
-
-この引数は既定では `false` なので、従来の起動コマンドには影響しません。
 
 LiDAR を使わない場合は、`r1_dummy_map_node` が `map -> odom` TF を publish します。`/initialpose` を送ると、その内容に合わせて `map -> odom` が更新されます。
 
