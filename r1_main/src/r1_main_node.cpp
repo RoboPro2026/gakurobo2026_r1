@@ -2269,7 +2269,8 @@ void R1MainNode::manual_mode2_collect_pole_task(void)
   if (step == 1) {
     kfs_robot_start_act();
     spear_y_pos_ref(SPEAR_Y_COLLECT1_POS);
-    spear_roll_pos_ref(SPEAR_ROLL_NORMAL_ANGLE);
+    spear_roll1_pos_ref(SPEAR_ROLL1_NORMAL_ANGLE);
+    spear_roll2_pos_ref(SPEAR_ROLL2_NORMAL_ANGLE);
     spear_hand1_valve(true);
     spear_hand2_valve(true);
     spear_hand_push_valve(true);
