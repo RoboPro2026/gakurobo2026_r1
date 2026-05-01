@@ -2268,11 +2268,11 @@ void R1MainNode::manual_mode2_collect_pole_task(void)
 #if SPEAR_MECHANISM == SPEAR_MECHANISM_OTSUKI
   if (step == 1) {
     kfs_robot_start_act();
-    // spear_y_pos_ref(SPEAR_Y_COLLECT1_POS);
-    // spear_roll_pos_ref(SPEAR_ROLL_NORMAL_ANGLE);
-    // spear_hand1_valve(true);
-    // spear_hand2_valve(true);
-    // spear_hand_push_valve(true);
+    spear_y_pos_ref(SPEAR_Y_COLLECT1_POS);
+    spear_roll_pos_ref(SPEAR_ROLL_NORMAL_ANGLE);
+    spear_hand1_valve(true);
+    spear_hand2_valve(true);
+    spear_hand_push_valve(true);
     step++;
   } else if (step == 2) {
     spear_hand1_valve(false);
@@ -2511,8 +2511,6 @@ void R1MainNode::manual_mode3_make_spear_task(int n)
     publish_aruco_marker_id(1);
     step++;
   } else if (step == 3) {
-    // 安全のために何もしないステップを設ける
-  } else if (step == 4) {
     if (manual_mode3_push_valve_timer_) {
       manual_mode3_push_valve_timer_->cancel();
     }
