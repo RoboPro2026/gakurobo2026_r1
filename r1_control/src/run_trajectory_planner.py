@@ -70,9 +70,7 @@ class RunTrajectoryPlanner:
         self.curvature = None
 
     def get_display_theta(self, theta: float) -> float:
-        """表示用の姿勢角を返す（zone を反転しても見た目の向きを揃える）"""
-        if self.zone == "blue":
-            return math.pi - float(theta)
+        """表示用の姿勢角を返す"""
         return float(theta)
 
     def _log(self, msg: str) -> None:
@@ -308,17 +306,8 @@ class RunTrajectoryPlanner:
     ) -> tuple[
         list[float], list[float], list[float], list[float]
     ]:
-        """ゾーンに応じて変換した waypoint を返す（元データは変更しない）"""
-        x_adj = list(self.x_wp)
-        theta_adj = list(self.theta_wp)
-
-        if self.zone == "blue":
-            x_adj = [-x for x in self.x_wp]
-            theta_adj = [
-                np.pi - th if math.isfinite(th) else math.inf for th in self.theta_wp
-            ]
-
-        return x_adj, self.y_wp, theta_adj, self.v_trans_wp
+        """waypoint を返す。座標は zone によらず CSV の値をそのまま使う。"""
+        return self.x_wp, self.y_wp, self.theta_wp, self.v_trans_wp
 
     def _print_waypoints(self) -> None:
         self._log("Waypoints:")
@@ -731,7 +720,7 @@ class RunTrajectoryPlanner:
     def _calculate_trajectory(self) -> bool:
         """軌道を計算し、成功/失敗を返す"""
 
-        # ゾーンに応じた waypoint で軌道計算
+        # waypoint は zone によらず CSV の座標をそのまま使う
         x_calc, y_calc, theta_calc, v_trans_calc = self._get_zone_adjusted_waypoints()
 
         (
@@ -845,7 +834,7 @@ class RunTrajectoryPlanner:
         scatter = self.ax.scatter(
             self.x, self.y, c=self.v_trans, cmap="viridis", s=15, label="Trajectory"
         )
-        # ゾーンに応じて変換した waypoint を描画
+        # waypoint は zone によらず CSV の座標をそのまま描画
         x_wp_plot, y_wp_plot, _, _ = self._get_zone_adjusted_waypoints()
         self.ax.scatter(
             x_wp_plot,

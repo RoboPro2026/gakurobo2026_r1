@@ -156,7 +156,8 @@ public:
       this->create_publisher<std_msgs::msg::Float64>("/chassis_error_theta", 10);
 
     // パラメータの宣言と取得
-    declare_and_get_parameter("act_filebase", act_filebase_, "");
+    declare_and_get_parameter("act_filebase_red", act_filebase_red_, "");
+    declare_and_get_parameter("act_filebase_blue", act_filebase_blue_, "");
     declare_and_get_parameter("zone", zone_, "red");
 
     // 経路生成のパラメータ
@@ -421,7 +422,8 @@ public:
         center_x += offset_x;
         center_y += offset_y;
       } else {
-        // 本当はcenter_xはプラスではなくマイナスのはずだが、何故か動かないので一旦プラス
+        // 本当はcenter_xはプラスではなくマイナスのはずだが、何故か動かないので一旦プラス。
+        // おそらく、プラスでいいのはrect_yawが角度を反転させてるからだと思う。
         center_x += offset_x;
         center_y += offset_y;
       }
@@ -809,6 +811,7 @@ public:
 
   int load_trajectory_csv(int n)
   {
+    const std::string selected_act_filebase = get_selected_act_filebase();
     // paramの読み込み
     double & dt = traj_dt_[n];
     double & v_max = traj_v_max_[n];
@@ -817,12 +820,14 @@ public:
     double & omega_max = traj_omega_max_[n];
     char line[256], buff[256];
     // ファイル名が与えられていなかったらエラーにする
-    if (act_filebase_ == "") {
-      RCLCPP_FATAL(this->get_logger(), "actfilebase is not set");
+    if (selected_act_filebase == "") {
+      RCLCPP_FATAL(
+        this->get_logger(), "act_filebase_%s is not set. Set act_filebase_red or act_filebase_blue",
+        zone_.c_str());
       return 1;
     }
     // ファイルを開く
-    std::string param_name = act_filebase_ + std::to_string(n) + "_robot_parameter.csv";
+    std::string param_name = selected_act_filebase + std::to_string(n) + "_robot_parameter.csv";
     FILE * fp = fopen(param_name.c_str(), "r");
     if (fp == NULL) {
       RCLCPP_FATAL(this->get_logger(), "Failed to open %s", param_name.c_str());
@@ -884,11 +889,13 @@ public:
     theta_wp.clear();
     v_trans_wp.clear();
     // ファイル名が与えられていなかったらエラーにする
-    if (act_filebase_ == "") {
-      RCLCPP_FATAL(this->get_logger(), "act_filebase is not set");
+    if (selected_act_filebase == "") {
+      RCLCPP_FATAL(
+        this->get_logger(), "act_filebase_%s is not set. Set act_filebase_red or act_filebase_blue",
+        zone_.c_str());
       return 1;
     }
-    std::string wp_filename = act_filebase_ + std::to_string(n) + "_waypoints.csv";
+    std::string wp_filename = selected_act_filebase + std::to_string(n) + "_waypoints.csv";
     // ファイルを開く
     fp = fopen(wp_filename.c_str(), "r");
     if (fp == NULL) {
@@ -955,15 +962,18 @@ public:
 
     fclose(fp);
 
-    // ゾーンが青ゾーンの場合は、x座標を反転する
-    if (zone_ == "blue") {
-      for (int i = 0; i < (int)x_wp.size(); i++) {
-        x_wp[i] = -x_wp[i];
-      }
-      // TODO: thetaも反転させたほうがいいかも
-    }
-
     return 0;
+  }
+
+  std::string get_selected_act_filebase() const
+  {
+    if (zone_ == "red" && act_filebase_red_ != "") {
+      return act_filebase_red_;
+    }
+    if (zone_ == "blue" && act_filebase_blue_ != "") {
+      return act_filebase_blue_;
+    }
+    return "";
   }
 
   int generate_trajectory(int n)
@@ -1061,7 +1071,8 @@ public:
   // ロボットの軌道保管用
   nav_msgs::msg::Path robot_trajectory_;
   // filepath
-  std::string act_filebase_;
+  std::string act_filebase_red_;
+  std::string act_filebase_blue_;
   // zone
   std::string zone_;
   // 内回り/外回りで減速判定に使う長方形中心の座標 [x, y, yaw]

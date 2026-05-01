@@ -1,7 +1,8 @@
 r1_chassis_control_node:
   ros__parameters:
     # =========== r1_chassis_control_nodeの基本パラメータ ==========
-    act_filebase: "src/gakurobo2026_r1/data/"
+    act_filebase_red: "src/gakurobo2026_r1/data/red/"
+    act_filebase_blue: "src/gakurobo2026_r1/data/blue/"
     timer_rate: 100.0
     visualize_timer_rate: 10.0
     cmd_vel_topic: "/cmd_vel_target"
@@ -47,13 +48,13 @@ r1_chassis_control_node:
     # 減速範囲の長方形サイズ [m]
     # yaw=0 のとき width は map の x 方向、height は map の y 方向の長さになる
     # yaw を与えた場合は、その yaw だけ回転した長方形ローカル座標系での幅と高さになる
-    decel_height: 0.3
+    decel_height: 0.45
     decel_width: 1.5
     # 内回り/外回りの減速範囲の中心座標 [x, y, yaw]
     # # 内回りのときは2,1,4,7,10を通る
     inner_decel_center_pos:
-      1: [3.6, 2.58, 0.0]
-      2: [2.4, 2.58, 0.0]
+      1: [3.4, 2.58, 0.0]
+      2: [2.2, 2.58, 0.0]
       3: [100.0, 100.0, 0.0] # ここは通らない
       4: [5.4, 4.2, 1.57]
       5: [100.0, 100.0, 0.0] # ここにはKFSは置かれない
@@ -75,8 +76,8 @@ r1_chassis_control_node:
       7: [100.0, 100.0, 0.0] # ここは通らない
       8: [100.0, 100.0, 0.0] # ここにはKFSは置かれない
       9: [0.6, 5.4, 1.57]
-      10: [3.75, 8.55, 0.0]
-      11: [2.55, 8.55, 0.0]
+      10: [3.4, 8.55, 0.0]
+      11: [2.2, 8.55, 0.0]
       12: [0.6, 6.6, 1.57]
     # KFS回収時のオフセット（front_kfsかrear_kfsのうち、遠い方に適応する）
     collect_kfs_offset: 0.838
@@ -115,10 +116,13 @@ r1_main_node:
     timer_rate: 100.0
     ps4_connection_timeout: 1.0
     # PSボタンを押されたら、lidarをactivateするかどうか
-    activate_lidar_on_ps: false
+    activate_lidar_on_ps: true
     share_long_press_sec: 0.4  # shareボタン長押し判定秒数 [s]
     # /initialpose publish後に現在のTFをログするまでの遅延 [s]
     initialpose_tf_log_delay_sec: 5.0
+    # /initialpose の再送遅延 [s]（LiDAR lifecycle 起動の非同期性に対応するため複数回送信する）
+    initialpose_retry1_delay_sec: 1.0
+    initialpose_retry2_delay_sec: 3.0
     # ========== 足回り ==========
 
     chassis_make_spear_velocity: 0.2
@@ -133,8 +137,8 @@ r1_main_node:
     # fx
     kfs_fx_normal_pos: 0.005
     kfs_fx_storage_pos: 0.2
-    kfs_fx_start_pos: 0.3
-    kfs_fx_put_pos: 0.3
+    kfs_fx_start_pos: 0.005
+    kfs_fx_put_pos: 0.45
     kfs_fx_expand_pos: 0.67
     kfs_fx_low_mech_lock_pos: 0.05
     kfs_fx_high_mech_lock_pos: 0.67
@@ -144,23 +148,25 @@ r1_main_node:
     kfs_fz_low_pos: 0.005
     kfs_fz_middle_pos: 0.22
     kfs_fz_high_pos: 0.42
-    kfs_fz_put_pos: 0.5
+    kfs_fz_put_pos: 0.55
     kfs_fz_storage_pos: 0.5
+    kfs_fz_start_pos: 0.6
     kfs_fz_low_mech_lock_pos: 0.005
-    kfs_fz_high_mech_lock_pos: 0.55
+    kfs_fz_high_mech_lock_pos: 0.65
     kfs_fz_r2_lift_pos: 0.005
     # fyaw
     kfs_fyaw_normal_angle: 0.0
     kfs_fyaw_front_angle: 3.141592653589793
     kfs_fyaw_side_angle: 1.5707963267948966
     kfs_fyaw_rear_angle: 0.0
+    kfs_fyaw_start_angle: 1.5707963267948966
     kfs_fyaw_low_mech_lock_angle: 0.05
     kfs_fyaw_high_mech_lock_angle: 3.1
     # rx
     kfs_rx_normal_pos: 0.005
     kfs_rx_storage_pos: 0.2
-    kfs_rx_start_pos: 0.3
-    kfs_rx_put_pos: 0.3
+    kfs_rx_start_pos: 0.005
+    kfs_rx_put_pos: 0.45
     kfs_rx_expand_pos: 0.67
     kfs_rx_low_mech_lock_pos: 0.05
     kfs_rx_high_mech_lock_pos: 0.67
@@ -172,19 +178,21 @@ r1_main_node:
     kfs_rz_high_pos: 0.42
     kfs_rz_put_pos: 0.5
     kfs_rz_storage_pos: 0.5
-    kfs_rz_put_pos: 0.5
+    kfs_rz_put_pos: 0.55
+    kfs_rz_start_pos: 0.6
     kfs_rz_low_mech_lock_pos: 0.005
-    kfs_rz_high_mech_lock_pos: 0.55
+    kfs_rz_high_mech_lock_pos: 0.65
     kfs_rz_r2_lift_pos: 0.005
     # ryaw
     kfs_ryaw_normal_angle: 0.0
     kfs_ryaw_front_angle: 3.141592653589793
     kfs_ryaw_side_angle: 1.5707963267948966
     kfs_ryaw_rear_angle: 0.0
+    kfs_ryaw_start_angle: 1.5707963267948966
     kfs_ryaw_low_mech_lock_angle: 0.05
     kfs_ryaw_high_mech_lock_angle: 3.1
     # 回収するときの遅延時間
-    kfs_yaw_delay_time: 0.4
+    kfs_yaw_delay_time: 0.25
 
     # ========== 展開 ==========
     # R2昇降
@@ -196,88 +204,107 @@ r1_main_node:
     r2_rlift_down_pos: 0.0
 
     # ========== やり ==========
-    # spear1
-    spear1_normal_pos: 0.05
-    # ポールを掴む位置
-    spear1_collect1_pos: 0.25
-    # ポールを掴んでちょっとだけ上げたときの位置
-    spear1_collect2_pos: 0.35
-    # ポールを受け渡す位置
-    spear1_collect3_pos: 0.55
-    # KFS回収中に機構が当たらないようにする位置
-    spear1_kfs_collect_pos: 0.6
-    spear1_low_attack_pos: 0.6
-    spear1_middle_attack_pos: 0.6
-    spear1_high_attack_pos: 0.8
-    spear1_make_spear_start_pos: 0.35
-    # スピアを押し込むときの速度[rad/s]
-    spear1_push_vel: 10.0
-    # spear2
-    spear2_normal_pos: 0.05
-    # ポールを掴む位置
-    spear2_collect1_pos: 0.25
-    # ポールを掴んでちょっとだけ上げたときの位置
-    spear2_collect2_pos: 0.35
-    # ポールを受け渡す位置
-    spear2_collect3_pos: 0.55
-    # KFS回収中に機構が当たらないようにする位置
-    spear2_kfs_collect_pos: 0.6
-    spear2_low_attack_pos: 0.6
-    spear2_middle_attack_pos: 0.6
-    spear2_high_attack_pos: 0.8
-    spear2_make_spear_start_pos: 0.35
-    # スピアを押し込むときの速度[rad/s]
-    spear2_push_vel: 10.0
-    # spear3
-    spear3_normal_pos: 0.0
-    spear3_collect_pos: 0.0
-    # KFS回収中に機構が当たらないようにする位置
-    spear3_kfs_collect_pos: 0.6
-    spear3_make_spear_start_pos: 0.0
-    # スピアを押し込むときの速度[rad/s]
-    spear3_push_vel: 10.0
-    # spear4
-    spear4_normal_pos: 0.0
-    spear4_collect_pos: 0.0
-    # KFS回収中に機構が当たらないようにする位置
-    spear4_kfs_collect_pos: 0.6
-    spear4_make_spear_start_pos: 0.0
-    # スピアを押し込むときの速度[rad/s]
-    spear4_push_vel: 10.0
-    # spear_x
-    spear_x_normal_pos: 0.0
-    spear_x_middle_pos: 0.15
-    spear_x_make_spear1_pos: 0.15
-    # spear_x_make_spear2_pos: 0.305
-    spear_x_make_spear2_pos: 0.285
-    spear_x_make_spear3_pos: 0.0
-    spear_x_make_spear4_pos: 0.0
-    # spear_y
-    spear_y_normal_pos: 0.0
-    spear_y_expand_pos: 0.1
-    # spear_roll
-    spear_roll_normal_angle: 0.0
-    spear_roll_inv_normal_angle: 3.14159265358979326
-    spear_roll_vertical_angle: 1.5707963267948966
-    # spear_roll_vertical_angle: 1.62
-    spear_roll_low_attack_angle: 0.0
-    spear_roll_middle_attack_angle: 2.07
-    spear_roll_high_attack_angle: 2.27
-    # spear_pitch1
-    # デフォルトで少しだけ位置を上げる
-    spear_pitch1_normal_angle: 0.1
-    spear_pitch1_vertical_angle: 0.1
-    # spear_pitch2
-    # デフォルトで少しだけ位置を上げる
-    spear_pitch2_normal_angle: 0.1
-    spear_pitch2_vertical_angle: 0.1
+    # 大槻機構
+    spear_y_normal_pos: 0.05
+    spear_y_collect1_pos: 0.10
+    spear_y_collect2_pos: 0.20
+    spear_y_make_spear_pos: 0.44
+    spear_y_low_attack_pos: 0.65
+    spear_y_middle_attack_pos: 0.65
+    spear_y_high_attack_pos: 0.74
+    spear_y_throw_away_pos: 0.05
+    spear_roll1_normal_angle: 0.0
+    spear_roll1_vertical_angle: 0.0
+    spear_roll1_horizontal_angle: 1.5707963267948966
+    spear_roll1_inv_horozontal_angle: -1.5707963267948966
+    spear_roll1_low_attack_angle: 1.5707963267948966
+    spear_roll1_middle_attack_angle: 1.0
+    spear_roll1_high_attack_angle: 0.8
+    spear_roll2_normal_angle: 0.0
+    spear_roll2_vertical_angle: 0.0
+    spear_roll2_horizontal_angle: 1.5707963267948966
+    spear_roll2_inv_horozontal_angle: -1.5707963267948966
+    spear_roll2_low_attack_angle: 1.5707963267948966
+    spear_roll2_middle_attack_angle: 1.0
+    spear_roll2_high_attack_angle: 0.8
+    # 千田機構
+    # # spear1
+    # spear1_normal_pos: 0.05
+    # # ポールを掴む位置
+    # spear1_collect1_pos: 0.25
+    # # ポールを掴んでちょっとだけ上げたときの位置
+    # spear1_collect2_pos: 0.35
+    # # ポールを受け渡す位置
+    # spear1_collect3_pos: 0.55
+    # # KFS回収中に機構が当たらないようにする位置
+    # spear1_kfs_collect_pos: 0.6
+    # spear1_low_attack_pos: 0.6
+    # spear1_middle_attack_pos: 0.6
+    # spear1_high_attack_pos: 0.8
+    # spear1_make_spear_start_pos: 0.35
+    # # スピアを押し込むときの速度[rad/s]
+    # spear1_push_vel: 10.0
+    # # spear2
+    # spear2_normal_pos: 0.05
+    # # ポールを掴む位置
+    # spear2_collect1_pos: 0.25
+    # # ポールを掴んでちょっとだけ上げたときの位置
+    # spear2_collect2_pos: 0.35
+    # # ポールを受け渡す位置
+    # spear2_collect3_pos: 0.55
+    # # KFS回収中に機構が当たらないようにする位置
+    # spear2_kfs_collect_pos: 0.6
+    # spear2_low_attack_pos: 0.6
+    # spear2_middle_attack_pos: 0.6
+    # spear2_high_attack_pos: 0.8
+    # spear2_make_spear_start_pos: 0.35
+    # # スピアを押し込むときの速度[rad/s]
+    # spear2_push_vel: 10.0
+    # # spear3
+    # spear3_normal_pos: 0.0
+    # spear3_collect_pos: 0.0
+    # # KFS回収中に機構が当たらないようにする位置
+    # spear3_kfs_collect_pos: 0.6
+    # spear3_make_spear_start_pos: 0.0
+    # # スピアを押し込むときの速度[rad/s]
+    # spear3_push_vel: 10.0
+    # # spear4
+    # spear4_normal_pos: 0.0
+    # spear4_collect_pos: 0.0
+    # # KFS回収中に機構が当たらないようにする位置
+    # spear4_kfs_collect_pos: 0.6
+    # spear4_make_spear_start_pos: 0.0
+    # # スピアを押し込むときの速度[rad/s]
+    # spear4_push_vel: 10.0
+    # # spear_x
+    # spear_x_normal_pos: 0.0
+    # spear_x_middle_pos: 0.15
+    # spear_x_make_spear1_pos: 0.15
+    # # spear_x_make_spear2_pos: 0.305
+    # spear_x_make_spear2_pos: 0.285
+    # spear_x_make_spear3_pos: 0.0
+    # spear_x_make_spear4_pos: 0.0
+    # # spear_y
+    # spear_y_normal_pos: 0.0
+    # spear_y_expand_pos: 0.1
+    # # spear_roll
+    # spear_roll_normal_angle: 0.0
+    # spear_roll_inv_normal_angle: 3.14159265358979326
+    # spear_roll_vertical_angle: 1.5707963267948966
+    # # spear_roll_vertical_angle: 1.62
+    # spear_roll_low_attack_angle: 0.0
+    # spear_roll_middle_attack_angle: 2.07
+    # spear_roll_high_attack_angle: 2.27
+    # # spear_pitch1
+    # # デフォルトで少しだけ位置を上げる
+    # spear_pitch1_normal_angle: 0.1
+    # spear_pitch1_vertical_angle: 0.1
+    # # spear_pitch2
+    # # デフォルトで少しだけ位置を上げる
+    # spear_pitch2_normal_angle: 0.1
+    # spear_pitch2_vertical_angle: 0.1
     # ========== KFS回収の移動関連 ==========
     # KFSが置かれている場所
-    # kfs_forest_number: [4]
-    # kfs_forest_number: [4, 2]
-    kfs_forest_number: [4, 7]
-    # kfs_forest_number: [2, 1]
-    # kfs_forest_number: [3, 6]
     # KFS回収範囲の長方形サイズ [m]
     # yaw=0 のとき width は map の x 方向、height は map の y 方向の長さになる
     # yaw を与えた場合は、その yaw だけ回転した長方形ローカル座標系での幅と高さになる
@@ -290,8 +317,8 @@ r1_main_node:
     # 内回り/外回りのKFS回収範囲の中心座標 [x, y, yaw]
     # # 内回りのときは2,1,4,7,10を通る
     inner_collect_kfs_center_pos:
-      1: [3.6, 2.58, 0.0]
-      2: [2.4, 2.58, 0.0]
+      1: [3.4, 2.58, 0.0]
+      2: [2.2, 2.58, 0.0]
       3: [100.0, 100.0, 0.0] # ここは通らない
       4: [5.4, 4.2, 1.57]
       5: [100.0, 100.0, 0.0] # ここにはKFSは置かれない
@@ -313,8 +340,8 @@ r1_main_node:
       7: [100.0, 100.0, 0.0] # ここは通らない
       8: [100.0, 100.0, 0.0] # ここにはKFSは置かれない
       9: [0.6, 5.4, 1.57]
-      10: [3.75, 8.55, 0.0]
-      11: [2.55, 8.55, 0.0]
+      10: [3.4, 8.55, 0.0]
+      11: [2.2, 8.55, 0.0]
       12: [0.6, 6.6, 1.57]
     collect_kfs_offset: 0.838 # KFS回収時のオフセット（front_kfsかrear_kfsのうち、遠い方に適応する）
     kfs_yaw_delay_time: 1.0 # 範囲外へ出たあとに収納用 yaw を送るまでの遅延時間 [s]
@@ -324,10 +351,10 @@ r1_mecanum_node:
   ros__parameters:
   #   # 50mm
     wheel_radius: 0.05
-  #   # 800mm
-    robot_length: 0.8
-  #   # 800mm
-    robot_width: 0.8
+  #   # 828mm
+    robot_length: 0.828
+  #   # 802mm
+    robot_width: 0.802
     speed_limit: 100.0
   # モーターの出力は歯数が32（モーター側）と歯数が64（ホイール側）で組みあわせているので
   #   # 減速比は32 / 64 = 0.5
@@ -571,220 +598,291 @@ r1_r2_rlift_node:
     inverse_low_switch_logic: false
     inverse_high_switch_logic: false
 # ---------- やり ----------
-# linear motion node
-# C610
-r1_spear1_node:
-  ros__parameters:
-    timer_rate: 10.0
-    # トルク検出時のしきい値
-    torque_threshold: 0.5 # Nm
-    # 通常位置モード時に Robomas の torque_lim として使う値
-    normal_torque_limit: 1.0 # Nm
-    # 原点検出・メカロック移動中に Robomas の torque_lim として使う値
-    contact_torque_limit: 0.75 # Nm
-    origin_detect_threshold_time: 0.5 # 秒
-    # 原点検出のときは、0の方向に戻るので、負の速度にする
-    origin_detect_speed: -6.28 # rad/s
-    pos_min: -0.1
-    pos_max: 1.0
-    normal_pos: 0.05
-    # モータが1回転すると100mm進むので、半径は15.9mm
-    radius: 0.015915494309189534
-    inverse_motor: false
-    use_low_switch: false
-    use_high_switch: false
-    inverse_low_switch_logic: false
-    inverse_high_switch_logic: false
-# linear motion node
-# C610
-r1_spear2_node:
-  ros__parameters:
-    timer_rate: 10.0
-    # トルク検出時のしきい値
-    torque_threshold: 0.5 # Nm
-    # 通常位置モード時に Robomas の torque_lim として使う値
-    normal_torque_limit: 1.0 # Nm
-    # 原点検出・メカロック移動中に Robomas の torque_lim として使う値
-    contact_torque_limit: 0.75 # Nm
-    origin_detect_threshold_time: 0.5 # 秒
-    # 原点検出のときは、0の方向に戻るので、負の速度にする
-    origin_detect_speed: -6.28 # rad/s
-    pos_min: -0.1
-    pos_max: 1.0
-    normal_pos: 0.05
-    # モータが1回転すると100mm進むので、半径は15.9mm
-    radius: 0.015915494309189534
-    inverse_motor: false
-    use_low_switch: false
-    use_high_switch: false
-    inverse_low_switch_logic: false
-    inverse_high_switch_logic: false
-# linear motion node
-# C610
-r1_spear3_node:
-  ros__parameters:
-    timer_rate: 10.0
-    # トルク検出時のしきい値
-    torque_threshold: 0.5 # Nm
-    # 通常位置モード時に Robomas の torque_lim として使う値
-    normal_torque_limit: 1.0 # Nm
-    # 原点検出・メカロック移動中に Robomas の torque_lim として使う値
-    contact_torque_limit: 1.0 # Nm
-    origin_detect_threshold_time: 0.5 # 秒
-    # 原点検出のときは、0の方向に戻るので、負の速度にする
-    origin_detect_speed: -6.28 # rad/s
-    pos_min: -0.1
-    pos_max: 1.0
-    normal_pos: 0.05
-    # モータが1回転すると100mm進むので、半径は15.9mm
-    radius: 0.015915494309189534
-    inverse_motor: false
-    use_low_switch: false
-    use_high_switch: false
-    inverse_low_switch_logic: false
-    inverse_high_switch_logic: false
-# linear motion node
-# C610
-r1_spear4_node:
-  ros__parameters:
-    timer_rate: 10.0
-    # トルク検出時のしきい値
-    torque_threshold: 0.5 # Nm
-    # 通常位置モード時に Robomas の torque_lim として使う値
-    normal_torque_limit: 1.0 # Nm
-    # 原点検出・メカロック移動中に Robomas の torque_lim として使う値
-    contact_torque_limit: 1.0 # Nm
-    origin_detect_threshold_time: 0.5 # 秒
-    # 原点検出のときは、0の方向に戻るので、負の速度にする
-    origin_detect_speed: -6.28 # rad/s
-    pos_min: -0.1
-    pos_max: 1.0
-    normal_pos: 0.05
-    # モータが1回転すると100mm進むので、半径は15.9mm
-    radius: 0.015915494309189534
-    inverse_motor: false
-    use_low_switch: false
-    use_high_switch: false
-    inverse_low_switch_logic: false
-    inverse_high_switch_logic: false
-# linear motion node
-# C620
-r1_spear_x_node:
-  ros__parameters:
-    timer_rate: 10.0
-    # トルク検出時のしきい値
-    torque_threshold: 0.5 # Nm
-    # 通常位置モード時に Robomas の torque_lim として使う値
-    normal_torque_limit: 4.0 # Nm
-    # 原点検出・メカロック移動中に Robomas の torque_lim として使う値
-    contact_torque_limit: 4.0 # Nm
-    origin_detect_threshold_time: 0.5 # 秒
-    # 原点検出のときは、0の方向に戻るので、負の速度にする
-    origin_detect_speed: -6.28 # rad/s
-    pos_min: -1.0
-    pos_max: 1.0
-    normal_pos: 0.05
-    # モータが1回転すると36pi mm進むので、半径は18.0mm
-    radius: 0.018
-    inverse_motor: true
-    use_low_switch: false
-    use_high_switch: false
-    inverse_low_switch_logic: false
-    inverse_high_switch_logic: false
-# linear motion node
-# C620
+# ----- 大槻機構 -----
+# # C610
 r1_spear_y_node:
   ros__parameters:
     timer_rate: 10.0
     # トルク検出時のしきい値
     torque_threshold: 0.5 # Nm
     # 通常位置モード時に Robomas の torque_lim として使う値
-    normal_torque_limit: 4.0 # Nm
+    normal_torque_limit: 0.7 # Nm
     # 原点検出・メカロック移動中に Robomas の torque_lim として使う値
-    contact_torque_limit: 4.0 # Nm
+    contact_torque_limit: 0.7 # Nm
     origin_detect_threshold_time: 0.5 # 秒
     # 原点検出のときは、0の方向に戻るので、負の速度にする
     origin_detect_speed: -6.28 # rad/s
     pos_min: -0.1
     pos_max: 1.0
     normal_pos: 0.05
-    # モータが1回転すると110mm進むので、半径は17.5mm
-    radius: 0.01750704374010849
-    inverse_motor: false
-    use_low_switch: false
-    use_high_switch: false
-    inverse_low_switch_logic: false
-    inverse_high_switch_logic: false
-# angle motion node
-r1_spear_roll_node:
-  ros__parameters:
-    timer_rate: 10.0
-    # トルク検出時のしきい値
-    torque_threshold: 0.5 # Nm
-    # NOTE: robstrideなので、トルクしきい値は無効化
-    # 通常位置モード時に Robomas の torque_lim として使う値
-    normal_torque_limit: 1.5 # Nm
-    # 原点検出・メカロック移動中に Robomas の torque_lim として使う値
-    contact_torque_limit: 1.5 # Nm
-    origin_detect_threshold_time: 0.5 # 秒
-    origin_detect_speed: -3.14 # rad/s
-    angle_min: -5.0
-    angle_max: 5.0
-    normal_angle: 0.0
-    # ギア比で割った値がモーターの角度指令値となる
-    # 1.0 / 5.0 = 0.2
-    gear_ratio: 0.2
+    # ギアが一周すると2*pi*15mm進むので、半径は15mm
+    radius: 0.015
     inverse_motor: true
     use_low_switch: false
     use_high_switch: false
     inverse_low_switch_logic: false
     inverse_high_switch_logic: false
 # angle motion node
-r1_spear_pitch1_node:
+r1_spear_roll1_node:
   ros__parameters:
     timer_rate: 10.0
     # トルク検出時のしきい値
     torque_threshold: 0.5 # Nm
     # 通常位置モード時に Robomas の torque_lim として使う値
-    normal_torque_limit: 4.0 # Nm
+    normal_torque_limit: 0.7 # Nm
     # 原点検出・メカロック移動中に Robomas の torque_lim として使う値
-    contact_torque_limit: 4.0 # Nm
+    contact_torque_limit: 0.7 # Nm
     origin_detect_threshold_time: 0.5 # 秒
     origin_detect_speed: -3.14 # rad/s
     angle_min: -5.0
     angle_max: 5.0
     normal_angle: 0.1
     # ギア比で割った値がモーターの角度指令値となる
-    # 1.0 / 5.0 = 0.2
-    gear_ratio: 0.2
+    # 13.0 / 42.0 = 0.30952380952380953
+    gear_ratio: 0.30952380952380953
     inverse_motor: true
     use_low_switch: false
     use_high_switch: false
     inverse_low_switch_logic: false
     inverse_high_switch_logic: false
 # angle motion node
-r1_spear_pitch2_node:
+r1_spear_roll2_node:
   ros__parameters:
     timer_rate: 10.0
     # トルク検出時のしきい値
     torque_threshold: 0.5 # Nm
     # 通常位置モード時に Robomas の torque_lim として使う値
-    normal_torque_limit: 4.0 # Nm
+    normal_torque_limit: 0.7 # Nm
     # 原点検出・メカロック移動中に Robomas の torque_lim として使う値
-    contact_torque_limit: 4.0 # Nm
+    contact_torque_limit: 0.7 # Nm
     origin_detect_threshold_time: 0.5 # 秒
     origin_detect_speed: -3.14 # rad/s
     angle_min: -5.0
     angle_max: 5.0
     normal_angle: 0.1
     # ギア比で割った値がモーターの角度指令値となる
-    # 1.0 / 5.0 = 0.2
-    gear_ratio: 0.2
-    inverse_motor: false
+    # 13.0 / 42.0 = 0.30952380952380953
+    gear_ratio: 0.30952380952380953
+    inverse_motor: true
     use_low_switch: false
     use_high_switch: false
     inverse_low_switch_logic: false
     inverse_high_switch_logic: false
+# ----- 千田機構 -----
+# # linear motion node
+# # C610
+# r1_spear1_node:
+#   ros__parameters:
+#     timer_rate: 10.0
+#     # トルク検出時のしきい値
+#     torque_threshold: 0.5 # Nm
+#     # 通常位置モード時に Robomas の torque_lim として使う値
+#     normal_torque_limit: 1.0 # Nm
+#     # 原点検出・メカロック移動中に Robomas の torque_lim として使う値
+#     contact_torque_limit: 0.75 # Nm
+#     origin_detect_threshold_time: 0.5 # 秒
+#     # 原点検出のときは、0の方向に戻るので、負の速度にする
+#     origin_detect_speed: -6.28 # rad/s
+#     pos_min: -0.1
+#     pos_max: 1.0
+#     normal_pos: 0.05
+#     # モータが1回転すると100mm進むので、半径は15.9mm
+#     radius: 0.015915494309189534
+#     inverse_motor: false
+#     use_low_switch: false
+#     use_high_switch: false
+#     inverse_low_switch_logic: false
+#     inverse_high_switch_logic: false
+# # linear motion node
+# # C610
+# r1_spear2_node:
+#   ros__parameters:
+#     timer_rate: 10.0
+#     # トルク検出時のしきい値
+#     torque_threshold: 0.5 # Nm
+#     # 通常位置モード時に Robomas の torque_lim として使う値
+#     normal_torque_limit: 1.0 # Nm
+#     # 原点検出・メカロック移動中に Robomas の torque_lim として使う値
+#     contact_torque_limit: 0.75 # Nm
+#     origin_detect_threshold_time: 0.5 # 秒
+#     # 原点検出のときは、0の方向に戻るので、負の速度にする
+#     origin_detect_speed: -6.28 # rad/s
+#     pos_min: -0.1
+#     pos_max: 1.0
+#     normal_pos: 0.05
+#     # モータが1回転すると100mm進むので、半径は15.9mm
+#     radius: 0.015915494309189534
+#     inverse_motor: false
+#     use_low_switch: false
+#     use_high_switch: false
+#     inverse_low_switch_logic: false
+#     inverse_high_switch_logic: false
+# # linear motion node
+# # C610
+# r1_spear3_node:
+#   ros__parameters:
+#     timer_rate: 10.0
+#     # トルク検出時のしきい値
+#     torque_threshold: 0.5 # Nm
+#     # 通常位置モード時に Robomas の torque_lim として使う値
+#     normal_torque_limit: 1.0 # Nm
+#     # 原点検出・メカロック移動中に Robomas の torque_lim として使う値
+#     contact_torque_limit: 1.0 # Nm
+#     origin_detect_threshold_time: 0.5 # 秒
+#     # 原点検出のときは、0の方向に戻るので、負の速度にする
+#     origin_detect_speed: -6.28 # rad/s
+#     pos_min: -0.1
+#     pos_max: 1.0
+#     normal_pos: 0.05
+#     # モータが1回転すると100mm進むので、半径は15.9mm
+#     radius: 0.015915494309189534
+#     inverse_motor: false
+#     use_low_switch: false
+#     use_high_switch: false
+#     inverse_low_switch_logic: false
+#     inverse_high_switch_logic: false
+# # linear motion node
+# # C610
+# r1_spear4_node:
+#   ros__parameters:
+#     timer_rate: 10.0
+#     # トルク検出時のしきい値
+#     torque_threshold: 0.5 # Nm
+#     # 通常位置モード時に Robomas の torque_lim として使う値
+#     normal_torque_limit: 1.0 # Nm
+#     # 原点検出・メカロック移動中に Robomas の torque_lim として使う値
+#     contact_torque_limit: 1.0 # Nm
+#     origin_detect_threshold_time: 0.5 # 秒
+#     # 原点検出のときは、0の方向に戻るので、負の速度にする
+#     origin_detect_speed: -6.28 # rad/s
+#     pos_min: -0.1
+#     pos_max: 1.0
+#     normal_pos: 0.05
+#     # モータが1回転すると100mm進むので、半径は15.9mm
+#     radius: 0.015915494309189534
+#     inverse_motor: false
+#     use_low_switch: false
+#     use_high_switch: false
+#     inverse_low_switch_logic: false
+#     inverse_high_switch_logic: false
+# # linear motion node
+# # C620
+# r1_spear_x_node:
+#   ros__parameters:
+#     timer_rate: 10.0
+#     # トルク検出時のしきい値
+#     torque_threshold: 0.5 # Nm
+#     # 通常位置モード時に Robomas の torque_lim として使う値
+#     normal_torque_limit: 4.0 # Nm
+#     # 原点検出・メカロック移動中に Robomas の torque_lim として使う値
+#     contact_torque_limit: 4.0 # Nm
+#     origin_detect_threshold_time: 0.5 # 秒
+#     # 原点検出のときは、0の方向に戻るので、負の速度にする
+#     origin_detect_speed: -6.28 # rad/s
+#     pos_min: -1.0
+#     pos_max: 1.0
+#     normal_pos: 0.05
+#     # モータが1回転すると36pi mm進むので、半径は18.0mm
+#     radius: 0.018
+#     inverse_motor: true
+#     use_low_switch: false
+#     use_high_switch: false
+#     inverse_low_switch_logic: false
+#     inverse_high_switch_logic: false
+# # linear motion node
+# # C620
+# r1_spear_y_node:
+#   ros__parameters:
+#     timer_rate: 10.0
+#     # トルク検出時のしきい値
+#     torque_threshold: 0.5 # Nm
+#     # 通常位置モード時に Robomas の torque_lim として使う値
+#     normal_torque_limit: 4.0 # Nm
+#     # 原点検出・メカロック移動中に Robomas の torque_lim として使う値
+#     contact_torque_limit: 4.0 # Nm
+#     origin_detect_threshold_time: 0.5 # 秒
+#     # 原点検出のときは、0の方向に戻るので、負の速度にする
+#     origin_detect_speed: -6.28 # rad/s
+#     pos_min: -0.1
+#     pos_max: 1.0
+#     normal_pos: 0.05
+#     # モータが1回転すると110mm進むので、半径は17.5mm
+#     radius: 0.01750704374010849
+#     inverse_motor: false
+#     use_low_switch: false
+#     use_high_switch: false
+#     inverse_low_switch_logic: false
+#     inverse_high_switch_logic: false
+# # angle motion node
+# r1_spear_roll_node:
+#   ros__parameters:
+#     timer_rate: 10.0
+#     # トルク検出時のしきい値
+#     torque_threshold: 0.5 # Nm
+#     # NOTE: robstrideなので、トルクしきい値は無効化
+#     # 通常位置モード時に Robomas の torque_lim として使う値
+#     normal_torque_limit: 1.5 # Nm
+#     # 原点検出・メカロック移動中に Robomas の torque_lim として使う値
+#     contact_torque_limit: 1.5 # Nm
+#     origin_detect_threshold_time: 0.5 # 秒
+#     origin_detect_speed: -3.14 # rad/s
+#     angle_min: -5.0
+#     angle_max: 5.0
+#     normal_angle: 0.0
+#     # ギア比で割った値がモーターの角度指令値となる
+#     # 1.0 / 5.0 = 0.2
+#     gear_ratio: 0.2
+#     inverse_motor: true
+#     use_low_switch: false
+#     use_high_switch: false
+#     inverse_low_switch_logic: false
+#     inverse_high_switch_logic: false
+# # angle motion node
+# r1_spear_pitch1_node:
+#   ros__parameters:
+#     timer_rate: 10.0
+#     # トルク検出時のしきい値
+#     torque_threshold: 0.5 # Nm
+#     # 通常位置モード時に Robomas の torque_lim として使う値
+#     normal_torque_limit: 4.0 # Nm
+#     # 原点検出・メカロック移動中に Robomas の torque_lim として使う値
+#     contact_torque_limit: 4.0 # Nm
+#     origin_detect_threshold_time: 0.5 # 秒
+#     origin_detect_speed: -3.14 # rad/s
+#     angle_min: -5.0
+#     angle_max: 5.0
+#     normal_angle: 0.1
+#     # ギア比で割った値がモーターの角度指令値となる
+#     # 1.0 / 5.0 = 0.2
+#     gear_ratio: 0.2
+#     inverse_motor: true
+#     use_low_switch: false
+#     use_high_switch: false
+#     inverse_low_switch_logic: false
+#     inverse_high_switch_logic: false
+# # angle motion node
+# r1_spear_pitch2_node:
+#   ros__parameters:
+#     timer_rate: 10.0
+#     # トルク検出時のしきい値
+#     torque_threshold: 0.5 # Nm
+#     # 通常位置モード時に Robomas の torque_lim として使う値
+#     normal_torque_limit: 4.0 # Nm
+#     # 原点検出・メカロック移動中に Robomas の torque_lim として使う値
+#     contact_torque_limit: 4.0 # Nm
+#     origin_detect_threshold_time: 0.5 # 秒
+#     origin_detect_speed: -3.14 # rad/s
+#     angle_min: -5.0
+#     angle_max: 5.0
+#     normal_angle: 0.1
+#     # ギア比で割った値がモーターの角度指令値となる
+#     # 1.0 / 5.0 = 0.2
+#     gear_ratio: 0.2
+#     inverse_motor: false
+#     use_low_switch: false
+#     use_high_switch: false
+#     inverse_low_switch_logic: false
+#     inverse_high_switch_logic: false
 r1_machine_manage_node:
   ros__parameters:
     # 足回りの制御方式。"mecanum" または "swerve"
@@ -818,12 +916,12 @@ r1_aruco_display_node:
 
 r1_aruco_serial_node:
   ros__parameters:
-    port: "/dev/serial/by-path/pci-0000:00:14.0-usb-0:1.2.1:1.0-port0"
+    port: "/dev/serial/by-path/pci-0000:00:14.0-usb-0:1.4.1:1.0-port0"
 
 # IMU
 bno086_node:
   ros__parameters:
-    port: "/dev/serial/by-path/pci-0000:00:14.0-usb-0:1.2.4:1.0-port0"
+    port: "/dev/serial/by-path/pci-0000:00:14.0-usb-0:1.4.4:1.0-port0"
 
 # 足回り メカナム
 sabacan_robomasv2_node_id1:
@@ -1018,6 +1116,30 @@ sabacan_robomasv2_node_id7:
     monitor_reg1: [0x0, 0x0, 0x0C00000000000000,0x0C00000000000000]
     monitor_reg2: [0x0, 0x0, 0x0, 0x0]
     monitor_period: 10
+sabacan_robomasv2_node_id8:
+  ros__parameters:
+    board_id: 8
+    enable_initialize: false
+    publish_timer_rate: 10.0
+    # spear_y, spear_roll1, spear_roll2, none
+    motor_type: ["C610", "C610", "C610", "C610"]
+    control_type: ["TORQUE", "TORQUE", "TORQUE", "TORQUE"]
+    speed_gain_p: [0.5, 0.5, 0.5, 0.5]
+    speed_gain_i: [0.1, 0.1, 0.1, 0.1]
+    speed_gain_d: [0.0, 0.0, 0.0, 0.0]
+    # 位置制御のときはここのトルクリミットは適応されない。r1_linear_motion_nodeかr1_angle_motion_nodeのtorque_limitが適応される。
+    torque_lim: [1.0, 1.0, 1.0, 1.0]
+    pos_gain_p: [5.0, 5.0, 5.0, 5.0]
+    pos_gain_i: [0.0, 0.0, 0.0, 0.0]
+    pos_gain_d: [0.0, 0.0, 0.0, 0.0]
+    speed_lim: [10.0, 10.0, 10.0, 10.0]
+    # TRQ+SPD+POSをフィードバック
+    monitor_reg1: [0x0001000100010000, 0x0001000100010000, 0x0001000100010000, 0x0001000100010000]
+    # TRQ+SPD+POS+MOTOR_STATEをフィードバック
+    # monitor_reg1: [0x0001000100010002, 0x0001000100010002, 0x0001000100010002, 0x0001000100010002]
+    # VESCのフィードバックは無効化
+    monitor_reg2: [0, 0, 0, 0]
+    monitor_period: 100
 sabacan_gpio_node_id1:
   ros__parameters:
     board_id: 1

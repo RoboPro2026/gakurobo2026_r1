@@ -15,7 +15,7 @@
 - これとは別に、シャーシ自動シーケンスは内部状態 `auto_chassis_status_`、KFS 自動回収は `kfs_auto_collect_status` で独立管理します。
 - `PS` ボタンで `reset_robot(true)` と `/r1_machine_initialize` publish を行った後は、`/r1_machine_initialize_done` を受け取るまで `is_initialized_ == false` のため各ページの実動作は走りません。
 - この待機中は、`PS` 押下後に右スティックで自動 ACT を再開することもできません。`r1_machine_initialize_done` を受け取ってから再度入力を受け付けます。
-- `MODE2_POLE` / `MODE3_SPEAR` / `MODE7_SPEAR_ATTACK` は、現状ほとんどの処理がコメントアウトされています。
+- `MODE2_POLE` / `MODE7_SPEAR_ATTACK` は、現状ほとんどの処理がコメントアウトされています。
 - LED 指令は timer 周期ごとに `sabacan_led_update()` で 1 回だけ publish します。各処理は直接 publish せず、LED の要求状態を更新します。
 
 ## 役割
@@ -96,6 +96,12 @@
 - `/bno086/imu/data_raw` (`sensor_msgs/msg/Imu`)
 - `/odometry` (`nav_msgs/msg/Odometry`)
 - `/chassis_act_status` (`std_msgs/msg/Int32`)
+- `/r1_init_parameter` (`r1_msgs/msg/R1InitParameter`)
+  - スマートフォンアプリ等から送られる初期化パラメータ。`zone`・`r1_kfs_value`・`enable_auto_select` を含みます。
+  - MODE3 → 次モードへの右スティック遷移時に KFS 経路決定に使います。
+- `/r1_collect_kfs` (`r1_msgs/msg/R1CollectKfs`)
+  - 手動で KFS 回収経路を直接指定するときに使います。
+  - `enable_auto_select == false` のときのみ、MODE3 遷移時の経路として採用されます。
 - `/<axis>_mode_status` (`std_msgs/msg/Int32`)
   - 対象軸
   - `kfs_fx`
@@ -263,8 +269,9 @@ LED は timer callback の最後に 1 回だけ更新されます。
   - `sabacan_power_ref(!sabacan_is_ems_)` を送り、電源基板の EMS をトグルします。
 - `ps`
   - `activate_lidar_on_ps == true` のとき、`urg_node2_1` / `urg_node2_2` へ lifecycle `activate` を要求します。
-  - `reset_robot(true)` を実行します。
+  - `reset_robot(true)` を実行します（`received_r1_collect_kfs_` もリセットされます）。
   - `/r1_machine_initialize` を publish します。
+  - `/initialpose` を計 3 回 publish します（`delay_sec` 後・`initialpose_retry1_delay_sec` 後・`initialpose_retry2_delay_sec` 後）。LiDAR の lifecycle activate 完了タイミングに依存せず AMCL に届けるためです。PS を連続で押した場合は前回の再送タイマーをすべてキャンセルしてから再スケジュールします。
 - `share`
   - 短押し（`share_long_press_sec` 秒未満でリリース）: `OperationMode` を順送りします。
   - 長押し（`share_long_press_sec` 秒以上押し続けた時点で即時発火）: 一つ前の `OperationMode` へ戻ります。
@@ -363,11 +370,47 @@ LED は timer callback の最後に 1 回だけ更新されます。
 - どちらも押していない間
   - 両方停止
 
+### `OperationMode / MODE3_SPEAR`
+
+右スティック押し込みで次モード（MODE4）へ遷移し、KFS 自動回収と自律シャーシ走行を開始します。
+
+#### 経路決定ロジック
+
+遷移時に `/r1_init_parameter` が未受信の場合は警告を出して遷移しません。
+
+**`enable_auto_select == true` のとき（自動判別）**
+
+`r1_kfs_value`（森番号 3 つ）を使って経路を決定します。
+
+1. 3 つの森番号で INNER 森（1, 2, 4, 7, 10）と OUTER 森（3, 6, 9, 10, 11, 12）を多数決。
+2. `INNER_ACTIVE` なら INNER 側の森のみ、`OUTER_ACTIVE` なら OUTER 側の森のみを抽出（最大 2 つ）。
+3. 機構タイプの割り当て: INNER は先頭 `rear_kfs`・残り `front_kfs`、OUTER は先頭 `front_kfs`・残り `rear_kfs`。
+
+無効な森番号（範囲外・5・8）が含まれる場合は警告を出して遷移しません。
+
+**`enable_auto_select == false` のとき（手動指定）**
+
+`/r1_collect_kfs` の `forest_order` と `kfs_mechanism_type` をそのまま使います。
+
+- `/r1_collect_kfs` が未受信・空の場合は警告を出して遷移しません。
+- 各森番号のバリデーション（1〜12、5 と 8 は除く）を行い、無効値があれば遷移しません。
+- `forest_order` の多数決で `INNER_ACTIVE` / `OUTER_ACTIVE` を決定します（`auto_collect_kfs_task` の座標選択に必要）。
+
+#### シャーシ ACT の選択
+
+| 状態 | 条件 | 使用 ACT |
+|---|---|---|
+| OUTER_ACTIVE | 問わず | `ACT4_START` |
+| INNER_ACTIVE | `forest_order` に 1 または 2 を含む | `ACT2_START` |
+| INNER_ACTIVE | 上記以外 | `ACT2_START`（ACT3 は調整中のため代用） |
+
+その他のボタン操作は現状ほぼコメントアウト済みです。
+
 ### 現状ほぼ未実装の mode
 
 - `MODE2_POLE`
-- `MODE3_SPEAR`
 - `MODE7_SPEAR_ATTACK`
+
 
 これらは関数自体は残っていますが、大半の操作がコメントアウトされています。
 
@@ -388,10 +431,12 @@ LED は timer callback の最後に 1 回だけ更新されます。
   - 内回り KFS 回収用の `RobotMove` を publish
   - `start_auto_chassis(ChassisAct::ACT2_START, forest_order, collect_kfs_type)`
   - 併せて内回り KFS 自動回収を開始
+  - `forest_order` / `collect_kfs_type` は MODE3 → 次モード遷移時に確定した `kfs_auto_collect_plan_` を使います
 - `square`
   - 外回り KFS 回収用の `RobotMove` を publish
   - `start_auto_chassis(ChassisAct::ACT4_START, forest_order, collect_kfs_type)`
   - 併せて外回り KFS 自動回収を開始
+  - `forest_order` / `collect_kfs_type` は MODE3 → 次モード遷移時に確定した `kfs_auto_collect_plan_` を使います
 - `down`
   - `start_auto_chassis(ChassisAct::ACT1_START, {}, {})`
 - `right`
@@ -531,9 +576,17 @@ bringup 起動時は [`r1_bringup.launch.py`](../../r1_bringup/launch/r1_bringup
 - `r2_lift_up_velocity`
 - `r2_lift_down_velocity`
 
+### /initialpose 再送
+
+- `initialpose_retry1_delay_sec`
+  - PS ボタン押下から最初の再送までの遅延 [s]
+  - 既定値は `1.0`
+- `initialpose_retry2_delay_sec`
+  - PS ボタン押下から 2 回目の再送までの遅延 [s]
+  - 既定値は `3.0`
+
 ### KFS 回収経路
 
-- `kfs_forest_number`
 - `collect_kfs_height`
 - `collect_kfs_width`
 - `collect_kfs_offset`
@@ -552,8 +605,8 @@ bringup 起動時は [`r1_bringup.launch.py`](../../r1_bringup/launch/r1_bringup
 - `register_position_axis()` は `position_ref` publish、`detect_origin` publish、`mode_status` subscribe をまとめて登録します。
 - `register_velocity_axis()` は `MotorRef` を `control_type = "VELOCITY"` で publish します。
 - `publish_*` helper は publish と同時に内部の ref 値も更新します。
-- `set_initialpose()` は既定で 0.2 秒遅延してから `/initialpose` を 1 回だけ publish します。
-- `/initialpose` publish 後、`initialpose_tf_log_delay_sec` 秒待ってから `map->odom` と `map->base_link` の現在 TF を 1 回だけログします。既定値は `1.0` 秒です。
+- `set_initialpose()` は引数の `delay_sec` 後に `/initialpose` を publish し、さらに `initialpose_retry1_delay_sec` 後・`initialpose_retry2_delay_sec` 後に計 2 回再送します。PS を連続で押した場合は既存のタイマーをすべてキャンセルしてから再スケジュールします。
+- 初回 publish 後、`initialpose_tf_log_delay_sec` 秒待ってから `map->odom` と `map->base_link` の現在 TF を 1 回だけログします。既定値は `5.0` 秒です。
 - `ps4_->is_connected() == false` の間は、`auto_chassis_status_` や KFS 自動回収状態に関係なく危険側のアクチュエータを停止します。
 
 ## Launch
