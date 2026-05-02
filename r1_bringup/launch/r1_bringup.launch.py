@@ -28,10 +28,11 @@ def generate_launch_description():
     use_lidar = LaunchConfiguration("use_lidar")
     use_aruco_display = LaunchConfiguration("use_aruco_display")
     robot_control_mode = LaunchConfiguration("robot_control_mode")
+    zone = LaunchConfiguration("zone")
 
     # パラメータファイルのフルパスを作成
     param_file = os.path.join(pkg_dir, "config", "r1_machine_config.yaml")
-    zone_parameter = {"zone": "blue"}
+    zone_parameter = {"zone": zone}
     robot_control_mode_parameter = {"robot_control_mode": robot_control_mode}
 
     ps4_node = Node(
@@ -496,6 +497,7 @@ def generate_launch_description():
                 "r1_slam.launch.py",
             )
         ),
+        launch_arguments={"zone": zone}.items(),
         condition=IfCondition(use_lidar),
     )
 
@@ -515,6 +517,7 @@ def generate_launch_description():
                 "r1_sim.launch.py",
             )
         ),
+        launch_arguments={"zone": zone}.items(),
     )
 
     foxglove_node = Node(
@@ -653,6 +656,11 @@ def generate_launch_description():
                 "robot_control_mode",
                 default_value="manual",
                 description="Initial mode for r1_main_node: manual or auto",
+            ),
+            DeclareLaunchArgument(
+                "zone",
+                default_value="blue",
+                description="Zone color: blue or red",
             ),
             # TimerAction(period=0.0, actions=[foxglove_node]),
             TimerAction(period=0.0, actions=common_nodes),

@@ -2,13 +2,18 @@ import os
 
 from ament_index_python.packages import get_package_share_directory
 from launch import LaunchDescription
+from launch.actions import DeclareLaunchArgument
+from launch.substitutions import LaunchConfiguration, PythonExpression
 from launch_ros.actions import Node
 
 
 def generate_launch_description():
     pkg_dir = get_package_share_directory("r1_bringup")
     sim_param_file = os.path.join(pkg_dir, "config", "r1_sim_config.yaml")
-    sim_map_yaml = "src/gakurobo2026_r1/data/map/field_blue.yaml"
+    zone = LaunchConfiguration("zone")
+    sim_map_yaml = PythonExpression([
+        "'src/gakurobo2026_r1/data/map/field_' + '", zone, "' + '.yaml'"
+    ])
 
     sim_map_server_node = Node(
         package="nav2_map_server",
@@ -49,6 +54,11 @@ def generate_launch_description():
 
     return LaunchDescription(
         [
+            DeclareLaunchArgument(
+                "zone",
+                default_value="blue",
+                description="Zone color: blue or red",
+            ),
             sim_map_server_node,
             sim_map_lifecycle_manager_node,
             r1_dummy_map_node,

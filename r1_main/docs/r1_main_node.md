@@ -386,7 +386,7 @@ LED は timer callback の最後に 1 回だけ更新されます。
 2. `INNER_ACTIVE` なら INNER 側の森のみ、`OUTER_ACTIVE` なら OUTER 側の森のみを抽出（最大 2 つ）。
 3. 機構タイプの割り当て: INNER は先頭 `rear_kfs`・残り `front_kfs`、OUTER は先頭 `front_kfs`・残り `rear_kfs`。
 
-無効な森番号（範囲外・5・8）が含まれる場合は警告を出して遷移しません。
+無効な森番号（範囲外・5・8）が含まれる場合は警告を出してその値を読み飛ばし、残りの有効な値で経路を決定します。有効な値が 1 つも無い場合は遷移しません。
 
 **`enable_auto_select == false` のとき（手動指定）**
 
@@ -458,8 +458,8 @@ LED は timer callback の最後に 1 回だけ更新されます。
 
 - `kfs_auto_collect_status != NONE` の間は `map -> base_link` TF を見て、回収範囲の長方形に入ったかを判定します。
 - `INNER_ACTIVE` では `inner_collect_kfs_center_pos.*` を、`OUTER_ACTIVE` では `outer_collect_kfs_center_pos.*` を使います。
-- 判定対象の中心座標は `inner_collect_kfs_center_pos.*` / `outer_collect_kfs_center_pos.*` です。
-- `zone == blue` のときは `x` と `yaw` を反転して使用します。
+- 判定対象の中心座標は `{zone}_inner_collect_kfs_center_pos.*` / `{zone}_outer_collect_kfs_center_pos.*` です（`zone` は `red` または `blue`）。
+- 座標変換はコード側では行わず、YAML パラメータで各ゾーンの実座標を直接指定します。
 - `collect_kfs_offset` を、使用する KFS 機構に応じて中心座標へ加えます。
 - `kfs_yaw_delay_time` 秒だけ遅らせて、範囲外へ出た後の収納用 yaw 指令を送ります。
 - `enable_auto_collect_kfs_actuator == false` のときは、範囲判定と LED 更新は続けますが、KFS の位置・yaw・ポンプ・バルブ指令は publish しません。
@@ -594,11 +594,10 @@ bringup 起動時は [`r1_bringup.launch.py`](../../r1_bringup/launch/r1_bringup
 - `kfs_yaw_delay_time`
   - 範囲外へ出たあとに収納用 yaw を送るまでの遅延時間 [s]
   - 既定値は `1.0`
-- `inner_collect_kfs_center_pos.<1..12>`
-- `outer_collect_kfs_center_pos.<1..12>`
-- `collect_kfs_height`
-- `collect_kfs_width`
-- `collect_kfs_offset`
+- `red_inner_collect_kfs_center_pos.<1..12>` / `blue_inner_collect_kfs_center_pos.<1..12>`
+  - 内回り KFS 回収判定用長方形の中心座標 `[x, y, yaw]`。`zone` に応じたパラメータセットを使用します。
+- `red_outer_collect_kfs_center_pos.<1..12>` / `blue_outer_collect_kfs_center_pos.<1..12>`
+  - 外回り KFS 回収判定用長方形の中心座標 `[x, y, yaw]`。`zone` に応じたパラメータセットを使用します。
 
 ## 実装メモ
 

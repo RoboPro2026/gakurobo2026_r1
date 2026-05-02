@@ -162,27 +162,36 @@ public:
 
     // 経路生成のパラメータ
     for (int i = 0; i < 12; i++) {
-      std::string inner_decel_center_pos_name = "inner_decel_center_pos." + std::to_string(i + 1);
-      std::string outer_decel_center_pos_name = "outer_decel_center_pos." + std::to_string(i + 1);
-      // 適当な初期値を代入
-      this->declare_parameter<std::vector<double>>(
-        inner_decel_center_pos_name, {100.0, 100.0, 0.0});
-      this->declare_parameter<std::vector<double>>(
-        outer_decel_center_pos_name, {100.0, 100.0, 0.0});
+      const std::string idx = std::to_string(i + 1);
+      std::string blue_inner_name = "blue_inner_decel_center_pos." + idx;
+      std::string blue_outer_name = "blue_outer_decel_center_pos." + idx;
+      std::string red_inner_name = "red_inner_decel_center_pos." + idx;
+      std::string red_outer_name = "red_outer_decel_center_pos." + idx;
+      this->declare_parameter<std::vector<double>>(blue_inner_name, {100.0, 100.0, 0.0});
+      this->declare_parameter<std::vector<double>>(blue_outer_name, {100.0, 100.0, 0.0});
+      this->declare_parameter<std::vector<double>>(red_inner_name, {-100.0, 100.0, 0.0});
+      this->declare_parameter<std::vector<double>>(red_outer_name, {-100.0, 100.0, 0.0});
       std::vector<double> inner_decel_center_pos, outer_decel_center_pos;
-      this->get_parameter(inner_decel_center_pos_name, inner_decel_center_pos);
-      this->get_parameter(outer_decel_center_pos_name, outer_decel_center_pos);
+      if (zone_ == "blue") {
+        this->get_parameter(blue_inner_name, inner_decel_center_pos);
+        this->get_parameter(blue_outer_name, outer_decel_center_pos);
+      } else {
+        this->get_parameter(red_inner_name, inner_decel_center_pos);
+        this->get_parameter(red_outer_name, outer_decel_center_pos);
+      }
       if (inner_decel_center_pos.size() != 3) {
         RCLCPP_FATAL(
-          this->get_logger(), "inner_decel_center_pos.%d must have exactly 3 elements (x, y, yaw)",
-          i);
+          this->get_logger(),
+          "%s_inner_decel_center_pos.%d must have exactly 3 elements (x, y, yaw)", zone_.c_str(),
+          i + 1);
         rclcpp::shutdown();
         return;
       }
       if (outer_decel_center_pos.size() != 3) {
         RCLCPP_FATAL(
-          this->get_logger(), "outer_decel_center_pos.%d must have exactly 3 elements (x, y, yaw)",
-          i);
+          this->get_logger(),
+          "%s_outer_decel_center_pos.%d must have exactly 3 elements (x, y, yaw)", zone_.c_str(),
+          i + 1);
         rclcpp::shutdown();
         return;
       }
@@ -403,26 +412,32 @@ public:
         center_y = outer_decel_center_pos_[forest - 1][1];
         rect_yaw = outer_decel_center_pos_[forest - 1][2];
       }
-      if (zone_ == "blue") {
-        // zoneがblueのときはy軸を反転させる（yawも反転させる）
-        center_x *= -1.0;
-        rect_yaw = angle_normalize(M_PI - rect_yaw);
-      }
-      // TODO: ココらへんの処理はかなり怪しいので、赤ゾーンに対応するときに見直す。おそらく角度の扱いが怪しい
-      // yは進行方向と同じ向きに対してオフセットを適用する
-      if (is_inner && msg->kfs_mechanism_type[i] == "rear_kfs") {
-        offset_x = collect_kfs_offset_ * std::cos(rect_yaw);
-        offset_y = collect_kfs_offset_ * std::sin(rect_yaw);
-      } else if (is_outer && msg->kfs_mechanism_type[i] == "front_kfs") {
-        offset_x = collect_kfs_offset_ * std::cos(rect_yaw);
-        offset_y = collect_kfs_offset_ * std::sin(rect_yaw);
+      // kfs_mechanism_typeに応じてオフセットを適用する
+      // rect_yawの方向に沿ってオフセットを加算する
+      // TODO: 角度の扱いが怪しい可能性あり
+      if (zone_ == "red") {
+        if (is_inner && msg->kfs_mechanism_type[i] == "front_kfs") {
+          offset_x = collect_kfs_offset_ * std::cos(rect_yaw);
+          offset_y = collect_kfs_offset_ * std::sin(rect_yaw);
+        } else if (is_outer && msg->kfs_mechanism_type[i] == "rear_kfs") {
+          offset_x = collect_kfs_offset_ * std::cos(rect_yaw);
+          offset_y = collect_kfs_offset_ * std::sin(rect_yaw);
+        }
+      } else if (zone_ == "blue") {
+        if (is_inner && msg->kfs_mechanism_type[i] == "rear_kfs") {
+          offset_x = collect_kfs_offset_ * std::cos(rect_yaw);
+          offset_y = collect_kfs_offset_ * std::sin(rect_yaw);
+        } else if (is_outer && msg->kfs_mechanism_type[i] == "front_kfs") {
+          offset_x = collect_kfs_offset_ * std::cos(rect_yaw);
+          offset_y = collect_kfs_offset_ * std::sin(rect_yaw);
+        }
       }
       // center_xとcenter_yにオフセットを適用する
       if (zone_ == "red") {
         center_x += offset_x;
         center_y += offset_y;
       } else {
-        // 本当はcenter_xはプラスではなくマイナスのはずだが、何故か動かないので一旦プラス。
+        // 本当はcenter_xはプラスではなくマイナスのはずだが、何故か動かないので一旦プラス
         // おそらく、プラスでいいのはrect_yawが角度を反転させてるからだと思う。
         center_x += offset_x;
         center_y += offset_y;

@@ -12,7 +12,12 @@
 
 ## 引数
 
-この launch に公開引数はありません。`r1_bringup.launch.py` の `use_lidar:=true` から include される想定です。
+- `zone`
+  - `blue`（既定値）または `red`
+  - `nav2_map_server` に渡すフィールドマップを切り替えます。
+    - `blue` → `src/gakurobo2026_r1/data/map/field_blue.yaml`
+    - `red`  → `src/gakurobo2026_r1/data/map/field_red.yaml`
+  - 通常は `r1_bringup.launch.py` から `zone` を受け取ります。単体で起動する場合は明示的に指定してください。
 
 ## 主に起動するノード
 
@@ -40,11 +45,12 @@
 ## 補足
 
 - `slam_toolbox` と `r1_laser_filter_node` の起動コードはファイル内にありますが、現状はコメントアウトされています。
-- 地図ファイルは `src/gakurobo2026_r1/data/map/field_blue.yaml` を参照しています。
+- 地図ファイルは `zone` 引数に応じて `field_blue.yaml` / `field_red.yaml` を切り替えます。
 - AMCL は `/scan` を購読します。`/scan1` と `/scan2` のどちらかが止まると `dual_laser_merger` が `/scan` を publish できず、AMCL の `map -> odom` TF も出ません。
 
 ## 起動例
 
 ```bash
-ros2 launch r1_bringup r1_slam.launch.py
+ros2 launch r1_bringup r1_slam.launch.py              # blue（既定値）
+ros2 launch r1_bringup r1_slam.launch.py zone:=red    # red ゾーン
 ```
