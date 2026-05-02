@@ -2126,6 +2126,7 @@ void R1MainNode::kfs_collect_start_act(void)
 {
 // 千田機構
 #if SPEAR_MECHANISM == SPEAR_MECHANISM_OTSUKI
+  spear_y_pos_ref(SPEAR_Y_MAKE_SPEAR_POS);
   spear_hand_push_valve(true);
   spear_roll1_pos_ref(SPEAR_ROLL1_VERTICAL_ANGLE);
   spear_roll2_pos_ref(SPEAR_ROLL2_VERTICAL_ANGLE);
