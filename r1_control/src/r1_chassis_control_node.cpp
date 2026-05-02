@@ -23,6 +23,7 @@
 #include "r1_control/pos_follower.h"
 #include "r1_control/trajectory_follower.h"
 #include "r1_control/trajectory_planner.h"
+#include "r1_msgs/msg/r1_init_parameter.hpp"
 #include "r1_msgs/msg/robot_move.hpp"
 #include "r1_util/r1_util.h"
 #include "rcl_interfaces/msg/floating_point_range.hpp"
@@ -144,6 +145,9 @@ public:
       "/r1_machine_initialize_done", 10,
       std::bind(
         &R1ChassisControlNode::machine_initialize_done_callback, this, std::placeholders::_1));
+    r1_init_parameter_subscription_ = this->create_subscription<r1_msgs::msg::R1InitParameter>(
+      "/r1_init_parameter", 10,
+      std::bind(&R1ChassisControlNode::r1_init_parameter_callback, this, std::placeholders::_1));
 
     // chassis_error_tangentのPublisher
     chassis_error_tangent_publisher_ =
@@ -314,6 +318,11 @@ public:
     //   odometry_.pose.pose.position.y, tf2::getYaw(odometry_.pose.pose.orientation));
   }
 
+  void r1_init_parameter_callback(const r1_msgs::msg::R1InitParameter::SharedPtr msg)
+  {
+    enable_kfs_auto_chassis_ = msg->enable_kfs_auto_chassis;
+  }
+
   void act_callback(const std_msgs::msg::Int32::SharedPtr msg)
   {
     if (!is_machine_initialized_) {
@@ -323,7 +332,15 @@ public:
         act_name.c_str());
       return;
     }
-    act_step_ = static_cast<ChassisAct>(msg->data);
+    ChassisAct act = static_cast<ChassisAct>(msg->data);
+    if (!enable_kfs_auto_chassis_ && act_to_trajectory_index(act) >= 2) {
+      std::string act_name{magic_enum::enum_name(act)};
+      RCLCPP_INFO(
+        this->get_logger(), "Ignored act ref %s: enable_kfs_auto_chassis is false.",
+        act_name.c_str());
+      return;
+    }
+    act_step_ = act;
     std::string act_name{magic_enum::enum_name(act_step_)};
     // RCLCPP_INFO(this->get_logger(), "Received act step: %s", act_name.c_str());
   }
@@ -368,6 +385,15 @@ public:
       RCLCPP_WARN(
         this->get_logger(),
         "Ignored RobotMove for %s while waiting for /r1_machine_initialize_done.",
+        act_name.c_str());
+      return;
+    }
+    if (
+      !enable_kfs_auto_chassis_ &&
+      act_to_trajectory_index(static_cast<ChassisAct>(msg->act)) >= 2) {
+      std::string act_name{magic_enum::enum_name(static_cast<ChassisAct>(msg->act))};
+      RCLCPP_INFO(
+        this->get_logger(), "Ignored RobotMove for %s: enable_kfs_auto_chassis is false.",
         act_name.c_str());
       return;
     }
@@ -1061,6 +1087,7 @@ public:
   rclcpp::Subscription<r1_msgs::msg::RobotMove>::SharedPtr robot_move_subscription_;
   rclcpp::Subscription<std_msgs::msg::Empty>::SharedPtr machine_initialize_subscription_;
   rclcpp::Subscription<std_msgs::msg::Empty>::SharedPtr machine_initialize_done_subscription_;
+  rclcpp::Subscription<r1_msgs::msg::R1InitParameter>::SharedPtr r1_init_parameter_subscription_;
   // chassis_error_tangentのPublisher
   rclcpp::Publisher<std_msgs::msg::Float64>::SharedPtr chassis_error_tangent_publisher_;
   // chassis_error_lateralのPublisher
@@ -1081,6 +1108,7 @@ public:
   bool has_target_pose_ = false;
   bool has_seen_map_transform_ = false;
   bool is_machine_initialized_ = true;
+  bool enable_kfs_auto_chassis_ = true;
   ChassisAct act_step_ = ChassisAct::NONE;
   ChassisAct prev_act_step_ = ChassisAct::NONE;
   // ロボットの軌道保管用

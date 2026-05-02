@@ -8,3 +8,5 @@ int32[] r2_kfs_value
 int32[] r2_fake_kfs_value
 # どのKFSを回収するかを自動判別するか
 bool enable_auto_select
+# KFS回収時に足回りを自動制御するか（falseの場合はmode2以降の足回り自動制御のみを無効化）
+bool enable_kfs_auto_chassis

@@ -8,6 +8,7 @@ ros2 topic pub --once /r1_init_parameter r1_msgs/msg/R1InitParameter \
   r2_kfs_value: [-1, -1, -1, -1], \
   r2_fake_kfs_value: [-1], \
   enable_auto_select: true \
+  enable_kfs_auto_chassis: true \
 }"
 
 # enable_auto_select=false（手動指定）
@@ -17,6 +18,7 @@ ros2 topic pub --once /r1_init_parameter r1_msgs/msg/R1InitParameter \
 #  r2_kfs_value: [-1, -1, -1, -1], \
 #  r2_fake_kfs_value: [-1], \
 #  enable_auto_select: false \
+# enable_kfs_auto_chassis: true \
 #}"
 
 # 森1（rear_kfs）と森2（front_kfs）を指定
