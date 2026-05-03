@@ -4,11 +4,11 @@ source install/setup.bash
 # enable_auto_select=true（自動判別）
 ros2 topic pub --once /r1_init_parameter r1_msgs/msg/R1InitParameter \
   "{zone: 'red', \
-  r1_kfs_value: [7, 10, -1], \
+  r1_kfs_value: [12, 11, -1], \
   r2_kfs_value: [-1, -1, -1, -1], \
   r2_fake_kfs_value: [-1], \
   enable_auto_select: true, \
-  enable_kfs_auto_chassis: true \
+  enable_kfs_auto_chassis: false \
 }"
 
 # enable_auto_select=false（手動指定）

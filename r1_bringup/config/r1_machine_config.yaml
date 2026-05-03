@@ -190,8 +190,8 @@ r1_main_node:
     kfs_fyaw_high_mech_lock_angle: 3.1
     # rx
     kfs_rx_normal_pos: 0.005
-    kfs_rx_storage_pos: 0.005
-    kfs_rx_start_pos: 0.1
+    kfs_rx_storage_pos: 0.1
+    kfs_rx_start_pos: 0.005
     kfs_rx_put_pos: 0.45
     kfs_rx_expand_pos: 0.67
     kfs_rx_low_mech_lock_pos: 0.05
