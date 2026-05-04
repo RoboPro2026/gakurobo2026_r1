@@ -217,7 +217,7 @@ r1_main_node:
     kfs_ryaw_low_mech_lock_angle: 0.05
     kfs_ryaw_high_mech_lock_angle: 3.1
     # 回収するときの遅延時間
-    kfs_yaw_delay_time: 0.25
+    kfs_yaw_delay_time: 0.5
 
     # ========== 展開 ==========
     # R2昇降
@@ -401,7 +401,6 @@ r1_main_node:
       11: [-2.2, 8.55, 3.141592653589793]
       12: [-0.6, 6.6, 1.5707963267948966]
     collect_kfs_offset: 0.838 # KFS回収時のオフセット（front_kfsかrear_kfsのうち、遠い方に適応する）
-    kfs_yaw_delay_time: 1.0 # 範囲外へ出たあとに収納用 yaw を送るまでの遅延時間 [s]
 
 # -------- 足回り ----------
 r1_mecanum_node:
