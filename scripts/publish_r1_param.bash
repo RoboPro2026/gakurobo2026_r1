@@ -2,9 +2,9 @@ cd "$HOME/ros2_ws"
 source install/setup.bash
 
 # enable_auto_select=true（自動判別）
-ros2 topic pub --once /r1_init_parameter r1_msgs/msg/R1InitParameter \
+ros2 topic pub /r1_init_parameter r1_msgs/msg/R1InitParameter \
   "{zone: 'red', \
-  r1_kfs_value: [12, 11, -1], \
+  r1_kfs_value: [1, 4, -1], \
   r2_kfs_value: [-1, -1, -1, -1], \
   r2_fake_kfs_value: [-1], \
   enable_auto_select: true, \
