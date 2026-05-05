@@ -51,6 +51,7 @@
 #include "std_msgs/msg/float64.hpp"
 #include "std_msgs/msg/float64_multi_array.hpp"
 #include "std_msgs/msg/int32.hpp"
+#include "std_msgs/msg/string.hpp"
 #include "tf2_ros/buffer.h"
 #include "tf2_ros/transform_listener.h"
 
@@ -236,6 +237,11 @@ public:
   rclcpp::Subscription<r1_msgs::msg::R1CollectKfs>::SharedPtr r1_collect_kfs_subscription_;
   r1_msgs::msg::R1CollectKfs r1_collect_kfs_;
   bool received_r1_collect_kfs_ = false;
+
+  // スマホ通信
+  rclcpp::Publisher<std_msgs::msg::Int32>::SharedPtr r1_operation_mode_publisher_;
+  rclcpp::Publisher<std_msgs::msg::String>::SharedPtr r1_log_message_publisher_;
+  OperationMode last_published_operation_mode_{OperationMode::MODE1_DETECT_ORIGIN};
 
   // zone
   std::string zone_;
@@ -570,6 +576,9 @@ public:
     ChassisAct act, std::vector<int> forest_order, std::vector<std::string> kfs_mechanism_type);
   // arucoマーカ
   void publish_aruco_marker_id(int id);
+  void r1_init_parameter_callback(const r1_msgs::msg::R1InitParameter::SharedPtr msg);
+  void r1_collect_kfs_callback(const r1_msgs::msg::R1CollectKfs::SharedPtr msg);
+  void publish_r1_log(const std::string & message);
   bool is_localization_ready(void);
   void request_auto_robot_move(
     ChassisAct act, std::vector<int> forest_order, std::vector<std::string> kfs_mechanism_type);
@@ -583,9 +592,6 @@ public:
     std::vector<std::string> kfs_mechanism_type);
   void stop_kfs_auto_collect(void);
   void reset_kfs_auto_collect_tracking(void);
-  // スマホ関連
-  void r1_init_parameter_callback(const r1_msgs::msg::R1InitParameter::SharedPtr msg);
-  void r1_collect_kfs_callback(const r1_msgs::msg::R1CollectKfs::SharedPtr msg);
   // ========== 各アクチュエータ単体の動作関数 ==========
   bool chassis_rotate90 = false;
   // 足回り
