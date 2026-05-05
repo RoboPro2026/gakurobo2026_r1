@@ -36,6 +36,8 @@
 #include "r1_msgs/msg/gpio_servo_ref.hpp"
 #include "r1_msgs/msg/linear_motion.hpp"
 #include "r1_msgs/msg/motor_ref.hpp"
+#include "r1_msgs/msg/r1_collect_kfs.hpp"
+#include "r1_msgs/msg/r1_init_parameter.hpp"
 #include "r1_msgs/msg/robot_move.hpp"
 #include "r1_util/r1_util.h"
 #include "rcl_interfaces/msg/set_parameters_result.hpp"
@@ -52,6 +54,13 @@
 #include "tf2_ros/buffer.h"
 #include "tf2_ros/transform_listener.h"
 
+#ifndef SPEAR_MECHANISM
+
+#define SPEAR_MECHANISM_CHIDA 0
+#define SPEAR_MECHANISM_OTSUKI 1
+#define SPEAR_MECHANISM SPEAR_MECHANISM_OTSUKI
+
+#endif
 class R1MainNode : public rclcpp::Node
 {
 public:
@@ -184,6 +193,9 @@ public:
     initialpose_publisher_;
   // initialposeをPublish時に、遅延させる用のtimer
   rclcpp::TimerBase::SharedPtr initialpose_publish_timer_;
+  // LiDAR起動完了後にも確実に届くよう、遅延を変えて再送するタイマー
+  rclcpp::TimerBase::SharedPtr initialpose_retry1_timer_;
+  rclcpp::TimerBase::SharedPtr initialpose_retry2_timer_;
   rclcpp::TimerBase::SharedPtr initialpose_tf_log_timer_;
   // chassis_actのPublisher
   rclcpp::Publisher<std_msgs::msg::Int32>::SharedPtr chassis_act_ref_publisher_;
@@ -200,6 +212,8 @@ public:
   rclcpp::node_interfaces::OnSetParametersCallbackHandle::SharedPtr parameter_callback_handle_;
   double timer_rate_ = 100.0;
   double initialpose_tf_log_delay_sec_ = 1.0;
+  double initialpose_retry1_delay_sec_ = 1.0;
+  double initialpose_retry2_delay_sec_ = 3.0;
   rclcpp::Time initialize_done_time_;
   // tf関連
   std::shared_ptr<tf2_ros::Buffer> tf_buffer_;
@@ -214,6 +228,14 @@ public:
   ChassisAct chassis_act_status_ = ChassisAct::NONE;
   // arucoマーカ
   rclcpp::Publisher<std_msgs::msg::Int32>::SharedPtr aruco_marker_id_publisher_;
+  // スマホから送られてくる初期化パラメータ
+  rclcpp::Subscription<r1_msgs::msg::R1InitParameter>::SharedPtr r1_init_parameter_subscription_;
+  r1_msgs::msg::R1InitParameter r1_init_parameter_;
+  bool received_r1_init_parameter_ = false;
+  // KFS回収の個別指定
+  rclcpp::Subscription<r1_msgs::msg::R1CollectKfs>::SharedPtr r1_collect_kfs_subscription_;
+  r1_msgs::msg::R1CollectKfs r1_collect_kfs_;
+  bool received_r1_collect_kfs_ = false;
 
   // zone
   std::string zone_;
@@ -227,6 +249,24 @@ public:
   double kfs_rx_position_ref_ = 0.0;
   double kfs_rz_position_ref_ = 0.0;
   double kfs_ryaw_position_ref_ = 0.0;
+  double r2_flift_position_ref_ = 0.0;
+  double r2_rlift_position_ref_ = 0.0;
+
+  double kfs_front_pump_ref_ = 0.0;
+  double kfs_rear_pump_ref_ = 0.0;
+  bool kfs_front_valve_ref_ = false;
+  bool kfs_rear_valve_ref_ = false;
+
+#if SPEAR_MECHANISM == SPEAR_MECHANISM_OTSUKI
+  // 大槻機構
+  double spear_y_position_ref_ = 0.0;
+  double spear_roll1_position_ref_ = 0.0;
+  double spear_roll2_position_ref_ = 0.0;
+  bool spear_hand1_valve_ref_ = false;
+  bool spear_hand2_valve_ref_ = false;
+  bool spear_hand_push_valve_ref_ = false;
+#elif SPEAR_MECHANISM == SPEAR_MECHANISM_CHIDA
+  // 千田機構
   double spear1_position_ref_ = 0.0;
   double spear2_position_ref_ = 0.0;
   double spear3_position_ref_ = 0.0;
@@ -236,17 +276,12 @@ public:
   double spear_roll_position_ref_ = 0.0;
   double spear_pitch1_position_ref_ = 0.0;
   double spear_pitch2_position_ref_ = 0.0;
-  double r2_flift_position_ref_ = 0.0;
-  double r2_rlift_position_ref_ = 0.0;
-  double kfs_front_pump_ref_ = 0.0;
-  double kfs_rear_pump_ref_ = 0.0;
-  bool kfs_front_valve_ref_ = false;
-  bool kfs_rear_valve_ref_ = false;
   bool spear_u1_valve_ref_ = false;
   bool spear_d1_valve_ref_ = false;
   bool spear_u2_valve_ref_ = false;
   bool spear_d2_valve_ref_ = false;
 
+#endif
   // sabacan
   bool sabacan_is_ems_ = false;
 
@@ -306,6 +341,7 @@ public:
   double KFS_FZ_HIGH_POS = 0.0;
   double KFS_FZ_PUT_POS = 0.0;
   double KFS_FZ_STORAGE_POS = 0.0;
+  double KFS_FZ_START_POS = 0.0;
   double KFS_FZ_LOW_MECH_LOCK_POS = 0.0;
   double KFS_FZ_HIGH_MECH_LOCK_POS = 0.0;
   double KFS_FZ_R2_LIFT_POS = 0.0;
@@ -314,6 +350,7 @@ public:
   double KFS_FYAW_FRONT_ANGLE = 0.0;
   double KFS_FYAW_SIDE_ANGLE = 0.0;
   double KFS_FYAW_REAR_ANGLE = 0.0;
+  double KFS_FYAW_START_ANGLE = 0.0;
   double KFS_FYAW_LOW_MECH_LOCK_ANGLE = 0.0;
   double KFS_FYAW_HIGH_MECH_LOCK_ANGLE = 0.0;
   // rx
@@ -332,6 +369,7 @@ public:
   double KFS_RZ_HIGH_POS = 0.0;
   double KFS_RZ_PUT_POS = 0.0;
   double KFS_RZ_STORAGE_POS = 0.0;
+  double KFS_RZ_START_POS = 0.0;
   double KFS_RZ_LOW_MECH_LOCK_POS = 0.0;
   double KFS_RZ_HIGH_MECH_LOCK_POS = 0.0;
   double KFS_RZ_R2_LIFT_POS = 0.0;
@@ -340,6 +378,7 @@ public:
   double KFS_RYAW_FRONT_ANGLE = 0.0;
   double KFS_RYAW_SIDE_ANGLE = 0.0;
   double KFS_RYAW_REAR_ANGLE = 0.0;
+  double KFS_RYAW_START_ANGLE = 0.0;
   double KFS_RYAW_LOW_MECH_LOCK_ANGLE = 0.0;
   double KFS_RYAW_HIGH_MECH_LOCK_ANGLE = 0.0;
   // R2昇降
@@ -350,7 +389,36 @@ public:
   double R2_RLIFT_UP_POS = 0.0;
   double R2_RLIFT_DOWN_POS = 0.0;
 
-  // ========== やり ==========
+// ========== やり ==========
+// 大槻機構
+#if SPEAR_MECHANISM == SPEAR_MECHANISM_OTSUKI
+  // spear y
+  double SPEAR_Y_NORMAL_POS = 0.0;
+  double SPEAR_Y_COLLECT1_POS = 0.0;
+  double SPEAR_Y_COLLECT2_POS = 0.0;
+  double SPEAR_Y_MAKE_SPEAR_POS = 0.0;
+  double SPEAR_Y_LOW_ATTACK_POS = 0.0;
+  double SPEAR_Y_MIDDLE_ATTACK_POS = 0.0;
+  double SPEAR_Y_HIGH_ATTACK_POS = 0.0;
+  double SPEAR_Y_THROW_AWAY_POS = 0.0;
+  // spear roll1
+  double SPEAR_ROLL1_NORMAL_ANGLE = 0.0;
+  double SPEAR_ROLL1_VERTICAL_ANGLE = 0.0;
+  double SPEAR_ROLL1_HORIZONTAL_ANGLE = 0.0;
+  double SPEAR_ROLL1_INV_HORIZONTAL_ANGLE = 0.0;
+  double SPEAR_ROLL1_LOW_ATTACK_ANGLE = 0.0;
+  double SPEAR_ROLL1_MIDDLE_ATTACK_ANGLE = 0.0;
+  double SPEAR_ROLL1_HIGH_ATTACK_ANGLE = 0.0;
+  // spear roll2
+  double SPEAR_ROLL2_NORMAL_ANGLE = 0.0;
+  double SPEAR_ROLL2_VERTICAL_ANGLE = 0.0;
+  double SPEAR_ROLL2_HORIZONTAL_ANGLE = 0.0;
+  double SPEAR_ROLL2_INV_HORIZONTAL_ANGLE = 0.0;
+  double SPEAR_ROLL2_LOW_ATTACK_ANGLE = 0.0;
+  double SPEAR_ROLL2_MIDDLE_ATTACK_ANGLE = 0.0;
+  double SPEAR_ROLL2_HIGH_ATTACK_ANGLE = 0.0;
+#elif SPEAR_MECHANISM == SPEAR_MECHANISM_CHIDA
+  // 千田機構
   // spear1
   double SPEAR1_NORMAL_POS = 0.0;
   double SPEAR1_COLLECT1_POS = 0.0;
@@ -408,9 +476,8 @@ public:
   // spear_pitch2
   double SPEAR_PITCH2_NORMAL_ANGLE = 0.0;
   double SPEAR_PITCH2_VERTICAL_ANGLE = 0.0;
+#endif
 
-  // KFS回収の森林の順番
-  std::vector<int> KFS_FOREST_NUMBER;
   // 内回り/外回りでKFS回収の判定に使う長方形中心の座標 [x, y, yaw]
   // yaw=0 のときは map 座標系に平行で、yaw を与えるとその分だけ長方形が回転する
   std::vector<std::vector<double>> INNER_COLLECT_KFS_CENTER_POS;
@@ -511,16 +578,14 @@ public:
     ChassisAct act, std::vector<int> forest_order, std::vector<std::string> kfs_mechanism_type);
   void clear_auto_chassis_state(bool stop_kfs_auto_collect = false);
   geometry_msgs::msg::PoseStamped get_map_pos(void);
-  bool build_inner_kfs_auto_collect_plan(
-    std::vector<int> & forest_order, std::vector<std::string> & collect_kfs_type) const;
-  bool build_outer_kfs_auto_collect_plan(
-    std::vector<int> & forest_order, std::vector<std::string> & collect_kfs_type) const;
-  bool set_mode3_kfs_auto_collect_status(KfsAutoCollectStatus & status);
   void start_kfs_auto_collect(
     KfsAutoCollectStatus status, std::vector<int> forest_order,
     std::vector<std::string> kfs_mechanism_type);
   void stop_kfs_auto_collect(void);
   void reset_kfs_auto_collect_tracking(void);
+  // スマホ関連
+  void r1_init_parameter_callback(const r1_msgs::msg::R1InitParameter::SharedPtr msg);
+  void r1_collect_kfs_callback(const r1_msgs::msg::R1CollectKfs::SharedPtr msg);
   // ========== 各アクチュエータ単体の動作関数 ==========
   bool chassis_rotate90 = false;
   // 足回り
@@ -565,7 +630,27 @@ public:
   // 速度指令停止
   void r2_flift_speed_mode_stop(void);
   void r2_rlift_speed_mode_stop(void);
-  // やり
+// やり
+// 位置指令
+#if SPEAR_MECHANISM == SPEAR_MECHANISM_OTSUKI
+  // 位置指令
+  void spear_y_pos_ref(double pos);
+  void spear_roll1_pos_ref(double angle);
+  void spear_roll2_pos_ref(double angle);
+  // 速度指令
+  void spear_y_speed_ref(double speed);
+  void spear_roll1_speed_ref(double speed);
+  void spear_roll2_speed_ref(double speed);
+  // 速度指令停止
+  void spear_y_speed_mode_stop(void);
+  void spear_roll1_speed_mode_stop(void);
+  void spear_roll2_speed_mode_stop(void);
+  // 角度指定
+  void spear_y_set_pos(double pos);
+  void spear_roll1_set_angle(double angle);
+  void spear_roll2_set_angle(double angle);
+
+#elif SPEAR_MECHANISM == SPEAR_MECHANISM_CHIDA
   // 位置指令
   void spear1_pos_ref(double pos);
   void spear2_pos_ref(double pos);
@@ -605,6 +690,7 @@ public:
   void spear_roll_speed_mode_stop(void);
   void spear_pitch1_speed_mode_stop(void);
   void spear_pitch2_speed_mode_stop(void);
+#endif
   // ========== move_mech_lock関数 ==========
   // KFS回収
   void kfs_fx_move_mech_lock(int direction);
@@ -625,7 +711,12 @@ public:
   void r2_flift_move_up_mech_lock(void);
   void r2_rlift_move_down_mech_lock(void);
   void r2_rlift_move_up_mech_lock(void);
-  // やり
+// やり
+#if SPEAR_MECHANISM == SPEAR_MECHANISM_OTSUKI
+  void spear_y_move_mech_lock(int direction);
+  void spear_roll1_move_mech_lock(int direction);
+  void spear_roll2_move_mech_lock(int direction);
+#elif SPEAR_MECHANISM == SPEAR_MECHANISM_CHIDA
   void spear1_move_mech_lock(int direction);
   void spear2_move_mech_lock(int direction);
   void spear3_move_mech_lock(int direction);
@@ -635,21 +726,30 @@ public:
   void spear_roll_move_mech_lock(int direction);
   void spear_pitch1_move_mech_lock(int direction);
   void spear_pitch2_move_mech_lock(int direction);
+#endif
   // KFS真空ポンプ・電磁弁
   void kfs_front_pump(double pwm);
   void kfs_rear_pump(double pwm);
   void kfs_front_valve(bool on);
   void kfs_rear_valve(bool on);
-  // やり電磁弁
+// やり電磁弁
+// 大槻機構
+#if SPEAR_MECHANISM == SPEAR_MECHANISM_OTSUKI
+  void spear_hand1_valve(bool on);
+  void spear_hand2_valve(bool on);
+  void spear_hand_push_valve(bool on);
+#elif SPEAR_MECHANISM == SPEAR_MECHANISM_CHIDA
+  // 千田機構
   void spear_u1_valve(bool on);
   void spear_d1_valve(bool on);
   void spear_u2_valve(bool on);
   void spear_d2_valve(bool on);
-
+#endif
   // ========== 各動作の関数 ==========
 
-  rclcpp::TimerBase::SharedPtr kfs_init_pos_roll_timer_;
-  void kfs_init_pos(void);
+  void kfs_robot_start_act(void);
+  rclcpp::TimerBase::SharedPtr kfs_collect_start_act_roll_timer_;
+  void kfs_collect_start_act(void);
 
   // 動いていたら危険なアクチュエータは停止する
   // 位置制御は止められないので、そのまま
@@ -666,7 +766,12 @@ public:
   // r2昇降
   void r2_flift_detect_origin(void);
   void r2_rlift_detect_origin(void);
-  // やり
+// やり
+#if SPEAR_MECHANISM == SPEAR_MECHANISM_OTSUKI
+  void spear_y_detect_origin(void);
+  void spear_roll1_detect_origin(void);
+  void spear_roll2_detect_origin(void);
+#elif SPEAR_MECHANISM == SPEAR_MECHANISM_CHIDA
   void spear1_detect_origin(void);
   void spear2_detect_origin(void);
   void spear3_detect_origin(void);
@@ -676,6 +781,7 @@ public:
   void spear_roll_detect_origin(void);
   void spear_pitch1_detect_origin(void);
   void spear_pitch2_detect_origin(void);
+#endif
   // ========== センサーの取得 ==========
   bool get_kfs_fz_low_switch_status(void) { return kfs_fz_low_switch_status_; }
   bool get_kfs_rz_low_switch_status(void) { return kfs_rz_low_switch_status_; }
@@ -704,7 +810,11 @@ public:
   void manual_mode9_auto_chassis(void);
   static constexpr int DEFAULT_STEP = 1;
   int manual_mode2_collect_pole_task_step_ = DEFAULT_STEP;
+  int manual_mode2_hand_valve_step_ = DEFAULT_STEP;
+  int manual_mode2_push_valve_step_ = DEFAULT_STEP;
   int manual_mode3_make_spear_task_step_ = DEFAULT_STEP;
+  int manual_mode3_hand_valve_step_ = DEFAULT_STEP;
+  int manual_mode3_push_valve_step_ = DEFAULT_STEP;
   int manual_mode4_fx_step_ = DEFAULT_STEP;
   int manual_mode4_fz_step_ = DEFAULT_STEP;
   int manual_mode4_fyaw_step_ = DEFAULT_STEP;
@@ -719,10 +829,13 @@ public:
   int manual_mode6_r2_lift_step_ = DEFAULT_STEP;
   int manual_mode7_spear_attack_task_step_ = DEFAULT_STEP;
   int manual_mode7_spear_throw_away_task_step_ = DEFAULT_STEP;
+  int manual_mode7_hand_valve_step_ = DEFAULT_STEP;
+  int manual_mode7_push_valve_step_ = DEFAULT_STEP;
   rclcpp::TimerBase::SharedPtr manual_mode3_timer1_;
   rclcpp::TimerBase::SharedPtr manual_mode3_timer2_;
   rclcpp::TimerBase::SharedPtr manual_mode3_timer3_;
   rclcpp::TimerBase::SharedPtr manual_mode3_timer4_;
+  rclcpp::TimerBase::SharedPtr manual_mode3_push_valve_timer_;
   rclcpp::TimerBase::SharedPtr manual_mode4_front_valve_timer_;
   rclcpp::TimerBase::SharedPtr manual_mode5_rear_valve_timer_;
   rclcpp::TimerBase::SharedPtr manual_mode6_r2_lift_timer_;

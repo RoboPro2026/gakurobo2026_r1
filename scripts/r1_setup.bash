@@ -14,10 +14,10 @@ export DBUS_SESSION_BUS_ADDRESS=unix:path=$XDG_RUNTIME_DIR/bus
 
 sudo cpupower frequency-set -g performance
 
-IMU_DEV="/dev/serial/by-path/pci-0000:00:14.0-usb-0:1.2.4:1.0-port0"
-LIDAR1_DEV="/dev/serial/by-path/pci-0000:00:14.0-usb-0:1.4:1.0"
+IMU_DEV="/dev/serial/by-path/pci-0000:00:14.0-usb-0:1.4.4:1.0-port0"
+LIDAR1_DEV="/dev/serial/by-path/pci-0000:00:14.0-usb-0:1.2:1.0"
 LIDAR2_DEV="/dev/serial/by-path/pci-0000:00:14.0-usb-0:1.1:1.0"
-ARUCO_DEV="/dev/serial/by-path/pci-0000:00:14.0-usb-0:1.2.1:1.0-port0"
+ARUCO_DEV="/dev/serial/by-path/pci-0000:00:14.0-usb-0:1.4.1:1.0-port0"
 
 # by-id -> 実体の ttyUSBx を取得
 IMU_TTY="$(basename "$(readlink -f "$IMU_DEV")")"

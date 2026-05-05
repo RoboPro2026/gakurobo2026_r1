@@ -24,6 +24,10 @@
   - `false` で `r1_aruco_display_node` を起動しない
   - `true` で `r1_aruco_display_node` を起動する
   - GUI 表示には `DISPLAY` または `WAYLAND_DISPLAY` が必要なため、通常の SSH シェルからはそのまま起動できません
+- `zone`
+  - `blue`（既定値）または `red`
+  - `r1_main_node`・`r1_chassis_control_node` に渡すゾーン情報。ゾーン別パラメータ（座標・マップ）の選択に使用します。
+  - `r1_slam.launch.py`・`r1_sim.launch.py` にも伝達し、フィールドマップ（`field_blue.yaml` / `field_red.yaml`）の切り替えを行います。
 
 ## 主に起動するノード
 
@@ -46,12 +50,13 @@
 
 ## 起動例
 
-- 実機を `MODE1_DETECT_ORIGIN` で通常起動する
+- 実機を `MODE1_DETECT_ORIGIN` で通常起動する（青ゾーン）
   - `robot_control_mode:=manual` を含む既定構成でまとめて起動します。
 
 ```bash
 cd ~/ros2_ws
-./src/gakurobo2026_r1/scripts/r1_manual.bash
+./src/gakurobo2026_r1/scripts/r1_manual.bash         # blue（既定値）
+./src/gakurobo2026_r1/scripts/r1_manual.bash red      # red ゾーン
 ```
 
 - 実機を足回り `AUTO` / `MODE1_DETECT_ORIGIN` で通常起動する
@@ -59,16 +64,25 @@ cd ~/ros2_ws
 
 ```bash
 cd ~/ros2_ws
-./src/gakurobo2026_r1/scripts/r1_auto.bash
+./src/gakurobo2026_r1/scripts/r1_auto.bash            # blue（既定値）
+./src/gakurobo2026_r1/scripts/r1_auto.bash red        # red ゾーン
 ```
 
 - `r1_setup.bash` 実行後に、`MODE1_DETECT_ORIGIN` の既定引数で直接 launch する
-  - `use_sim:=false`、`use_lidar:=true`、`robot_control_mode:=manual` の既定値をそのまま使います。
+  - `use_sim:=false`、`use_lidar:=true`、`robot_control_mode:=manual`、`zone:=blue` の既定値をそのまま使います。
 
 ```bash
 cd ~/ros2_ws
 source install/setup.bash
 ros2 launch r1_bringup r1_bringup.launch.py
+```
+
+- `zone:=red` を指定して直接 launch する
+
+```bash
+cd ~/ros2_ws
+source install/setup.bash
+ros2 launch r1_bringup r1_bringup.launch.py zone:=red
 ```
 
 - `robot_control_mode:=auto` を指定して直接 launch する
@@ -77,7 +91,7 @@ ros2 launch r1_bringup r1_bringup.launch.py
 ```bash
 cd ~/ros2_ws
 source install/setup.bash
-ros2 launch r1_bringup r1_bringup.launch.py robot_control_mode:=auto
+ros2 launch r1_bringup r1_bringup.launch.py robot_control_mode:=auto zone:=red
 ```
 
 - シミュレーションモードで起動する

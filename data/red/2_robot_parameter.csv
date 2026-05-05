@@ -1,0 +1,7 @@
+zone,red
+dt,0.01
+v_max,1.0
+a_max,2.0
+j_max,10.0
+omega_max,4.0
+robot_dt,0.2

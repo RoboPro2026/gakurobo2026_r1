@@ -4,10 +4,11 @@ import sys
 import yaml
 from ament_index_python.packages import get_package_share_directory
 from launch import LaunchDescription
-from launch.actions import EmitEvent, RegisterEventHandler
+from launch.actions import DeclareLaunchArgument, EmitEvent, RegisterEventHandler
 from launch.conditions import IfCondition
 from launch.event_handlers import OnProcessStart
 from launch.events import matches_action
+from launch.substitutions import LaunchConfiguration, PythonExpression
 from launch_ros.actions import LifecycleNode, Node
 from launch_ros.event_handlers import OnStateTransition
 from launch_ros.events.lifecycle import ChangeState
@@ -21,6 +22,10 @@ def generate_launch_description():
 
     # パッケージの共有ディレクトリのパスを取得
     pkg_dir = get_package_share_directory("r1_bringup")
+    zone = LaunchConfiguration("zone")
+    map_yaml = PythonExpression([
+        "'src/gakurobo2026_r1/data/map/field_' + '", zone, "' + '.yaml'"
+    ])
 
     # パラメータファイルのフルパスを作成
     param_file = os.path.join(pkg_dir, "config", "r1_slam_config.yaml")
@@ -146,7 +151,7 @@ def generate_launch_description():
         executable="static_transform_publisher",
         arguments=[
             "--x",
-            "0.0575",
+            "0.0875",
             "--y",
             "-0.0",
             "--z",
@@ -169,11 +174,9 @@ def generate_launch_description():
         executable="static_transform_publisher",
         arguments=[
             "--x",
-            # xとyはうまく行かなくて実機で適当に合わせた
-            "-0.04125",
+            "0.0875",
             "--y",
-            # "-0.427169",
-            "-0.43",
+            "-0.414",
             "--z",
             "0.05",
             "--roll",
@@ -224,7 +227,7 @@ def generate_launch_description():
         executable="map_server",
         name="map_server",
         output="screen",
-        parameters=[{"yaml_filename": "src/gakurobo2026_r1/data/map/field_blue.yaml"}],
+        parameters=[{"yaml_filename": map_yaml}],
     )
     nav2_amcl = Node(
         package="nav2_amcl",
@@ -248,6 +251,11 @@ def generate_launch_description():
 
     return LaunchDescription(
         [
+            DeclareLaunchArgument(
+                "zone",
+                default_value="blue",
+                description="Zone color: blue or red",
+            ),
             urg_node2_1,
             urg_node2_2,
             urg_node2_1_configure_event_handler,

@@ -23,6 +23,7 @@
 #include "r1_control/pos_follower.h"
 #include "r1_control/trajectory_follower.h"
 #include "r1_control/trajectory_planner.h"
+#include "r1_msgs/msg/r1_init_parameter.hpp"
 #include "r1_msgs/msg/robot_move.hpp"
 #include "r1_util/r1_util.h"
 #include "rcl_interfaces/msg/floating_point_range.hpp"
@@ -144,6 +145,9 @@ public:
       "/r1_machine_initialize_done", 10,
       std::bind(
         &R1ChassisControlNode::machine_initialize_done_callback, this, std::placeholders::_1));
+    r1_init_parameter_subscription_ = this->create_subscription<r1_msgs::msg::R1InitParameter>(
+      "/r1_init_parameter", 10,
+      std::bind(&R1ChassisControlNode::r1_init_parameter_callback, this, std::placeholders::_1));
 
     // chassis_error_tangentのPublisher
     chassis_error_tangent_publisher_ =
@@ -156,32 +160,42 @@ public:
       this->create_publisher<std_msgs::msg::Float64>("/chassis_error_theta", 10);
 
     // パラメータの宣言と取得
-    declare_and_get_parameter("act_filebase", act_filebase_, "");
+    declare_and_get_parameter("act_filebase_red", act_filebase_red_, "");
+    declare_and_get_parameter("act_filebase_blue", act_filebase_blue_, "");
     declare_and_get_parameter("zone", zone_, "red");
 
     // 経路生成のパラメータ
     for (int i = 0; i < 12; i++) {
-      std::string inner_decel_center_pos_name = "inner_decel_center_pos." + std::to_string(i + 1);
-      std::string outer_decel_center_pos_name = "outer_decel_center_pos." + std::to_string(i + 1);
-      // 適当な初期値を代入
-      this->declare_parameter<std::vector<double>>(
-        inner_decel_center_pos_name, {100.0, 100.0, 0.0});
-      this->declare_parameter<std::vector<double>>(
-        outer_decel_center_pos_name, {100.0, 100.0, 0.0});
+      const std::string idx = std::to_string(i + 1);
+      std::string blue_inner_name = "blue_inner_decel_center_pos." + idx;
+      std::string blue_outer_name = "blue_outer_decel_center_pos." + idx;
+      std::string red_inner_name = "red_inner_decel_center_pos." + idx;
+      std::string red_outer_name = "red_outer_decel_center_pos." + idx;
+      this->declare_parameter<std::vector<double>>(blue_inner_name, {100.0, 100.0, 0.0});
+      this->declare_parameter<std::vector<double>>(blue_outer_name, {100.0, 100.0, 0.0});
+      this->declare_parameter<std::vector<double>>(red_inner_name, {-100.0, 100.0, 0.0});
+      this->declare_parameter<std::vector<double>>(red_outer_name, {-100.0, 100.0, 0.0});
       std::vector<double> inner_decel_center_pos, outer_decel_center_pos;
-      this->get_parameter(inner_decel_center_pos_name, inner_decel_center_pos);
-      this->get_parameter(outer_decel_center_pos_name, outer_decel_center_pos);
+      if (zone_ == "blue") {
+        this->get_parameter(blue_inner_name, inner_decel_center_pos);
+        this->get_parameter(blue_outer_name, outer_decel_center_pos);
+      } else {
+        this->get_parameter(red_inner_name, inner_decel_center_pos);
+        this->get_parameter(red_outer_name, outer_decel_center_pos);
+      }
       if (inner_decel_center_pos.size() != 3) {
         RCLCPP_FATAL(
-          this->get_logger(), "inner_decel_center_pos.%d must have exactly 3 elements (x, y, yaw)",
-          i);
+          this->get_logger(),
+          "%s_inner_decel_center_pos.%d must have exactly 3 elements (x, y, yaw)", zone_.c_str(),
+          i + 1);
         rclcpp::shutdown();
         return;
       }
       if (outer_decel_center_pos.size() != 3) {
         RCLCPP_FATAL(
-          this->get_logger(), "outer_decel_center_pos.%d must have exactly 3 elements (x, y, yaw)",
-          i);
+          this->get_logger(),
+          "%s_outer_decel_center_pos.%d must have exactly 3 elements (x, y, yaw)", zone_.c_str(),
+          i + 1);
         rclcpp::shutdown();
         return;
       }
@@ -304,6 +318,11 @@ public:
     //   odometry_.pose.pose.position.y, tf2::getYaw(odometry_.pose.pose.orientation));
   }
 
+  void r1_init_parameter_callback(const r1_msgs::msg::R1InitParameter::SharedPtr msg)
+  {
+    enable_kfs_auto_chassis_ = msg->enable_kfs_auto_chassis;
+  }
+
   void act_callback(const std_msgs::msg::Int32::SharedPtr msg)
   {
     if (!is_machine_initialized_) {
@@ -313,7 +332,15 @@ public:
         act_name.c_str());
       return;
     }
-    act_step_ = static_cast<ChassisAct>(msg->data);
+    ChassisAct act = static_cast<ChassisAct>(msg->data);
+    if (!enable_kfs_auto_chassis_ && act_to_trajectory_index(act) >= 2) {
+      std::string act_name{magic_enum::enum_name(act)};
+      RCLCPP_INFO(
+        this->get_logger(), "Ignored act ref %s: enable_kfs_auto_chassis is false.",
+        act_name.c_str());
+      return;
+    }
+    act_step_ = act;
     std::string act_name{magic_enum::enum_name(act_step_)};
     // RCLCPP_INFO(this->get_logger(), "Received act step: %s", act_name.c_str());
   }
@@ -361,6 +388,15 @@ public:
         act_name.c_str());
       return;
     }
+    if (
+      !enable_kfs_auto_chassis_ &&
+      act_to_trajectory_index(static_cast<ChassisAct>(msg->act)) >= 2) {
+      std::string act_name{magic_enum::enum_name(static_cast<ChassisAct>(msg->act))};
+      RCLCPP_INFO(
+        this->get_logger(), "Ignored RobotMove for %s: enable_kfs_auto_chassis is false.",
+        act_name.c_str());
+      return;
+    }
     ChassisAct act = static_cast<ChassisAct>(msg->act);
     std::string act_name{magic_enum::enum_name(act)};
     const int index = act_to_trajectory_index(act);
@@ -402,19 +438,25 @@ public:
         center_y = outer_decel_center_pos_[forest - 1][1];
         rect_yaw = outer_decel_center_pos_[forest - 1][2];
       }
-      if (zone_ == "blue") {
-        // zoneがblueのときはy軸を反転させる（yawも反転させる）
-        center_x *= -1.0;
-        rect_yaw = angle_normalize(M_PI - rect_yaw);
-      }
-      // TODO: ココらへんの処理はかなり怪しいので、赤ゾーンに対応するときに見直す。おそらく角度の扱いが怪しい
-      // yは進行方向と同じ向きに対してオフセットを適用する
-      if (is_inner && msg->kfs_mechanism_type[i] == "rear_kfs") {
-        offset_x = collect_kfs_offset_ * std::cos(rect_yaw);
-        offset_y = collect_kfs_offset_ * std::sin(rect_yaw);
-      } else if (is_outer && msg->kfs_mechanism_type[i] == "front_kfs") {
-        offset_x = collect_kfs_offset_ * std::cos(rect_yaw);
-        offset_y = collect_kfs_offset_ * std::sin(rect_yaw);
+      // kfs_mechanism_typeに応じてオフセットを適用する
+      // rect_yawの方向に沿ってオフセットを加算する
+      // TODO: 角度の扱いが怪しい可能性あり
+      if (zone_ == "red") {
+        if (is_inner && msg->kfs_mechanism_type[i] == "front_kfs") {
+          offset_x = collect_kfs_offset_ * std::cos(rect_yaw);
+          offset_y = collect_kfs_offset_ * std::sin(rect_yaw);
+        } else if (is_outer && msg->kfs_mechanism_type[i] == "rear_kfs") {
+          offset_x = collect_kfs_offset_ * std::cos(rect_yaw);
+          offset_y = collect_kfs_offset_ * std::sin(rect_yaw);
+        }
+      } else if (zone_ == "blue") {
+        if (is_inner && msg->kfs_mechanism_type[i] == "rear_kfs") {
+          offset_x = collect_kfs_offset_ * std::cos(rect_yaw);
+          offset_y = collect_kfs_offset_ * std::sin(rect_yaw);
+        } else if (is_outer && msg->kfs_mechanism_type[i] == "front_kfs") {
+          offset_x = collect_kfs_offset_ * std::cos(rect_yaw);
+          offset_y = collect_kfs_offset_ * std::sin(rect_yaw);
+        }
       }
       // center_xとcenter_yにオフセットを適用する
       if (zone_ == "red") {
@@ -422,6 +464,7 @@ public:
         center_y += offset_y;
       } else {
         // 本当はcenter_xはプラスではなくマイナスのはずだが、何故か動かないので一旦プラス
+        // おそらく、プラスでいいのはrect_yawが角度を反転させてるからだと思う。
         center_x += offset_x;
         center_y += offset_y;
       }
@@ -809,6 +852,7 @@ public:
 
   int load_trajectory_csv(int n)
   {
+    const std::string selected_act_filebase = get_selected_act_filebase();
     // paramの読み込み
     double & dt = traj_dt_[n];
     double & v_max = traj_v_max_[n];
@@ -817,12 +861,14 @@ public:
     double & omega_max = traj_omega_max_[n];
     char line[256], buff[256];
     // ファイル名が与えられていなかったらエラーにする
-    if (act_filebase_ == "") {
-      RCLCPP_FATAL(this->get_logger(), "actfilebase is not set");
+    if (selected_act_filebase == "") {
+      RCLCPP_FATAL(
+        this->get_logger(), "act_filebase_%s is not set. Set act_filebase_red or act_filebase_blue",
+        zone_.c_str());
       return 1;
     }
     // ファイルを開く
-    std::string param_name = act_filebase_ + std::to_string(n) + "_robot_parameter.csv";
+    std::string param_name = selected_act_filebase + std::to_string(n) + "_robot_parameter.csv";
     FILE * fp = fopen(param_name.c_str(), "r");
     if (fp == NULL) {
       RCLCPP_FATAL(this->get_logger(), "Failed to open %s", param_name.c_str());
@@ -884,11 +930,13 @@ public:
     theta_wp.clear();
     v_trans_wp.clear();
     // ファイル名が与えられていなかったらエラーにする
-    if (act_filebase_ == "") {
-      RCLCPP_FATAL(this->get_logger(), "act_filebase is not set");
+    if (selected_act_filebase == "") {
+      RCLCPP_FATAL(
+        this->get_logger(), "act_filebase_%s is not set. Set act_filebase_red or act_filebase_blue",
+        zone_.c_str());
       return 1;
     }
-    std::string wp_filename = act_filebase_ + std::to_string(n) + "_waypoints.csv";
+    std::string wp_filename = selected_act_filebase + std::to_string(n) + "_waypoints.csv";
     // ファイルを開く
     fp = fopen(wp_filename.c_str(), "r");
     if (fp == NULL) {
@@ -955,15 +1003,18 @@ public:
 
     fclose(fp);
 
-    // ゾーンが青ゾーンの場合は、x座標を反転する
-    if (zone_ == "blue") {
-      for (int i = 0; i < (int)x_wp.size(); i++) {
-        x_wp[i] = -x_wp[i];
-      }
-      // TODO: thetaも反転させたほうがいいかも
-    }
-
     return 0;
+  }
+
+  std::string get_selected_act_filebase() const
+  {
+    if (zone_ == "red" && act_filebase_red_ != "") {
+      return act_filebase_red_;
+    }
+    if (zone_ == "blue" && act_filebase_blue_ != "") {
+      return act_filebase_blue_;
+    }
+    return "";
   }
 
   int generate_trajectory(int n)
@@ -1036,6 +1087,7 @@ public:
   rclcpp::Subscription<r1_msgs::msg::RobotMove>::SharedPtr robot_move_subscription_;
   rclcpp::Subscription<std_msgs::msg::Empty>::SharedPtr machine_initialize_subscription_;
   rclcpp::Subscription<std_msgs::msg::Empty>::SharedPtr machine_initialize_done_subscription_;
+  rclcpp::Subscription<r1_msgs::msg::R1InitParameter>::SharedPtr r1_init_parameter_subscription_;
   // chassis_error_tangentのPublisher
   rclcpp::Publisher<std_msgs::msg::Float64>::SharedPtr chassis_error_tangent_publisher_;
   // chassis_error_lateralのPublisher
@@ -1056,12 +1108,14 @@ public:
   bool has_target_pose_ = false;
   bool has_seen_map_transform_ = false;
   bool is_machine_initialized_ = true;
+  bool enable_kfs_auto_chassis_ = true;
   ChassisAct act_step_ = ChassisAct::NONE;
   ChassisAct prev_act_step_ = ChassisAct::NONE;
   // ロボットの軌道保管用
   nav_msgs::msg::Path robot_trajectory_;
   // filepath
-  std::string act_filebase_;
+  std::string act_filebase_red_;
+  std::string act_filebase_blue_;
   // zone
   std::string zone_;
   // 内回り/外回りで減速判定に使う長方形中心の座標 [x, y, yaw]

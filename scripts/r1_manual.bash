@@ -10,6 +10,11 @@ export XDG_RUNTIME_DIR=/run/user/$(id -u)
 export WAYLAND_DISPLAY=wayland-0
 export QT_QPA_PLATFORM=wayland
 export DBUS_SESSION_BUS_ADDRESS=unix:path=$XDG_RUNTIME_DIR/bus
-echo "========== R1 bringup start =========="
-USE_PHONE=${1:-false}
-ros2 launch r1_bringup r1_bringup.launch.py use_sim:=false use_lidar:=true use_phone:=$USE_PHONE
+# 使い方: ./r1_manual.bash [zone] [use_phone]
+#   例: ./r1_manual.bash blue true   → blueゾーン・iPhoneコントローラ
+#       ./r1_manual.bash red         → redゾーン・PS4コントローラ
+#       ./r1_manual.bash             → blueゾーン・PS4コントローラ
+ZONE="${1:-blue}"
+USE_PHONE="${2:-false}"
+echo "========== R1 bringup start (zone: $ZONE, use_phone: $USE_PHONE) =========="
+ros2 launch r1_bringup r1_bringup.launch.py use_sim:=false use_lidar:=true zone:=$ZONE use_phone:=$USE_PHONE
