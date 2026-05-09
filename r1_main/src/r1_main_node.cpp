@@ -2639,21 +2639,21 @@ void R1MainNode::manual_mode3_spear(void)
   auto & push_valve_step = manual_mode3_push_valve_step_;
 
   if (ps4_->is_pushed_up()) {
-    spear_y_pos_ref(spear_y_position_ref_ + 0.005);
+    spear_y_pos_ref(spear_y_position_ref_ + 0.002);
   }
 
   if (ps4_->is_pushed_right()) {
-    spear_roll1_pos_ref(spear_roll1_position_ref_ + 0.015);
-    spear_roll2_pos_ref(spear_roll2_position_ref_ + 0.015);
+    spear_roll1_pos_ref(spear_roll1_position_ref_ + 0.01);
+    spear_roll2_pos_ref(spear_roll2_position_ref_ + 0.01);
   }
 
   if (ps4_->is_pushed_down()) {
-    spear_y_pos_ref(spear_y_position_ref_ - 0.005);
+    spear_y_pos_ref(spear_y_position_ref_ - 0.002);
   }
 
   if (ps4_->is_pushed_left()) {
-    spear_roll1_pos_ref(spear_roll1_position_ref_ - 0.015);
-    spear_roll2_pos_ref(spear_roll2_position_ref_ - 0.015);
+    spear_roll1_pos_ref(spear_roll1_position_ref_ - 0.01);
+    spear_roll2_pos_ref(spear_roll2_position_ref_ - 0.01);
   }
 
   if (ps4_->is_pushed_triangle()) {

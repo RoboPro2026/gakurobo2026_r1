@@ -162,7 +162,7 @@ r1_main_node:
     use_kfs_mech_lock: false
     # fx
     kfs_fx_normal_pos: 0.005
-    kfs_fx_storage_pos: 0.005
+    kfs_fx_storage_pos: 0.01
     kfs_fx_start_pos: 0.005
     kfs_fx_put_pos: 0.45
     kfs_fx_expand_pos: 0.67
@@ -190,7 +190,7 @@ r1_main_node:
     kfs_fyaw_high_mech_lock_angle: 3.1
     # rx
     kfs_rx_normal_pos: 0.005
-    kfs_rx_storage_pos: 0.005
+    kfs_rx_storage_pos: 0.01
     kfs_rx_start_pos: 0.005
     kfs_rx_put_pos: 0.45
     kfs_rx_expand_pos: 0.67
@@ -217,7 +217,7 @@ r1_main_node:
     kfs_ryaw_low_mech_lock_angle: 0.05
     kfs_ryaw_high_mech_lock_angle: 3.1
     # 回収するときの遅延時間
-    kfs_yaw_delay_time: 0.25
+    kfs_yaw_delay_time: 0.5
 
     # ========== 展開 ==========
     # R2昇降
@@ -231,8 +231,8 @@ r1_main_node:
     # ========== やり ==========
     # 大槻機構
     spear_y_normal_pos: 0.05
-    spear_y_collect1_pos: 0.10
-    spear_y_collect2_pos: 0.20
+    spear_y_collect1_pos: 0.07
+    spear_y_collect2_pos: 0.17
     spear_y_make_spear_pos: 0.44
     spear_y_low_attack_pos: 0.65
     spear_y_middle_attack_pos: 0.65
