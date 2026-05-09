@@ -10,9 +10,11 @@ export XDG_RUNTIME_DIR=/run/user/$(id -u)
 export WAYLAND_DISPLAY=wayland-0
 export QT_QPA_PLATFORM=wayland
 export DBUS_SESSION_BUS_ADDRESS=unix:path=$XDG_RUNTIME_DIR/bus
-# ゾーンを第1引数から取得する。引数が省略された場合は "blue" をデフォルト値として使う
-# 使い方: ./r1_manual.bash         → blue
-#         ./r1_manual.bash red     → red
+# 使い方: ./r1_manual.bash [zone] [use_phone]
+#   例: ./r1_manual.bash blue true   → blueゾーン・iPhoneコントローラ
+#       ./r1_manual.bash red         → redゾーン・PS4コントローラ
+#       ./r1_manual.bash             → blueゾーン・PS4コントローラ
 ZONE="${1:-blue}"
-echo "========== R1 bringup start (zone: $ZONE) =========="
-ros2 launch r1_bringup r1_bringup.launch.py use_sim:=false use_lidar:=true zone:=$ZONE
+USE_PHONE="${2:-false}"
+echo "========== R1 bringup start (zone: $ZONE, use_phone: $USE_PHONE) =========="
+ros2 launch r1_bringup r1_bringup.launch.py use_sim:=false use_lidar:=true zone:=$ZONE use_phone:=$USE_PHONE

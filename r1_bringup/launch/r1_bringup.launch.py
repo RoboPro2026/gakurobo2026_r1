@@ -28,6 +28,7 @@ def generate_launch_description():
     use_lidar = LaunchConfiguration("use_lidar")
     use_aruco_display = LaunchConfiguration("use_aruco_display")
     robot_control_mode = LaunchConfiguration("robot_control_mode")
+    use_phone = LaunchConfiguration("use_phone")
     zone = LaunchConfiguration("zone")
 
     # パラメータファイルのフルパスを作成
@@ -40,6 +41,18 @@ def generate_launch_description():
         executable="joy_node",
         name="joy_node",
         arguments=["--ros-args", "--log-level", "warn"],
+        condition=UnlessCondition(use_phone),
+    )
+
+    rosbridge_launch = IncludeLaunchDescription(
+        XMLLaunchDescriptionSource([
+            os.path.join(
+                get_package_share_directory("rosbridge_server"),
+                "launch",
+                "rosbridge_websocket_launch.xml",
+            )
+        ]),
+        condition=IfCondition(use_phone),
     )
 
     bno086_node = Node(
@@ -576,6 +589,7 @@ def generate_launch_description():
         r1_mecanum_node,
         # r1_swerve_drive_node,
         ps4_node,
+        rosbridge_launch,
         r1_aruco_display_node,
         r1_aruco_serial_node,
         r1_kfs_fx_node,
@@ -656,6 +670,11 @@ def generate_launch_description():
                 "robot_control_mode",
                 default_value="manual",
                 description="Initial mode for r1_main_node: manual or auto",
+            ),
+            DeclareLaunchArgument(
+                "use_phone",
+                default_value="false",
+                description="Use iPhone controller via rosbridge instead of PS4",
             ),
             DeclareLaunchArgument(
                 "zone",

@@ -562,7 +562,11 @@ R1MainNode::R1MainNode() : Node("r1_main_node")
   // arucoマーカ
   aruco_marker_id_publisher_ = this->create_publisher<std_msgs::msg::Int32>("/aruco_marker_id", 10);
 
-  // スマホ関連
+  // スマホ通信
+  r1_operation_mode_publisher_ =
+    this->create_publisher<std_msgs::msg::Int32>("/r1_operation_mode", 10);
+  r1_log_message_publisher_ =
+    this->create_publisher<std_msgs::msg::String>("/r1_log_message", 10);
   r1_init_parameter_subscription_ = this->create_subscription<r1_msgs::msg::R1InitParameter>(
     "/r1_init_parameter", 10,
     std::bind(&R1MainNode::r1_init_parameter_callback, this, std::placeholders::_1));
@@ -1306,6 +1310,7 @@ void R1MainNode::r1_init_parameter_callback(const r1_msgs::msg::R1InitParameter:
   s += std::string("enable_auto_select: ") +
        (r1_init_parameter_.enable_auto_select ? "true" : "false") + "\n";
   RCLCPP_INFO(this->get_logger(), "received /r1_init_parameter:\n%s", s.c_str());
+  publish_r1_log("Initialize received: zone=" + r1_init_parameter_.zone);
 }
 
 void R1MainNode::r1_collect_kfs_callback(const r1_msgs::msg::R1CollectKfs::SharedPtr msg)
@@ -1326,6 +1331,7 @@ void R1MainNode::r1_collect_kfs_callback(const r1_msgs::msg::R1CollectKfs::Share
          std::to_string(r1_collect_kfs_.forest_order[i]) + "\n";
   }
   RCLCPP_INFO(this->get_logger(), "received /r1_collect_kfs:\n%s", s.c_str());
+  publish_r1_log("Collect KFS order received");
 }
 
 void R1MainNode::publish_r1_machine_initialize(void)
@@ -1654,6 +1660,13 @@ void R1MainNode::publish_aruco_marker_id(int id)
   RCLCPP_INFO(this->get_logger(), "publish aruco marker id: %d", id);
 }
 
+void R1MainNode::publish_r1_log(const std::string & message)
+{
+  std_msgs::msg::String msg;
+  msg.data = message;
+  r1_log_message_publisher_->publish(msg);
+}
+
 bool R1MainNode::is_localization_ready(void)
 {
   if (!tf_buffer_->_frameExists("map") || !tf_buffer_->_frameExists("base_link")) {
@@ -1806,6 +1819,14 @@ void R1MainNode::timer_callback(void)
   clear_led_status();
   // 状態を更新
   state_machine_->update();
+  // operation_modeの変化をスマホにpublish
+  const auto current_op_mode = state_machine_->get_current_state().operation_mode;
+  if (current_op_mode != last_published_operation_mode_) {
+    std_msgs::msg::Int32 op_mode_msg;
+    op_mode_msg.data = static_cast<int32_t>(current_op_mode);
+    r1_operation_mode_publisher_->publish(op_mode_msg);
+    last_published_operation_mode_ = current_op_mode;
+  }
   // タスクを実行
   // ps4_->print_data();
   main_task();
