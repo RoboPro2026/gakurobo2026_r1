@@ -61,6 +61,8 @@
 - `ACT3_START` / `ACT3` / `ACT3_FINISH`
 - `ACT4_START` / `ACT4` / `ACT4_FINISH`
 - `ACT5_START` / `ACT5` / `ACT5_FINISH`
+- `ACT_PAUSE` (1000) — 軌道追従を一時停止中（ポーズ状態）
+- `ACT_RESUME` (1001) — ポーズ解除指令（遷移トリガー。定常状態ではない）
 
 ### ChassisControlMode
 
@@ -85,7 +87,7 @@
   - `MODE9_AUTO_CHASSIS`
   - `MODE1_DETECT_ORIGIN`
 - `ChassisControlMode` は `chassis_act_status_` に応じて自動更新されます。
-  - `chassis_act_status_ == NONE` のとき `MANUAL`
+  - `chassis_act_status_ == NONE` または `ACT_PAUSE` のとき `MANUAL`
   - それ以外のとき `AUTO`
   - PS4 未接続時は `HOLD`
 ## 主なトピック
@@ -134,6 +136,7 @@
 - `/robot_move` (`r1_msgs/msg/RobotMove`)
 - `/r1_machine_initialize` (`std_msgs/msg/Empty`)
 - `/r1_machine_initialize_done` (`std_msgs/msg/Empty`) を subscribe
+- `/chassis_tangent_pid_enable` (`std_msgs/msg/Bool`): KFS 回収ゾーン在圏中は `false` を publish して接線方向 PID を無効化します
 - `/<axis>_position_ref` (`std_msgs/msg/Float64`)
 - `/<axis>_detect_origin` (`std_msgs/msg/Bool`)
 - `/r2_flift_motor_ref` (`r1_msgs/msg/MotorRef`)
@@ -262,9 +265,15 @@ LED は timer callback の最後に 1 回だけ更新されます。
 
 ### 共通操作
 
-- 左スティック / 右スティック
+- 左スティック / 右スティック（傾け操作）
   - `ChassisControlMode == MANUAL` のとき `cmd_vel_topic` へ反映します。
   - つまり軌道実行中でない限り、`OperationMode` に関係なく手動速度指令を送れます。
+- 右スティック（押し込み）
+  - **ポーズ中**（`is_act_paused_ == true`）のとき: ポーズを解除してレジューム (`ACT_RESUME`) を publish し、軌道追従を再開します。
+  - **自動走行中** (`chassis_act_status_ != NONE` かつ `!= ACT_PAUSE`) のとき:
+    - `enable_right_stick_pause == true` かつ `ACT2 / ACT3 / ACT4 / ACT5` 実行中: `ACT_PAUSE` を publish して一時停止します。一時停止中は手動操作が可能です。
+    - 上記以外（`enable_right_stick_pause == false`、または `ACT0 / ACT1` 等）: 自動走行を中断して手動モードへ戻ります（従来の挙動）。
+  - **アイドル中**（自動走行していない）かつ `is_initialized_ == true` のとき: `OperationMode` に応じた ACT を開始します。
 - `options`
   - `sabacan_power_ref(!sabacan_is_ems_)` を送り、電源基板の EMS をトグルします。
 - `ps`
@@ -470,6 +479,7 @@ LED は timer callback の最後に 1 回だけ更新されます。
   - `base` 色は `OperationMode` に従います。
 - `ACT1` / `ACT3` / `ACT5` は KFS 自動回収を起動せず、通常の軌道追従だけを行います。
 - `ACT2` / `ACT4` が終了または中断されたときは、対応する KFS 自動回収も停止します。
+- `ACT2` / `ACT3` / `ACT4` 実行中に 1 機でも KFS 回収ゾーン内にいる間は、`/chassis_tangent_pid_enable` に `false` を publish して `r1_chassis_control_node` の接線方向 PID を無効化します。これにより、ローカライズ誤差による追従暴走を防ぎつつ、法線方向・角度の PID は継続して機体の横ずれを抑制します。ゾーン外へ出ると `true` を publish して接線方向 PID を再有効化します。
 
 ### 制約
 
@@ -519,6 +529,9 @@ bringup 起動時は [`r1_bringup.launch.py`](../../r1_bringup/launch/r1_bringup
 - `cmd_vel_topic`
 - `timer_rate`
 - `ps4_connection_timeout`
+- `enable_right_stick_pause`
+  - `true` のとき、自動走行中（ACT2 / ACT3 / ACT4 / ACT5）に右スティック単押しで一時停止（ポーズ）できます。
+  - 既定値は `false`。`false` のときは右スティック押し込みで従来通り自動走行を中断します。
 
 ### 足回り
 

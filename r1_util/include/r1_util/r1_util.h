@@ -38,7 +38,9 @@ enum class ChassisAct
   ACT4_FINISH = 43,
   ACT5_START = 51,
   ACT5 = 52,
-  ACT5_FINISH = 53
+  ACT5_FINISH = 53,
+  ACT_PAUSE  = 1000,
+  ACT_RESUME = 1001,
 };
 
 // MainStateの定義

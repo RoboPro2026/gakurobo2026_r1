@@ -549,6 +549,9 @@ R1MainNode::R1MainNode() : Node("r1_main_node")
   chassis_act_status_subscription_ = this->create_subscription<std_msgs::msg::Int32>(
     "/chassis_act_status", 10,
     std::bind(&R1MainNode::chassis_act_status_callback, this, std::placeholders::_1));
+  // 接線方向PID補正ON/OFFのPublisher
+  chassis_tangent_pid_enable_publisher_ =
+    this->create_publisher<std_msgs::msg::Bool>("/chassis_tangent_pid_enable", 10);
   // robot_moveのPublisher
   robot_move_publisher_ = this->create_publisher<r1_msgs::msg::RobotMove>("/robot_move", 10);
   // r1_machine_manage_node の初期化要求
@@ -565,8 +568,7 @@ R1MainNode::R1MainNode() : Node("r1_main_node")
   // スマホ通信
   r1_operation_mode_publisher_ =
     this->create_publisher<std_msgs::msg::Int32>("/r1_operation_mode", 10);
-  r1_log_message_publisher_ =
-    this->create_publisher<std_msgs::msg::String>("/r1_log_message", 10);
+  r1_log_message_publisher_ = this->create_publisher<std_msgs::msg::String>("/r1_log_message", 10);
   r1_init_parameter_subscription_ = this->create_subscription<r1_msgs::msg::R1InitParameter>(
     "/r1_init_parameter", 10,
     std::bind(&R1MainNode::r1_init_parameter_callback, this, std::placeholders::_1));
@@ -592,6 +594,7 @@ R1MainNode::R1MainNode() : Node("r1_main_node")
   declare_and_get_parameter("ps4_connection_timeout", ps4_connection_timeout_, 0.3);
   declare_and_get_parameter("activate_lidar_on_ps", activate_lidar_on_ps_, true);
   declare_and_get_parameter("share_long_press_sec", SHARE_LONG_PRESS_SEC, 1.0);
+  declare_and_get_parameter("enable_right_stick_pause", enable_right_stick_pause_, false);
   declare_and_get_parameter("initialpose_tf_log_delay_sec", initialpose_tf_log_delay_sec_, 1.0);
   declare_and_get_parameter("initialpose_retry1_delay_sec", initialpose_retry1_delay_sec_, 1.0);
   declare_and_get_parameter("initialpose_retry2_delay_sec", initialpose_retry2_delay_sec_, 3.0);
@@ -1622,6 +1625,18 @@ void R1MainNode::publish_chassis_act_stop(void)
   publish_chassis_act_ref(stop_ref);
 }
 
+void R1MainNode::publish_chassis_act_pause(void)
+{
+  publish_chassis_act_ref(ChassisAct::ACT_PAUSE);
+  RCLCPP_INFO(this->get_logger(), "chassis act pause");
+}
+
+void R1MainNode::publish_chassis_act_resume(void)
+{
+  publish_chassis_act_ref(ChassisAct::ACT_RESUME);
+  RCLCPP_INFO(this->get_logger(), "chassis act resume");
+}
+
 void R1MainNode::publish_robot_move(
   ChassisAct act, std::vector<int> forest_order, std::vector<std::string> kfs_mechanism_type)
 {
@@ -1731,6 +1746,7 @@ void R1MainNode::clear_auto_chassis_state(bool stop_kfs_auto_collect)
   auto_chassis_status_ = ChassisAct::NONE;
   pending_auto_robot_move_valid_ = false;
   pending_auto_robot_move_ = r1_msgs::msg::RobotMove();
+  is_act_paused_ = false;
 }
 
 void R1MainNode::reset_kfs_auto_collect_tracking(void)
@@ -3740,6 +3756,24 @@ void R1MainNode::auto_collect_kfs_task(void)
     // 最後に前回値を更新する
     prev_within = within;
   }
+
+  // 回収ゾーン内（within=true）のときだけ接線方向PID補正をOFFにする。
+  // ゾーン外または対象外ACTのときはONに戻す。
+  {
+    constexpr int FKFS = 0, RKFS = 1;
+    bool any_within = false;
+    const bool is_kfs_act =
+      (chassis_act_status_ == ChassisAct::ACT2 || chassis_act_status_ == ChassisAct::ACT3 ||
+       chassis_act_status_ == ChassisAct::ACT4);
+    if (is_kfs_act) {
+      for (const auto & w : kfs_auto_collect_within_) {
+        any_within |= w[FKFS] || w[RKFS];
+      }
+    }
+    std_msgs::msg::Bool tangent_msg;
+    tangent_msg.data = !any_within;
+    chassis_tangent_pid_enable_publisher_->publish(tangent_msg);
+  }
 }
 
 void R1MainNode::manual_mode8_auto_collect_kfs(void)
@@ -4067,6 +4101,7 @@ void R1MainNode::main_task(void)
   }
   if (ps4_->is_pushed_ps()) {
     is_initialized_ = false;
+    is_act_paused_ = false;
     if (activate_lidar_on_ps_) {
       request_lidar_lifecycle_activation();
     }
@@ -4074,15 +4109,39 @@ void R1MainNode::main_task(void)
     publish_r1_machine_initialize();
     return;
   }
+  // 右スティック押下: 長押し判定の開始時刻をリセット
   if (ps4_->is_pushed_right_stick()) {
-    const bool auto_running =
-      (chassis_act_status_ != ChassisAct::NONE) || pending_auto_robot_move_valid_;
-    if (auto_running) {
-      publish_chassis_act_stop();
-      clear_auto_chassis_state(true);
-      chassis_act_status_ = ChassisAct::NONE;
-      next_state.chassis_control_mode = ChassisControlMode::MANUAL;
-    } else if (is_initialized_) {
+    bool right_stick_handled = false;
+    if (is_act_paused_) {
+      // ポーズ中 → レジューム
+      publish_chassis_act_resume();
+      is_act_paused_      = false;
+      right_stick_handled = true;
+    } else {
+      const bool auto_running =
+        (chassis_act_status_ != ChassisAct::NONE &&
+         chassis_act_status_ != ChassisAct::ACT_PAUSE) ||
+        pending_auto_robot_move_valid_;
+      if (auto_running) {
+        right_stick_handled = true;
+        const bool is_pausable =
+          enable_right_stick_pause_ &&
+          (chassis_act_status_ == ChassisAct::ACT2 || chassis_act_status_ == ChassisAct::ACT3 ||
+           chassis_act_status_ == ChassisAct::ACT4 || chassis_act_status_ == ChassisAct::ACT5);
+        if (is_pausable) {
+          // ACT2以降かつパラメータ有効 → ポーズ
+          publish_chassis_act_pause();
+          is_act_paused_ = true;
+        } else {
+          // それ以外 → 停止（既存の挙動）
+          publish_chassis_act_stop();
+          clear_auto_chassis_state(true);
+          chassis_act_status_ = ChassisAct::NONE;
+          next_state.chassis_control_mode = ChassisControlMode::MANUAL;
+        }
+      }
+    }
+    if (!right_stick_handled && is_initialized_) {
       bool started_auto = false;
       if (current_state.operation_mode == OperationMode::MODE1_DETECT_ORIGIN) {
         // MODE1のときはACT0_STARTを開始する
@@ -4294,9 +4353,10 @@ void R1MainNode::main_task(void)
     next_state.operation_mode = next_operation_mode(current_state.operation_mode);
   }
 
-  const bool chassis_auto_requested = (chassis_act_status_ != ChassisAct::NONE) ||
-                                      pending_auto_robot_move_valid_ ||
-                                      (auto_chassis_status_ != ChassisAct::NONE);
+  const bool chassis_auto_requested =
+    (chassis_act_status_ != ChassisAct::NONE && chassis_act_status_ != ChassisAct::ACT_PAUSE) ||
+    pending_auto_robot_move_valid_ ||
+    (auto_chassis_status_ != ChassisAct::NONE && auto_chassis_status_ != ChassisAct::ACT_PAUSE);
   next_state.chassis_control_mode =
     chassis_auto_requested ? ChassisControlMode::AUTO : ChassisControlMode::MANUAL;
   state_machine_->set_next_state(next_state);

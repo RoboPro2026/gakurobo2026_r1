@@ -202,6 +202,8 @@ public:
   rclcpp::Publisher<std_msgs::msg::Int32>::SharedPtr chassis_act_ref_publisher_;
   // chassis_actのSubscription
   rclcpp::Subscription<std_msgs::msg::Int32>::SharedPtr chassis_act_status_subscription_;
+  // 接線方向PID補正ON/OFFのPublisher
+  rclcpp::Publisher<std_msgs::msg::Bool>::SharedPtr chassis_tangent_pid_enable_publisher_;
   // robot_moveのPublisher
   rclcpp::Publisher<r1_msgs::msg::RobotMove>::SharedPtr robot_move_publisher_;
   // r1_machine_manage_node の初期化要求
@@ -227,6 +229,8 @@ public:
   nav_msgs::msg::Odometry odometry_;
   // chassis_act
   ChassisAct chassis_act_status_ = ChassisAct::NONE;
+  bool is_act_paused_ = false;
+  bool enable_right_stick_pause_ = false;
   // arucoマーカ
   rclcpp::Publisher<std_msgs::msg::Int32>::SharedPtr aruco_marker_id_publisher_;
   // スマホから送られてくる初期化パラメータ
@@ -561,6 +565,8 @@ public:
   void set_mecanum_yaw(double yaw);
   void set_swerve_drive_yaw(double yaw);
   void publish_chassis_act_stop(void);
+  void publish_chassis_act_pause(void);
+  void publish_chassis_act_resume(void);
   // オドメトリ
   void odometry_callback(const nav_msgs::msg::Odometry::SharedPtr msg);
   void set_odometry(double x, double y, double yaw);
