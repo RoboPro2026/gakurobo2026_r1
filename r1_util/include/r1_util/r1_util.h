@@ -83,7 +83,7 @@ enum class ChassisControlMode
  * @return double 出力 y = alpha * x + (1 - alpha) * prev_y
  * ただし alpha = dt / (tau + dt)
  */
-double lpf(double x, double prev_y, double tau, double dt)
+inline double lpf(double x, double prev_y, double tau, double dt)
 {
   double alpha = dt / (tau + dt);
   return alpha * x + (1 - alpha) * prev_y;
@@ -97,7 +97,7 @@ double lpf(double x, double prev_y, double tau, double dt)
  * @param num 分割数
  * @return std::vector<double> 
  */
-std::vector<double> linspace(double start, double end, int num)
+inline std::vector<double> linspace(double start, double end, int num)
 {
   std::vector<double> x(num);
   double step = (end - start) / (num - 1);
@@ -113,7 +113,7 @@ std::vector<double> linspace(double start, double end, int num)
    * @param x 
    * @return double xが0.0以上なら1.0、負なら-1.0を返す
    */
-double sign(double x) { return (x >= 0) ? 1.0 : -1.0; }
+inline double sign(double x) { return (x >= 0) ? 1.0 : -1.0; }
 
 /**
    * @brief 角度を-pi~piの範囲に正規化する
@@ -121,7 +121,7 @@ double sign(double x) { return (x >= 0) ? 1.0 : -1.0; }
    * @param angle 
    * @return double 
    */
-double angle_normalize(double angle)
+inline double angle_normalize(double angle)
 {
   std::complex<double> ret = std::polar(1.0, angle);
   return std::arg(ret);
@@ -134,7 +134,7 @@ double angle_normalize(double angle)
    * @param prev_angle 
    * @return double 
    */
-double angle_diff(double current_angle, double prev_angle)
+inline double angle_diff(double current_angle, double prev_angle)
 {
   std::complex<double> current = std::polar(1.0, current_angle);
   std::complex<double> prev = std::polar(1.0, prev_angle);
@@ -154,7 +154,7 @@ double angle_diff(double current_angle, double prev_angle)
  * @return true 
  * @return false 
  */
-bool is_within_range(double current_x, double current_y, double x1, double y1, double x2, double y2)
+inline bool is_within_range(double current_x, double current_y, double x1, double y1, double x2, double y2)
 {
   // x2とy2がx1とy1より大きくなるようにする。
   if (x1 > x2) {
@@ -184,7 +184,7 @@ bool is_within_range(double current_x, double current_y, double x1, double y1, d
  * @return true 点が長方形の内側にある
  * @return false 点が長方形の外側にある
  */
-bool is_within_rotated_rectangle(
+inline bool is_within_rotated_rectangle(
   double current_x, double current_y, double center_x, double center_y, double yaw, double width,
   double height)
 {
@@ -212,7 +212,7 @@ bool is_within_rotated_rectangle(
  * @return true goalを通過している
  * @return false goalを通過していない
  */
-bool is_passed_goal_by_dot(
+inline bool is_passed_goal_by_dot(
   double start_x, double start_y, double goal_x, double goal_y, double current_x, double current_y)
 {
   double gsx = goal_x - start_x;
