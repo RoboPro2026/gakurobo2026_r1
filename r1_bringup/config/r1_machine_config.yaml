@@ -219,8 +219,6 @@ r1_main_node:
     kfs_ryaw_start_angle: 1.5707963267948966
     kfs_ryaw_low_mech_lock_angle: 0.05
     kfs_ryaw_high_mech_lock_angle: 3.1
-    # 回収するときの遅延時間
-    kfs_yaw_delay_time: 0.5
 
     # ========== 展開 ==========
     # R2昇降
@@ -348,6 +346,27 @@ r1_main_node:
     # false にすると auto_collect_kfs_task は範囲判定と LED 更新だけ行い、
     # KFS の位置・yaw・ポンプ・バルブ指令は出さない
     enable_auto_collect_kfs_actuator: true
+    # KFS回収時に一時停止するか
+    enable_stop_before_collect_kfs_: true
+    # KFS回収時にセンサーを用いたの回収にするか。
+    # trueのときはセンサーを用いた回収、falseのときは座標を用いた回収になる
+    enable_wall_sensor: false
+    # 壁検出時に止まるようにするか。
+    # 壁検出センサーの距離閾値 [m]
+    wall_sensor_distance_threshold: 0.5
+    # 壁検出センサーの反応時間閾値
+    wall_sensor_time_threshold: 0.15
+    # 壁検出後に回収動作をしながら移動する距離 [m]
+    # その間は進行方向に進み続ける。
+    move_distance_after_wall_detected: 0.4
+    # 壁の検出範囲のサイズ [m]
+    wall_sensor_detect_height: 0.3
+    wall_sensor_detect_width: 0.6
+    # 壁検出の遅延距離オフセット [m]
+    # センサーが反応したときに展開すると回収機構がぶつかる方のセンサーに適用される
+    wall_sensor_delay_offset_distance: 0.15
+    # KFS回収完了後、次に同じ回収機構が回収動作を行うまでのインターバル時間 [s]
+    collect_kfs_interval_time: 5.0
     # 内回り/外回りのKFS回収範囲の中心座標 [x, y, yaw]
     # 内回りのときは2,1,4,7,10を通る
     red_inner_collect_kfs_center_pos:
@@ -404,7 +423,8 @@ r1_main_node:
       11: [-2.2, 8.55, 3.141592653589793]
       12: [-0.6, 6.6, 1.5707963267948966]
     collect_kfs_offset: 0.838 # KFS回収時のオフセット（front_kfsかrear_kfsのうち、遠い方に適応する）
-    kfs_yaw_delay_time: 1.0 # 範囲外へ出たあとに収納用 yaw を送るまでの遅延時間 [s]
+    # 回収するときの遅延時間
+    kfs_yaw_delay_time: 0.5
 
 # -------- 足回り ----------
 r1_mecanum_node:
@@ -982,6 +1002,216 @@ r1_aruco_serial_node:
 bno086_node:
   ros__parameters:
     port: "/dev/serial/by-path/pci-0000:00:14.0-usb-0:1.4.4:1.0-port0"
+
+# 前上段sdm15
+ydlidar_fh_ros2_driver_node:
+  ros__parameters:
+    # auto_detect_serial_portは、フォーク元のydlidar_ros2_driverでは存在しないパラメータ。
+    # フォーク元では存在しないパラメータが与えられば場合、自分で正しいデバイス名を探しに行くが、
+    # それをされてしまうと、USBが抜けたときに面倒なので、それを防止するパラメータ
+    # デフォルトではauto_detect_serial_portはtrueになっている。
+    auto_detect_serial_port: false
+    port: /dev/ttyUSB100
+    frame_id: base_link
+    ignore_array: ""
+    baudrate: 460800
+    lidar_type: 5
+    device_type: 0
+    isSingleChannel: false
+    intensity: true
+    intensity_bit: 8
+    sample_rate: 50
+    abnormal_check_count: 4
+    fixed_resolution: true
+    reversion: false
+    inverted: false
+    auto_reconnect: true
+    support_motor_dtr: false
+    angle_max: 180.0
+    angle_min: -180.0
+    range_max: 64.0
+    range_min: 0.01
+    frequency: 50.0
+    invalid_range_is_inf: false
+    debug: false
+    # publish_rateは、フォーク元のydlidar_ros2_driverでは存在しないパラメータ。
+    # publish_rateは、レーザースキャンを何Hzでpublishするかを指定する。
+    publish_rate: 50.0
+
+# 前中段sdm15
+ydlidar_fm_ros2_driver_node:
+  ros__parameters:
+    # auto_detect_serial_portは、フォーク元のydlidar_ros2_driverでは存在しないパラメータ。
+    # フォーク元では存在しないパラメータが与えられば場合、自分で正しいデバイス名を探しに行くが、
+    # それをされてしまうと、USBが抜けたときに面倒なので、それを防止するパラメータ
+    # デフォルトではauto_detect_serial_portはtrueになっている。
+    auto_detect_serial_port: false
+    port: /dev/ttyUSB101
+    frame_id: base_link
+    ignore_array: ""
+    baudrate: 460800
+    lidar_type: 5
+    device_type: 0
+    isSingleChannel: false
+    intensity: true
+    intensity_bit: 8
+    sample_rate: 50
+    abnormal_check_count: 4
+    fixed_resolution: true
+    reversion: false
+    inverted: false
+    auto_reconnect: true
+    support_motor_dtr: false
+    angle_max: 180.0
+    angle_min: -180.0
+    range_max: 64.0
+    range_min: 0.01
+    frequency: 50.0
+    invalid_range_is_inf: false
+    debug: false
+    # publish_rateは、フォーク元のydlidar_ros2_driverでは存在しないパラメータ。
+    # publish_rateは、レーザースキャンを何Hzでpublishするかを指定する。
+    publish_rate: 50.0
+
+# 前下段sdm15
+ydlidar_fl_ros2_driver_node:
+  ros__parameters:
+    # auto_detect_serial_portは、フォーク元のydlidar_ros2_driverでは存在しないパラメータ。
+    # フォーク元では存在しないパラメータが与えられば場合、自分で正しいデバイス名を探しに行くが、
+    # それをされてしまうと、USBが抜けたときに面倒なので、それを防止するパラメータ
+    # デフォルトではauto_detect_serial_portはtrueになっている。
+    auto_detect_serial_port: false
+    port: /dev/ttyUSB102
+    frame_id: base_link
+    ignore_array: ""
+    baudrate: 460800
+    lidar_type: 5
+    device_type: 0
+    isSingleChannel: false
+    intensity: true
+    intensity_bit: 8
+    sample_rate: 50
+    abnormal_check_count: 4
+    fixed_resolution: true
+    reversion: false
+    inverted: false
+    auto_reconnect: true
+    support_motor_dtr: false
+    angle_max: 180.0
+    angle_min: -180.0
+    range_max: 64.0
+    range_min: 0.01
+    frequency: 50.0
+    invalid_range_is_inf: false
+    debug: false
+    # publish_rateは、フォーク元のydlidar_ros2_driverでは存在しないパラメータ。
+    # publish_rateは、レーザースキャンを何Hzでpublishするかを指定する。
+    publish_rate: 50.0
+
+# 後上段sdm15
+ydlidar_rh_ros2_driver_node:
+  ros__parameters:
+    # auto_detect_serial_portは、フォーク元のydlidar_ros2_driverでは存在しないパラメータ。
+    # フォーク元では存在しないパラメータが与えられば場合、自分で正しいデバイス名を探しに行くが、
+    # それをされてしまうと、USBが抜けたときに面倒なので、それを防止するパラメータ
+    # デフォルトではauto_detect_serial_portはtrueになっている。
+    auto_detect_serial_port: false
+    port: /dev/ttyUSB103
+    frame_id: base_link
+    ignore_array: ""
+    baudrate: 460800
+    lidar_type: 5
+    device_type: 0
+    isSingleChannel: false
+    intensity: true
+    intensity_bit: 8
+    sample_rate: 50
+    abnormal_check_count: 4
+    fixed_resolution: true
+    reversion: false
+    inverted: false
+    auto_reconnect: true
+    support_motor_dtr: false
+    angle_max: 180.0
+    angle_min: -180.0
+    range_max: 64.0
+    range_min: 0.01
+    frequency: 50.0
+    invalid_range_is_inf: false
+    debug: false
+    # publish_rateは、フォーク元のydlidar_ros2_driverでは存在しないパラメータ。
+    # publish_rateは、レーザースキャンを何Hzでpublishするかを指定する。
+    publish_rate: 50.0
+
+# 後中段sdm15
+ydlidar_rm_ros2_driver_node:
+  ros__parameters:
+    # auto_detect_serial_portは、フォーク元のydlidar_ros2_driverでは存在しないパラメータ。
+    # フォーク元では存在しないパラメータが与えられば場合、自分で正しいデバイス名を探しに行くが、
+    # それをされてしまうと、USBが抜けたときに面倒なので、それを防止するパラメータ
+    # デフォルトではauto_detect_serial_portはtrueになっている。
+    auto_detect_serial_port: false
+    port: /dev/ttyUSB104
+    frame_id: base_link
+    ignore_array: ""
+    baudrate: 460800
+    lidar_type: 5
+    device_type: 0
+    isSingleChannel: false
+    intensity: true
+    intensity_bit: 8
+    sample_rate: 50
+    abnormal_check_count: 4
+    fixed_resolution: true
+    reversion: false
+    inverted: false
+    auto_reconnect: true
+    support_motor_dtr: false
+    angle_max: 180.0
+    angle_min: -180.0
+    range_max: 64.0
+    range_min: 0.01
+    frequency: 50.0
+    invalid_range_is_inf: false
+    debug: false
+    # publish_rateは、フォーク元のydlidar_ros2_driverでは存在しないパラメータ。
+    # publish_rateは、レーザースキャンを何Hzでpublishするかを指定する。
+    publish_rate: 50.0
+
+# 後下段sdm15
+ydlidar_rl_ros2_driver_node:
+  ros__parameters:
+    # auto_detect_serial_portは、フォーク元のydlidar_ros2_driverでは存在しないパラメータ。
+    # フォーク元では存在しないパラメータが与えられば場合、自分で正しいデバイス名を探しに行くが、
+    # それをされてしまうと、USBが抜けたときに面倒なので、それを防止するパラメータ
+    # デフォルトではauto_detect_serial_portはtrueになっている。
+    auto_detect_serial_port: false
+    port: /dev/ttyUSB105
+    frame_id: base_link
+    ignore_array: ""
+    baudrate: 460800
+    lidar_type: 5
+    device_type: 0
+    isSingleChannel: false
+    intensity: true
+    intensity_bit: 8
+    sample_rate: 50
+    abnormal_check_count: 4
+    fixed_resolution: true
+    reversion: false
+    inverted: false
+    auto_reconnect: true
+    support_motor_dtr: false
+    angle_max: 180.0
+    angle_min: -180.0
+    range_max: 64.0
+    range_min: 0.01
+    frequency: 50.0
+    invalid_range_is_inf: false
+    debug: false
+    # publish_rateは、フォーク元のydlidar_ros2_driverでは存在しないパラメータ。
+    # publish_rateは、レーザースキャンを何Hzでpublishするかを指定する。
+    publish_rate: 50.0
 
 # 足回り メカナム
 sabacan_robomasv2_node_id1:

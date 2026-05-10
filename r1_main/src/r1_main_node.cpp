@@ -526,6 +526,13 @@ R1MainNode::R1MainNode() : Node("r1_main_node")
   // IMU
   imu_subscription_ = this->create_subscription<sensor_msgs::msg::Imu>(
     "/bno086/imu/data_raw", 10, std::bind(&R1MainNode::imu_callback, this, std::placeholders::_1));
+  // Scan (YDLidar) の登録
+  register_scan("/scan_fh", scan_fh_subscription_, scan_fh_data_);
+  register_scan("/scan_fm", scan_fm_subscription_, scan_fm_data_);
+  register_scan("/scan_fl", scan_fl_subscription_, scan_fl_data_);
+  register_scan("/scan_rh", scan_rh_subscription_, scan_rh_data_);
+  register_scan("/scan_rm", scan_rm_subscription_, scan_rm_data_);
+  register_scan("/scan_rl", scan_rl_subscription_, scan_rl_data_);
 
   // set_mecanum_yawのPublisher
   set_mecanum_yaw_publisher_ =
@@ -801,9 +808,17 @@ R1MainNode::R1MainNode() : Node("r1_main_node")
   declare_and_get_parameter("collect_kfs_height", COLLECT_KFS_HEIGHT);
   declare_and_get_parameter("collect_kfs_width", COLLECT_KFS_WIDTH);
   declare_and_get_parameter("collect_kfs_offset", COLLECT_KFS_OFFSET);
-  declare_and_get_parameter("kfs_yaw_delay_time", KFS_YAW_DELAY_TIME, 1.0);
-  declare_and_get_parameter(
-    "enable_auto_collect_kfs_actuator", ENABLE_AUTO_COLLECT_KFS_ACTUATOR, true);
+  declare_and_get_parameter("kfs_yaw_delay_time", KFS_YAW_DELAY_TIME);
+  declare_and_get_parameter("enable_auto_collect_kfs_actuator", ENABLE_AUTO_COLLECT_KFS_ACTUATOR);
+  declare_and_get_parameter("enalbe_stop_before_collect_kfs", ENABLE_STOP_BEFORE_COLLECT_KFS);
+  declare_and_get_parameter("enable_wall_sensor", ENABLE_WALL_SENSOR);
+  declare_and_get_parameter("wall_sensor_distance_threshold", WALL_SENSOR_DISTANCE_THRESHOLD);
+  declare_and_get_parameter("wall_sensor_time_threshold", WALL_SENSOR_TIME_THRESHOLD);
+  declare_and_get_parameter("move_distance_after_wall_detect", MOVE_DISTANCE_AFTER_WALL_DETECT);
+  declare_and_get_parameter("wall_sensor_detect_height", WALL_SENSOR_DETECT_HEIGHT);
+  declare_and_get_parameter("wall_sensor_detect_width", WALL_SENSOR_DETECT_WIDTH);
+  declare_and_get_parameter("wall_sensor_delay_offset_distance", WALL_SENSOR_DELAY_OFFSET_DISTANCE);
+  declare_and_get_parameter("collect_kfs_interval_time", COLLECT_KFS_INTERVAL_TIME);
   parameter_callback_handle_ =
     this->add_on_set_parameters_callback([this](const std::vector<rclcpp::Parameter> & parameters) {
       rcl_interfaces::msg::SetParametersResult result;
@@ -866,6 +881,18 @@ void R1MainNode::imu_callback(const sensor_msgs::msg::Imu::SharedPtr msg)
   // IMUの情報を更新
   tf2::Quaternion q(msg->orientation.x, msg->orientation.y, msg->orientation.z, msg->orientation.w);
   tf2::Matrix3x3(q).getRPY(roll_, pitch_, yaw_);
+}
+
+void R1MainNode::register_scan(
+  const std::string & topic_name,
+  rclcpp::Subscription<sensor_msgs::msg::LaserScan>::SharedPtr & subscription, double & data)
+{
+  subscription = this->create_subscription<sensor_msgs::msg::LaserScan>(
+    topic_name, 10, [&data](const sensor_msgs::msg::LaserScan::SharedPtr msg) {
+      if (!msg->ranges.empty()) {
+        data = static_cast<double>(msg->ranges[4]);
+      }
+    });
 }
 
 void R1MainNode::odometry_callback(const nav_msgs::msg::Odometry::SharedPtr msg)
@@ -1762,6 +1789,12 @@ void R1MainNode::reset_kfs_auto_collect_tracking(void)
       kfs_auto_collect_within_[i][j] = false;
       kfs_auto_collect_prev_within_[i][j] = false;
     }
+  }
+  for (int i = 0; i < 12; i++) {
+    wall_sensor_detect_start_time_[i] = this->now();
+    wall_sensor_detected_[i] = false;
+    // odom座標系
+    wall_detect_pos_[i] = nav_msgs::msg::Odometry();
   }
 }
 
@@ -3539,6 +3572,49 @@ void R1MainNode::auto_collect_kfs_task(void)
     }
   };
 
+  auto update_wall_sensor_status = [&](int target_forest, int within_index) {
+    int kfs_height = calc_height(target_forest);
+    double sensor_value = 0.0;
+    if (within_index == FKFS) {
+      if (kfs_height == HEIGHT_LOW) {
+        sensor_value = scan_fl_data_;
+      } else if (kfs_height == HEIGHT_MIDDLE) {
+        sensor_value = scan_fm_data_;
+      } else if (kfs_height == HEIGHT_HIGH) {
+        sensor_value = scan_fh_data_;
+      }
+    } else if (within_index == RKFS) {
+      if (kfs_height == HEIGHT_LOW) {
+        sensor_value = scan_rl_data_;
+      } else if (kfs_height == HEIGHT_MIDDLE) {
+        sensor_value = scan_rm_data_;
+      } else if (kfs_height == HEIGHT_HIGH) {
+        sensor_value = scan_rh_data_;
+      }
+    }
+
+    // センサーが初回の反応だった場合は開始時刻を更新
+    bool sensor_detect = (sensor_value > WALL_SENSOR_DISTANCE_THRESHOLD);
+    if (sensor_detect && wall_sensor_detected_[target_forest - 1] == false) {
+      wall_sensor_detect_start_time_[target_forest - 1] = this->now();
+    }
+    wall_sensor_detected_[target_forest - 1] = sensor_detect;
+  };
+
+  auto is_detect_wall = [&](int target_forest) {
+    // 壁センサーが一定時間以上反応している場合は壁があると判断する
+    if (wall_sensor_detected_[target_forest - 1]) {
+      rclcpp::Duration detected_duration =
+        this->now() - wall_sensor_detect_start_time_[target_forest - 1];
+      if (detected_duration.seconds() > WALL_SENSOR_TIME_THRESHOLD) {
+        return true;
+      } else {
+        return false;
+      }
+    }
+    return false;
+  };
+
   if (kfs_auto_collect_plan_.status == KfsAutoCollectStatus::NONE) {
     return;
   }
@@ -3560,7 +3636,7 @@ void R1MainNode::auto_collect_kfs_task(void)
       kfs_auto_collect_plan_.forest_order.size(), kfs_auto_collect_plan_.kfs_mechanism_type.size());
     return;
   }
-  // TODO: 進行方向と使用する回収機構の順番に応じて、OFFSETをいい感じに適応する
+
   geometry_msgs::msg::PoseStamped map_pos = get_map_pos();
   int n = kfs_auto_collect_plan_.forest_order.size();
   for (int i = 0; i < n; i++) {
@@ -3578,7 +3654,19 @@ void R1MainNode::auto_collect_kfs_task(void)
     }
     double map_x = map_pos.pose.position.x;
     double map_y = map_pos.pose.position.y;
-    double center_x = 0.0, center_y = 0.0, rect_yaw = 0.0, offset_x = 0.0, offset_y = 0.0;
+    double odom_x = odometry_.pose.pose.position.x;
+    double odom_y = odometry_.pose.pose.position.y;
+    double center_x = 0.0;
+    double center_y = 0.0;
+    double rect_yaw = 0.0;
+    double offset_x = 0.0;
+    double offset_y = 0.0;
+    // 壁センサー反応時のオフセット
+    double wall_offset_x = 0.0;
+    double wall_offset_y = 0.0;
+    // 壁検出から終了までの移動距離
+    double wall_move_dist_x = 0.0;
+    double wall_move_dist_y = 0.0;
 
     // within関連はメンバー変数。名前が長いので、参照として短い名前で扱う。
     int within_index = (mechanism_type == "front_kfs") ? FKFS : RKFS;
@@ -3603,8 +3691,7 @@ void R1MainNode::auto_collect_kfs_task(void)
       // center_x *= -1.0;
       // rect_yaw = angle_normalize(M_PI - rect_yaw);
     }
-    // TODO: ココらへんの処理はかなり怪しいので、赤ゾーンに対応するときに見直す。おそらく角度の扱いが怪しい
-    // yは進行方向と同じ向きに対してオフセットを適用する
+    // 足回りは進行方向に対してオフセットを適用する
     if (zone_ == "red") {
       if (is_inner && mechanism_type == "front_kfs") {
         offset_x = COLLECT_KFS_OFFSET * std::cos(rect_yaw);
@@ -3623,6 +3710,29 @@ void R1MainNode::auto_collect_kfs_task(void)
       }
     }
 
+    // 壁センサーは進行方向に対して、回収機構よりも先に壁が反応するときにのみ適用する
+    if (zone_ == "red") {
+      wall_move_dist_x = MOVE_DISTANCE_AFTER_WALL_DETECT * std::cos(rect_yaw);
+      wall_move_dist_y = MOVE_DISTANCE_AFTER_WALL_DETECT * std::sin(rect_yaw);
+      if (is_inner && mechanism_type == "rear_kfs") {
+        wall_offset_x = WALL_SENSOR_DELAY_OFFSET_DISTANCE * std::cos(rect_yaw);
+        wall_offset_y = WALL_SENSOR_DELAY_OFFSET_DISTANCE * std::sin(rect_yaw);
+      } else if (!is_inner && mechanism_type == "front_kfs") {
+        wall_offset_x = WALL_SENSOR_DELAY_OFFSET_DISTANCE * std::cos(rect_yaw);
+        wall_offset_y = WALL_SENSOR_DELAY_OFFSET_DISTANCE * std::sin(rect_yaw);
+      }
+    } else if (zone_ == "blue") {
+      wall_move_dist_x = MOVE_DISTANCE_AFTER_WALL_DETECT * std::cos(rect_yaw);
+      wall_move_dist_y = MOVE_DISTANCE_AFTER_WALL_DETECT * std::sin(rect_yaw);
+      if (is_inner && mechanism_type == "front_kfs") {
+        wall_offset_x = WALL_SENSOR_DELAY_OFFSET_DISTANCE * std::cos(rect_yaw);
+        wall_offset_y = WALL_SENSOR_DELAY_OFFSET_DISTANCE * std::sin(rect_yaw);
+      } else if (!is_inner && mechanism_type == "rear_kfs") {
+        wall_offset_x = WALL_SENSOR_DELAY_OFFSET_DISTANCE * std::cos(rect_yaw);
+        wall_offset_y = WALL_SENSOR_DELAY_OFFSET_DISTANCE * std::sin(rect_yaw);
+      }
+    }
+
     // center_xとcenter_yにオフセットを適用する
     if (zone_ == "red") {
       center_x += offset_x;
@@ -3633,14 +3743,172 @@ void R1MainNode::auto_collect_kfs_task(void)
       center_x += offset_x;
       center_y += offset_y;
     }
-    if (
-      is_within_rotated_rectangle(
-        map_x, map_y, center_x, center_y, rect_yaw, COLLECT_KFS_WIDTH, COLLECT_KFS_HEIGHT)) {
-      within = true;
-    }
-    if (within == false) {
-      // trueからfalseに変わったら、収納動作を行う。
-      if (prev_within == true) {
+
+    int kfs_height = calc_height(target_forest_number);
+    auto & step = within_index == FKFS ? auto_collect_kfs_fkfs_step_ : auto_collect_kfs_rkfs_step_;
+
+    if (step == 1) {
+      // 最後に自動回収された時刻が近い場合はスキップ
+      if ((this->now() - last_auto_collect_kfs_time_[within_index]).seconds() < COLLECT_KFS_INTERVAL_TIME) {
+        RCLCPP_ERROR(
+          this->get_logger(),
+          "skipping auto collect kfs because last collect time is too recent: %f seconds ago",
+          (this->now() - last_auto_collect_kfs_time_[within_index]).seconds());
+        continue;
+      }
+      // ENABLE_WALL_SENSOR == trueのとき、壁センサーの値を更新し、壁を検出する
+      // ENABLE_WALL_SENSOR == falseのとき、座標ベースで回収動作を開始するかどうかの判定を行う
+      if (ENABLE_WALL_SENSOR == true) {
+        // 壁センサーベースの判定
+        // まずは壁検出機能が有効となる範囲内にロボットがいるかを確認する
+        // withinの判定のみmap座標系で行う
+        if (
+          is_within_rotated_rectangle(
+            map_x, map_y, center_x, center_y, rect_yaw, WALL_SENSOR_DETECT_HEIGHT,
+            WALL_SENSOR_DETECT_WIDTH)) {
+          // 範囲内にいるときは壁センサーの値を更新する
+          update_wall_sensor_status(target_forest_number, within_index);
+          if (is_detect_wall(target_forest_number)) {
+            // 壁検出位置の座標を更新（odom座標系）
+            wall_detect_pos_[target_forest_number - 1] = odometry_;
+            // 壁センサーが一定時間反応しているときはwithinをtrueにする
+            step++;
+          }
+        } else {
+          // 座標ベースの判定
+          // 座標が範囲内のときはwithinをtrueにする
+          if (
+            is_within_rotated_rectangle(
+              map_x, map_y, center_x, center_y, rect_yaw, COLLECT_KFS_WIDTH, COLLECT_KFS_HEIGHT)) {
+            // within = true;
+            // 範囲内に入ったら次のステップに移動する
+            step++;
+          }
+        }
+      } else if (step == 2) {
+        // 壁センサーでオフセットを適用する場合、少し進む
+        // 壁センサーを使用しない場合、このステップはスキップする
+        if (ENABLE_WALL_SENSOR == false) {
+          double sx = wall_detect_pos_[target_forest_number - 1].pose.pose.position.x;
+          double sy = wall_detect_pos_[target_forest_number - 1].pose.pose.position.y;
+          double gx = sx + wall_offset_x;
+          double gy = sy + wall_offset_y;
+          double cx = odom_x;
+          double cy = odom_y;
+          if (is_passed_goal_by_dot(sx, sy, gx, gy, cx, cy)) {
+            step++;
+          }
+        } else {
+          step++;
+        }
+      } else if (step == 3) {
+        // 足回りの進行方向の位置制御はOFFにする
+        std_msgs::msg::Bool tangent_msg;
+        tangent_msg.data = false;
+        chassis_tangent_pid_enable_publisher_->publish(tangent_msg);
+        if (ENABLE_STOP_BEFORE_COLLECT_KFS) {
+          publish_chassis_act_pause();
+          is_act_paused_ = true;
+        }
+        step++;
+      } else if (step == 4) {
+        // ポーズ中は回収動作を行わない（右スティックでresumeされるまで待機）
+        if (is_act_paused_) {
+          return;
+        }
+        if (ENABLE_AUTO_COLLECT_KFS_ACTUATOR) {
+          // 回収位置に移動し、回収動作を行う
+          if (within_index == FKFS) {
+            // 収納yawタイマーが残っている場合はキャンセルする
+            if (auto_collect_front_storage_yaw_timer_) {
+              auto_collect_front_storage_yaw_timer_->cancel();
+            }
+            // 回収機構を動かす
+            kfs_fx_pos_ref(KFS_FX_EXPAND_POS);
+            if (zone_ == "blue" && is_inner) {
+              kfs_fyaw_move_front_mech_lock();
+            } else if (zone_ == "blue" && !is_inner) {
+              kfs_fyaw_move_rear_mech_lock();
+            } else if (zone_ == "red" && is_inner) {
+              kfs_fyaw_move_rear_mech_lock();
+            } else if (zone_ == "red" && !is_inner) {
+              kfs_fyaw_move_front_mech_lock();
+            }
+            kfs_front_pump(1.0);
+            kfs_front_valve(false);
+            if (kfs_height == HEIGHT_LOW) {
+              kfs_fz_pos_ref(KFS_FZ_LOW_POS);
+            } else if (kfs_height == HEIGHT_MIDDLE) {
+              kfs_fz_pos_ref(KFS_FZ_MIDDLE_POS);
+            } else if (kfs_height == HEIGHT_HIGH) {
+              kfs_fz_pos_ref(KFS_FZ_HIGH_POS);
+            }
+          } else {
+            // 収納yawタイマーが残っている場合はキャンセルする
+            if (auto_collect_rear_storage_yaw_timer_) {
+              auto_collect_rear_storage_yaw_timer_->cancel();
+            }
+            // 回収機構を動かす
+            kfs_rx_pos_ref(KFS_RX_EXPAND_POS);
+            if (zone_ == "blue" && is_inner) {
+              kfs_ryaw_move_front_mech_lock();
+            } else if (zone_ == "blue" && !is_inner) {
+              kfs_ryaw_move_rear_mech_lock();
+            } else if (zone_ == "red" && is_inner) {
+              kfs_ryaw_move_rear_mech_lock();
+            } else if (zone_ == "red" && !is_inner) {
+              kfs_ryaw_move_front_mech_lock();
+            }
+            kfs_rear_pump(1.0);
+            kfs_rear_valve(false);
+            if (kfs_height == HEIGHT_LOW) {
+              kfs_rz_pos_ref(KFS_RZ_LOW_POS);
+            } else if (kfs_height == HEIGHT_MIDDLE) {
+              kfs_rz_pos_ref(KFS_RZ_MIDDLE_POS);
+            } else if (kfs_height == HEIGHT_HIGH) {
+              kfs_rz_pos_ref(KFS_RZ_HIGH_POS);
+            }
+          }
+        } else {
+          RCLCPP_INFO(
+            this->get_logger(),
+            "%d forest %s kfs collect skipped because enable_auto_collect_kfs_actuator=false",
+            target_forest_number, kfs_auto_collect_plan_.kfs_mechanism_type[i].c_str());
+        }
+        if (ENABLE_AUTO_COLLECT_KFS_ACTUATOR) {
+          RCLCPP_INFO(
+            this->get_logger(), "%d forest %s kfs collect", target_forest_number,
+            kfs_auto_collect_plan_.kfs_mechanism_type[i].c_str());
+        }
+      } else if (step == 5) {
+        if (ENABLE_WALL_SENSOR == true) {
+          // 一定距離進むまで待機
+          double sx = wall_detect_pos_[target_forest_number - 1].pose.pose.position.x;
+          double sy = wall_detect_pos_[target_forest_number - 1].pose.pose.position.y;
+          double gx = sx + wall_offset_x + wall_move_dist_x;
+          double gy = sy + wall_offset_y + wall_move_dist_y;
+          double cx = odom_x;
+          double cy = odom_y;
+          if (is_passed_goal_by_dot(sx, sy, gx, gy, cx, cy)) {
+            step++;
+          }
+        } else {
+          // TODO: 座標ベースの終了判定も本当は終点のときはodom座標系のほうがいいかも
+          if (
+            is_within_rotated_rectangle(
+              map_x, map_y, center_x, center_y, rect_yaw, COLLECT_KFS_WIDTH, COLLECT_KFS_HEIGHT) ==
+            false) {
+            step++;
+          }
+        }
+      } else if (step == 6) {
+        // TODO: ロボットが安定しないようだったら、step6の前とかにも手動操縦を挟んでもいいかも
+
+        // 回収動作終了
+        // 足回りの進行方向の位置制御をONにする
+        std_msgs::msg::Bool tangent_msg;
+        tangent_msg.data = false;
+        chassis_tangent_pid_enable_publisher_->publish(tangent_msg);
         if (ENABLE_AUTO_COLLECT_KFS_ACTUATOR) {
           // 収納位置に移動
           if (within_index == FKFS) {
@@ -3681,101 +3949,135 @@ void R1MainNode::auto_collect_kfs_task(void)
             this->get_logger(), "%d forest %s kfs storage", target_forest_number,
             kfs_auto_collect_plan_.kfs_mechanism_type[i].c_str());
         }
+        RCLCPP_INFO(
+          this->get_logger(), "%d forest %s kfs auto collect completed", target_forest_number,
+          kfs_auto_collect_plan_.kfs_mechanism_type[i].c_str());
+        // ステップをリセット
+        step = 1;
+        // 最終時刻を更新
+        last_auto_collect_kfs_time_[within_index] = this->now();
       }
-    } else {
-      // falseからtrueに変わったら、回収動作を行う。
-      if (prev_within == false) {
-        if (ENABLE_AUTO_COLLECT_KFS_ACTUATOR) {
-          // 回収位置に移動
-          if (within_index == FKFS) {
-            // 収納yawタイマーが残っている場合はキャンセルする
-            if (auto_collect_front_storage_yaw_timer_) {
-              auto_collect_front_storage_yaw_timer_->cancel();
-            }
-            // 回収機構を動かす
-            kfs_fx_pos_ref(KFS_FX_EXPAND_POS);
-            if (zone_ == "blue" && is_inner) {
-              kfs_fyaw_move_front_mech_lock();
-            } else if (zone_ == "blue" && !is_inner) {
-              kfs_fyaw_move_rear_mech_lock();
-            } else if (zone_ == "red" && is_inner) {
-              kfs_fyaw_move_rear_mech_lock();
-            } else if (zone_ == "red" && !is_inner) {
-              kfs_fyaw_move_front_mech_lock();
-            }
-            kfs_front_pump(1.0);
-            kfs_front_valve(false);
-            int kfs_height = calc_height(target_forest_number);
-            if (kfs_height == HEIGHT_LOW) {
-              kfs_fz_pos_ref(KFS_FZ_LOW_POS);
-            } else if (kfs_height == HEIGHT_MIDDLE) {
-              kfs_fz_pos_ref(KFS_FZ_MIDDLE_POS);
-            } else if (kfs_height == HEIGHT_HIGH) {
-              kfs_fz_pos_ref(KFS_FZ_HIGH_POS);
-            }
-          } else {
-            // 収納yawタイマーが残っている場合はキャンセルする
-            if (auto_collect_rear_storage_yaw_timer_) {
-              auto_collect_rear_storage_yaw_timer_->cancel();
-            }
-            // 回収機構を動かす
-            kfs_rx_pos_ref(KFS_RX_EXPAND_POS);
-            if (zone_ == "blue" && is_inner) {
-              kfs_ryaw_move_front_mech_lock();
-            } else if (zone_ == "blue" && !is_inner) {
-              kfs_ryaw_move_rear_mech_lock();
-            } else if (zone_ == "red" && is_inner) {
-              kfs_ryaw_move_rear_mech_lock();
-            } else if (zone_ == "red" && !is_inner) {
-              kfs_ryaw_move_front_mech_lock();
-            }
-            kfs_rear_pump(1.0);
-            kfs_rear_valve(false);
-            int kfs_height = calc_height(target_forest_number);
-            if (kfs_height == HEIGHT_LOW) {
-              kfs_rz_pos_ref(KFS_RZ_LOW_POS);
-            } else if (kfs_height == HEIGHT_MIDDLE) {
-              kfs_rz_pos_ref(KFS_RZ_MIDDLE_POS);
-            } else if (kfs_height == HEIGHT_HIGH) {
-              kfs_rz_pos_ref(KFS_RZ_HIGH_POS);
-            }
-          }
-        } else {
-          RCLCPP_INFO(
-            this->get_logger(),
-            "%d forest %s kfs collect skipped because enable_auto_collect_kfs_actuator=false",
-            target_forest_number, kfs_auto_collect_plan_.kfs_mechanism_type[i].c_str());
-        }
-        if (ENABLE_AUTO_COLLECT_KFS_ACTUATOR) {
-          RCLCPP_INFO(
-            this->get_logger(), "%d forest %s kfs collect", target_forest_number,
-            kfs_auto_collect_plan_.kfs_mechanism_type[i].c_str());
-        }
-      }
-    }
-    // 最後に前回値を更新する
-    prev_within = within;
-  }
 
-  // 回収ゾーン内（within=true）のときだけ接線方向PID補正をOFFにする。
-  // ゾーン外または対象外ACTのときはONに戻す。
-  {
-    constexpr int FKFS = 0, RKFS = 1;
-    bool any_within = false;
-    const bool is_kfs_act =
-      (chassis_act_status_ == ChassisAct::ACT2 || chassis_act_status_ == ChassisAct::ACT3 ||
-       chassis_act_status_ == ChassisAct::ACT4);
-    if (is_kfs_act) {
-      for (const auto & w : kfs_auto_collect_within_) {
-        any_within |= w[FKFS] || w[RKFS];
-      }
+      // trueのときは壁検出ベースの判定、falseのときは座標ベースの判定
+
+      // if (within == false) {
+      //   // trueからfalseに変わったら、収納動作を行う。
+      //   if (prev_within == true) {
+      //     if (ENABLE_AUTO_COLLECT_KFS_ACTUATOR) {
+      //       // 収納位置に移動
+      //       if (within_index == FKFS) {
+      //         kfs_fx_pos_ref(KFS_FX_STORAGE_POS);
+      //         kfs_fz_pos_ref(KFS_FZ_STORAGE_POS);
+      //         if (auto_collect_front_storage_yaw_timer_) {
+      //           auto_collect_front_storage_yaw_timer_->cancel();
+      //         }
+      //         auto_collect_front_storage_yaw_timer_ = this->create_wall_timer(
+      //           std::chrono::duration<double>(KFS_YAW_DELAY_TIME), [this]() {
+      //             kfs_fyaw_pos_ref(KFS_FYAW_SIDE_ANGLE);
+      //             if (auto_collect_front_storage_yaw_timer_) {
+      //               auto_collect_front_storage_yaw_timer_->cancel();
+      //             }
+      //           });
+      //       } else {
+      //         kfs_rx_pos_ref(KFS_RX_STORAGE_POS);
+      //         kfs_rz_pos_ref(KFS_RZ_STORAGE_POS);
+      //         if (auto_collect_rear_storage_yaw_timer_) {
+      //           auto_collect_rear_storage_yaw_timer_->cancel();
+      //         }
+      //         auto_collect_rear_storage_yaw_timer_ = this->create_wall_timer(
+      //           std::chrono::duration<double>(KFS_YAW_DELAY_TIME), [this]() {
+      //             kfs_ryaw_pos_ref(KFS_RYAW_SIDE_ANGLE);
+      //             if (auto_collect_rear_storage_yaw_timer_) {
+      //               auto_collect_rear_storage_yaw_timer_->cancel();
+      //             }
+      //           });
+      //       }
+      //     } else {
+      //       RCLCPP_INFO(
+      //         this->get_logger(),
+      //         "%d forest %s kfs storage skipped because enable_auto_collect_kfs_actuator=false",
+      //         target_forest_number, kfs_auto_collect_plan_.kfs_mechanism_type[i].c_str());
+      //     }
+      //     if (ENABLE_AUTO_COLLECT_KFS_ACTUATOR) {
+      //       RCLCPP_INFO(
+      //         this->get_logger(), "%d forest %s kfs storage", target_forest_number,
+      //         kfs_auto_collect_plan_.kfs_mechanism_type[i].c_str());
+      //     }
+      //   }
+      // } else {
+      //   // falseからtrueに変わったら、回収動作を行う。
+      //   if (prev_within == false) {
+      //     if (ENABLE_AUTO_COLLECT_KFS_ACTUATOR) {
+      //       // 回収位置に移動
+      //       if (within_index == FKFS) {
+      //         // 収納yawタイマーが残っている場合はキャンセルする
+      //         if (auto_collect_front_storage_yaw_timer_) {
+      //           auto_collect_front_storage_yaw_timer_->cancel();
+      //         }
+      //         // 回収機構を動かす
+      //         kfs_fx_pos_ref(KFS_FX_EXPAND_POS);
+      //         if (zone_ == "blue" && is_inner) {
+      //           kfs_fyaw_move_front_mech_lock();
+      //         } else if (zone_ == "blue" && !is_inner) {
+      //           kfs_fyaw_move_rear_mech_lock();
+      //         } else if (zone_ == "red" && is_inner) {
+      //           kfs_fyaw_move_rear_mech_lock();
+      //         } else if (zone_ == "red" && !is_inner) {
+      //           kfs_fyaw_move_front_mech_lock();
+      //         }
+      //         kfs_front_pump(1.0);
+      //         kfs_front_valve(false);
+      //         if (kfs_height == HEIGHT_LOW) {
+      //           kfs_fz_pos_ref(KFS_FZ_LOW_POS);
+      //         } else if (kfs_height == HEIGHT_MIDDLE) {
+      //           kfs_fz_pos_ref(KFS_FZ_MIDDLE_POS);
+      //         } else if (kfs_height == HEIGHT_HIGH) {
+      //           kfs_fz_pos_ref(KFS_FZ_HIGH_POS);
+      //         }
+      //       } else {
+      //         // 収納yawタイマーが残っている場合はキャンセルする
+      //         if (auto_collect_rear_storage_yaw_timer_) {
+      //           auto_collect_rear_storage_yaw_timer_->cancel();
+      //         }
+      //         // 回収機構を動かす
+      //         kfs_rx_pos_ref(KFS_RX_EXPAND_POS);
+      //         if (zone_ == "blue" && is_inner) {
+      //           kfs_ryaw_move_front_mech_lock();
+      //         } else if (zone_ == "blue" && !is_inner) {
+      //           kfs_ryaw_move_rear_mech_lock();
+      //         } else if (zone_ == "red" && is_inner) {
+      //           kfs_ryaw_move_rear_mech_lock();
+      //         } else if (zone_ == "red" && !is_inner) {
+      //           kfs_ryaw_move_front_mech_lock();
+      //         }
+      //         kfs_rear_pump(1.0);
+      //         kfs_rear_valve(false);
+      //         if (kfs_height == HEIGHT_LOW) {
+      //           kfs_rz_pos_ref(KFS_RZ_LOW_POS);
+      //         } else if (kfs_height == HEIGHT_MIDDLE) {
+      //           kfs_rz_pos_ref(KFS_RZ_MIDDLE_POS);
+      //         } else if (kfs_height == HEIGHT_HIGH) {
+      //           kfs_rz_pos_ref(KFS_RZ_HIGH_POS);
+      //         }
+      //       }
+      //     } else {
+      //       RCLCPP_INFO(
+      //         this->get_logger(),
+      //         "%d forest %s kfs collect skipped because enable_auto_collect_kfs_actuator=false",
+      //         target_forest_number, kfs_auto_collect_plan_.kfs_mechanism_type[i].c_str());
+      //     }
+      //     if (ENABLE_AUTO_COLLECT_KFS_ACTUATOR) {
+      //       RCLCPP_INFO(
+      //         this->get_logger(), "%d forest %s kfs collect", target_forest_number,
+      //         kfs_auto_collect_plan_.kfs_mechanism_type[i].c_str());
+      //     }
+      //   }
+      // }
+      // // 最後に前回値を更新する
+      // prev_within = within;
     }
-    std_msgs::msg::Bool tangent_msg;
-    tangent_msg.data = !any_within;
-    chassis_tangent_pid_enable_publisher_->publish(tangent_msg);
   }
 }
-
 void R1MainNode::manual_mode8_auto_collect_kfs(void)
 {
   // if (ps4_->is_pushed_circle()) {
@@ -3999,6 +4301,9 @@ void R1MainNode::reset_robot(bool is_start_zone)
   // arucoマーカをリセットする
   publish_aruco_marker_id(0);
   received_r1_collect_kfs_ = false;
+  std_msgs::msg::Bool msg;
+  msg.data = true;
+  chassis_tangent_pid_enable_publisher_->publish(msg);
 }
 
 void R1MainNode::manual_task(void)
@@ -4115,12 +4420,11 @@ void R1MainNode::main_task(void)
     if (is_act_paused_) {
       // ポーズ中 → レジューム
       publish_chassis_act_resume();
-      is_act_paused_      = false;
+      is_act_paused_ = false;
       right_stick_handled = true;
     } else {
       const bool auto_running =
-        (chassis_act_status_ != ChassisAct::NONE &&
-         chassis_act_status_ != ChassisAct::ACT_PAUSE) ||
+        (chassis_act_status_ != ChassisAct::NONE && chassis_act_status_ != ChassisAct::ACT_PAUSE) ||
         pending_auto_robot_move_valid_;
       if (auto_running) {
         right_stick_handled = true;
@@ -4214,7 +4518,8 @@ void R1MainNode::main_task(void)
               if (!is_valid_forest(n)) {
                 RCLCPP_WARN(
                   this->get_logger(),
-                  "MODE3 enable_auto_select=true: r1_kfs_value contains invalid forest number %d.",
+                  "MODE3 enable_auto_select=true: r1_kfs_value contains invalid forest number "
+                  "%d.",
                   n);
                 continue;
               }
@@ -4256,7 +4561,8 @@ void R1MainNode::main_task(void)
                 }
                 RCLCPP_INFO(
                   this->get_logger(),
-                  "MODE3 enable_auto_select=true: status=%s zone=%s forests=[%d,%d,%d] -> selected "
+                  "MODE3 enable_auto_select=true: status=%s zone=%s forests=[%d,%d,%d] -> "
+                  "selected "
                   "%zu first=%s",
                   kfs_auto_collect_status_name(mode3_collect_status).c_str(), zone_.c_str(),
                   kfs_val[0], kfs_val[1], kfs_val[2], forest_order.size(), first_type.c_str());

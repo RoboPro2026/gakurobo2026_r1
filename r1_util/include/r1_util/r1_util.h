@@ -39,7 +39,7 @@ enum class ChassisAct
   ACT5_START = 51,
   ACT5 = 52,
   ACT5_FINISH = 53,
-  ACT_PAUSE  = 1000,
+  ACT_PAUSE = 1000,
   ACT_RESUME = 1001,
 };
 
@@ -198,4 +198,33 @@ bool is_within_rotated_rectangle(
   double local_y = -sin_yaw * dx + cos_yaw * dy;
 
   return std::abs(local_x) <= width * 0.5 && std::abs(local_y) <= height * 0.5;
+}
+
+/**
+ * @brief 始点と終点を通る直線に対して、現在位置がその直線を通過したかどうかを判定する
+ * 
+ * @param start_x 
+ * @param start_y 
+ * @param goal_x 
+ * @param goal_y 
+ * @param current_x 
+ * @param current_y 
+ * @return true goalを通過している
+ * @return false goalを通過していない
+ */
+bool is_passed_goal_by_dot(
+  double start_x, double start_y, double goal_x, double goal_y, double current_x, double current_y)
+{
+  double gsx = goal_x - start_x;
+  double gsy = goal_y - start_y;
+  double csx = current_x - start_x;
+  double csy = current_y - start_y;
+  double dist = std::hypot(gsx, gsy);
+  if (dist < 1e-6) {
+    // ゴールと開始点がほぼ同じ場合は、常にゴールを通過しているとみなす
+    return true;
+  }
+  double dot = gsx * csx + gsy * csy;
+  // 内積が正のときはゴールを通過している
+  return dot > 0;
 }
