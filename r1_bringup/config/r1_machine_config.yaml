@@ -1011,7 +1011,7 @@ ydlidar_fh_ros2_driver_node:
     # それをされてしまうと、USBが抜けたときに面倒なので、それを防止するパラメータ
     # デフォルトではauto_detect_serial_portはtrueになっている。
     auto_detect_serial_port: false
-    port: /dev/ttyUSB100
+    port: /dev/serial/by-path/pci-0000:00:14.0-usb-0:1.2.1:1.0-port0
     frame_id: base_link
     ignore_array: ""
     baudrate: 460800
@@ -1046,7 +1046,7 @@ ydlidar_fm_ros2_driver_node:
     # それをされてしまうと、USBが抜けたときに面倒なので、それを防止するパラメータ
     # デフォルトではauto_detect_serial_portはtrueになっている。
     auto_detect_serial_port: false
-    port: /dev/ttyUSB101
+    port: /dev/serial/by-path/pci-0000:00:14.0-usb-0:1.2.2:1.0-port0
     frame_id: base_link
     ignore_array: ""
     baudrate: 460800
@@ -1081,7 +1081,7 @@ ydlidar_fl_ros2_driver_node:
     # それをされてしまうと、USBが抜けたときに面倒なので、それを防止するパラメータ
     # デフォルトではauto_detect_serial_portはtrueになっている。
     auto_detect_serial_port: false
-    port: /dev/ttyUSB102
+    port: /dev/serial/by-path/pci-0000:00:14.0-usb-0:1.2.3:1.0-port0
     frame_id: base_link
     ignore_array: ""
     baudrate: 460800
@@ -1116,7 +1116,7 @@ ydlidar_rh_ros2_driver_node:
     # それをされてしまうと、USBが抜けたときに面倒なので、それを防止するパラメータ
     # デフォルトではauto_detect_serial_portはtrueになっている。
     auto_detect_serial_port: false
-    port: /dev/ttyUSB103
+    port: /dev/serial/by-path/pci-0000:00:14.0-usb-0:1.4.4:1.0-port0
     frame_id: base_link
     ignore_array: ""
     baudrate: 460800
@@ -1151,7 +1151,7 @@ ydlidar_rm_ros2_driver_node:
     # それをされてしまうと、USBが抜けたときに面倒なので、それを防止するパラメータ
     # デフォルトではauto_detect_serial_portはtrueになっている。
     auto_detect_serial_port: false
-    port: /dev/ttyUSB104
+    port: /dev/serial/by-path/pci-0000:00:14.0-usb-0:1.4.3:1.0-port0
     frame_id: base_link
     ignore_array: ""
     baudrate: 460800
@@ -1186,7 +1186,7 @@ ydlidar_rl_ros2_driver_node:
     # それをされてしまうと、USBが抜けたときに面倒なので、それを防止するパラメータ
     # デフォルトではauto_detect_serial_portはtrueになっている。
     auto_detect_serial_port: false
-    port: /dev/ttyUSB105
+    port: /dev/serial/by-path/pci-0000:00:14.0-usb-0:1.4.2:1.0-port0
     frame_id: base_link
     ignore_array: ""
     baudrate: 460800
