@@ -114,7 +114,7 @@ r1_chassis_velocity_control_node:
     # true のとき input_cmd_vel_topic と /odometry から PID 補正した output_cmd_vel_topic を出す
 
    # メカナムのときはtrue,ステアのときは安定しなかったのでfalse
-    enable_velocity_pid: true
+    enable_velocity_pid: false
     control_rate: 100.0
     input_cmd_vel_topic: "/cmd_vel_target"
     output_cmd_vel_topic: "/cmd_vel"
@@ -440,7 +440,7 @@ r1_mecanum_node:
   #   # 減速比は32 / 64 = 0.5
   #   # ギア比で割った値がモーターの出力となる
     gear_ratio: 0.5
-    motor_inverse: [true, false, false, true]
+    motor_inverse: [false, false, false, false]
     use_imu: true
 r1_swerve_drive_node:
   ros__parameters:
@@ -482,7 +482,7 @@ r1_odometry_node:
     wheel_radius: 0.025
     # wheel_radius: 0.0125
     encoder_x_inverse: false
-    encoder_y_inverse: false
+    encoder_y_inverse: true
     use_imu: true
 # ---------- KFS回収機構 ----------
 # linear motion node
@@ -1224,7 +1224,7 @@ sabacan_robomasv2_node_id1:
     # モータ番号0,1,2,3はフィードバックなし
     monitor_reg1: [0x0, 0x0, 0x0, 0x0]
 #     # VESCの極数
-    vesc_pole: [14, 14, 14, 14]
+    vesc_pole: [28, 28, 28, 28]
     # モータ番号0と1はMOTOR_STATE,ABS_SPD,ABS_POSをフィードバック
     # モータ番号2と3はMOTOR_STATEのみフィードバック
     # monitor_reg1: [0x0C00000000000002, 0x0C00000000000002, 0x2, 0x2]
