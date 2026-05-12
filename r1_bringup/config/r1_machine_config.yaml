@@ -996,12 +996,12 @@ r1_aruco_display_node:
 
 r1_aruco_serial_node:
   ros__parameters:
-    port: "/dev/serial/by-path/pci-0000:00:14.0-usb-0:1.4.1:1.0-port0"
+    port: "/dev/serial/by-path/pci-0000:00:14.0-usb-0:1.1.1:1.0-port0"
 
 # IMU
 bno086_node:
   ros__parameters:
-    port: "/dev/serial/by-path/pci-0000:00:14.0-usb-0:1.4.4:1.0-port0"
+    port: "/dev/serial/by-path/pci-0000:00:14.0-usb-0:1.1.4.4:1.0-port0"
 
 # 前上段sdm15
 ydlidar_fh_ros2_driver_node:

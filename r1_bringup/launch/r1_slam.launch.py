@@ -23,9 +23,9 @@ def generate_launch_description():
     # パッケージの共有ディレクトリのパスを取得
     pkg_dir = get_package_share_directory("r1_bringup")
     zone = LaunchConfiguration("zone")
-    map_yaml = PythonExpression([
-        "'src/gakurobo2026_r1/data/map/field_' + '", zone, "' + '.yaml'"
-    ])
+    map_yaml = PythonExpression(
+        ["'src/gakurobo2026_r1/data/map/field_' + '", zone, "' + '.yaml'"]
+    )
 
     # パラメータファイルのフルパスを作成
     param_file = os.path.join(pkg_dir, "config", "r1_slam_config.yaml")
@@ -153,7 +153,7 @@ def generate_launch_description():
             "--x",
             "0.0875",
             "--y",
-            "-0.0",
+            "0.414",
             "--z",
             "0.05",
             "--roll",
@@ -161,7 +161,7 @@ def generate_launch_description():
             "--pitch",
             "0.0",
             "--yaw",
-            "3.1415926525",
+            "1.5707963267948966",
             "--frame-id",
             "base_link",
             "--child-frame-id",
