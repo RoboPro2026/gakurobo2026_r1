@@ -273,12 +273,12 @@ def generate_launch_description():
             ],
         )
 
-    ydlidar_fh_node = create_ydlidar_node("ydlidar_fh_node", "fh")
-    ydlidar_fm_node = create_ydlidar_node("ydlidar_fm_node", "fm")
-    ydlidar_fl_node = create_ydlidar_node("ydlidar_fl_node", "fl")
-    ydlidar_rh_node = create_ydlidar_node("ydlidar_rh_node", "rh")
-    ydlidar_rm_node = create_ydlidar_node("ydlidar_rm_node", "rm")
-    ydlidar_rl_node = create_ydlidar_node("ydlidar_rl_node", "rl")
+    ydlidar_fh_node = create_ydlidar_node("ydlidar_fh_ros2_driver_node", "fh")
+    ydlidar_fm_node = create_ydlidar_node("ydlidar_fm_ros2_driver_node", "fm")
+    ydlidar_fl_node = create_ydlidar_node("ydlidar_fl_ros2_driver_node", "fl")
+    ydlidar_rh_node = create_ydlidar_node("ydlidar_rh_ros2_driver_node", "rh")
+    ydlidar_rm_node = create_ydlidar_node("ydlidar_rm_ros2_driver_node", "rm")
+    ydlidar_rl_node = create_ydlidar_node("ydlidar_rl_ros2_driver_node", "rl")
 
     def create_sabacan_robomasv2_node(
         board_id: int,
