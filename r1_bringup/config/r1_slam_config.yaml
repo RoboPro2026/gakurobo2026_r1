@@ -14,8 +14,8 @@ urg_node2_1:
     diagnostics_tolerance : 0.05
     diagnostics_window_time : 5.0
     time_offset : 0.0
-    angle_min : -0.58
-    angle_max : 0.63
+    angle_min : -1.1
+    angle_max : 1.2
     skip : 0
     cluster : 1
 urg_node2_2:
