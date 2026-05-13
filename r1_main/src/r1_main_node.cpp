@@ -874,6 +874,16 @@ R1MainNode::R1MainNode() : Node("r1_main_node")
   state_machine_->print_state(initial_state_, "Configured initial state: ");
   // アクチュエータを初期化
   // init_actuator();
+
+  // this->now() と同じクロック型で時刻ベクターを初期化する
+  // ヘッダのデフォルト値 rclcpp::Time(0) は RCL_ROS_TIME (type=1) になるため、
+  // use_sim_time=false 環境では this->now() (type=2) と型が合わずクラッシュする
+  for (int i = 0; i < 2; i++) {
+    last_auto_collect_kfs_time_[i] = this->now();
+  }
+  for (int i = 0; i < 12; i++) {
+    wall_sensor_detect_start_time_[i] = this->now();
+  }
 }
 
 void R1MainNode::imu_callback(const sensor_msgs::msg::Imu::SharedPtr msg)
@@ -3995,7 +4005,7 @@ void R1MainNode::auto_collect_kfs_task(void)
         step = 1;
         // 壁センサーの状態をリセット
         wall_sensor_detected_[target_forest_number - 1] = false;
-        wall_sensor_detect_start_time_[target_forest_number - 1] = rclcpp::Time(0, 0);
+        wall_sensor_detect_start_time_[target_forest_number - 1] = this->now();
         // 最終時刻を更新
         last_auto_collect_kfs_time_[within_index] = this->now();
       }
