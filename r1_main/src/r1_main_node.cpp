@@ -898,7 +898,7 @@ void R1MainNode::register_scan(
   rclcpp::Subscription<sensor_msgs::msg::LaserScan>::SharedPtr & subscription, double & data)
 {
   subscription = this->create_subscription<sensor_msgs::msg::LaserScan>(
-    topic_name, 10, [&data](const sensor_msgs::msg::LaserScan::SharedPtr msg) {
+    topic_name, rclcpp::SensorDataQoS(), [&data](const sensor_msgs::msg::LaserScan::SharedPtr msg) {
       data = static_cast<double>(msg->ranges[4]);
     });
 }
