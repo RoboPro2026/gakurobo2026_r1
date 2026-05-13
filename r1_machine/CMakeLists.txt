@@ -63,6 +63,7 @@ ament_target_dependencies(r1_machine_manage_node
   rclcpp
   sabacan_msgs
   sabacan_single_control_msgs
+  sensor_msgs
   std_msgs
   r1_msgs
   r1_util
