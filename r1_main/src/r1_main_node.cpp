@@ -3797,6 +3797,8 @@ void R1MainNode::auto_collect_kfs_task(void)
             map_x, map_y, center_x, center_y, rect_yaw, WALL_SENSOR_DETECT_HEIGHT,
             WALL_SENSOR_DETECT_WIDTH)) {
           // 範囲内にいるときは壁センサーの値を更新する
+          // withinがtrueになるとLEDの色が変わる
+          within = true;
           update_wall_sensor_status(target_forest_number, within_index);
           if (is_detect_wall(target_forest_number)) {
             // 壁検出位置の座標を更新（odom座標系）
@@ -3807,10 +3809,11 @@ void R1MainNode::auto_collect_kfs_task(void)
         } else {
           // 座標ベースの判定
           // 座標が範囲内のときはwithinをtrueにする
+          // withinがtrueになるとLEDの色が変わる
           if (
             is_within_rotated_rectangle(
               map_x, map_y, center_x, center_y, rect_yaw, COLLECT_KFS_WIDTH, COLLECT_KFS_HEIGHT)) {
-            // within = true;
+            within = true;
             // 範囲内に入ったら次のステップに移動する
             step++;
           }
@@ -3995,6 +3998,12 @@ void R1MainNode::auto_collect_kfs_task(void)
         wall_sensor_detect_start_time_[target_forest_number - 1] = rclcpp::Time(0, 0);
         // 最終時刻を更新
         last_auto_collect_kfs_time_[within_index] = this->now();
+      }
+
+      // 回収シーケンス進行中 (step >= 2) は within をtrueにする
+      // withinがtrueのとき、LEDの色が変わる
+      if (step >= 2) {
+        within = true;
       }
 
       // trueのときは壁検出ベースの判定、falseのときは座標ベースの判定
