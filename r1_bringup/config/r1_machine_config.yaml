@@ -345,12 +345,12 @@ r1_main_node:
     collect_kfs_width: 0.6
     # false にすると auto_collect_kfs_task は範囲判定と LED 更新だけ行い、
     # KFS の位置・yaw・ポンプ・バルブ指令は出さない
-    enable_auto_collect_kfs_actuator: true
+    enable_auto_collect_kfs_actuator: false
     # KFS回収時に一時停止するか
     enable_stop_before_collect_kfs_: true
     # KFS回収時にセンサーを用いたの回収にするか。
     # trueのときはセンサーを用いた回収、falseのときは座標を用いた回収になる
-    enable_wall_sensor: false
+    enable_wall_sensor: true
     # 壁検出時に止まるようにするか。
     # 壁検出センサーの距離閾値 [m]
     wall_sensor_distance_threshold: 0.5
