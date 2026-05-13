@@ -2208,12 +2208,21 @@ void R1MainNode::kfs_robot_start_act(void)
 
 void R1MainNode::kfs_collect_start_act(void)
 {
-// 千田機構
+  auto ROLL_DELAY = 300ms;
+  auto PUSH_VALVE_DELAY = 1000ms;
+
+  if (kfs_collect_start_act_roll_timer_) {
+    kfs_collect_start_act_roll_timer_->cancel();
+  }
+
+  if (kfs_collect_start_act_push_valve_timer_) {
+    kfs_collect_start_act_push_valve_timer_->cancel();
+  }
+
 #if SPEAR_MECHANISM == SPEAR_MECHANISM_OTSUKI
+  // 1. spear_yを移動。push_valveをtrueにし、槍回収機構を押し出す。
   spear_y_pos_ref(SPEAR_Y_MAKE_SPEAR_POS);
   spear_hand_push_valve(true);
-  spear_roll1_pos_ref(SPEAR_ROLL1_VERTICAL_ANGLE);
-  spear_roll2_pos_ref(SPEAR_ROLL2_VERTICAL_ANGLE);
 #elif SPEAR_MECHANISM == SPEAR_MECHANISM_CHIDA
 // // spear_xを動かす
 // spear_x_pos_ref(SPEAR_X_MIDDLE_POS);
@@ -2224,46 +2233,55 @@ void R1MainNode::kfs_collect_start_act(void)
 #endif
   // arucoマーカをもとに戻す
   publish_aruco_marker_id(0);
-  // 一定時間経過後にKFS回収機構を動かす
-  if (kfs_collect_start_act_roll_timer_) {
-    kfs_collect_start_act_roll_timer_->cancel();
-  }
-  kfs_collect_start_act_roll_timer_ = this->create_wall_timer(1000ms, [this]() {
-  // hand_push_valveをoffにする
+
+  // 2. 少ししたら、rollを垂直にする
+  kfs_collect_start_act_roll_timer_ = this->create_wall_timer(ROLL_DELAY, [this]() {
 #if SPEAR_MECHANISM == SPEAR_MECHANISM_OTSUKI
-    spear_hand_push_valve(false);
+    spear_roll1_pos_ref(SPEAR_ROLL1_VERTICAL_ANGLE);
+    spear_roll2_pos_ref(SPEAR_ROLL2_VERTICAL_ANGLE);
 #endif
-    // デバッグ用にKFS回収用アクチュエータを回収位置位置に移動
-    kfs_fx_pos_ref(KFS_FX_START_POS);
-    kfs_rx_pos_ref(KFS_RX_START_POS);
-    kfs_fz_pos_ref(KFS_FZ_STORAGE_POS);
-    kfs_rz_pos_ref(KFS_RZ_STORAGE_POS);
-    bool is_inner =
-      (chassis_act_status_ == ChassisAct::ACT2 || chassis_act_status_ == ChassisAct::ACT3);
-    bool is_outer = chassis_act_status_ == ChassisAct::ACT4;
-    if (zone_ == "blue" && is_inner) {
-      // front
-      kfs_fyaw_move_front_mech_lock();
-      kfs_ryaw_move_front_mech_lock();
-    } else if (zone_ == "blue" && is_outer) {
-      // rear
-      kfs_fyaw_move_rear_mech_lock();
-      kfs_ryaw_move_rear_mech_lock();
-    } else if (zone_ == "red" && is_inner) {
-      // rear
-      kfs_fyaw_move_rear_mech_lock();
-      kfs_ryaw_move_rear_mech_lock();
-    } else if (zone_ == "red" && is_outer) {
-      // front
-      kfs_fyaw_move_front_mech_lock();
-      kfs_ryaw_move_front_mech_lock();
-    }
-    kfs_front_pump(0.0);
-    kfs_rear_pump(0.0);
     if (kfs_collect_start_act_roll_timer_) {
       kfs_collect_start_act_roll_timer_->cancel();
     }
   });
+
+  kfs_collect_start_act_push_valve_timer_ =
+    this->create_wall_timer(ROLL_DELAY + PUSH_VALVE_DELAY, [this]() {
+  // 3. hand_push_valveをoffにし、やり回収機構を引っ込める
+#if SPEAR_MECHANISM == SPEAR_MECHANISM_OTSUKI
+      spear_hand_push_valve(false);
+#endif
+      // 4. KFS回収用アクチュエータを回収位置位置に移動
+      kfs_fx_pos_ref(KFS_FX_START_POS);
+      kfs_rx_pos_ref(KFS_RX_START_POS);
+      kfs_fz_pos_ref(KFS_FZ_STORAGE_POS);
+      kfs_rz_pos_ref(KFS_RZ_STORAGE_POS);
+      bool is_inner =
+        (chassis_act_status_ == ChassisAct::ACT2 || chassis_act_status_ == ChassisAct::ACT3);
+      bool is_outer = chassis_act_status_ == ChassisAct::ACT4;
+      if (zone_ == "blue" && is_inner) {
+        // front
+        kfs_fyaw_move_front_mech_lock();
+        kfs_ryaw_move_front_mech_lock();
+      } else if (zone_ == "blue" && is_outer) {
+        // rear
+        kfs_fyaw_move_rear_mech_lock();
+        kfs_ryaw_move_rear_mech_lock();
+      } else if (zone_ == "red" && is_inner) {
+        // rear
+        kfs_fyaw_move_rear_mech_lock();
+        kfs_ryaw_move_rear_mech_lock();
+      } else if (zone_ == "red" && is_outer) {
+        // front
+        kfs_fyaw_move_front_mech_lock();
+        kfs_ryaw_move_front_mech_lock();
+      }
+      kfs_front_pump(0.0);
+      kfs_rear_pump(0.0);
+      if (kfs_collect_start_act_push_valve_timer_) {
+        kfs_collect_start_act_push_valve_timer_->cancel();
+      }
+    });
 }
 
 void R1MainNode::stop_actuator(void)
@@ -2594,48 +2612,83 @@ void R1MainNode::manual_mode3_init_move_task(int n)
 
 void R1MainNode::manual_mode3_make_spear_task(int n)
 {
-  auto PUSH_VALVE_DELAY = 1000ms;
   int & step = manual_mode3_make_spear_task_step_;
+
+  auto ROLL_DELAY = 300ms;
+  auto PUSH_VALVE_DELAY = 1000ms;
   RCLCPP_INFO(this->get_logger(), "manual_mode3_make_spear_task step: %d", step);
 #if SPEAR_MECHANISM == SPEAR_MECHANISM_OTSUKI
   if (step == 1) {
+    if (manual_mode3_roll_timer_) {
+      manual_mode3_roll_timer_->cancel();
+    }
     if (manual_mode3_push_valve_timer_) {
       manual_mode3_push_valve_timer_->cancel();
     }
-    if (zone_ == "red") {
-      spear_roll1_pos_ref(SPEAR_ROLL1_INV_HORIZONTAL_ANGLE);
-      spear_roll2_pos_ref(SPEAR_ROLL2_INV_HORIZONTAL_ANGLE);
-    } else {
-      spear_roll1_pos_ref(SPEAR_ROLL1_HORIZONTAL_ANGLE);
-      spear_roll2_pos_ref(SPEAR_ROLL2_HORIZONTAL_ANGLE);
-    }
 
+    // 1. spear_yを動かす。
+    // hand_push_valveを動かし、機構を前に出す。
+    // arucoマーカーは0をpublishする
     spear_y_pos_ref(SPEAR_Y_MAKE_SPEAR_POS);
     spear_hand_push_valve(true);
     publish_aruco_marker_id(0);
-    manual_mode3_push_valve_timer_ = this->create_wall_timer(PUSH_VALVE_DELAY, [this]() {
-      spear_hand_push_valve(false);
-      if (manual_mode3_push_valve_timer_) {
-        manual_mode3_push_valve_timer_->cancel();
+
+    // 2. 少し遅延を入れて、rollを横向きにする
+    manual_mode3_roll_timer_ = this->create_wall_timer(ROLL_DELAY, [this]() {
+      if (zone_ == "red") {
+        spear_roll1_pos_ref(SPEAR_ROLL1_INV_HORIZONTAL_ANGLE);
+        spear_roll2_pos_ref(SPEAR_ROLL2_INV_HORIZONTAL_ANGLE);
+      } else {
+        spear_roll1_pos_ref(SPEAR_ROLL1_HORIZONTAL_ANGLE);
+        spear_roll2_pos_ref(SPEAR_ROLL2_HORIZONTAL_ANGLE);
+      }
+
+      if (manual_mode3_roll_timer_) {
+        manual_mode3_roll_timer_->cancel();
       }
     });
+
+    // 3. さらに遅延を入れて、hand_push_valveをoffにし、機構を引っ込める
+    manual_mode3_push_valve_timer_ =
+      this->create_wall_timer(ROLL_DELAY + PUSH_VALVE_DELAY, [this]() {
+        spear_hand_push_valve(false);
+        if (manual_mode3_push_valve_timer_) {
+          manual_mode3_push_valve_timer_->cancel();
+        }
+      });
     step++;
   } else if (step == 2) {
     publish_aruco_marker_id(1);
     step++;
   } else if (step == 3) {
+    if (manual_mode3_roll_timer_) {
+      manual_mode3_roll_timer_->cancel();
+    }
+
     if (manual_mode3_push_valve_timer_) {
       manual_mode3_push_valve_timer_->cancel();
     }
-    spear_roll1_pos_ref(SPEAR_ROLL1_VERTICAL_ANGLE);
-    spear_roll2_pos_ref(SPEAR_ROLL2_VERTICAL_ANGLE);
+
+    // 1. push_valveをonにし、機構を前に出す。
     spear_hand_push_valve(true);
-    manual_mode3_push_valve_timer_ = this->create_wall_timer(PUSH_VALVE_DELAY, [this]() {
-      spear_hand_push_valve(false);
-      if (manual_mode3_push_valve_timer_) {
-        manual_mode3_push_valve_timer_->cancel();
+
+    // 2. 少し遅延を入れて、rollを縦向きにする
+    manual_mode3_roll_timer_ = this->create_wall_timer(ROLL_DELAY, [this]() {
+      spear_roll1_pos_ref(SPEAR_ROLL1_VERTICAL_ANGLE);
+      spear_roll2_pos_ref(SPEAR_ROLL2_VERTICAL_ANGLE);
+      if (manual_mode3_roll_timer_) {
+        manual_mode3_roll_timer_->cancel();
       }
     });
+
+    // 3. さらに遅延を入れて、push_valveをoffにし、機構を引っ込める
+    manual_mode3_push_valve_timer_ =
+      this->create_wall_timer(ROLL_DELAY + PUSH_VALVE_DELAY, [this]() {
+        spear_hand_push_valve(false);
+        if (manual_mode3_push_valve_timer_) {
+          manual_mode3_push_valve_timer_->cancel();
+        }
+      });
     step = 1;
     RCLCPP_INFO(this->get_logger(), "make spear task completed");
   }

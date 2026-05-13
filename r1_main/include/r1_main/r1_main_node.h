@@ -799,6 +799,7 @@ public:
 
   void kfs_robot_start_act(void);
   rclcpp::TimerBase::SharedPtr kfs_collect_start_act_roll_timer_;
+  rclcpp::TimerBase::SharedPtr kfs_collect_start_act_push_valve_timer_;
   void kfs_collect_start_act(void);
 
   // 動いていたら危険なアクチュエータは停止する
@@ -885,6 +886,7 @@ public:
   rclcpp::TimerBase::SharedPtr manual_mode3_timer2_;
   rclcpp::TimerBase::SharedPtr manual_mode3_timer3_;
   rclcpp::TimerBase::SharedPtr manual_mode3_timer4_;
+  rclcpp::TimerBase::SharedPtr manual_mode3_roll_timer_;
   rclcpp::TimerBase::SharedPtr manual_mode3_push_valve_timer_;
   rclcpp::TimerBase::SharedPtr manual_mode4_front_valve_timer_;
   rclcpp::TimerBase::SharedPtr manual_mode5_rear_valve_timer_;
