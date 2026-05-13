@@ -273,10 +273,10 @@ def generate_launch_description():
             ],
         )
 
-    ydlidar_fh_node = create_ydlidar_node("ydlidar_fh_ros2_driver_node", "fh")
+    # ydlidar_fh_node = create_ydlidar_node("ydlidar_fh_ros2_driver_node", "fh")
     ydlidar_fm_node = create_ydlidar_node("ydlidar_fm_ros2_driver_node", "fm")
     ydlidar_fl_node = create_ydlidar_node("ydlidar_fl_ros2_driver_node", "fl")
-    ydlidar_rh_node = create_ydlidar_node("ydlidar_rh_ros2_driver_node", "rh")
+    # ydlidar_rh_node = create_ydlidar_node("ydlidar_rh_ros2_driver_node", "rh")
     ydlidar_rm_node = create_ydlidar_node("ydlidar_rm_ros2_driver_node", "rm")
     ydlidar_rl_node = create_ydlidar_node("ydlidar_rl_ros2_driver_node", "rl")
 
@@ -590,10 +590,10 @@ def generate_launch_description():
     # r1_mainのノードの起動を遅延させる
     common_nodes = [
         # 単眼Lidar
-        ydlidar_fh_node,
+        # ydlidar_fh_node,
         ydlidar_fm_node,
         ydlidar_fl_node,
-        ydlidar_rh_node,
+        # ydlidar_rh_node,
         ydlidar_rm_node,
         ydlidar_rl_node,
         # sabacan

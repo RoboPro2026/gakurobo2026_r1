@@ -899,9 +899,7 @@ void R1MainNode::register_scan(
 {
   subscription = this->create_subscription<sensor_msgs::msg::LaserScan>(
     topic_name, 10, [&data](const sensor_msgs::msg::LaserScan::SharedPtr msg) {
-      if (!msg->ranges.empty()) {
-        data = static_cast<double>(msg->ranges[4]);
-      }
+      data = static_cast<double>(msg->ranges[4]);
     });
 }
 
