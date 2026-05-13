@@ -3749,7 +3749,9 @@ void R1MainNode::auto_collect_kfs_task(void)
 
     if (step == 1) {
       // 最後に自動回収された時刻が近い場合はスキップ
-      if ((this->now() - last_auto_collect_kfs_time_[within_index]).seconds() < COLLECT_KFS_INTERVAL_TIME) {
+      if (
+        (this->now() - last_auto_collect_kfs_time_[within_index]).seconds() <
+        COLLECT_KFS_INTERVAL_TIME) {
         RCLCPP_ERROR(
           this->get_logger(),
           "skipping auto collect kfs because last collect time is too recent: %f seconds ago",
@@ -3812,10 +3814,7 @@ void R1MainNode::auto_collect_kfs_task(void)
         }
         step++;
       } else if (step == 4) {
-        // ポーズ中は回収動作を行わない（右スティックでresumeされるまで待機）
-        if (is_act_paused_) {
-          return;
-        }
+        // 機構を展開
         if (ENABLE_AUTO_COLLECT_KFS_ACTUATOR) {
           // 回収位置に移動し、回収動作を行う
           if (within_index == FKFS) {
@@ -3880,7 +3879,16 @@ void R1MainNode::auto_collect_kfs_task(void)
             this->get_logger(), "%d forest %s kfs collect", target_forest_number,
             kfs_auto_collect_plan_.kfs_mechanism_type[i].c_str());
         }
+        // 最後まで終わったら次のステップに進む
+        step++;
       } else if (step == 5) {
+        // ポーズ中は回収動作を行わない（右スティックでresumeされるまで待機）
+        if (is_act_paused_) {
+          return;
+        }
+        // 最後まで終わったら次のステップに進む
+        step++;
+      } else if (step == 6) {
         if (ENABLE_WALL_SENSOR == true) {
           // 一定距離進むまで待機
           double sx = wall_detect_pos_[target_forest_number - 1].pose.pose.position.x;
@@ -3901,7 +3909,7 @@ void R1MainNode::auto_collect_kfs_task(void)
             step++;
           }
         }
-      } else if (step == 6) {
+      } else if (step == 7) {
         // TODO: ロボットが安定しないようだったら、step6の前とかにも手動操縦を挟んでもいいかも
 
         // 回収動作終了
