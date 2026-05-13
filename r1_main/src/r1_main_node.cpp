@@ -3797,11 +3797,10 @@ void R1MainNode::auto_collect_kfs_task(void)
       if (
         (this->now() - last_auto_collect_kfs_time_[within_index]).seconds() <
         COLLECT_KFS_INTERVAL_TIME) {
-        // ログがうるさいのでコメントアウト
-        // RCLCPP_ERROR(
-        //   this->get_logger(),
-        //   "skipping auto collect kfs because last collect time is too recent: %f seconds ago",
-        //   (this->now() - last_auto_collect_kfs_time_[within_index]).seconds());
+        RCLCPP_ERROR_THROTTLE(
+          this->get_logger(), *this->get_clock(), 1000,
+          "skipping auto collect kfs because last collect time is too recent: %f seconds ago",
+          (this->now() - last_auto_collect_kfs_time_[within_index]).seconds());
         continue;
       }
       // ENABLE_WALL_SENSOR == trueのとき、壁センサーの値を更新し、壁を検出する
@@ -3814,14 +3813,13 @@ void R1MainNode::auto_collect_kfs_task(void)
           is_within_rotated_rectangle(
             map_x, map_y, center_x, center_y, rect_yaw, WALL_SENSOR_DETECT_HEIGHT,
             WALL_SENSOR_DETECT_WIDTH)) {
-          // 範囲内にいるときは壁センサーの値を更新する
-          // withinがtrueになるとLEDの色が変わる
-          within = true;
           update_wall_sensor_status(target_forest_number, within_index);
           if (is_detect_wall(target_forest_number)) {
             // 壁検出位置の座標を更新（odom座標系）
             wall_detect_pos_[target_forest_number - 1] = odometry_;
-            // 壁センサーが一定時間反応しているときはwithinをtrueにする
+            // 範囲内にいるときは壁センサーの値を更新する
+            // withinがtrueになるとLEDの色が変わる
+            within = true;
             step++;
           }
         }
@@ -3840,7 +3838,7 @@ void R1MainNode::auto_collect_kfs_task(void)
     } else if (step == 2) {
       // 壁センサーでオフセットを適用する場合、少し進む
       // 壁センサーを使用しない場合、このステップはスキップする
-      if (ENABLE_WALL_SENSOR == false) {
+      if (ENABLE_WALL_SENSOR == true) {
         double sx = wall_detect_pos_[target_forest_number - 1].pose.pose.position.x;
         double sy = wall_detect_pos_[target_forest_number - 1].pose.pose.position.y;
         double gx = sx + wall_offset_x;
@@ -3968,9 +3966,11 @@ void R1MainNode::auto_collect_kfs_task(void)
 
       // 回収動作終了
       // 足回りの進行方向の位置制御をONにする
-      std_msgs::msg::Bool tangent_msg;
-      tangent_msg.data = false;
-      chassis_tangent_pid_enable_publisher_->publish(tangent_msg);
+      if (r1_init_parameter_.enable_kfs_auto_chassis == true) {
+        std_msgs::msg::Bool tangent_msg;
+        tangent_msg.data = false;
+        chassis_tangent_pid_enable_publisher_->publish(tangent_msg);
+      }
       if (ENABLE_AUTO_COLLECT_KFS_ACTUATOR) {
         // 収納位置に移動
         if (within_index == FKFS) {
