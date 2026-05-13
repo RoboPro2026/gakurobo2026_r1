@@ -3574,31 +3574,59 @@ void R1MainNode::auto_collect_kfs_task(void)
 
   auto update_wall_sensor_status = [&](int target_forest, int within_index) {
     int kfs_height = calc_height(target_forest);
-    double sensor_value = 0.0;
+    // double sensor_value = 0.0;
+    // if (within_index == FKFS) {
+    //   if (kfs_height == HEIGHT_LOW) {
+    //     sensor_value = scan_fl_data_;
+    //   } else if (kfs_height == HEIGHT_MIDDLE) {
+    //     sensor_value = scan_fm_data_;
+    //   } else if (kfs_height == HEIGHT_HIGH) {
+    //     sensor_value = scan_fh_data_;
+    //   }
+    // } else if (within_index == RKFS) {
+    //   if (kfs_height == HEIGHT_LOW) {
+    //     sensor_value = scan_rl_data_;
+    //   } else if (kfs_height == HEIGHT_MIDDLE) {
+    //     sensor_value = scan_rm_data_;
+    //   } else if (kfs_height == HEIGHT_HIGH) {
+    //     sensor_value = scan_rh_data_;
+    //   }
+    // }
+    // bool sensor_detect = (sensor_value > WALL_SENSOR_DISTANCE_THRESHOLD);
+    // if (sensor_detect && wall_sensor_detected_[target_forest - 1] == false) {
+    //   wall_sensor_detect_start_time_[target_forest - 1] = this->now();
+    // }
+    // wall_sensor_detected_[target_forest - 1] = sensor_detect;
+    bool wall_detected = false;
+    double sensor_value_low = 0.0;
+    double sensor_value_middle = 0.0;
+    double sensor_value_high = 0.0;
     if (within_index == FKFS) {
-      if (kfs_height == HEIGHT_LOW) {
-        sensor_value = scan_fl_data_;
-      } else if (kfs_height == HEIGHT_MIDDLE) {
-        sensor_value = scan_fm_data_;
-      } else if (kfs_height == HEIGHT_HIGH) {
-        sensor_value = scan_fh_data_;
-      }
+      sensor_value_low = scan_fl_data_;
+      sensor_value_middle = scan_fm_data_;
     } else if (within_index == RKFS) {
-      if (kfs_height == HEIGHT_LOW) {
-        sensor_value = scan_rl_data_;
-      } else if (kfs_height == HEIGHT_MIDDLE) {
-        sensor_value = scan_rm_data_;
-      } else if (kfs_height == HEIGHT_HIGH) {
-        sensor_value = scan_rh_data_;
-      }
+      sensor_value_low = scan_rl_data_;
+      sensor_value_middle = scan_rm_data_;
     }
 
+    // センサーが反応しているかを確認
+    if (kfs_height == HEIGHT_LOW) {
+      // 下段の検出：lセンサがOFF->ONの切り替わり
+      wall_detected = (sensor_value_low > WALL_SENSOR_DISTANCE_THRESHOLD);
+    } else if (kfs_height == HEIGHT_MIDDLE) {
+      // 中段の検出：9以外：lセンサがONかつmセンサがON->OFFの切り替わり
+      wall_detected =
+        (sensor_value_low < WALL_SENSOR_DISTANCE_THRESHOLD &&
+         sensor_value_middle > WALL_SENSOR_DISTANCE_THRESHOLD);
+    } else if (kfs_height == HEIGHT_HIGH) {
+      // 上段の検出：mセンサがOFF->ONの切り替わり
+      wall_detected = (sensor_value_middle < WALL_SENSOR_DISTANCE_THRESHOLD);
+    }
     // センサーが初回の反応だった場合は開始時刻を更新
-    bool sensor_detect = (sensor_value > WALL_SENSOR_DISTANCE_THRESHOLD);
-    if (sensor_detect && wall_sensor_detected_[target_forest - 1] == false) {
+    if (wall_detected && wall_sensor_detected_[target_forest - 1] == false) {
       wall_sensor_detect_start_time_[target_forest - 1] = this->now();
     }
-    wall_sensor_detected_[target_forest - 1] = sensor_detect;
+    wall_sensor_detected_[target_forest - 1] = wall_detected;
   };
 
   auto is_detect_wall = [&](int target_forest) {
@@ -3962,6 +3990,9 @@ void R1MainNode::auto_collect_kfs_task(void)
           kfs_auto_collect_plan_.kfs_mechanism_type[i].c_str());
         // ステップをリセット
         step = 1;
+        // 壁センサーの状態をリセット
+        wall_sensor_detected_[target_forest_number - 1] = false;
+        wall_sensor_detect_start_time_[target_forest_number - 1] = rclcpp::Time(0, 0);
         // 最終時刻を更新
         last_auto_collect_kfs_time_[within_index] = this->now();
       }
