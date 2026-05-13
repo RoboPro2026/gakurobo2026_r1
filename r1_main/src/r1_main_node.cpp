@@ -3797,10 +3797,11 @@ void R1MainNode::auto_collect_kfs_task(void)
       if (
         (this->now() - last_auto_collect_kfs_time_[within_index]).seconds() <
         COLLECT_KFS_INTERVAL_TIME) {
-        RCLCPP_ERROR(
-          this->get_logger(),
-          "skipping auto collect kfs because last collect time is too recent: %f seconds ago",
-          (this->now() - last_auto_collect_kfs_time_[within_index]).seconds());
+        // ログがうるさいのでコメントアウト
+        // RCLCPP_ERROR(
+        //   this->get_logger(),
+        //   "skipping auto collect kfs because last collect time is too recent: %f seconds ago",
+        //   (this->now() - last_auto_collect_kfs_time_[within_index]).seconds());
         continue;
       }
       // ENABLE_WALL_SENSOR == trueのとき、壁センサーの値を更新し、壁を検出する
