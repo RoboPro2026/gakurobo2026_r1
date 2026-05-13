@@ -3866,6 +3866,10 @@ void R1MainNode::auto_collect_kfs_task(void)
           is_within_rotated_rectangle(
             map_x, map_y, center_x, center_y, rect_yaw, WALL_SENSOR_DETECT_HEIGHT,
             WALL_SENSOR_DETECT_WIDTH)) {
+          RCLCPP_INFO(
+            this->get_logger(), "within wall sensor detect range for forest %d, mechanism: %s",
+            target_forest_number, mechanism_type.c_str());
+          RCLCPP_INFO(this->get_logger(), "%f %f", scan_fl_data_, scan_rl_data_);
           update_wall_sensor_status(target_forest_number, within_index);
           if (is_detect_wall(target_forest_number)) {
             // 壁検出位置の座標を更新（odom座標系）
