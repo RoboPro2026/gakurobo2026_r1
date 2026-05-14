@@ -3802,8 +3802,8 @@ void R1MainNode::auto_collect_kfs_task(void)
         // まずは壁検出機能が有効となる範囲内にロボットがいるかを確認する
         if (
           is_within_rotated_rectangle(
-            map_x, map_y, center_x, center_y, rect_yaw, WALL_SENSOR_DETECT_HEIGHT,
-            WALL_SENSOR_DETECT_WIDTH)) {
+            map_x, map_y, center_x, center_y, rect_yaw, WALL_SENSOR_DETECT_WIDTH,
+            WALL_SENSOR_DETECT_HEIGHT)) {
           update_wall_sensor_status(target_forest_number, within_index);
           double log_sensor_low = (within_index == FKFS) ? scan_fl_data_ : scan_rl_data_;
           double log_sensor_middle = (within_index == FKFS) ? scan_fm_data_ : scan_rm_data_;
