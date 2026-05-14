@@ -3788,15 +3788,16 @@ void R1MainNode::auto_collect_kfs_task(void)
           is_within_rotated_rectangle(
             map_x, map_y, center_x, center_y, rect_yaw, WALL_SENSOR_DETECT_HEIGHT,
             WALL_SENSOR_DETECT_WIDTH)) {
-          RCLCPP_INFO(
-            this->get_logger(), "within wall sensor detect range for forest %d, mechanism: %s",
-            target_forest_number, mechanism_type.c_str());
-          RCLCPP_INFO(this->get_logger(), "%f %f", scan_fl_data_, scan_rl_data_);
           update_wall_sensor_status(target_forest_number, within_index);
           if (is_detect_wall(target_forest_number)) {
             // 壁検出位置の座標を更新（odom座標系）
             wall_detect_pos_[target_forest_number - 1] = odometry_;
-            // 範囲内にいるときは壁センサーの値を更新する
+            RCLCPP_INFO(
+              this->get_logger(),
+              "Step = %d, wall detected for forest %d %s kfs: map_x=%.2f, map_y=%.2f, odom_x=%.2f, "
+              "odom_y=%.2f, wall_offset_x=%.2f, wall_offset_y=%.2f",
+              step, target_forest_number, mechanism_type.c_str(), map_x, map_y, odom_x, odom_y,
+              wall_offset_x, wall_offset_y);
             step++;
           }
         }
@@ -3820,6 +3821,12 @@ void R1MainNode::auto_collect_kfs_task(void)
         double cx = odom_x;
         double cy = odom_y;
         if (is_passed_goal_by_dot(sx, sy, gx, gy, cx, cy)) {
+          RCLCPP_INFO(
+            this->get_logger(),
+            "Step = %d, passed wall detect offset position for forest %d %s kfs: sx=%.2f, sy=%.2f, "
+            "gx=%.2f, "
+            "gy=%.2f, cx=%.2f, cy=%.2f",
+            step, target_forest_number, mechanism_type.c_str(), sx, sy, gx, gy, cx, cy);
           step++;
         }
       } else {
@@ -3928,6 +3935,13 @@ void R1MainNode::auto_collect_kfs_task(void)
         double cx = odom_x;
         double cy = odom_y;
         if (is_passed_goal_by_dot(sx, sy, gx, gy, cx, cy)) {
+          RCLCPP_INFO(
+            this->get_logger(),
+            "Step = %d, passed wall detect offset + move distance position for forest %d %s kfs: "
+            "sx=%.2f, "
+            "sy=%.2f, "
+            "gx=%.2f, gy=%.2f, cx=%.2f, cy=%.2f",
+            step, target_forest_number, mechanism_type.c_str(), sx, sy, gx, gy, cx, cy);
           step++;
         }
       } else {
