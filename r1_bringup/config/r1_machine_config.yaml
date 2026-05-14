@@ -155,9 +155,9 @@ r1_main_node:
     # ========== 足回り ==========
     chassis_low_velocity: 0.2
     chassis_low_omega: 0.2
-    chassis_normal_velocity: 0.6
+    chassis_normal_velocity: 0.8
     chassis_normal_omega: 0.5
-    chassis_high_velocity: 1.0
+    chassis_high_velocity: 1.5
     chassis_high_omega: 0.7
     # ========== KFS回収 ==========
     # 現状だと、fx,fz,rx,rzのnormal_torqueが1Nmになっていて、長時間接触しているとC610が止まるので、falseにする
@@ -345,7 +345,7 @@ r1_main_node:
     collect_kfs_width: 0.6
     # false にすると auto_collect_kfs_task は範囲判定と LED 更新だけ行い、
     # KFS の位置・yaw・ポンプ・バルブ指令は出さない
-    enable_auto_collect_kfs_actuator: false
+    enable_auto_collect_kfs_actuator: true
     # KFS回収時に一時停止するか
     enable_stop_before_collect_kfs_: true
     # KFS回収時にセンサーを用いたの回収にするか。
@@ -358,7 +358,7 @@ r1_main_node:
     wall_sensor_time_threshold: 0.15
     # 壁検出後に回収動作をしながら移動する距離 [m]
     # その間は進行方向に進み続ける。
-    move_distance_after_wall_detect: 0.4
+    move_distance_after_wall_detect: 0.3
     # 壁の検出範囲のサイズ [m]
     wall_sensor_detect_height: 0.3
     wall_sensor_detect_width: 0.6
