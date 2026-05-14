@@ -605,6 +605,7 @@ R1MainNode::R1MainNode() : Node("r1_main_node")
   declare_and_get_parameter("initialpose_tf_log_delay_sec", initialpose_tf_log_delay_sec_, 1.0);
   declare_and_get_parameter("initialpose_retry1_delay_sec", initialpose_retry1_delay_sec_, 1.0);
   declare_and_get_parameter("initialpose_retry2_delay_sec", initialpose_retry2_delay_sec_, 3.0);
+  declare_and_get_parameter("enable_r2_analog_speed_control", ENABLE_R2_ANALOG_SPEED_CONTROL);
   declare_and_get_parameter("chassis_low_velocity", CHASSIS_LOW_VELOCITY);
   declare_and_get_parameter("chassis_normal_velocity", CHASSIS_NORMAL_VELOCITY);
   declare_and_get_parameter("chassis_high_velocity", CHASSIS_HIGH_VELOCITY);
@@ -4405,6 +4406,7 @@ void R1MainNode::manual_task(void)
   double vx_max = CHASSIS_NORMAL_VELOCITY;
   double vy_max = CHASSIS_NORMAL_VELOCITY;
   double vz_max = CHASSIS_NORMAL_OMEGA;
+  double slope = ENABLE_R2_ANALOG_SPEED_CONTROL == true ? ps4_->get_r2_analog() : 1.0;
   bool on_mode2_low_speed =
     (current_state.operation_mode == OperationMode::MODE2_POLE) && ps4_->is_pushing_r2() == false;
   bool on_mode3_low_speed =
@@ -4415,13 +4417,15 @@ void R1MainNode::manual_task(void)
     (current_state.operation_mode == OperationMode::MODE5_RKFS) && ps4_->is_pushing_r2() == true;
 
   if (on_mode2_low_speed || on_mode3_low_speed) {
-    vx_max = CHASSIS_LOW_VELOCITY;
-    vy_max = CHASSIS_LOW_VELOCITY;
-    vz_max = CHASSIS_LOW_OMEGA;
+    // 最大速度と最大角速度をCHASSIS_LOW_VELOCITY / CHASSIS_LOW_OMEGAまで線形に変化させる
+    vx_max = CHASSIS_LOW_VELOCITY + (CHASSIS_NORMAL_VELOCITY - CHASSIS_LOW_VELOCITY) * slope;
+    vy_max = CHASSIS_LOW_VELOCITY + (CHASSIS_NORMAL_VELOCITY - CHASSIS_LOW_VELOCITY) * slope;
+    vz_max = CHASSIS_LOW_OMEGA + (CHASSIS_NORMAL_OMEGA - CHASSIS_LOW_OMEGA) * slope;
   } else if (on_mode4_high_speed || on_mode5_high_speed) {
-    vx_max = CHASSIS_HIGH_VELOCITY;
-    vy_max = CHASSIS_HIGH_VELOCITY;
-    vz_max = CHASSIS_HIGH_OMEGA;
+    // 最大速度と最大角速度をCHASSIS_HIGH_VELOCITY / CHASSIS_HIGH_OMEGAまで線形に変化させる
+    vx_max = CHASSIS_NORMAL_VELOCITY + (CHASSIS_HIGH_VELOCITY - CHASSIS_NORMAL_VELOCITY) * slope;
+    vy_max = CHASSIS_NORMAL_VELOCITY + (CHASSIS_HIGH_VELOCITY - CHASSIS_NORMAL_VELOCITY) * slope;
+    vz_max = CHASSIS_NORMAL_OMEGA + (CHASSIS_HIGH_OMEGA - CHASSIS_NORMAL_OMEGA) * slope;
   }
 
   if (current_state.chassis_control_mode == ChassisControlMode::MANUAL) {

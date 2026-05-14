@@ -344,6 +344,7 @@ public:
 
   // 指令値関係
   // ========== 足回り ==========
+  bool ENABLE_R2_ANALOG_SPEED_CONTROL = false;
   double CHASSIS_LOW_VELOCITY = 0.0;
   double CHASSIS_NORMAL_VELOCITY = 0.0;
   double CHASSIS_HIGH_VELOCITY = 0.0;
