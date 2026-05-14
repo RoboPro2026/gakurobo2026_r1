@@ -358,7 +358,7 @@ r1_main_node:
     wall_sensor_time_threshold: 0.15
     # 壁検出後に回収動作をしながら移動する距離 [m]
     # その間は進行方向に進み続ける。
-    move_distance_after_wall_detect: 0.3
+    move_distance_after_wall_detect: 0.35
     # 壁の検出範囲のサイズ [m]
     wall_sensor_detect_height: 0.3
     wall_sensor_detect_width: 0.6
