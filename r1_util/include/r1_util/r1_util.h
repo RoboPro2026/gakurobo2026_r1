@@ -212,6 +212,20 @@ inline bool is_within_rotated_rectangle(
  * @return true goalを通過している
  * @return false goalを通過していない
  */
+// start から goal に向かってロボットが goal を通過したかを内積で判定する。
+//
+// 記号定義:
+//   g = goal - start   (ゴール方向ベクトル, 大きさ = dist)
+//   c = current - start
+//   dot = g・c = |g||c|cos(θ)
+//
+// ゴール通過条件: c の g 方向への射影 >= dist
+//   dot / dist >= dist  ⟺  dot >= dist²
+//
+// 図（進行方向→）:
+//   start ───────────[goal]──── ...
+//                       ↑
+//                   dot >= dist² で true
 inline bool is_passed_goal_by_dot(
   double start_x, double start_y, double goal_x, double goal_y, double current_x, double current_y)
 {
@@ -225,6 +239,5 @@ inline bool is_passed_goal_by_dot(
     return true;
   }
   double dot = gsx * csx + gsy * csy;
-  // 内積が正のときはゴールを通過している
-  return dot > 0;
+  return dot >= dist * dist;
 }
