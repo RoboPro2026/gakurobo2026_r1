@@ -29,6 +29,7 @@
 #include "rcl_interfaces/msg/floating_point_range.hpp"
 #include "rcl_interfaces/msg/parameter_descriptor.hpp"
 #include "rclcpp/rclcpp.hpp"
+#include "std_msgs/msg/bool.hpp"
 #include "std_msgs/msg/empty.hpp"
 #include "std_msgs/msg/float64.hpp"
 #include "std_msgs/msg/float64_multi_array.hpp"
@@ -148,6 +149,12 @@ public:
     r1_init_parameter_subscription_ = this->create_subscription<r1_msgs::msg::R1InitParameter>(
       "/r1_init_parameter", 10,
       std::bind(&R1ChassisControlNode::r1_init_parameter_callback, this, std::placeholders::_1));
+    tangent_pid_enable_subscription_ = this->create_subscription<std_msgs::msg::Bool>(
+      "/chassis_tangent_pid_enable", 10, [this](const std_msgs::msg::Bool::SharedPtr msg) {
+        chassis_tangent_pid_enable_ = msg->data;
+        RCLCPP_INFO(
+          this->get_logger(), "Set chassis_tangent_pid_enable to %s", msg->data ? "true" : "false");
+      });
 
     // chassis_error_tangentのPublisher
     chassis_error_tangent_publisher_ =
@@ -340,6 +347,33 @@ public:
         act_name.c_str());
       return;
     }
+    if (act == ChassisAct::ACT_PAUSE) {
+      if (!paused_) {
+        paused_ = true;
+        paused_act_step_ = act_step_;
+        int idx = act_to_trajectory_index(act_step_);
+        if (idx >= 0 && traj_follower_[idx]) {
+          traj_follower_[idx]->reset_integral();
+        }
+        publish_cmd_vel(geometry_msgs::msg::Twist());
+        RCLCPP_INFO(
+          this->get_logger(), "ACT paused at %s",
+          std::string(magic_enum::enum_name(act_step_)).c_str());
+      }
+      act_step_ = ChassisAct::ACT_PAUSE;
+      return;
+    }
+    if (act == ChassisAct::ACT_RESUME) {
+      if (paused_) {
+        paused_ = false;
+        act_step_ = paused_act_step_;
+        RCLCPP_INFO(
+          this->get_logger(), "ACT resumed at %s",
+          std::string(magic_enum::enum_name(act_step_)).c_str());
+      }
+      return;
+    }
+    paused_ = false;
     act_step_ = act;
     std::string act_name{magic_enum::enum_name(act_step_)};
     // RCLCPP_INFO(this->get_logger(), "Received act step: %s", act_name.c_str());
@@ -515,6 +549,9 @@ public:
   {
     act_step_ = ChassisAct::NONE;
     prev_act_step_ = ChassisAct::NONE;
+    paused_ = false;
+    paused_act_step_ = ChassisAct::NONE;
+    chassis_tangent_pid_enable_ = true;
     cmd_vel_ = geometry_msgs::msg::Twist();
     has_target_pose_ = false;
     latest_target_pose_ = geometry_msgs::msg::PoseStamped();
@@ -718,6 +755,7 @@ public:
   {
     act_step_ = spec.running;
     traj_follower_[spec.trajectory_index]->reset();
+    traj_follower_[spec.trajectory_index]->set_tangent_pid_enable(true);
     if (spec.start == ChassisAct::ACT0_START && pos_follower_) {
       pos_follower_->reset();
     }
@@ -727,6 +765,7 @@ public:
 
   void update_running_act(const ActSpec & spec)
   {
+    traj_follower_[spec.trajectory_index]->set_tangent_pid_enable(chassis_tangent_pid_enable_);
     std::pair<WayPoint, geometry_msgs::msg::Twist> ret =
       traj_follower_[spec.trajectory_index]->update(odometry_);
     update_target_pose(ret.first);
@@ -813,6 +852,15 @@ public:
 
   void timer_callback()
   {
+    if (paused_) {
+      publish_cmd_vel(geometry_msgs::msg::Twist());
+      std_msgs::msg::Int32 act_status_msg;
+      act_status_msg.data = static_cast<int>(act_step_);
+      act_publisher_->publish(act_status_msg);
+      publish_robot_map_pos();
+      return;
+    }
+
     const std::vector<ActSpec> act_specs{
       {ChassisAct::ACT0_START, ChassisAct::ACT0, ChassisAct::ACT0_FINISH, 0},
       {ChassisAct::ACT1_START, ChassisAct::ACT1, ChassisAct::ACT1_FINISH, 1},
@@ -1088,6 +1136,10 @@ public:
   rclcpp::Subscription<std_msgs::msg::Empty>::SharedPtr machine_initialize_subscription_;
   rclcpp::Subscription<std_msgs::msg::Empty>::SharedPtr machine_initialize_done_subscription_;
   rclcpp::Subscription<r1_msgs::msg::R1InitParameter>::SharedPtr r1_init_parameter_subscription_;
+  rclcpp::Subscription<std_msgs::msg::Bool>::SharedPtr tangent_pid_enable_subscription_;
+  bool chassis_tangent_pid_enable_ = true;
+  bool paused_ = false;
+  ChassisAct paused_act_step_ = ChassisAct::NONE;
   // chassis_error_tangentのPublisher
   rclcpp::Publisher<std_msgs::msg::Float64>::SharedPtr chassis_error_tangent_publisher_;
   // chassis_error_lateralのPublisher

@@ -45,13 +45,15 @@ def generate_launch_description():
     )
 
     rosbridge_launch = IncludeLaunchDescription(
-        XMLLaunchDescriptionSource([
-            os.path.join(
-                get_package_share_directory("rosbridge_server"),
-                "launch",
-                "rosbridge_websocket_launch.xml",
-            )
-        ]),
+        XMLLaunchDescriptionSource(
+            [
+                os.path.join(
+                    get_package_share_directory("rosbridge_server"),
+                    "launch",
+                    "rosbridge_websocket_launch.xml",
+                )
+            ]
+        ),
         condition=IfCondition(use_phone),
     )
 
@@ -256,6 +258,27 @@ def generate_launch_description():
     # r1_spear_pitch2_node = create_r1_angle_motion_node(
     #     "r1_spear_pitch2_node", "spear_pitch2"
     # )
+
+    def create_ydlidar_node(
+        node_name: str, topic_prefix: str, log_level="warn"
+    ) -> Node:
+        return Node(
+            package="ydlidar_ros2_driver",
+            executable="ydlidar_ros2_driver_node",
+            name=node_name,
+            parameters=[param_file],
+            arguments=["--ros-args", "--log-level", log_level],
+            remappings=[
+                ("scan", f"scan_{topic_prefix}"),
+            ],
+        )
+
+    # ydlidar_fh_node = create_ydlidar_node("ydlidar_fh_ros2_driver_node", "fh")
+    ydlidar_fm_node = create_ydlidar_node("ydlidar_fm_ros2_driver_node", "fm")
+    ydlidar_fl_node = create_ydlidar_node("ydlidar_fl_ros2_driver_node", "fl")
+    # ydlidar_rh_node = create_ydlidar_node("ydlidar_rh_ros2_driver_node", "rh")
+    ydlidar_rm_node = create_ydlidar_node("ydlidar_rm_ros2_driver_node", "rm")
+    ydlidar_rl_node = create_ydlidar_node("ydlidar_rl_ros2_driver_node", "rl")
 
     def create_sabacan_robomasv2_node(
         board_id: int,
@@ -566,7 +589,14 @@ def generate_launch_description():
 
     # r1_mainのノードの起動を遅延させる
     common_nodes = [
-        # 最初にsabacanを起動
+        # 単眼Lidar
+        # ydlidar_fh_node,
+        ydlidar_fm_node,
+        ydlidar_fl_node,
+        # ydlidar_rh_node,
+        ydlidar_rm_node,
+        ydlidar_rl_node,
+        # sabacan
         # can0
         sabacan_robomasv2_node_id1,
         sabacan_robomasv2_node_id2,

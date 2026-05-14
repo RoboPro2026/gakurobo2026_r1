@@ -46,6 +46,7 @@
 #include "sabacan_msgs/msg/sabacan_power_ref.hpp"
 #include "sensor_msgs/msg/imu.hpp"
 #include "sensor_msgs/msg/joy.hpp"
+#include "sensor_msgs/msg/laser_scan.hpp"
 #include "std_msgs/msg/bool.hpp"
 #include "std_msgs/msg/empty.hpp"
 #include "std_msgs/msg/float64.hpp"
@@ -181,6 +182,20 @@ public:
   double yaw_ = 0.0;
   double pitch_ = 0.0;
   double roll_ = 0.0;
+
+  // ========== Scan (YDLidar) ==========
+  rclcpp::Subscription<sensor_msgs::msg::LaserScan>::SharedPtr scan_fh_subscription_;
+  rclcpp::Subscription<sensor_msgs::msg::LaserScan>::SharedPtr scan_fm_subscription_;
+  rclcpp::Subscription<sensor_msgs::msg::LaserScan>::SharedPtr scan_fl_subscription_;
+  rclcpp::Subscription<sensor_msgs::msg::LaserScan>::SharedPtr scan_rh_subscription_;
+  rclcpp::Subscription<sensor_msgs::msg::LaserScan>::SharedPtr scan_rm_subscription_;
+  rclcpp::Subscription<sensor_msgs::msg::LaserScan>::SharedPtr scan_rl_subscription_;
+  double scan_fh_data_ = 0.0;
+  double scan_fm_data_ = 0.0;
+  double scan_fl_data_ = 0.0;
+  double scan_rh_data_ = 0.0;
+  double scan_rm_data_ = 0.0;
+  double scan_rl_data_ = 0.0;
   // set_mecanum_yawのPublisher
   rclcpp::Publisher<std_msgs::msg::Float64>::SharedPtr set_mecanum_yaw_publisher_;
   // set_swerve_drive_yawのPublisher
@@ -202,6 +217,8 @@ public:
   rclcpp::Publisher<std_msgs::msg::Int32>::SharedPtr chassis_act_ref_publisher_;
   // chassis_actのSubscription
   rclcpp::Subscription<std_msgs::msg::Int32>::SharedPtr chassis_act_status_subscription_;
+  // 接線方向PID補正ON/OFFのPublisher
+  rclcpp::Publisher<std_msgs::msg::Bool>::SharedPtr chassis_tangent_pid_enable_publisher_;
   // robot_moveのPublisher
   rclcpp::Publisher<r1_msgs::msg::RobotMove>::SharedPtr robot_move_publisher_;
   // r1_machine_manage_node の初期化要求
@@ -227,6 +244,8 @@ public:
   nav_msgs::msg::Odometry odometry_;
   // chassis_act
   ChassisAct chassis_act_status_ = ChassisAct::NONE;
+  bool is_act_paused_ = false;
+  bool enable_right_stick_pause_ = false;
   // arucoマーカ
   rclcpp::Publisher<std_msgs::msg::Int32>::SharedPtr aruco_marker_id_publisher_;
   // スマホから送られてくる初期化パラメータ
@@ -325,10 +344,13 @@ public:
 
   // 指令値関係
   // ========== 足回り ==========
-  double CHASSIS_MAKE_SPEAR_VELOCITY = 0.0;
-  double CHASSIS_MAKE_SPEAR_OMEGA = 0.0;
-  double CHASSIS_MAX_VELOCITY = 0.0;
-  double CHASSIS_MAX_OMEGA = 0.0;
+  bool ENABLE_R2_ANALOG_SPEED_CONTROL = false;
+  double CHASSIS_LOW_VELOCITY = 0.0;
+  double CHASSIS_NORMAL_VELOCITY = 0.0;
+  double CHASSIS_HIGH_VELOCITY = 0.0;
+  double CHASSIS_LOW_OMEGA = 0.0;
+  double CHASSIS_NORMAL_OMEGA = 0.0;
+  double CHASSIS_HIGH_OMEGA = 0.0;
   // ========== KFS回収 ==========
   bool USE_KFS_MECH_LOCK = false;
   // fx
@@ -498,6 +520,25 @@ public:
   double KFS_YAW_DELAY_TIME = 1.0;
   // auto_collect_kfs_task 内で実際にアクチュエータ指令を出すか
   bool ENABLE_AUTO_COLLECT_KFS_ACTUATOR = true;
+  // KFS回収時に一度停止するか
+  bool ENABLE_STOP_BEFORE_COLLECT_KFS = true;
+  // auto_collect_kfs_task内で単眼Lidarを用いた回収を行うか。
+  // trueのときは単眼Lidarを用いた回収、falseのときは座標による回収となる
+  bool ENABLE_WALL_SENSOR = true;
+  // 壁検出センサーの距離閾値 [m]
+  double WALL_SENSOR_DISTANCE_THRESHOLD = 0.5;
+  // 壁検出センサーの反応時間閾値 [s]
+  double WALL_SENSOR_TIME_THRESHOLD = 0.15;
+  // 壁検出後に回収動作をしながら移動する距離 [m]
+  // その間は進行方向に進み続ける。
+  double MOVE_DISTANCE_AFTER_WALL_DETECT = 0.3;
+  // 壁の検出範囲のサイズ [m]
+  double WALL_SENSOR_DETECT_HEIGHT = 0.5;
+  double WALL_SENSOR_DETECT_WIDTH = 1.0;
+  // 壁検出の遅延距離オフセット [m]
+  double WALL_SENSOR_DELAY_OFFSET_DISTANCE = 0.25;
+  // KFS回収完了後、次に同じ回収機構が回収動作を行うまでのインターバル時間 [s]
+  double COLLECT_KFS_INTERVAL_TIME = 5.0;
   // コンストラクタ
   R1MainNode();
 
@@ -558,9 +599,15 @@ public:
   void sabacan_led_update(void);
   // IMU
   void imu_callback(const sensor_msgs::msg::Imu::SharedPtr msg);
+  // Scan (YDLidar)
+  void register_scan(
+    const std::string & topic_name,
+    rclcpp::Subscription<sensor_msgs::msg::LaserScan>::SharedPtr & subscription, double & data);
   void set_mecanum_yaw(double yaw);
   void set_swerve_drive_yaw(double yaw);
   void publish_chassis_act_stop(void);
+  void publish_chassis_act_pause(void);
+  void publish_chassis_act_resume(void);
   // オドメトリ
   void odometry_callback(const nav_msgs::msg::Odometry::SharedPtr msg);
   void set_odometry(double x, double y, double yaw);
@@ -755,6 +802,7 @@ public:
 
   void kfs_robot_start_act(void);
   rclcpp::TimerBase::SharedPtr kfs_collect_start_act_roll_timer_;
+  rclcpp::TimerBase::SharedPtr kfs_collect_start_act_push_valve_timer_;
   void kfs_collect_start_act(void);
 
   // 動いていたら危険なアクチュエータは停止する
@@ -825,12 +873,10 @@ public:
   int manual_mode4_fz_step_ = DEFAULT_STEP;
   int manual_mode4_fyaw_step_ = DEFAULT_STEP;
   int manual_mode4_front_pump_step_ = DEFAULT_STEP;
-  bool manual_mode4_r1_long_press_triger_ = false;
   int manual_mode5_rx_step_ = DEFAULT_STEP;
   int manual_mode5_rz_step_ = DEFAULT_STEP;
   int manual_mode5_ryaw_step_ = DEFAULT_STEP;
   int manual_mode5_rear_pump_step_ = DEFAULT_STEP;
-  bool manual_mode5_r1_long_press_triger_ = false;
   int manual_mode6_aruco_marker_step_ = DEFAULT_STEP;
   int manual_mode6_r2_lift_step_ = DEFAULT_STEP;
   int manual_mode7_spear_attack_task_step_ = DEFAULT_STEP;
@@ -841,6 +887,7 @@ public:
   rclcpp::TimerBase::SharedPtr manual_mode3_timer2_;
   rclcpp::TimerBase::SharedPtr manual_mode3_timer3_;
   rclcpp::TimerBase::SharedPtr manual_mode3_timer4_;
+  rclcpp::TimerBase::SharedPtr manual_mode3_roll_timer_;
   rclcpp::TimerBase::SharedPtr manual_mode3_push_valve_timer_;
   rclcpp::TimerBase::SharedPtr manual_mode4_front_valve_timer_;
   rclcpp::TimerBase::SharedPtr manual_mode5_rear_valve_timer_;
@@ -859,6 +906,21 @@ public:
     std::vector<std::vector<bool>>(12, std::vector<bool>(2, false));
   std::vector<std::vector<bool>> kfs_auto_collect_prev_within_ =
     std::vector<std::vector<bool>>(12, std::vector<bool>(2, false));
+  // 要素数12の配列
+  std::vector<rclcpp::Time> wall_sensor_detect_start_time_ =
+    std::vector<rclcpp::Time>(12, rclcpp::Time(0));
+  std::vector<bool> wall_sensor_detected_ = std::vector<bool>(12, false);
+  // 壁検出の距離は近距離なので、map座標系ではなく、odom座標系で処理を行う
+  // ただし、おおよその壁の位置の探索のみmap座標系で行う
+  std::vector<nav_msgs::msg::Odometry> wall_detect_pos_ = std::vector<nav_msgs::msg::Odometry>(12);
+  // 最後に自動回収を行った時刻
+  std::vector<rclcpp::Time> last_auto_collect_kfs_time_ =
+    std::vector<rclcpp::Time>(2, rclcpp::Time(0));
+  // 回収完了済みフラグ（チャタリング防止）: forest番号-1 をインデックスとする
+  std::vector<bool> kfs_already_collected_ = std::vector<bool>(12, false);
+  int auto_collect_kfs_fkfs_step_ = DEFAULT_STEP;
+  int auto_collect_kfs_rkfs_step_ = DEFAULT_STEP;
+
   bool pending_auto_robot_move_valid_ = false;
   r1_msgs::msg::RobotMove pending_auto_robot_move_;
   // ========== リセット ==========

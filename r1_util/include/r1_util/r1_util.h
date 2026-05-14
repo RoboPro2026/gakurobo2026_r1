@@ -38,7 +38,9 @@ enum class ChassisAct
   ACT4_FINISH = 43,
   ACT5_START = 51,
   ACT5 = 52,
-  ACT5_FINISH = 53
+  ACT5_FINISH = 53,
+  ACT_PAUSE = 1000,
+  ACT_RESUME = 1001,
 };
 
 // MainStateの定義
@@ -81,7 +83,7 @@ enum class ChassisControlMode
  * @return double 出力 y = alpha * x + (1 - alpha) * prev_y
  * ただし alpha = dt / (tau + dt)
  */
-double lpf(double x, double prev_y, double tau, double dt)
+inline double lpf(double x, double prev_y, double tau, double dt)
 {
   double alpha = dt / (tau + dt);
   return alpha * x + (1 - alpha) * prev_y;
@@ -95,7 +97,7 @@ double lpf(double x, double prev_y, double tau, double dt)
  * @param num 分割数
  * @return std::vector<double> 
  */
-std::vector<double> linspace(double start, double end, int num)
+inline std::vector<double> linspace(double start, double end, int num)
 {
   std::vector<double> x(num);
   double step = (end - start) / (num - 1);
@@ -111,7 +113,7 @@ std::vector<double> linspace(double start, double end, int num)
    * @param x 
    * @return double xが0.0以上なら1.0、負なら-1.0を返す
    */
-double sign(double x) { return (x >= 0) ? 1.0 : -1.0; }
+inline double sign(double x) { return (x >= 0) ? 1.0 : -1.0; }
 
 /**
    * @brief 角度を-pi~piの範囲に正規化する
@@ -119,7 +121,7 @@ double sign(double x) { return (x >= 0) ? 1.0 : -1.0; }
    * @param angle 
    * @return double 
    */
-double angle_normalize(double angle)
+inline double angle_normalize(double angle)
 {
   std::complex<double> ret = std::polar(1.0, angle);
   return std::arg(ret);
@@ -132,7 +134,7 @@ double angle_normalize(double angle)
    * @param prev_angle 
    * @return double 
    */
-double angle_diff(double current_angle, double prev_angle)
+inline double angle_diff(double current_angle, double prev_angle)
 {
   std::complex<double> current = std::polar(1.0, current_angle);
   std::complex<double> prev = std::polar(1.0, prev_angle);
@@ -152,7 +154,7 @@ double angle_diff(double current_angle, double prev_angle)
  * @return true 
  * @return false 
  */
-bool is_within_range(double current_x, double current_y, double x1, double y1, double x2, double y2)
+inline bool is_within_range(double current_x, double current_y, double x1, double y1, double x2, double y2)
 {
   // x2とy2がx1とy1より大きくなるようにする。
   if (x1 > x2) {
@@ -182,7 +184,7 @@ bool is_within_range(double current_x, double current_y, double x1, double y1, d
  * @return true 点が長方形の内側にある
  * @return false 点が長方形の外側にある
  */
-bool is_within_rotated_rectangle(
+inline bool is_within_rotated_rectangle(
   double current_x, double current_y, double center_x, double center_y, double yaw, double width,
   double height)
 {
@@ -196,4 +198,46 @@ bool is_within_rotated_rectangle(
   double local_y = -sin_yaw * dx + cos_yaw * dy;
 
   return std::abs(local_x) <= width * 0.5 && std::abs(local_y) <= height * 0.5;
+}
+
+/**
+ * @brief 始点と終点を通る直線に対して、現在位置がその直線を通過したかどうかを判定する
+ * 
+ * @param start_x 
+ * @param start_y 
+ * @param goal_x 
+ * @param goal_y 
+ * @param current_x 
+ * @param current_y 
+ * @return true goalを通過している
+ * @return false goalを通過していない
+ */
+// start から goal に向かってロボットが goal を通過したかを内積で判定する。
+//
+// 記号定義:
+//   g = goal - start   (ゴール方向ベクトル, 大きさ = dist)
+//   c = current - start
+//   dot = g・c = |g||c|cos(θ)
+//
+// ゴール通過条件: c の g 方向への射影 >= dist
+//   dot / dist >= dist  ⟺  dot >= dist²
+//
+// 図（進行方向→）:
+//   start ───────────[goal]──── ...
+//                       ↑
+//                   dot >= dist² で true
+inline bool is_passed_goal_by_dot(
+  double start_x, double start_y, double goal_x, double goal_y, double current_x, double current_y)
+{
+  double gsx = goal_x - start_x;
+  double gsy = goal_y - start_y;
+  double csx = current_x - start_x;
+  double csy = current_y - start_y;
+  double dist = std::hypot(gsx, gsy);
+  if (dist < 1e-6) {
+    // ゴールと開始点がほぼ同じ場合は、常にゴールを通過しているとみなす
+    return true;
+  }
+  double dot = gsx * csx + gsy * csy;
+  return dot >= dist * dist;
 }

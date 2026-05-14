@@ -1,7 +1,7 @@
 /**
  * @file r1_machine_manage_node.cpp
  * @author Yamaguchi Yudai
- * @brief sabacan_msgs と r1_machine 間のメッセージ変換を行うノード。
+ * @brief sabacan_msgs と r1_machine 間のメッセージ変換を行うノード。SDM15 スキャンデータのデバッグ出力も担う。
  * @version 0.1
  * @date 2025-10-04
  *
@@ -46,6 +46,7 @@
 #include "sabacan_msgs/srv/sabacan_reset.hpp"
 #include "sabacan_msgs/srv/set_robomas_gains.hpp"
 #include "sabacan_single_control_msgs/msg/sabacan_robomas_single_ref.hpp"
+#include "sensor_msgs/msg/laser_scan.hpp"
 #include "std_msgs/msg/empty.hpp"
 #include "std_msgs/msg/float64.hpp"
 
@@ -674,6 +675,43 @@ static GpioInputChannel make_gpio_input_channel(
     info, make_topic(name, "_status"), make_debug_gpio_status_topic(name), availability};
 }
 
+/**
+ * @brief SDM15 スキャンチャネルの配線情報を保持する。
+ */
+struct Sdm15Channel
+{
+  /**
+   * @brief 空の SDM15 チャネルを生成する。
+   */
+  Sdm15Channel() = default;
+
+  /**
+   * @brief SDM15 チャネル定義を生成する。
+   * @param scan_topic_name スキャン入力 topic
+   * @param debug_topic_name デバッグ出力 topic
+   */
+  Sdm15Channel(std::string scan_topic_name, std::string debug_topic_name)
+  : scan_topic(std::move(scan_topic_name)), debug_topic(std::move(debug_topic_name))
+  {
+  }
+
+  std::string scan_topic;
+  std::string debug_topic;
+  rclcpp::Subscription<sensor_msgs::msg::LaserScan>::SharedPtr subscription;
+  rclcpp::Publisher<std_msgs::msg::Float64>::SharedPtr publisher;
+  double value{0.0};
+};
+
+/**
+ * @brief SDM15 チャネル定義を生成する。
+ * @param prefix トピック名のプレフィックス。scan_topic = /<prefix>、debug_topic = /debug_<prefix>
+ * @return Sdm15Channel 生成したチャネル
+ */
+static Sdm15Channel make_sdm15_channel(const std::string & prefix)
+{
+  return Sdm15Channel{"/" + prefix, "/debug_" + prefix};
+}
+
 class MachineManageNode : public rclcpp::Node
 {
 public:
@@ -717,6 +755,7 @@ private:
     TIMER_ANGLE_MOTION,
     TIMER_VELOCITY_CONTROL,
     TIMER_GPIO,
+    TIMER_SDM15,
     TIMER_COUNT,
   };
 
@@ -946,6 +985,7 @@ private:
     initialize_gpio_float_output_channels(gpio_float_output_channels_);
     initialize_gpio_int_output_channels(gpio_int_output_channels_);
     initialize_gpio_input_channels(gpio_input_channels_);
+    initialize_sdm15_channels(sdm15_channels_);
   }
 
   /**
@@ -1229,6 +1269,22 @@ private:
   }
 
   /**
+   * @brief SDM15 チャネルの subscription / publisher を初期化する。
+   * @param channels 初期化対象のチャネルリスト
+   */
+  void initialize_sdm15_channels(std::vector<Sdm15Channel> & channels)
+  {
+    for (auto & channel : channels) {
+      channel.publisher = this->create_publisher<std_msgs::msg::Float64>(channel.debug_topic, 10);
+      channel.subscription = this->create_subscription<sensor_msgs::msg::LaserScan>(
+        channel.scan_topic, rclcpp::SensorDataQoS(),
+        [&channel](const sensor_msgs::msg::LaserScan::SharedPtr msg) {
+          channel.value = msg->ranges[4];
+        });
+    }
+  }
+
+  /**
    * @brief 足回りと役割別 status publish 用 timer をパラメータから生成する。
    */
   void initialize_publish_timers()
@@ -1249,6 +1305,8 @@ private:
       std::bind(&MachineManageNode::publish_velocity_control_status, this));
     publish_timers_[TIMER_GPIO] = create_publish_timer_from_parameter(
       "gpio_timer_rate", 100.0, std::bind(&MachineManageNode::publish_gpio_status, this));
+    publish_timers_[TIMER_SDM15] = create_publish_timer_from_parameter(
+      "sdm15_timer_rate", 100.0, std::bind(&MachineManageNode::publish_sdm15_range, this));
   }
 
   /**
@@ -2374,6 +2432,18 @@ private:
     }
   }
 
+  /**
+   * @brief SDM15 の ranges[4] をデバッグ用に publish する。
+   */
+  void publish_sdm15_range()
+  {
+    for (const auto & channel : sdm15_channels_) {
+      std_msgs::msg::Float64 msg;
+      msg.data = channel.value;
+      channel.publisher->publish(msg);
+    }
+  }
+
   // Sabacan 側の入出力をボード単位でまとめて保持する。
   std::vector<PublisherPtr<sabacan_msgs::msg::SabacanGPIORefInt>> sabacan_gpio_ref_int_publishers_;
   std::vector<PublisherPtr<sabacan_msgs::msg::SabacanGPIORefFloat>>
@@ -2488,6 +2558,13 @@ private:
   std::vector<GpioInputChannel> gpio_input_channels_{
     // make_gpio_input_channel({1, 7}, "kfs_fz_low_switch"),
     // make_gpio_input_channel({1, 8}, "kfs_rz_low_switch"),
+  };
+
+  // SDM15 スキャンチャネル定義。make_sdm15_channel(prefix) でデバイスを追加する。
+  // 追加すると /<prefix> をsubscribeし、/debug_<prefix> に ranges[4] を publish する。
+  std::vector<Sdm15Channel> sdm15_channels_{
+    make_sdm15_channel("scan_fh"), make_sdm15_channel("scan_fm"), make_sdm15_channel("scan_fl"),
+    make_sdm15_channel("scan_rh"), make_sdm15_channel("scan_rm"), make_sdm15_channel("scan_rl"),
   };
 
   // r1_msgs 側の足回り publisher / subscription。

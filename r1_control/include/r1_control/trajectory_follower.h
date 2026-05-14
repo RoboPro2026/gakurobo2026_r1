@@ -101,12 +101,33 @@ public:
     idx_ = 0;
     is_last_point_ = false;
     finish_ = 0;
+    tangent_pid_enable_ = true;
     last_out_of_range_time_ = rclcpp::Clock().now();
     // 制御で使う接線/法線/角度誤差をリセット
     error_ = {0.0, 0.0, 0.0};
     prev_error_ = {0.0, 0.0, 0.0};
     integral_error_ = {0.0, 0.0, 0.0};
     derivative_error_ = {0.0, 0.0, 0.0};
+  }
+
+  // ポーズからレジューム時のジャーク抑制用に全PID積分をリセットする。
+  void reset_integral()
+  {
+    integral_error_   = {0.0, 0.0, 0.0};
+    prev_error_       = {0.0, 0.0, 0.0};
+    derivative_error_ = {0.0, 0.0, 0.0};
+  }
+
+  // 接線方向のPID補正をON/OFFする。
+  // OFFからONに戻るとき、接線方向の積分をリセットして復帰ジャークを抑制する。
+  void set_tangent_pid_enable(bool enable)
+  {
+    if (!tangent_pid_enable_ && enable) {
+      integral_error_[0]   = 0.0;
+      prev_error_[0]       = 0.0;
+      derivative_error_[0] = 0.0;
+    }
+    tangent_pid_enable_ = enable;
   }
 
   // 軌道配列上の index から map 座標系の姿勢を組み立てる。
@@ -218,9 +239,11 @@ public:
     }
     // 接線方向は軌道に沿って進ませ、法線方向は軌道へ戻す役割を持つ。
     // これにより、前進のための指令と横ずれ補正の指令を分離できる。
-    double tangent_cmd =
-      kp_pos_tangent * error_[0] + ki_pos_tangent * integral_error_[0] +
-      kd_pos_tangent * derivative_error_[0] + v_ref_tangent;
+    // tangent_pid_enable_=false のとき接線はFFのみにして暴走リスクを排除する。
+    double tangent_cmd = tangent_pid_enable_
+      ? kp_pos_tangent * error_[0] + ki_pos_tangent * integral_error_[0] +
+          kd_pos_tangent * derivative_error_[0] + v_ref_tangent
+      : v_ref_tangent;
     double normal_cmd =
       kp_pos_lateral * error_[1] + ki_pos_lateral * integral_error_[1] +
       kd_pos_lateral * derivative_error_[1] + v_ref_normal;
@@ -485,5 +508,6 @@ private:
   int idx_ = 0;
   bool is_last_point_ = false;
   int finish_ = 0;
+  bool tangent_pid_enable_ = true;
   rclcpp::Time last_out_of_range_time_ = rclcpp::Clock().now();
 };

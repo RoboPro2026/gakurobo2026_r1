@@ -14,21 +14,47 @@ export DBUS_SESSION_BUS_ADDRESS=unix:path=$XDG_RUNTIME_DIR/bus
 
 sudo cpupower frequency-set -g performance
 
-IMU_DEV="/dev/serial/by-path/pci-0000:00:14.0-usb-0:1.4.4:1.0-port0"
-LIDAR1_DEV="/dev/serial/by-path/pci-0000:00:14.0-usb-0:1.2:1.0"
-LIDAR2_DEV="/dev/serial/by-path/pci-0000:00:14.0-usb-0:1.1:1.0"
-ARUCO_DEV="/dev/serial/by-path/pci-0000:00:14.0-usb-0:1.4.1:1.0-port0"
+IMU_DEV="/dev/serial/by-path/pci-0000:00:14.0-usb-0:1.1.4.4:1.0-port0"
+LIDAR1_DEV="/dev/serial/by-path/pci-0000:00:14.0-usb-0:1.2.4:1.0"
+LIDAR2_DEV="/dev/serial/by-path/pci-0000:00:14.0-usb-0:1.4.1:1.0"
+ARUCO_DEV="/dev/serial/by-path/pci-0000:00:14.0-usb-0:1.1.1:1.0-port0"
+# YDLIDAR_FH_DEV="/dev/serial/by-path/pci-0000:00:14.0-usb-0:1.2.1:1.0-port0"
+YDLIDAR_FM_DEV="/dev/serial/by-path/pci-0000:00:14.0-usb-0:1.2.2:1.0-port0"
+YDLIDAR_FL_DEV="/dev/serial/by-path/pci-0000:00:14.0-usb-0:1.2.3:1.0-port0"
+# YDLIDAR_RH_DEV="/dev/serial/by-path/pci-0000:00:14.0-usb-0:1.4.4:1.0-port0"
+YDLIDAR_RM_DEV="/dev/serial/by-path/pci-0000:00:14.0-usb-0:1.4.3:1.0-port0"
+YDLIDAR_RL_DEV="/dev/serial/by-path/pci-0000:00:14.0-usb-0:1.4.2:1.0-port0"
 
 # by-id -> 実体の ttyUSBx を取得
 IMU_TTY="$(basename "$(readlink -f "$IMU_DEV")")"
+LIDAR1_TTY="$(basename "$(readlink -f "$LIDAR1_DEV")")"
+LIDAR2_TTY="$(basename "$(readlink -f "$LIDAR2_DEV")")"
+ARUCO_TTY="$(basename "$(readlink -f "$ARUCO_DEV")")"
+YDLIDAR_FH_TTY="$(basename "$(readlink -f "$YDLIDAR_FH_DEV")")"
+YDLIDAR_FM_TTY="$(basename "$(readlink -f "$YDLIDAR_FM_DEV")")"
+YDLIDAR_FL_TTY="$(basename "$(readlink -f "$YDLIDAR_FL_DEV")")"
+YDLIDAR_RH_TTY="$(basename "$(readlink -f "$YDLIDAR_RH_DEV")")"
+YDLIDAR_RM_TTY="$(basename "$(readlink -f "$YDLIDAR_RM_DEV")")"
+YDLIDAR_RL_TTY="$(basename "$(readlink -f "$YDLIDAR_RL_DEV")")"
 
 sudo chmod 666 "$IMU_DEV"
 echo 1 | sudo tee "/sys/bus/usb-serial/devices/$IMU_TTY/latency_timer"
-
 sudo chmod 666 "$LIDAR1_DEV"
 sudo chmod 666 "$LIDAR2_DEV"
-
 sudo chmod 666 "$ARUCO_DEV"
+
+# sudo chmod 666 "$YDLIDAR_FH_DEV"
+# echo 1 | sudo tee "/sys/bus/usb-serial/devices/$YDLIDAR_FH_TTY/latency_timer"
+sudo chmod 666 "$YDLIDAR_FM_DEV"
+echo 1 | sudo tee "/sys/bus/usb-serial/devices/$YDLIDAR_FM_TTY/latency_timer"
+sudo chmod 666 "$YDLIDAR_FL_DEV"
+echo 1 | sudo tee "/sys/bus/usb-serial/devices/$YDLIDAR_FL_TTY/latency_timer"
+# sudo chmod 666 "$YDLIDAR_RH_DEV"
+# echo 1 | sudo tee "/sys/bus/usb-serial/devices/$YDLIDAR_RH_TTY/latency_timer"
+sudo chmod 666 "$YDLIDAR_RM_DEV"
+echo 1 | sudo tee "/sys/bus/usb-serial/devices/$YDLIDAR_RM_TTY/latency_timer"
+sudo chmod 666 "$YDLIDAR_RL_DEV"
+echo 1 | sudo tee "/sys/bus/usb-serial/devices/$YDLIDAR_RL_TTY/latency_timer"
 
 echo "---------- IMU setup OK ----------"
 
