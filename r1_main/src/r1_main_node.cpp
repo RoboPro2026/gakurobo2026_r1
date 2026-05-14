@@ -3917,6 +3917,8 @@ void R1MainNode::auto_collect_kfs_task(void)
       // 最後まで終わったら次のステップに進む
       step++;
     } else if (step == 6) {
+      // TODO: ココらへんのステップで回収に失敗したときはL2+R2同時押しで手動モードに切り替えるという実装にする
+      // 1回目で手動モード切り替え、2回目で手動モード終了にし、回収動作を終了する
       if (ENABLE_WALL_SENSOR == true) {
         // 一定距離進むまで待機
         double sx = wall_detect_pos_[target_forest_number - 1].pose.pose.position.x;
