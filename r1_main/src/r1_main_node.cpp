@@ -605,10 +605,12 @@ R1MainNode::R1MainNode() : Node("r1_main_node")
   declare_and_get_parameter("initialpose_tf_log_delay_sec", initialpose_tf_log_delay_sec_, 1.0);
   declare_and_get_parameter("initialpose_retry1_delay_sec", initialpose_retry1_delay_sec_, 1.0);
   declare_and_get_parameter("initialpose_retry2_delay_sec", initialpose_retry2_delay_sec_, 3.0);
-  declare_and_get_parameter("chassis_make_spear_velocity", CHASSIS_MAKE_SPEAR_VELOCITY);
-  declare_and_get_parameter("chassis_make_spear_omega", CHASSIS_MAKE_SPEAR_OMEGA);
-  declare_and_get_parameter("chassis_max_velocity", CHASSIS_MAX_VELOCITY);
-  declare_and_get_parameter("chassis_max_omega", CHASSIS_MAX_OMEGA);
+  declare_and_get_parameter("chassis_low_velocity", CHASSIS_LOW_VELOCITY);
+  declare_and_get_parameter("chassis_normal_velocity", CHASSIS_NORMAL_VELOCITY);
+  declare_and_get_parameter("chassis_high_velocity", CHASSIS_HIGH_VELOCITY);
+  declare_and_get_parameter("chassis_low_omega", CHASSIS_LOW_OMEGA);
+  declare_and_get_parameter("chassis_normal_omega", CHASSIS_NORMAL_OMEGA);
+  declare_and_get_parameter("chassis_high_omega", CHASSIS_HIGH_OMEGA);
 
   // ========== KFS回収 ==========
   declare_and_get_parameter("use_kfs_mech_lock", USE_KFS_MECH_LOCK);
@@ -2492,7 +2494,6 @@ void R1MainNode::manual_mode2_pole(void)
   }
 
   if (ps4_->is_pushed_cross()) {
-    // manual_task内で、速度トリガーとして使用
   }
 
   if (ps4_->is_pushed_square()) {
@@ -2528,6 +2529,7 @@ void R1MainNode::manual_mode2_pole(void)
   }
 
   if (ps4_->is_pushed_r2()) {
+    // manual_task内で、速度トリガーとして使用
     // spear_pitch2_pos_ref(spear_pitch2_position_ref_ + 0.05);
   }
 }
@@ -2837,6 +2839,7 @@ void R1MainNode::manual_mode3_spear(void)
   }
 
   if (ps4_->is_pushed_r2()) {
+    // manual_task内で、速度トリガーとして使用
     // spear_pitch2_pos_ref(spear_pitch2_position_ref_ + 0.05);
   }
 }
@@ -2915,16 +2918,9 @@ void R1MainNode::manual_mode4_fkfs(void)
     }
   }
 
-  if (ps4_->is_pushed_r1()) {
-    manual_mode4_r1_long_press_triger_ = true;
-  }
-
-  if (ps4_->is_pushing_r1() && ps4_->is_pushed_triangle()) {
-    // R1+△: kfs_fyawの微調整（指令値を増加）
-    manual_mode4_r1_long_press_triger_ = false;
+  if (ps4_->is_pushing_l2() && ps4_->is_pushed_triangle()) {
     kfs_fyaw_pos_ref(kfs_fyaw_position_ref_ + 0.05);
   } else if (ps4_->is_pushed_triangle()) {
-    // △単押し: kfs_fyawを90度進める
     fyaw_step++;
     if (fyaw_step > 3) {
       fyaw_step = 3;
@@ -2939,7 +2935,10 @@ void R1MainNode::manual_mode4_fkfs(void)
     }
   }
 
-  if (ps4_->is_pushed_circle()) {
+  if (ps4_->is_pushing_l2() && ps4_->is_pushed_circle()) {
+    // kfs_fxの微調整（指令値を増加）
+    kfs_fx_pos_ref(kfs_fx_position_ref_ + 0.01);
+  } else if (ps4_->is_pushed_circle()) {
     fx_step++;
     if (fx_step > 4) {
       fx_step = 4;
@@ -2956,12 +2955,9 @@ void R1MainNode::manual_mode4_fkfs(void)
     }
   }
 
-  if (ps4_->is_pushing_r1() && ps4_->is_pushed_cross()) {
-    // R1+×: kfs_fyawの微調整（指令値を減少）
-    manual_mode4_r1_long_press_triger_ = false;
+  if (ps4_->is_pushing_l2() && ps4_->is_pushed_cross()) {
     kfs_fyaw_pos_ref(kfs_fyaw_position_ref_ - 0.05);
   } else if (ps4_->is_pushed_cross()) {
-    // ×単押し: kfs_fyawを90度戻す
     fyaw_step--;
     if (fyaw_step < 1) {
       fyaw_step = 1;
@@ -2975,8 +2971,10 @@ void R1MainNode::manual_mode4_fkfs(void)
       kfs_fyaw_move_front_mech_lock();
     }
   }
-
-  if (ps4_->is_pushed_square()) {
+  if (ps4_->is_pushing_l2() && ps4_->is_pushed_square()) {
+    // kfs_fxの微調整（指令値を減少）
+    kfs_fx_pos_ref(kfs_fx_position_ref_ - 0.01);
+  } else if (ps4_->is_pushed_square()) {
     fx_step--;
     if (fx_step < 1) {
       fx_step = 1;
@@ -2994,55 +2992,21 @@ void R1MainNode::manual_mode4_fkfs(void)
   }
 
   if (ps4_->is_pushed_l1()) {
-    // kfs_fxの微調整（指令値を減少）
-    // メカロックが有効かつ次の指令値がメカロックしきい値を下回る場合は、メカロックにぶつける。
-    double next_ref = kfs_fx_position_ref_ - 0.01;
-    if (USE_KFS_MECH_LOCK && next_ref < KFS_FX_LOW_MECH_LOCK_POS) {
-      kfs_fx_position_ref_ = KFS_FX_LOW_MECH_LOCK_POS;
-      kfs_fx_move_mech_lock(-1);
-      RCLCPP_INFO(this->get_logger(), "moved kfs_fx low mech lock");
-    } else {
-      kfs_fx_pos_ref(kfs_fx_position_ref_ - 0.01);
-    }
+    // kfs_fzの微調整（指令値を減少）
+    kfs_fz_pos_ref(kfs_fz_position_ref_ - 0.01);
   }
 
-  if (ps4_->is_released_r1() && manual_mode4_r1_long_press_triger_) {
-    // R1単押し（コンボなし確定）: kfs_fxの微調整（指令値を増加）
-    manual_mode4_r1_long_press_triger_ = false;
-    double next_ref = kfs_fx_position_ref_ + 0.01;
-    if (USE_KFS_MECH_LOCK && next_ref > KFS_FX_HIGH_MECH_LOCK_POS) {
-      kfs_fx_position_ref_ = KFS_FX_HIGH_MECH_LOCK_POS;
-      kfs_fx_move_mech_lock(1);
-      RCLCPP_INFO(this->get_logger(), "moved kfs_fx high mech lock");
-    } else {
-      kfs_fx_pos_ref(kfs_fx_position_ref_ + 0.01);
-    }
+  if (ps4_->is_pushed_r1()) {
+    // kfs_fzの微調整（指令値を増加）
+    kfs_fz_pos_ref(kfs_fz_position_ref_ + 0.01);
   }
 
   if (ps4_->is_pushed_l2()) {
-    // kfs_fzの微調整（指令値を減少）
-    // メカロックが有効かつ次の指令値がメカロックしきい値を下回る場合は、メカロックにぶつける。
-    double next_ref = kfs_fz_position_ref_ - 0.01;
-    if (USE_KFS_MECH_LOCK && next_ref < KFS_FZ_LOW_MECH_LOCK_POS) {
-      kfs_fz_position_ref_ = KFS_FZ_LOW_MECH_LOCK_POS;
-      kfs_fz_move_mech_lock(-1);
-      RCLCPP_INFO(this->get_logger(), "moved kfs_fz low mech lock");
-    } else {
-      kfs_fz_pos_ref(kfs_fz_position_ref_ - 0.01);
-    }
+    // 微調整トリガーとして使用
   }
 
   if (ps4_->is_pushed_r2()) {
-    // kfs_fzの微調整（指令値を増加）
-    // メカロックが有効かつ次の指令値がメカロックしきい値を上回る場合は、メカロックにぶつける。
-    double next_ref = kfs_fz_position_ref_ + 0.01;
-    if (USE_KFS_MECH_LOCK && next_ref > KFS_FZ_HIGH_MECH_LOCK_POS) {
-      kfs_fz_position_ref_ = KFS_FZ_HIGH_MECH_LOCK_POS;
-      kfs_fz_move_mech_lock(1);
-      RCLCPP_INFO(this->get_logger(), "moved kfs_fz high mech lock");
-    } else {
-      kfs_fz_pos_ref(kfs_fz_position_ref_ + 0.01);
-    }
+    // manual_task内で、速度トリガーとして使用
   }
 }
 
@@ -3120,16 +3084,9 @@ void R1MainNode::manual_mode5_rkfs(void)
     }
   }
 
-  if (ps4_->is_pushed_r1()) {
-    manual_mode5_r1_long_press_triger_ = true;
-  }
-
-  if (ps4_->is_pushing_r1() && ps4_->is_pushed_triangle()) {
-    // R1+△: kfs_ryawの微調整（指令値を増加）
-    manual_mode5_r1_long_press_triger_ = false;
+  if (ps4_->is_pushing_l2() && ps4_->is_pushed_triangle()) {
     kfs_ryaw_pos_ref(kfs_ryaw_position_ref_ + 0.05);
   } else if (ps4_->is_pushed_triangle()) {
-    // △単押し: kfs_ryawを90度進める
     ryaw_step++;
     if (ryaw_step > 3) {
       ryaw_step = 3;
@@ -3144,7 +3101,10 @@ void R1MainNode::manual_mode5_rkfs(void)
     }
   }
 
-  if (ps4_->is_pushed_circle()) {
+  if (ps4_->is_pushing_l2() && ps4_->is_pushed_circle()) {
+    // kfs_rxの微調整（指令値を増加）
+    kfs_rx_pos_ref(kfs_rx_position_ref_ + 0.01);
+  } else if (ps4_->is_pushed_circle()) {
     rx_step++;
     if (rx_step > 4) {
       rx_step = 4;
@@ -3161,12 +3121,9 @@ void R1MainNode::manual_mode5_rkfs(void)
     }
   }
 
-  if (ps4_->is_pushing_r1() && ps4_->is_pushed_cross()) {
-    // R1+×: kfs_ryawの微調整（指令値を減少）
-    manual_mode5_r1_long_press_triger_ = false;
+  if (ps4_->is_pushing_l2() && ps4_->is_pushed_cross()) {
     kfs_ryaw_pos_ref(kfs_ryaw_position_ref_ - 0.05);
   } else if (ps4_->is_pushed_cross()) {
-    // ×単押し: kfs_ryawを90度戻す
     ryaw_step--;
     if (ryaw_step < 1) {
       ryaw_step = 1;
@@ -3181,7 +3138,10 @@ void R1MainNode::manual_mode5_rkfs(void)
     }
   }
 
-  if (ps4_->is_pushed_square()) {
+  if (ps4_->is_pushing_l2() && ps4_->is_pushed_square()) {
+    // kfs_rxの微調整（指令値を減少）
+    kfs_rx_pos_ref(kfs_rx_position_ref_ - 0.01);
+  } else if (ps4_->is_pushed_square()) {
     rx_step--;
     if (rx_step < 1) {
       rx_step = 1;
@@ -3199,55 +3159,21 @@ void R1MainNode::manual_mode5_rkfs(void)
   }
 
   if (ps4_->is_pushed_l1()) {
-    // kfs_rxの微調整（指令値を減少）
-    // メカロックが有効かつ次の指令値がメカロックしきい値を下回る場合は、メカロックにぶつける。
-    double next_ref = kfs_rx_position_ref_ - 0.01;
-    if (USE_KFS_MECH_LOCK && next_ref < KFS_RX_LOW_MECH_LOCK_POS) {
-      kfs_rx_position_ref_ = KFS_RX_LOW_MECH_LOCK_POS;
-      kfs_rx_move_mech_lock(-1);
-      RCLCPP_INFO(this->get_logger(), "moved kfs_rx low mech lock");
-    } else {
-      kfs_rx_pos_ref(kfs_rx_position_ref_ - 0.01);
-    }
+    // kfs_rzの微調整（指令値を減少）
+    kfs_rz_pos_ref(kfs_rz_position_ref_ - 0.01);
   }
 
-  if (ps4_->is_released_r1() && manual_mode5_r1_long_press_triger_) {
-    // R1単押し（コンボなし確定）: kfs_rxの微調整（指令値を増加）
-    manual_mode5_r1_long_press_triger_ = false;
-    double next_ref = kfs_rx_position_ref_ + 0.01;
-    if (USE_KFS_MECH_LOCK && next_ref > KFS_RX_HIGH_MECH_LOCK_POS) {
-      kfs_rx_position_ref_ = KFS_RX_HIGH_MECH_LOCK_POS;
-      kfs_rx_move_mech_lock(1);
-      RCLCPP_INFO(this->get_logger(), "moved kfs_rx high mech lock");
-    } else {
-      kfs_rx_pos_ref(kfs_rx_position_ref_ + 0.01);
-    }
+  if (ps4_->is_pushed_r1()) {
+    // kfs_rzの微調整（指令値を増加）
+    kfs_rz_pos_ref(kfs_rz_position_ref_ + 0.01);
   }
 
   if (ps4_->is_pushed_l2()) {
-    // kfs_rzの微調整（指令値を減少）
-    // メカロックが有効かつ次の指令値がメカロックしきい値を下回る場合は、メカロックにぶつける。
-    double next_ref = kfs_rz_position_ref_ - 0.01;
-    if (USE_KFS_MECH_LOCK && next_ref < KFS_RZ_LOW_MECH_LOCK_POS) {
-      kfs_rz_position_ref_ = KFS_RZ_LOW_MECH_LOCK_POS;
-      kfs_rz_move_mech_lock(-1);
-      RCLCPP_INFO(this->get_logger(), "moved kfs_rz mech lock");
-    } else {
-      kfs_rz_pos_ref(kfs_rz_position_ref_ - 0.01);
-    }
+    // 微調整トリガーとして使用
   }
 
   if (ps4_->is_pushed_r2()) {
-    // kfs_rzの微調整（指令値を増加）
-    // メカロックが有効かつ次の指令値がメカロックしきい値を上回る場合は、メカロックにぶつける。
-    double next_ref = kfs_rz_position_ref_ + 0.01;
-    if (USE_KFS_MECH_LOCK && next_ref > KFS_RZ_HIGH_MECH_LOCK_POS) {
-      kfs_rz_position_ref_ = KFS_RZ_HIGH_MECH_LOCK_POS;
-      kfs_rz_move_mech_lock(1);
-      RCLCPP_INFO(this->get_logger(), "moved kfs_rz mech lock");
-    } else {
-      kfs_rz_pos_ref(kfs_rz_position_ref_ + 0.01);
-    }
+    // manual_task内で、速度トリガーとして使用
   }
 }
 
@@ -3329,7 +3255,6 @@ void R1MainNode::manual_mode6_r2_lift(void)
   }
 
   if (ps4_->is_pushed_cross()) {
-    // 速度のトリガーとして使用
   }
 
   if (ps4_->is_pushed_l1()) {
@@ -4375,12 +4300,10 @@ void R1MainNode::reset_step(void)
   manual_mode4_fz_step_ = DEFAULT_STEP;
   manual_mode4_fyaw_step_ = DEFAULT_STEP;
   manual_mode4_front_pump_step_ = DEFAULT_STEP;
-  manual_mode4_r1_long_press_triger_ = false;
   manual_mode5_rx_step_ = DEFAULT_STEP;
   manual_mode5_rz_step_ = DEFAULT_STEP;
   manual_mode5_ryaw_step_ = DEFAULT_STEP;
   manual_mode5_rear_pump_step_ = DEFAULT_STEP;
-  manual_mode5_r1_long_press_triger_ = false;
   manual_mode6_aruco_marker_step_ = DEFAULT_STEP;
   manual_mode6_r2_lift_step_ = DEFAULT_STEP;
   manual_mode7_spear_attack_task_step_ = DEFAULT_STEP;
@@ -4445,20 +4368,26 @@ void R1MainNode::reset_robot(bool is_start_zone)
 void R1MainNode::manual_task(void)
 {
   auto current_state = state_machine_->get_current_state();
-  // スピア作成時だけロボットの速度を落とす
-  double vx_max = CHASSIS_MAX_VELOCITY;
-  double vy_max = CHASSIS_MAX_VELOCITY;
-  double vz_max = CHASSIS_MAX_OMEGA;
-  bool on_mode2_low_speed = (current_state.operation_mode == OperationMode::MODE2_POLE) &&
-                            ps4_->is_pushing_cross() == false;
-  bool on_mode3_low_speed = (current_state.operation_mode == OperationMode::MODE3_SPEAR) &&
-                            ps4_->is_pushing_cross() == false;
-  bool on_mode6_low_speed = (current_state.operation_mode == OperationMode::MODE6_R2_LIFT) &&
-                            ps4_->is_pushing_cross() == false;
-  if (on_mode2_low_speed || on_mode3_low_speed || on_mode6_low_speed) {
-    vx_max = CHASSIS_MAKE_SPEAR_VELOCITY;
-    vy_max = CHASSIS_MAKE_SPEAR_VELOCITY;
-    vz_max = CHASSIS_MAKE_SPEAR_OMEGA;
+  double vx_max = CHASSIS_NORMAL_VELOCITY;
+  double vy_max = CHASSIS_NORMAL_VELOCITY;
+  double vz_max = CHASSIS_NORMAL_OMEGA;
+  bool on_mode2_low_speed =
+    (current_state.operation_mode == OperationMode::MODE2_POLE) && ps4_->is_pushing_r2() == false;
+  bool on_mode3_low_speed =
+    (current_state.operation_mode == OperationMode::MODE3_SPEAR) && ps4_->is_pushing_r2() == false;
+  bool on_mode4_high_speed =
+    (current_state.operation_mode == OperationMode::MODE4_FKFS) && ps4_->is_pushing_r2() == true;
+  bool on_mode5_high_speed =
+    (current_state.operation_mode == OperationMode::MODE5_RKFS) && ps4_->is_pushing_r2() == true;
+
+  if (on_mode2_low_speed || on_mode3_low_speed) {
+    vx_max = CHASSIS_LOW_VELOCITY;
+    vy_max = CHASSIS_LOW_VELOCITY;
+    vz_max = CHASSIS_LOW_OMEGA;
+  } else if (on_mode4_high_speed || on_mode5_high_speed) {
+    vx_max = CHASSIS_HIGH_VELOCITY;
+    vy_max = CHASSIS_HIGH_VELOCITY;
+    vz_max = CHASSIS_HIGH_OMEGA;
   }
 
   if (current_state.chassis_control_mode == ChassisControlMode::MANUAL) {
@@ -4469,7 +4398,7 @@ void R1MainNode::manual_task(void)
       chassis_rotate90 = !chassis_rotate90;
     }
     if (chassis_rotate90) {
-      //L2を押している間は赤ゾーンの場合はロボットを90度回転、青ゾーンの場合はロボットを-90度回転させる
+      // 赤ゾーンの場合はロボットを90度回転、青ゾーンの場合はロボットを-90度回転させる
       double rotated_vx_ref, rotated_vy_ref;
       if (zone_ == "red") {
         // 赤ゾーンのとき

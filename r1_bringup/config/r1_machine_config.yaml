@@ -153,12 +153,12 @@ r1_main_node:
     initialpose_retry1_delay_sec: 1.0
     initialpose_retry2_delay_sec: 3.0
     # ========== 足回り ==========
-
-    chassis_make_spear_velocity: 0.2
-    chassis_make_spear_omega: 0.2
-    # 通常動作時の最大速度
-    chassis_max_velocity: 0.6
-    chassis_max_omega: 0.5
+    chassis_low_velocity: 0.2
+    chassis_low_omega: 0.2
+    chassis_normal_velocity: 0.6
+    chassis_normal_omega: 0.5
+    chassis_high_velocity: 1.0
+    chassis_high_omega: 0.7
     # ========== KFS回収 ==========
     # 現状だと、fx,fz,rx,rzのnormal_torqueが1Nmになっていて、長時間接触しているとC610が止まるので、falseにする
     # normal_torqueをもう少し低くできれば、trueにする予定

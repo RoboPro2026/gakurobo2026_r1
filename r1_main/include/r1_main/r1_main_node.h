@@ -344,10 +344,12 @@ public:
 
   // 指令値関係
   // ========== 足回り ==========
-  double CHASSIS_MAKE_SPEAR_VELOCITY = 0.0;
-  double CHASSIS_MAKE_SPEAR_OMEGA = 0.0;
-  double CHASSIS_MAX_VELOCITY = 0.0;
-  double CHASSIS_MAX_OMEGA = 0.0;
+  double CHASSIS_LOW_VELOCITY = 0.0;
+  double CHASSIS_NORMAL_VELOCITY = 0.0;
+  double CHASSIS_HIGH_VELOCITY = 0.0;
+  double CHASSIS_LOW_OMEGA = 0.0;
+  double CHASSIS_NORMAL_OMEGA = 0.0;
+  double CHASSIS_HIGH_OMEGA = 0.0;
   // ========== KFS回収 ==========
   bool USE_KFS_MECH_LOCK = false;
   // fx
@@ -870,12 +872,10 @@ public:
   int manual_mode4_fz_step_ = DEFAULT_STEP;
   int manual_mode4_fyaw_step_ = DEFAULT_STEP;
   int manual_mode4_front_pump_step_ = DEFAULT_STEP;
-  bool manual_mode4_r1_long_press_triger_ = false;
   int manual_mode5_rx_step_ = DEFAULT_STEP;
   int manual_mode5_rz_step_ = DEFAULT_STEP;
   int manual_mode5_ryaw_step_ = DEFAULT_STEP;
   int manual_mode5_rear_pump_step_ = DEFAULT_STEP;
-  bool manual_mode5_r1_long_press_triger_ = false;
   int manual_mode6_aruco_marker_step_ = DEFAULT_STEP;
   int manual_mode6_r2_lift_step_ = DEFAULT_STEP;
   int manual_mode7_spear_attack_task_step_ = DEFAULT_STEP;
