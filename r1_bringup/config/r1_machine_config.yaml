@@ -364,7 +364,7 @@ r1_main_node:
     wall_sensor_detect_width: 0.6
     # 壁検出の遅延距離オフセット [m]
     # センサーが反応したときに展開すると回収機構がぶつかる方のセンサーに適用される
-    wall_sensor_delay_offset_distance: 0.15
+    wall_sensor_delay_offset_distance: 0.05
     # KFS回収完了後、次に同じ回収機構が回収動作を行うまでのインターバル時間 [s]
     collect_kfs_interval_time: 5.0
     # 内回り/外回りのKFS回収範囲の中心座標 [x, y, yaw]
