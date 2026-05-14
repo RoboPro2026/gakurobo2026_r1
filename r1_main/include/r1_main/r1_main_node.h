@@ -915,6 +915,8 @@ public:
   // 最後に自動回収を行った時刻
   std::vector<rclcpp::Time> last_auto_collect_kfs_time_ =
     std::vector<rclcpp::Time>(2, rclcpp::Time(0));
+  // 回収完了済みフラグ（チャタリング防止）: forest番号-1 をインデックスとする
+  std::vector<bool> kfs_already_collected_ = std::vector<bool>(12, false);
   int auto_collect_kfs_fkfs_step_ = DEFAULT_STEP;
   int auto_collect_kfs_rkfs_step_ = DEFAULT_STEP;
 

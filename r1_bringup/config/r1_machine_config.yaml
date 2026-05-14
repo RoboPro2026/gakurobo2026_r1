@@ -353,7 +353,7 @@ r1_main_node:
     enable_wall_sensor: true
     # 壁検出時に止まるようにするか。
     # 壁検出センサーの距離閾値 [m]
-    wall_sensor_distance_threshold: 0.5
+    wall_sensor_distance_threshold: 0.4
     # 壁検出センサーの反応時間閾値
     wall_sensor_time_threshold: 0.15
     # 壁検出後に回収動作をしながら移動する距離 [m]

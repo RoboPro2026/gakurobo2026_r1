@@ -1333,6 +1333,8 @@ void R1MainNode::r1_init_parameter_callback(const r1_msgs::msg::R1InitParameter:
 {
   r1_init_parameter_ = *msg;
   received_r1_init_parameter_ = true;
+  // データを受信したらKFS自動走行関連のパラメータもリセットする
+  reset_kfs_auto_collect_tracking();
   std::string s;
   s += "zone: " + r1_init_parameter_.zone + "\n";
   for (int i = 0; i < (int)r1_init_parameter_.r1_kfs_value.size(); i++) {
@@ -1371,6 +1373,10 @@ void R1MainNode::r1_collect_kfs_callback(const r1_msgs::msg::R1CollectKfs::Share
   for (int i = 0; i < (int)r1_collect_kfs_.kfs_mechanism_type.size(); i++) {
     s += r1_collect_kfs_.kfs_mechanism_type[i] + ": " +
          std::to_string(r1_collect_kfs_.forest_order[i]) + "\n";
+    int forest = r1_collect_kfs_.forest_order[i];
+    if (forest >= 1 && forest <= 12) {
+      kfs_already_collected_[forest - 1] = false;
+    }
   }
   RCLCPP_INFO(this->get_logger(), "received /r1_collect_kfs:\n%s", s.c_str());
   publish_r1_log("Collect KFS order received");
@@ -1810,6 +1816,12 @@ void R1MainNode::reset_kfs_auto_collect_tracking(void)
   }
   auto_collect_kfs_fkfs_step_ = DEFAULT_STEP;
   auto_collect_kfs_rkfs_step_ = DEFAULT_STEP;
+  for (int i = 0; i < 12; i++) {
+    kfs_already_collected_[i] = false;
+  }
+  for (int i = 0; i < 2; i++) {
+    last_auto_collect_kfs_time_[i] = this->now();
+  }
 }
 
 void R1MainNode::start_kfs_auto_collect(
@@ -3769,6 +3781,10 @@ void R1MainNode::auto_collect_kfs_task(void)
     auto & step = within_index == FKFS ? auto_collect_kfs_fkfs_step_ : auto_collect_kfs_rkfs_step_;
 
     if (step == 1) {
+      // 既に回収完了済みの場合はスキップ
+      if (kfs_already_collected_[target_forest_number - 1]) {
+        continue;
+      }
       // 最後に自動回収された時刻が近い場合はスキップ
       if (
         (this->now() - last_auto_collect_kfs_time_[within_index]).seconds() <
@@ -4013,6 +4029,8 @@ void R1MainNode::auto_collect_kfs_task(void)
       wall_sensor_detect_start_time_[target_forest_number - 1] = this->now();
       // 最終時刻を更新
       last_auto_collect_kfs_time_[within_index] = this->now();
+      // 回収完了済みフラグをセット
+      kfs_already_collected_[target_forest_number - 1] = true;
       within = false;
     }
 
