@@ -3784,7 +3784,6 @@ void R1MainNode::auto_collect_kfs_task(void)
       if (ENABLE_WALL_SENSOR == true) {
         // 壁センサーベースの判定
         // まずは壁検出機能が有効となる範囲内にロボットがいるかを確認する
-        // withinの判定のみmap座標系で行う
         if (
           is_within_rotated_rectangle(
             map_x, map_y, center_x, center_y, rect_yaw, WALL_SENSOR_DETECT_HEIGHT,
@@ -3798,19 +3797,14 @@ void R1MainNode::auto_collect_kfs_task(void)
             // 壁検出位置の座標を更新（odom座標系）
             wall_detect_pos_[target_forest_number - 1] = odometry_;
             // 範囲内にいるときは壁センサーの値を更新する
-            // withinがtrueになるとLEDの色が変わる
-            within = true;
             step++;
           }
         }
       } else if (ENABLE_WALL_SENSOR == false) {
         // 座標ベースの判定
-        // 座標が範囲内のときはwithinをtrueにする
-        // withinがtrueになるとLEDの色が変わる
         if (
           is_within_rotated_rectangle(
             map_x, map_y, center_x, center_y, rect_yaw, COLLECT_KFS_WIDTH, COLLECT_KFS_HEIGHT)) {
-          within = true;
           // 範囲内に入ったら次のステップに移動する
           step++;
         }
@@ -3842,6 +3836,8 @@ void R1MainNode::auto_collect_kfs_task(void)
           is_act_paused_ = true;
         }
       }
+      // withinをtrueにし、KFS回収機構のLEDの色を変化させる。
+      within = true;
       step++;
     } else if (step == 4) {
       // 機構を展開
@@ -4001,12 +3997,7 @@ void R1MainNode::auto_collect_kfs_task(void)
       wall_sensor_detect_start_time_[target_forest_number - 1] = this->now();
       // 最終時刻を更新
       last_auto_collect_kfs_time_[within_index] = this->now();
-    }
-
-    // 回収シーケンス進行中 (step >= 2) は within をtrueにする
-    // withinがtrueのとき、LEDの色が変わる
-    if (step >= 2) {
-      within = true;
+      within = false;
     }
 
     // stepが変化した場合はログ出力
