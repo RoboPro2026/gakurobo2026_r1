@@ -265,8 +265,8 @@ def generate_launch_description():
     # id2は欠番
     sabacan_robomasv2_node_id3 = create_sabacan_robomasv2_node(3)
     sabacan_robomasv2_node_id4 = create_sabacan_robomasv2_node(4)
-    sabacan_robomasv2_node_id5 = create_sabacan_robomasv2_node(5)
-    # id6とid7は欠番
+    # id5とid6は欠番
+    sabacan_robomasv2_node_id7 = create_sabacan_robomasv2_node(7)
     sabacan_robomasv2_node_id8 = create_sabacan_robomasv2_node(8)
 
     def create_sabacan_single_control_node(
@@ -522,8 +522,8 @@ def generate_launch_description():
         # id2は欠番
         sabacan_robomasv2_node_id3,
         sabacan_robomasv2_node_id4,
-        sabacan_robomasv2_node_id5,
-        # id6とid7は欠番
+        # id5とid6は欠番
+        sabacan_robomasv2_node_id7,
         sabacan_robomasv2_node_id8,
         sabacan_gpio_node_id1,
         sabacan_gpio_node_id2,
