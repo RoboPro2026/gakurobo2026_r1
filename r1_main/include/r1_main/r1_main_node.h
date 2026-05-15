@@ -148,13 +148,14 @@ public:
     FKFS_LOW = 3,
     FKFS_GROUND = 4,
     FKFS_STORAGE = 5,
+    FKFS_COLLECT_START_POS = 6,
     RKFS_RACK = 10,
     RKFS_HIGH = 11,
     RKFS_MIDDLE = 12,
     RKFS_LOW = 13,
     RKFS_GROUND = 14,
     RKFS_STORAGE = 15,
-    FKFS_RKFS_COLLECT_START_POS = 20
+    RKFS_COLLECT_START_POS = 16
   };
 
   struct KfsAutoCollectPlan
@@ -271,6 +272,8 @@ public:
   // 回収機構を指定の位置に動かす
   rclcpp::Subscription<std_msgs::msg::Int32>::SharedPtr r1_kfs_mechanism_ref_subscription_;
   int r1_kfs_mechanism_ref_ = static_cast<int>(R1KfsMechanismRef::NONE);
+  // 3つ目のKFSを回収する
+  rclcpp::Subscription<std_msgs::msg::Int32>::SharedPtr r1_retry_collect_subscription_;
   // KFSの回収に失敗したので再回収する
   rclcpp::Subscription<std_msgs::msg::Int32>::SharedPtr r1_collect_3rd_kfs_subscription_;
   int r1_collect_3rd_kfs_ = -1;
@@ -564,6 +567,7 @@ public:
   void r1_init_parameter_callback(const r1_msgs::msg::R1InitParameter::SharedPtr msg);
   void r1_collect_kfs_callback(const r1_msgs::msg::R1CollectKfs::SharedPtr msg);
   void r1_kfs_mechanism_ref_callback(const std_msgs::msg::Int32::SharedPtr msg);
+  void r1_retry_collect_callback(const std_msgs::msg::Int32::SharedPtr msg);
   void r1_collect_3rd_kfs_callback(const std_msgs::msg::Int32::SharedPtr msg);
   void r1_initialize_all_actuator_callback(const std_msgs::msg::Int32::SharedPtr msg);
   void publish_r1_log(const std::string & message);

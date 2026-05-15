@@ -566,6 +566,9 @@ R1MainNode::R1MainNode() : Node("r1_main_node")
   r1_kfs_mechanism_ref_subscription_ = this->create_subscription<std_msgs::msg::Int32>(
     "/r1_kfs_mechanism_ref", 10,
     std::bind(&R1MainNode::r1_kfs_mechanism_ref_callback, this, std::placeholders::_1));
+  r1_retry_collect_subscription_ = this->create_subscription<std_msgs::msg::Int32>(
+    "/r1_retry_collect", 10,
+    std::bind(&R1MainNode::r1_retry_collect_callback, this, std::placeholders::_1));
   r1_collect_3rd_kfs_subscription_ = this->create_subscription<std_msgs::msg::Int32>(
     "/r1_collect_3rd_kfs", 10,
     std::bind(&R1MainNode::r1_collect_3rd_kfs_callback, this, std::placeholders::_1));
@@ -1251,6 +1254,11 @@ void R1MainNode::r1_kfs_mechanism_ref_callback(const std_msgs::msg::Int32::Share
   RCLCPP_INFO(
     this->get_logger(), "received /r1_kfs_mechanism_ref = %d(%s)", r1_kfs_mechanism_ref_,
     s.c_str());
+}
+
+void R1MainNode::r1_retry_collect_callback(const std_msgs::msg::Int32::SharedPtr msg)
+{
+  RCLCPP_INFO(this->get_logger(), "received /r1_retry_collect");
 }
 
 void R1MainNode::r1_collect_3rd_kfs_callback(const std_msgs::msg::Int32::SharedPtr msg)

@@ -112,19 +112,21 @@
   - `kfs_rx`
   - `kfs_rz`
   - `kfs_ryaw`
-  - `spear1`
-  - `spear2`
-  - `spear3`
-  - `spear4`
-  - `spear_x`
+  - `r2_flift`
+  - `r2_rlift`
   - `spear_y`
-  - `spear_roll`
-  - `spear_pitch1`
-  - `spear_pitch2`
+  - `spear_roll1`
+  - `spear_roll2`
 - `/r1_kfs_mechanism_ref` (`std_msgs/msg/Int32`)
   - KFS 機構の目標状態を外部から直接指定するトピックです。値は `R1KfsMechanismRef` enum にキャストして使用します。
-  - 有効な値: `NONE(-1)`, `FKFS_RACK(0)`, `FKFS_HIGH(1)`, `FKFS_MIDDLE(2)`, `FKFS_LOW(3)`, `FKFS_GROUND(4)`, `FKFS_STORAGE(5)`, `RKFS_RACK(10)`, `RKFS_HIGH(11)`, `RKFS_MIDDLE(12)`, `RKFS_LOW(13)`, `RKFS_GROUND(14)`, `RKFS_STORAGE(15)`, `FKFS_RKFS_COLLECT_START_POS(20)`
+  - 有効な値: `NONE(-1)`, `FKFS_RACK(0)`, `FKFS_HIGH(1)`, `FKFS_MIDDLE(2)`, `FKFS_LOW(3)`, `FKFS_GROUND(4)`, `FKFS_STORAGE(5)`, `FKFS_COLLECT_START_POS(6)`, `RKFS_RACK(10)`, `RKFS_HIGH(11)`, `RKFS_MIDDLE(12)`, `RKFS_LOW(13)`, `RKFS_GROUND(14)`, `RKFS_STORAGE(15)`, `RKFS_COLLECT_START_POS(16)`
   - 上記以外の値を受信した場合は `RCLCPP_ERROR` を出力してその値を無視します。
+- `/r1_retry_collect` (`std_msgs/msg/Int32`)
+  - KFS 回収のリトライ要求。現在は受信ログのみ出力（未実装）。
+- `/r1_collect_3rd_kfs` (`std_msgs/msg/Int32`)
+  - 3 本目 KFS の回収番号を指定します。受信値を `r1_collect_3rd_kfs_` に保持します。
+- `/r1_initialize_all_actuator` (`std_msgs/msg/Int32`)
+  - 全アクチュエータ初期化要求。現在は受信ログのみ出力（未実装）。
 - `/<gpio>_status` (`r1_msgs/msg/GpioInput`)
   - `kfs_fz_low_switch`
   - `kfs_rz_low_switch`
@@ -143,13 +145,17 @@
 - `/chassis_tangent_pid_enable` (`std_msgs/msg/Bool`): KFS 回収ゾーン在圏中は `false` を publish して接線方向 PID を無効化します
 - `/<axis>_position_ref` (`std_msgs/msg/Float64`)
 - `/<axis>_detect_origin` (`std_msgs/msg/Bool`)
-- `/r2_flift_motor_ref` (`r1_msgs/msg/MotorRef`)
-- `/r2_rlift_motor_ref` (`r1_msgs/msg/MotorRef`)
+- `/aruco_marker_id` (`std_msgs/msg/Int32`): ArUco マーカー ID を publish します
+- `/r1_operation_mode` (`std_msgs/msg/Int32`): 現在の `OperationMode` を publish します
+- `/r1_log_message` (`std_msgs/msg/String`): ログメッセージを publish します
 - `/<gpio>_gpio_pwm_ref` (`r1_msgs/msg/GpioPwmRef`)
   - `kfs_front_pump`
   - `kfs_rear_pump`
   - `kfs_front_valve`
   - `kfs_rear_valve`
+  - `spear_hand1_valve`
+  - `spear_hand2_valve`
+  - `spear_hand_push_valve`
 
 ### Sabacan 関連 Publish
 
@@ -206,20 +212,11 @@ LED は timer callback の最後に 1 回だけ更新されます。
 - `kfs_rx`
 - `kfs_rz`
 - `kfs_ryaw`
-- `spear1`
-- `spear2`
-- `spear3`
-- `spear4`
-- `spear_x`
-- `spear_y`
-- `spear_roll`
-- `spear_pitch1`
-- `spear_pitch2`
-
-### Velocity Axis
-
 - `r2_flift`
 - `r2_rlift`
+- `spear_y`
+- `spear_roll1`
+- `spear_roll2`
 
 ### GPIO Output
 
@@ -227,6 +224,9 @@ LED は timer callback の最後に 1 回だけ更新されます。
 - `kfs_rear_pump`
 - `kfs_front_valve`
 - `kfs_rear_valve`
+- `spear_hand1_valve`
+- `spear_hand2_valve`
+- `spear_hand_push_valve`
 
 ### GPIO Input
 
@@ -245,18 +245,17 @@ LED は timer callback の最後に 1 回だけ更新されます。
   - `kfs_rz_pos_ref()`
   - `kfs_ryaw_pos_ref()`
 - R2 昇降
-  - `r2_flift()`
-  - `r2_rlift()`
+  - `r2_flift_pos_ref(pos)` / `r2_flift_set_pos(pos)`
+  - `r2_flift_speed_ref(speed)` / `r2_flift_speed_mode_stop()`
+  - `r2_rlift_pos_ref(pos)` / `r2_rlift_set_pos(pos)`
+  - `r2_rlift_speed_ref(speed)` / `r2_rlift_speed_mode_stop()`
 - やり
-  - `spear1_pos_ref()`
-  - `spear2_pos_ref()`
-  - `spear3_pos_ref()`
-  - `spear4_pos_ref()`
-  - `spear_x_pos_ref()`
-  - `spear_y_pos_ref()`
-  - `spear_roll_pos_ref()`
-  - `spear_pitch1_pos_ref()`
-  - `spear_pitch2_pos_ref()`
+  - `spear_y_pos_ref(pos)` / `spear_y_set_pos(pos)`
+  - `spear_y_speed_ref(speed)` / `spear_y_speed_mode_stop()`
+  - `spear_roll1_pos_ref(angle)` / `spear_roll1_set_angle(angle)`
+  - `spear_roll1_speed_ref(speed)` / `spear_roll1_speed_mode_stop()`
+  - `spear_roll2_pos_ref(angle)` / `spear_roll2_set_angle(angle)`
+  - `spear_roll2_speed_ref(speed)` / `spear_roll2_speed_mode_stop()`
 - 原点検出
   - `*_detect_origin()`
 - GPIO
@@ -264,6 +263,9 @@ LED は timer callback の最後に 1 回だけ更新されます。
   - `kfs_rear_pump()`
   - `kfs_front_valve()`
   - `kfs_rear_valve()`
+  - `spear_hand1_valve(on)`
+  - `spear_hand2_valve(on)`
+  - `spear_hand_push_valve(on)`
 
 ## PS4 操作
 
