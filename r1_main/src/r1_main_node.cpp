@@ -563,6 +563,15 @@ R1MainNode::R1MainNode() : Node("r1_main_node")
   r1_collect_kfs_subscription_ = this->create_subscription<r1_msgs::msg::R1CollectKfs>(
     "/r1_collect_kfs", 10,
     std::bind(&R1MainNode::r1_collect_kfs_callback, this, std::placeholders::_1));
+  r1_kfs_mechanism_ref_subscription_ = this->create_subscription<std_msgs::msg::Int32>(
+    "/r1_kfs_mechanism_ref", 10,
+    std::bind(&R1MainNode::r1_kfs_mechanism_ref_callback, this, std::placeholders::_1));
+  r1_collect_3rd_kfs_subscription_ = this->create_subscription<std_msgs::msg::Int32>(
+    "/r1_collect_3rd_kfs", 10,
+    std::bind(&R1MainNode::r1_collect_3rd_kfs_callback, this, std::placeholders::_1));
+  r1_initialize_all_actuator_subscription_ = this->create_subscription<std_msgs::msg::Int32>(
+    "/r1_initialize_all_actuator", 10,
+    std::bind(&R1MainNode::r1_initialize_all_actuator_callback, this, std::placeholders::_1));
 
   // tf関連
   tf_buffer_ = std::make_shared<tf2_ros::Buffer>(this->get_clock());
@@ -1225,6 +1234,34 @@ void R1MainNode::r1_collect_kfs_callback(const r1_msgs::msg::R1CollectKfs::Share
   }
   RCLCPP_INFO(this->get_logger(), "received /r1_collect_kfs:\n%s", s.c_str());
   publish_r1_log("Collect KFS order received");
+}
+
+void R1MainNode::r1_kfs_mechanism_ref_callback(const std_msgs::msg::Int32::SharedPtr msg)
+{
+  r1_kfs_mechanism_ref_ = msg->data;
+  R1KfsMechanismRef ref = static_cast<R1KfsMechanismRef>(r1_kfs_mechanism_ref_);
+  auto enum_name = magic_enum::enum_name(ref);
+  if (enum_name.empty()) {
+    RCLCPP_ERROR(
+      this->get_logger(), "received /r1_kfs_mechanism_ref = %d (unknown enum value)",
+      r1_kfs_mechanism_ref_);
+    return;
+  }
+  std::string s{enum_name};
+  RCLCPP_INFO(
+    this->get_logger(), "received /r1_kfs_mechanism_ref = %d(%s)", r1_kfs_mechanism_ref_,
+    s.c_str());
+}
+
+void R1MainNode::r1_collect_3rd_kfs_callback(const std_msgs::msg::Int32::SharedPtr msg)
+{
+  r1_collect_3rd_kfs_ = msg->data;
+  RCLCPP_INFO(this->get_logger(), "received /r1_collect_3rd_kfs = %d", r1_collect_3rd_kfs_);
+}
+
+void R1MainNode::r1_initialize_all_actuator_callback(const std_msgs::msg::Int32::SharedPtr msg)
+{
+  RCLCPP_INFO(this->get_logger(), "received /r1_initialize_all_actuator");
 }
 
 void R1MainNode::publish_r1_machine_initialize(void)

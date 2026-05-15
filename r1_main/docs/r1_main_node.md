@@ -121,6 +121,10 @@
   - `spear_roll`
   - `spear_pitch1`
   - `spear_pitch2`
+- `/r1_kfs_mechanism_ref` (`std_msgs/msg/Int32`)
+  - KFS 機構の目標状態を外部から直接指定するトピックです。値は `R1KfsMechanismRef` enum にキャストして使用します。
+  - 有効な値: `NONE(-1)`, `FKFS_RACK(0)`, `FKFS_HIGH(1)`, `FKFS_MIDDLE(2)`, `FKFS_LOW(3)`, `FKFS_GROUND(4)`, `FKFS_STORAGE(5)`, `RKFS_RACK(10)`, `RKFS_HIGH(11)`, `RKFS_MIDDLE(12)`, `RKFS_LOW(13)`, `RKFS_GROUND(14)`, `RKFS_STORAGE(15)`, `FKFS_RKFS_COLLECT_START_POS(20)`
+  - 上記以外の値を受信した場合は `RCLCPP_ERROR` を出力してその値を無視します。
 - `/<gpio>_status` (`r1_msgs/msg/GpioInput`)
   - `kfs_fz_low_switch`
   - `kfs_rz_low_switch`

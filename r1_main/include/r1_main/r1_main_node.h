@@ -139,6 +139,24 @@ public:
     SECONDARY_OUTER_ACTIVE,  // 2回目: 1回目の回収後に残ったOUTER側を回収
   };
 
+  enum class R1KfsMechanismRef : int32_t
+  {
+    NONE = -1,
+    FKFS_RACK = 0,
+    FKFS_HIGH = 1,
+    FKFS_MIDDLE = 2,
+    FKFS_LOW = 3,
+    FKFS_GROUND = 4,
+    FKFS_STORAGE = 5,
+    RKFS_RACK = 10,
+    RKFS_HIGH = 11,
+    RKFS_MIDDLE = 12,
+    RKFS_LOW = 13,
+    RKFS_GROUND = 14,
+    RKFS_STORAGE = 15,
+    FKFS_RKFS_COLLECT_START_POS = 20
+  };
+
   struct KfsAutoCollectPlan
   {
     KfsAutoCollectStatus status = KfsAutoCollectStatus::NONE;
@@ -241,6 +259,7 @@ public:
   bool enable_right_stick_pause_ = false;
   // arucoマーカ
   rclcpp::Publisher<std_msgs::msg::Int32>::SharedPtr aruco_marker_id_publisher_;
+  // ========== スマホ関連 ==========
   // スマホから送られてくる初期化パラメータ
   rclcpp::Subscription<r1_msgs::msg::R1InitParameter>::SharedPtr r1_init_parameter_subscription_;
   r1_msgs::msg::R1InitParameter r1_init_parameter_;
@@ -249,8 +268,15 @@ public:
   rclcpp::Subscription<r1_msgs::msg::R1CollectKfs>::SharedPtr r1_collect_kfs_subscription_;
   r1_msgs::msg::R1CollectKfs r1_collect_kfs_;
   bool received_r1_collect_kfs_ = false;
+  // 回収機構を指定の位置に動かす
+  rclcpp::Subscription<std_msgs::msg::Int32>::SharedPtr r1_kfs_mechanism_ref_subscription_;
+  int r1_kfs_mechanism_ref_ = static_cast<int>(R1KfsMechanismRef::NONE);
+  // KFSの回収に失敗したので再回収する
+  rclcpp::Subscription<std_msgs::msg::Int32>::SharedPtr r1_collect_3rd_kfs_subscription_;
+  int r1_collect_3rd_kfs_ = -1;
+  // ロボットの全アクチュエータを初期化する
+  rclcpp::Subscription<std_msgs::msg::Int32>::SharedPtr r1_initialize_all_actuator_subscription_;
 
-  // スマホ通信
   rclcpp::Publisher<std_msgs::msg::Int32>::SharedPtr r1_operation_mode_publisher_;
   rclcpp::Publisher<std_msgs::msg::String>::SharedPtr r1_log_message_publisher_;
   OperationMode last_published_operation_mode_{OperationMode::MODE1_DETECT_ORIGIN};
@@ -534,8 +560,12 @@ public:
     ChassisAct act, std::vector<int> forest_order, std::vector<std::string> kfs_mechanism_type);
   // arucoマーカ
   void publish_aruco_marker_id(int id);
+  // スマホ関連
   void r1_init_parameter_callback(const r1_msgs::msg::R1InitParameter::SharedPtr msg);
   void r1_collect_kfs_callback(const r1_msgs::msg::R1CollectKfs::SharedPtr msg);
+  void r1_kfs_mechanism_ref_callback(const std_msgs::msg::Int32::SharedPtr msg);
+  void r1_collect_3rd_kfs_callback(const std_msgs::msg::Int32::SharedPtr msg);
+  void r1_initialize_all_actuator_callback(const std_msgs::msg::Int32::SharedPtr msg);
   void publish_r1_log(const std::string & message);
   bool is_localization_ready(void);
   void request_auto_robot_move(
