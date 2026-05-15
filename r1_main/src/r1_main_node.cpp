@@ -742,7 +742,6 @@ R1MainNode::R1MainNode() : Node("r1_main_node")
   declare_and_get_parameter("wall_sensor_detect_height", WALL_SENSOR_DETECT_HEIGHT);
   declare_and_get_parameter("wall_sensor_detect_width", WALL_SENSOR_DETECT_WIDTH);
   declare_and_get_parameter("wall_sensor_delay_offset_distance", WALL_SENSOR_DELAY_OFFSET_DISTANCE);
-  declare_and_get_parameter("collect_kfs_interval_time", COLLECT_KFS_INTERVAL_TIME);
   parameter_callback_handle_ =
     this->add_on_set_parameters_callback([this](const std::vector<rclcpp::Parameter> & parameters) {
       rcl_interfaces::msg::SetParametersResult result;
@@ -802,9 +801,6 @@ R1MainNode::R1MainNode() : Node("r1_main_node")
   // this->now() と同じクロック型で時刻ベクターを初期化する
   // ヘッダのデフォルト値 rclcpp::Time(0) は RCL_ROS_TIME (type=1) になるため、
   // use_sim_time=false 環境では this->now() (type=2) と型が合わずクラッシュする
-  for (int i = 0; i < 2; i++) {
-    last_auto_collect_kfs_time_[i] = this->now();
-  }
   for (int i = 0; i < 12; i++) {
     wall_sensor_detect_start_time_[i] = this->now();
   }
@@ -1667,9 +1663,6 @@ void R1MainNode::reset_kfs_auto_collect_tracking(void)
   auto_collect_kfs_rkfs_step_ = DEFAULT_STEP;
   for (int i = 0; i < 12; i++) {
     kfs_already_collected_[i] = false;
-  }
-  for (int i = 0; i < 2; i++) {
-    last_auto_collect_kfs_time_[i] = this->now();
   }
 }
 
@@ -3146,16 +3139,6 @@ void R1MainNode::auto_collect_kfs_task(void)
       if (kfs_already_collected_[target_forest_number - 1]) {
         continue;
       }
-      // 最後に自動回収された時刻が近い場合はスキップ
-      if (
-        (this->now() - last_auto_collect_kfs_time_[within_index]).seconds() <
-        COLLECT_KFS_INTERVAL_TIME) {
-        RCLCPP_ERROR_THROTTLE(
-          this->get_logger(), *this->get_clock(), 1000,
-          "skipping auto collect kfs because last collect time is too recent: %f seconds ago",
-          (this->now() - last_auto_collect_kfs_time_[within_index]).seconds());
-        continue;
-      }
       // ENABLE_WALL_SENSOR == trueのとき、壁センサーの値を更新し、壁を検出する
       // ENABLE_WALL_SENSOR == falseのとき、座標ベースで回収動作を開始するかどうかの判定を行う
       if (ENABLE_WALL_SENSOR == true) {
@@ -3398,8 +3381,6 @@ void R1MainNode::auto_collect_kfs_task(void)
       // 壁センサーの状態をリセット
       wall_sensor_detected_[target_forest_number - 1] = false;
       wall_sensor_detect_start_time_[target_forest_number - 1] = this->now();
-      // 最終時刻を更新
-      last_auto_collect_kfs_time_[within_index] = this->now();
       // 回収完了済みフラグをセット
       kfs_already_collected_[target_forest_number - 1] = true;
       within = false;

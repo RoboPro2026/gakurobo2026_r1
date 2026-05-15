@@ -450,8 +450,6 @@ public:
   double WALL_SENSOR_DETECT_WIDTH = 1.0;
   // 壁検出の遅延距離オフセット [m]
   double WALL_SENSOR_DELAY_OFFSET_DISTANCE = 0.25;
-  // KFS回収完了後、次に同じ回収機構が回収動作を行うまでのインターバル時間 [s]
-  double COLLECT_KFS_INTERVAL_TIME = 5.0;
   // コンストラクタ
   R1MainNode();
 
