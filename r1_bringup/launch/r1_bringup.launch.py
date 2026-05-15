@@ -100,13 +100,13 @@ def generate_launch_description():
     )
 
     # サーボの指令値を知りたいときはinfoにする
-    r1_swerve_drive_node = Node(
-        package="r1_machine",
-        executable="r1_swerve_drive_node",
-        name="r1_swerve_drive_node",
-        parameters=[param_file],
-        arguments=["--ros-args", "--log-level", "warn"],
-    )
+    # r1_swerve_drive_node = Node(
+    #     package="r1_machine",
+    #     executable="r1_swerve_drive_node",
+    #     name="r1_swerve_drive_node",
+    #     parameters=[param_file],
+    #     arguments=["--ros-args", "--log-level", "warn"],
+    # )
 
     # オドメトリの値を知りたいときはinfoにする
     r1_odometry_node = Node(
@@ -220,45 +220,6 @@ def generate_launch_description():
         "r1_spear_roll2_node", "spear_roll2"
     )
 
-    # 千田機構
-    # r1_spear1_node = create_r1_linear_motion_node(
-    #     "r1_spear1_node",
-    #     "spear1",
-    #     extra_remappings=[("low_switch_status", "spear1_low_switch_status")],
-    # )
-    # r1_spear2_node = create_r1_linear_motion_node(
-    #     "r1_spear2_node",
-    #     "spear2",
-    #     extra_remappings=[("low_switch_status", "spear2_low_switch_status")],
-    # )
-    # r1_spear3_node = create_r1_linear_motion_node(
-    #     "r1_spear3_node",
-    #     "spear3",
-    #     extra_remappings=[("low_switch_status", "spear3_low_switch_status")],
-    # )
-    # r1_spear4_node = create_r1_linear_motion_node(
-    #     "r1_spear4_node",
-    #     "spear4",
-    #     extra_remappings=[("low_switch_status", "spear4_low_switch_status")],
-    # )
-    # r1_spear_x_node = create_r1_linear_motion_node(
-    #     "r1_spear_x_node",
-    #     "spear_x",
-    #     extra_remappings=[("low_switch_status", "spear_x_low_switch_status")],
-    # )
-    # r1_spear_y_node = create_r1_linear_motion_node(
-    #     "r1_spear_y_node",
-    #     "spear_y",
-    #     extra_remappings=[("low_switch_status", "spear_y_low_switch_status")],
-    # )
-    # r1_spear_roll_node = create_r1_angle_motion_node("r1_spear_roll_node", "spear_roll")
-    # r1_spear_pitch1_node = create_r1_angle_motion_node(
-    #     "r1_spear_pitch1_node", "spear_pitch1"
-    # )
-    # r1_spear_pitch2_node = create_r1_angle_motion_node(
-    #     "r1_spear_pitch2_node", "spear_pitch2"
-    # )
-
     def create_ydlidar_node(
         node_name: str, topic_prefix: str, log_level="warn"
     ) -> Node:
@@ -301,12 +262,11 @@ def generate_launch_description():
         )
 
     sabacan_robomasv2_node_id1 = create_sabacan_robomasv2_node(1)
-    sabacan_robomasv2_node_id2 = create_sabacan_robomasv2_node(2)
+    # id2は欠番
     sabacan_robomasv2_node_id3 = create_sabacan_robomasv2_node(3)
     sabacan_robomasv2_node_id4 = create_sabacan_robomasv2_node(4)
     sabacan_robomasv2_node_id5 = create_sabacan_robomasv2_node(5)
-    sabacan_robomasv2_node_id6 = create_sabacan_robomasv2_node(6)
-    sabacan_robomasv2_node_id7 = create_sabacan_robomasv2_node(7)
+    # id6とid7は欠番
     sabacan_robomasv2_node_id8 = create_sabacan_robomasv2_node(8)
 
     def create_sabacan_single_control_node(
@@ -353,18 +313,7 @@ def generate_launch_description():
     sabacan_single_control_id1_motor3 = create_sabacan_single_control_node(
         1, 3, 100.0, "CURRENT", 0.0
     )
-    sabacan_single_control_id2_motor0 = create_sabacan_single_control_node(
-        2, 0, 100.0, "TORQUE", 0.0
-    )
-    sabacan_single_control_id2_motor1 = create_sabacan_single_control_node(
-        2, 1, 100.0, "TORQUE", 0.0
-    )
-    sabacan_single_control_id2_motor2 = create_sabacan_single_control_node(
-        2, 2, 100.0, "TORQUE", 0.0
-    )
-    sabacan_single_control_id2_motor3 = create_sabacan_single_control_node(
-        2, 3, 100.0, "TORQUE", 0.0
-    )
+    # id2は欠番
     # それ以外は25Hz(仮)
     sabacan_single_control_id3_motor0 = create_sabacan_single_control_node(
         3, 0, 25.0, "TORQUE", 0.0
@@ -390,30 +339,7 @@ def generate_launch_description():
     sabacan_single_control_id4_motor3 = create_sabacan_single_control_node(
         4, 3, 25.0, "TORQUE", 0.0
     )
-    sabacan_single_control_id5_motor0 = create_sabacan_single_control_node(
-        5, 0, 25.0, "TORQUE", 0.0
-    )
-    sabacan_single_control_id5_motor1 = create_sabacan_single_control_node(
-        5, 1, 25.0, "TORQUE", 0.0
-    )
-    sabacan_single_control_id5_motor2 = create_sabacan_single_control_node(
-        5, 2, 25.0, "TORQUE", 0.0
-    )
-    sabacan_single_control_id5_motor3 = create_sabacan_single_control_node(
-        5, 3, 25.0, "TORQUE", 0.0
-    )
-    sabacan_single_control_id6_motor0 = create_sabacan_single_control_node(
-        6, 0, 25.0, "TORQUE", 0.0
-    )
-    sabacan_single_control_id6_motor1 = create_sabacan_single_control_node(
-        6, 1, 25.0, "TORQUE", 0.0
-    )
-    sabacan_single_control_id6_motor2 = create_sabacan_single_control_node(
-        6, 2, 25.0, "TORQUE", 0.0
-    )
-    sabacan_single_control_id6_motor3 = create_sabacan_single_control_node(
-        6, 3, 25.0, "TORQUE", 0.0
-    )
+    # id5とid6は欠番
     # id7は計測輪のみなので不要
     sabacan_single_control_id8_motor0 = create_sabacan_single_control_node(
         8, 0, 25.0, "TORQUE", 0.0
@@ -449,7 +375,6 @@ def generate_launch_description():
 
     sabacan_gpio_node_id1 = create_sabacan_gpio_node(1)
     sabacan_gpio_node_id2 = create_sabacan_gpio_node(2)
-    sabacan_gpio_node_id3 = create_sabacan_gpio_node(3)
 
     sabacan_power_node_id0 = Node(
         package="sabacan",
@@ -491,11 +416,6 @@ def generate_launch_description():
                 ("to_can_bus", to_can_bus),
             ],
         )
-
-    # canbus1
-    sabacan_robstride_node_id1 = create_sabacan_robstride_node(
-        1, from_can_bus="from_can_bus1", to_can_bus="to_can_bus1"
-    )
 
     # socket_can_bridge_launch = GroupAction(
     #     [
@@ -556,18 +476,18 @@ def generate_launch_description():
         launch_arguments={"zone": zone}.items(),
     )
 
-    foxglove_node = Node(
-        package="foxglove_bridge",
-        executable="foxglove_bridge",
-        name="foxglove_bridge",
-        # output="screen",
-        parameters=[
-            {
-                "port": 8765,
-            }
-        ],
-        arguments=["--ros-args", "--log-level", "error"],
-    )
+    # foxglove_node = Node(
+    #     package="foxglove_bridge",
+    #     executable="foxglove_bridge",
+    #     name="foxglove_bridge",
+    #     # output="screen",
+    #     parameters=[
+    #         {
+    #             "port": 8765,
+    #         }
+    #     ],
+    #     arguments=["--ros-args", "--log-level", "error"],
+    # )
 
     r1_aruco_display_node = Node(
         package="r1_ui",
@@ -599,20 +519,16 @@ def generate_launch_description():
         # sabacan
         # can0
         sabacan_robomasv2_node_id1,
-        sabacan_robomasv2_node_id2,
+        # id2は欠番
         sabacan_robomasv2_node_id3,
         sabacan_robomasv2_node_id4,
         sabacan_robomasv2_node_id5,
-        sabacan_robomasv2_node_id6,
-        sabacan_robomasv2_node_id7,
+        # id6とid7は欠番
         sabacan_robomasv2_node_id8,
         sabacan_gpio_node_id1,
         sabacan_gpio_node_id2,
-        sabacan_gpio_node_id3,
         sabacan_power_node_id0,
         sabacan_led_node_id1,
-        # can1
-        sabacan_robstride_node_id1,
         # 次にsabacan_single_control以外のノードを起動
         r1_chassis_control_node,
         r1_chassis_velocity_control_node,
@@ -630,29 +546,15 @@ def generate_launch_description():
         r1_kfs_rz_node,
         r1_kfs_ryaw_node,
         r1_r2_rlift_node,
-        # 大槻機構
         r1_spear_y_node,
         r1_spear_roll1_node,
         r1_spear_roll2_node,
-        # 千田機構
-        # r1_spear1_node,
-        # r1_spear2_node,
-        # r1_spear3_node,
-        # r1_spear4_node,
-        # r1_spear_x_node,
-        # r1_spear_y_node,
-        # r1_spear_roll_node,
-        # r1_spear_pitch1_node,
-        # r1_spear_pitch2_node,
         # 最後にsabacan_single_controlを起動
         sabacan_single_control_id1_motor0,
         sabacan_single_control_id1_motor1,
         sabacan_single_control_id1_motor2,
         sabacan_single_control_id1_motor3,
-        sabacan_single_control_id2_motor0,
-        sabacan_single_control_id2_motor1,
-        sabacan_single_control_id2_motor2,
-        sabacan_single_control_id2_motor3,
+        # id2は欠番
         sabacan_single_control_id3_motor0,
         sabacan_single_control_id3_motor1,
         sabacan_single_control_id3_motor2,
@@ -661,15 +563,8 @@ def generate_launch_description():
         sabacan_single_control_id4_motor1,
         sabacan_single_control_id4_motor2,
         sabacan_single_control_id4_motor3,
-        sabacan_single_control_id5_motor0,
-        sabacan_single_control_id5_motor1,
-        sabacan_single_control_id5_motor2,
-        sabacan_single_control_id5_motor3,
-        sabacan_single_control_id6_motor0,
-        sabacan_single_control_id6_motor1,
-        sabacan_single_control_id6_motor2,
-        sabacan_single_control_id6_motor3,
-        # sabacan id7は計測輪のみなので不要
+        # id5とid6は欠番
+        # id7は計測輪のみなので不要
         sabacan_single_control_id8_motor0,
         sabacan_single_control_id8_motor1,
         sabacan_single_control_id8_motor2,

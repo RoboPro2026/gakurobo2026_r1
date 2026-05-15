@@ -476,21 +476,9 @@ R1MainNode::R1MainNode() : Node("r1_main_node")
   register_position_axis("kfs_ryaw", &kfs_ryaw_position_ref_, nullptr, true);
   register_position_axis("r2_flift", &r2_flift_position_ref_);
   register_position_axis("r2_rlift", &r2_rlift_position_ref_);
-#if SPEAR_MECHANISM == SPEAR_MECHANISM_OTSUKI
   register_position_axis("spear_y", &spear_y_position_ref_);
   register_position_axis("spear_roll1", &spear_roll1_position_ref_, nullptr, true);
   register_position_axis("spear_roll2", &spear_roll2_position_ref_, nullptr, true);
-#elif SPEAR_MECHANISM == SPEAR_MECHANISM_CHIDA
-  register_position_axis("spear1", &spear1_position_ref_);
-  register_position_axis("spear2", &spear2_position_ref_);
-  register_position_axis("spear3", &spear3_position_ref_);
-  register_position_axis("spear4", &spear4_position_ref_);
-  register_position_axis("spear_x", &spear_x_position_ref_);
-  register_position_axis("spear_y", &spear_y_position_ref_);
-  register_position_axis("spear_roll", &spear_roll_position_ref_, nullptr, true);
-  register_position_axis("spear_pitch1", &spear_pitch1_position_ref_, nullptr, true);
-  register_position_axis("spear_pitch2", &spear_pitch2_position_ref_, nullptr, true);
-#endif
   // // ========== R2昇降指令値 ==========
   // register_velocity_axis("r2_flift", "/r2_flift_motor_ref", &r2_flift_velocity_ref_);
   // register_velocity_axis("r2_rlift", "/r2_rlift_motor_ref", &r2_rlift_velocity_ref_);
@@ -500,17 +488,10 @@ R1MainNode::R1MainNode() : Node("r1_main_node")
   register_gpio_pwm_output("kfs_rear_pump", &kfs_rear_pump_ref_, nullptr);
   register_gpio_pwm_output("kfs_front_valve", nullptr, &kfs_front_valve_ref_);
   register_gpio_pwm_output("kfs_rear_valve", nullptr, &kfs_rear_valve_ref_);
-// 槍電磁弁
-#if SPEAR_MECHANISM == SPEAR_MECHANISM_OTSUKI
+  // 槍電磁弁
   register_gpio_pwm_output("spear_hand1_valve", nullptr, &spear_hand1_valve_ref_);
   register_gpio_pwm_output("spear_hand2_valve", nullptr, &spear_hand2_valve_ref_);
   register_gpio_pwm_output("spear_hand_push_valve", nullptr, &spear_hand_push_valve_ref_);
-#elif SPEAR_MECHANISM == SPEAR_MECHANISM_CHIDA
-  register_gpio_pwm_output("spear_u1_valve", nullptr, &spear_u1_valve_ref_);
-  register_gpio_pwm_output("spear_d1_valve", nullptr, &spear_d1_valve_ref_);
-  register_gpio_pwm_output("spear_u2_valve", nullptr, &spear_u2_valve_ref_);
-  register_gpio_pwm_output("spear_d2_valve", nullptr, &spear_d2_valve_ref_);
-#endif
   // センサー入力
   register_gpio_input("kfs_fz_low_switch", &kfs_fz_low_switch_status_);
   register_gpio_input("kfs_rz_low_switch", &kfs_rz_low_switch_status_);
@@ -680,9 +661,7 @@ R1MainNode::R1MainNode() : Node("r1_main_node")
   declare_and_get_parameter("r2_rlift_normal_pos", R2_RLIFT_NORMAL_POS);
   declare_and_get_parameter("r2_rlift_up_pos", R2_RLIFT_UP_POS);
   declare_and_get_parameter("r2_rlift_down_pos", R2_RLIFT_DOWN_POS);
-// ========== やり ==========
-// 大槻機構
-#if SPEAR_MECHANISM == SPEAR_MECHANISM_OTSUKI
+  // ========== やり ==========
   // spear_y
   declare_and_get_parameter("spear_y_collect1_pos", SPEAR_Y_COLLECT1_POS);
   declare_and_get_parameter("spear_y_collect2_pos", SPEAR_Y_COLLECT2_POS);
@@ -719,64 +698,6 @@ R1MainNode::R1MainNode() : Node("r1_main_node")
   this->get_parameter(zone_ + "_spear_roll2_low_attack_angle", SPEAR_ROLL2_LOW_ATTACK_ANGLE);
   this->get_parameter(zone_ + "_spear_roll2_middle_attack_angle", SPEAR_ROLL2_MIDDLE_ATTACK_ANGLE);
   this->get_parameter(zone_ + "_spear_roll2_high_attack_angle", SPEAR_ROLL2_HIGH_ATTACK_ANGLE);
-#elif SPEAR_MECHANISM == SPEAR_MECHANISM_CHIDA
-  // spear1
-  declare_and_get_parameter("spear1_normal_pos", SPEAR1_NORMAL_POS);
-  declare_and_get_parameter("spear1_collect1_pos", SPEAR1_COLLECT1_POS);
-  declare_and_get_parameter("spear1_collect2_pos", SPEAR1_COLLECT2_POS);
-  declare_and_get_parameter("spear1_collect3_pos", SPEAR1_COLLECT3_POS);
-  declare_and_get_parameter("spear1_make_spear_start_pos", SPEAR1_MAKE_SPEAR_START_POS);
-  declare_and_get_parameter("spear1_kfs_collect_pos", SPEAR1_KFS_COLLECT_POS);
-  declare_and_get_parameter("spear1_low_attack_pos", SPEAR1_LOW_ATTACK_POS);
-  declare_and_get_parameter("spear1_middle_attack_pos", SPEAR1_MIDDLE_ATTACK_POS);
-  declare_and_get_parameter("spear1_high_attack_pos", SPEAR1_HIGH_ATTACK_POS);
-  declare_and_get_parameter("spear1_push_vel", SPEAR1_PUSH_VEL);
-  // spear2
-  declare_and_get_parameter("spear2_normal_pos", SPEAR2_NORMAL_POS);
-  declare_and_get_parameter("spear2_collect1_pos", SPEAR2_COLLECT1_POS);
-  declare_and_get_parameter("spear2_collect2_pos", SPEAR2_COLLECT2_POS);
-  declare_and_get_parameter("spear2_collect3_pos", SPEAR2_COLLECT3_POS);
-  declare_and_get_parameter("spear2_make_spear_start_pos", SPEAR2_MAKE_SPEAR_START_POS);
-  declare_and_get_parameter("spear2_kfs_collect_pos", SPEAR2_KFS_COLLECT_POS);
-  declare_and_get_parameter("spear2_low_attack_pos", SPEAR2_LOW_ATTACK_POS);
-  declare_and_get_parameter("spear2_middle_attack_pos", SPEAR2_MIDDLE_ATTACK_POS);
-  declare_and_get_parameter("spear2_high_attack_pos", SPEAR2_HIGH_ATTACK_POS);
-  declare_and_get_parameter("spear2_push_vel", SPEAR2_PUSH_VEL);
-  // spear3
-  declare_and_get_parameter("spear3_normal_pos", SPEAR3_NORMAL_POS);
-  declare_and_get_parameter("spear3_collect_pos", SPEAR3_COLLECT_POS);
-  declare_and_get_parameter("spear3_make_spear_start_pos", SPEAR3_MAKE_SPEAR_START_POS);
-  declare_and_get_parameter("spear3_kfs_collect_pos", SPEAR3_KFS_COLLECT_POS);
-  declare_and_get_parameter("spear3_push_vel", SPEAR3_PUSH_VEL);
-  // spear4
-  declare_and_get_parameter("spear4_normal_pos", SPEAR4_NORMAL_POS);
-  declare_and_get_parameter("spear4_collect_pos", SPEAR4_COLLECT_POS);
-  declare_and_get_parameter("spear4_make_spear_start_pos", SPEAR4_MAKE_SPEAR_START_POS);
-  declare_and_get_parameter("spear4_kfs_collect_pos", SPEAR4_KFS_COLLECT_POS);
-  declare_and_get_parameter("spear4_push_vel", SPEAR4_PUSH_VEL);
-  // spear_x
-  declare_and_get_parameter("spear_x_normal_pos", SPEAR_X_NORMAL_POS);
-  declare_and_get_parameter("spear_x_middle_pos", SPEAR_X_MIDDLE_POS);
-  declare_and_get_parameter("spear_x_make_spear1_pos", SPEAR_X_MAKE_SPEAR1_POS);
-  declare_and_get_parameter("spear_x_make_spear2_pos", SPEAR_X_MAKE_SPEAR2_POS);
-  declare_and_get_parameter("spear_x_make_spear3_pos", SPEAR_X_MAKE_SPEAR3_POS);
-  declare_and_get_parameter("spear_x_make_spear4_pos", SPEAR_X_MAKE_SPEAR4_POS);
-  // spear_y
-  declare_and_get_parameter("spear_y_expand_pos", SPEAR_Y_EXPAND_POS);
-  // spear_roll
-  declare_and_get_parameter("spear_roll_normal_angle", SPEAR_ROLL_NORMAL_ANGLE);
-  declare_and_get_parameter("spear_roll_inv_normal_angle", SPEAR_ROLL_INV_NORMAL_ANGLE);
-  declare_and_get_parameter("spear_roll_vertical_angle", SPEAR_ROLL_VERTICAL_ANGLE);
-  declare_and_get_parameter("spear_roll_low_attack_angle", SPEAR_ROLL_LOW_ATTACK_ANGLE);
-  declare_and_get_parameter("spear_roll_middle_attack_angle", SPEAR_ROLL_MIDDLE_ATTACK_ANGLE);
-  declare_and_get_parameter("spear_roll_high_attack_angle", SPEAR_ROLL_HIGH_ATTACK_ANGLE);
-  // spear_pitch1
-  declare_and_get_parameter("spear_pitch1_normal_angle", SPEAR_PITCH1_NORMAL_ANGLE);
-  declare_and_get_parameter("spear_pitch1_vertical_angle", SPEAR_PITCH1_VERTICAL_ANGLE);
-  // spear_pitch2
-  declare_and_get_parameter("spear_pitch2_normal_angle", SPEAR_PITCH2_NORMAL_ANGLE);
-  declare_and_get_parameter("spear_pitch2_vertical_angle", SPEAR_PITCH2_VERTICAL_ANGLE);
-#endif
 
   for (int i = 0; i < 12; i++) {
     const std::string idx = std::to_string(i + 1);
@@ -932,34 +853,11 @@ void R1MainNode::r2_flift_detect_origin(void) { detect_origin_position_axis("r2_
 
 void R1MainNode::r2_rlift_detect_origin(void) { detect_origin_position_axis("r2_rlift"); }
 
-#if SPEAR_MECHANISM == SPEAR_MECHANISM_OTSUKI
 void R1MainNode::spear_y_detect_origin(void) { detect_origin_position_axis("spear_y"); }
 
 void R1MainNode::spear_roll1_detect_origin(void) { detect_origin_position_axis("spear_roll1"); }
 
 void R1MainNode::spear_roll2_detect_origin(void) { detect_origin_position_axis("spear_roll2"); }
-
-#elif SPEAR_MECHANISM == SPEAR_MECHANISM_CHIDA
-
-void R1MainNode::spear1_detect_origin(void) { detect_origin_position_axis("spear1"); }
-
-void R1MainNode::spear2_detect_origin(void) { detect_origin_position_axis("spear2"); }
-
-void R1MainNode::spear3_detect_origin(void) { detect_origin_position_axis("spear3"); }
-
-void R1MainNode::spear4_detect_origin(void) { detect_origin_position_axis("spear4"); }
-
-void R1MainNode::spear_x_detect_origin(void) { detect_origin_position_axis("spear_x"); }
-
-void R1MainNode::spear_y_detect_origin(void) { detect_origin_position_axis("spear_y"); }
-
-void R1MainNode::spear_roll_detect_origin(void) { detect_origin_position_axis("spear_roll"); }
-
-void R1MainNode::spear_pitch1_detect_origin(void) { detect_origin_position_axis("spear_pitch1"); }
-
-void R1MainNode::spear_pitch2_detect_origin(void) { detect_origin_position_axis("spear_pitch2"); }
-
-#endif
 
 void R1MainNode::kfs_fx_move_mech_lock(int direction)
 {
@@ -1001,7 +899,6 @@ void R1MainNode::r2_rlift_move_mech_lock(int direction)
   move_mech_lock_position_axis("r2_rlift", direction);
 }
 
-#if SPEAR_MECHANISM == SPEAR_MECHANISM_OTSUKI
 void R1MainNode::spear_y_move_mech_lock(int direction)
 {
   move_mech_lock_position_axis("spear_y", direction);
@@ -1016,55 +913,6 @@ void R1MainNode::spear_roll2_move_mech_lock(int direction)
 {
   move_mech_lock_position_axis("spear_roll2", direction);
 }
-
-#elif SPEAR_MECHANISM == SPEAR_MECHANISM_CHIDA
-
-void R1MainNode::spear1_move_mech_lock(int direction)
-{
-  move_mech_lock_position_axis("spear1", direction);
-}
-
-void R1MainNode::spear2_move_mech_lock(int direction)
-{
-  move_mech_lock_position_axis("spear2", direction);
-}
-
-void R1MainNode::spear3_move_mech_lock(int direction)
-{
-  move_mech_lock_position_axis("spear3", direction);
-}
-
-void R1MainNode::spear4_move_mech_lock(int direction)
-{
-  move_mech_lock_position_axis("spear4", direction);
-}
-
-void R1MainNode::spear_x_move_mech_lock(int direction)
-{
-  move_mech_lock_position_axis("spear_x", direction);
-}
-
-void R1MainNode::spear_y_move_mech_lock(int direction)
-{
-  move_mech_lock_position_axis("spear_y", direction);
-}
-
-void R1MainNode::spear_roll_move_mech_lock(int direction)
-{
-  move_mech_lock_position_axis("spear_roll", direction);
-}
-
-void R1MainNode::spear_pitch1_move_mech_lock(int direction)
-{
-  move_mech_lock_position_axis("spear_pitch1", direction);
-}
-
-void R1MainNode::spear_pitch2_move_mech_lock(int direction)
-{
-  move_mech_lock_position_axis("spear_pitch2", direction);
-}
-
-#endif
 
 void R1MainNode::r2_flift_move_down_mech_lock(void)
 {
@@ -2007,7 +1855,6 @@ void R1MainNode::r2_flift_speed_mode_stop(void) { stop_position_axis_speed_mode(
 
 void R1MainNode::r2_rlift_speed_mode_stop(void) { stop_position_axis_speed_mode("r2_rlift"); }
 
-#if SPEAR_MECHANISM == SPEAR_MECHANISM_OTSUKI
 void R1MainNode::spear_y_pos_ref(double pos) { publish_position_axis("spear_y", pos); }
 
 void R1MainNode::spear_roll1_pos_ref(double angle) { publish_position_axis("spear_roll1", angle); }
@@ -2039,121 +1886,6 @@ void R1MainNode::spear_y_speed_mode_stop(void) { stop_position_axis_speed_mode("
 void R1MainNode::spear_roll1_speed_mode_stop(void) { stop_position_axis_speed_mode("spear_roll1"); }
 void R1MainNode::spear_roll2_speed_mode_stop(void) { stop_position_axis_speed_mode("spear_roll2"); }
 
-#elif SPEAR_MECHANISM == SPEAR_MECHANISM_CHIDA
-
-void R1MainNode::spear1_pos_ref(double pos) { publish_position_axis("spear1", pos); }
-
-void R1MainNode::spear2_pos_ref(double pos) { publish_position_axis("spear2", pos); }
-
-void R1MainNode::spear3_pos_ref(double pos) { publish_position_axis("spear3", pos); }
-
-void R1MainNode::spear4_pos_ref(double pos) { publish_position_axis("spear4", pos); }
-
-void R1MainNode::spear_x_pos_ref(double pos) { publish_position_axis("spear_x", pos); }
-
-void R1MainNode::spear_y_pos_ref(double pos) { publish_position_axis("spear_y", pos); }
-
-void R1MainNode::spear_roll_pos_ref(double angle) { publish_position_axis("spear_roll", angle); }
-
-void R1MainNode::spear_pitch1_pos_ref(double angle)
-{
-  publish_position_axis("spear_pitch1", angle);
-}
-
-void R1MainNode::spear_pitch2_pos_ref(double angle)
-{
-  publish_position_axis("spear_pitch2", angle);
-}
-
-void R1MainNode::spear1_set_pos(double pos) { set_position_axis("spear1", pos); }
-
-void R1MainNode::spear2_set_pos(double pos) { set_position_axis("spear2", pos); }
-
-void R1MainNode::spear3_set_pos(double pos) { set_position_axis("spear3", pos); }
-
-void R1MainNode::spear4_set_pos(double pos) { set_position_axis("spear4", pos); }
-
-void R1MainNode::spear_x_set_pos(double pos) { set_position_axis("spear_x", pos); }
-
-void R1MainNode::spear_y_set_pos(double pos) { set_position_axis("spear_y", pos); }
-
-void R1MainNode::spear_roll_set_angle(double angle) { set_position_axis("spear_roll", angle); }
-
-void R1MainNode::spear_pitch1_set_angle(double angle) { set_position_axis("spear_pitch1", angle); }
-
-void R1MainNode::spear_pitch2_set_angle(double angle) { set_position_axis("spear_pitch2", angle); }
-
-void R1MainNode::spear1_speed_ref(double speed)
-{
-  publish_position_axis_speed_ref("spear1", speed);
-}
-
-void R1MainNode::spear2_speed_ref(double speed)
-{
-  publish_position_axis_speed_ref("spear2", speed);
-}
-
-void R1MainNode::spear3_speed_ref(double speed)
-{
-  publish_position_axis_speed_ref("spear3", speed);
-}
-
-void R1MainNode::spear4_speed_ref(double speed)
-{
-  publish_position_axis_speed_ref("spear4", speed);
-}
-
-void R1MainNode::spear_x_speed_ref(double speed)
-{
-  publish_position_axis_speed_ref("spear_x", speed);
-}
-
-void R1MainNode::spear_y_speed_ref(double speed)
-{
-  publish_position_axis_speed_ref("spear_y", speed);
-}
-
-void R1MainNode::spear_roll_speed_ref(double speed)
-{
-  publish_position_axis_speed_ref("spear_roll", speed);
-}
-
-void R1MainNode::spear_pitch1_speed_ref(double speed)
-{
-  publish_position_axis_speed_ref("spear_pitch1", speed);
-}
-
-void R1MainNode::spear_pitch2_speed_ref(double speed)
-{
-  publish_position_axis_speed_ref("spear_pitch2", speed);
-}
-
-void R1MainNode::spear1_speed_mode_stop(void) { stop_position_axis_speed_mode("spear1"); }
-
-void R1MainNode::spear2_speed_mode_stop(void) { stop_position_axis_speed_mode("spear2"); }
-
-void R1MainNode::spear3_speed_mode_stop(void) { stop_position_axis_speed_mode("spear3"); }
-
-void R1MainNode::spear4_speed_mode_stop(void) { stop_position_axis_speed_mode("spear4"); }
-
-void R1MainNode::spear_x_speed_mode_stop(void) { stop_position_axis_speed_mode("spear_x"); }
-
-void R1MainNode::spear_y_speed_mode_stop(void) { stop_position_axis_speed_mode("spear_y"); }
-
-void R1MainNode::spear_roll_speed_mode_stop(void) { stop_position_axis_speed_mode("spear_roll"); }
-
-void R1MainNode::spear_pitch1_speed_mode_stop(void)
-{
-  stop_position_axis_speed_mode("spear_pitch1");
-}
-
-void R1MainNode::spear_pitch2_speed_mode_stop(void)
-{
-  stop_position_axis_speed_mode("spear_pitch2");
-}
-
-#endif
-
 void R1MainNode::kfs_front_pump(double pwm) { publish_gpio_pwm_output("kfs_front_pump", pwm); }
 
 void R1MainNode::kfs_rear_pump(double pwm) { publish_gpio_pwm_output("kfs_rear_pump", pwm); }
@@ -2169,7 +1901,6 @@ void R1MainNode::kfs_rear_valve(bool on)
 }
 
 // 大槻機構
-#if SPEAR_MECHANISM == SPEAR_MECHANISM_OTSUKI
 void R1MainNode::spear_hand1_valve(bool on)
 {
   publish_gpio_pwm_output("spear_hand1_valve", on ? 1.0 : 0.0);
@@ -2184,30 +1915,6 @@ void R1MainNode::spear_hand_push_valve(bool on)
 {
   publish_gpio_pwm_output("spear_hand_push_valve", on ? 1.0 : 0.0);
 }
-
-#elif SPEAR_MECHANISM == SPEAR_MECHANISM_CHIDA
-
-void R1MainNode::spear_u1_valve(bool on)
-{
-  publish_gpio_pwm_output("spear_u1_valve", on ? 1.0 : 0.0);
-}
-
-void R1MainNode::spear_d1_valve(bool on)
-{
-  publish_gpio_pwm_output("spear_d1_valve", on ? 1.0 : 0.0);
-}
-
-void R1MainNode::spear_u2_valve(bool on)
-{
-  publish_gpio_pwm_output("spear_u2_valve", on ? 1.0 : 0.0);
-}
-
-void R1MainNode::spear_d2_valve(bool on)
-{
-  publish_gpio_pwm_output("spear_d2_valve", on ? 1.0 : 0.0);
-}
-
-#endif
 
 void R1MainNode::kfs_robot_start_act(void)
 {
@@ -2232,27 +1939,16 @@ void R1MainNode::kfs_collect_start_act(void)
     kfs_collect_start_act_push_valve_timer_->cancel();
   }
 
-#if SPEAR_MECHANISM == SPEAR_MECHANISM_OTSUKI
   // 1. spear_yを移動。push_valveをtrueにし、槍回収機構を押し出す。
   spear_y_pos_ref(SPEAR_Y_MAKE_SPEAR_POS);
   spear_hand_push_valve(true);
-#elif SPEAR_MECHANISM == SPEAR_MECHANISM_CHIDA
-// // spear_xを動かす
-// spear_x_pos_ref(SPEAR_X_MIDDLE_POS);
-// // まずrollを動かす
-// spear_roll_pos_ref(SPEAR_ROLL_VERTICAL_ANGLE);
-// spear1_pos_ref(SPEAR1_KFS_COLLECT_POS);
-// spear2_pos_ref(SPEAR2_KFS_COLLECT_POS);
-#endif
   // arucoマーカをもとに戻す
   publish_aruco_marker_id(0);
 
   // 2. 少ししたら、rollを垂直にする
   kfs_collect_start_act_roll_timer_ = this->create_wall_timer(ROLL_DELAY, [this]() {
-#if SPEAR_MECHANISM == SPEAR_MECHANISM_OTSUKI
     spear_roll1_pos_ref(SPEAR_ROLL1_VERTICAL_ANGLE);
     spear_roll2_pos_ref(SPEAR_ROLL2_VERTICAL_ANGLE);
-#endif
     if (kfs_collect_start_act_roll_timer_) {
       kfs_collect_start_act_roll_timer_->cancel();
     }
@@ -2260,10 +1956,8 @@ void R1MainNode::kfs_collect_start_act(void)
 
   kfs_collect_start_act_push_valve_timer_ =
     this->create_wall_timer(ROLL_DELAY + PUSH_VALVE_DELAY, [this]() {
-  // 3. hand_push_valveをoffにし、やり回収機構を引っ込める
-#if SPEAR_MECHANISM == SPEAR_MECHANISM_OTSUKI
+      // 3. hand_push_valveをoffにし、やり回収機構を引っ込める
       spear_hand_push_valve(false);
-#endif
       // 4. KFS回収用アクチュエータを回収位置位置に移動
       kfs_fx_pos_ref(KFS_FX_START_POS);
       kfs_rx_pos_ref(KFS_RX_START_POS);
@@ -2311,17 +2005,10 @@ void R1MainNode::stop_actuator(void)
   // KFS回収電磁弁を止める
   kfs_front_valve(false);
   kfs_rear_valve(false);
-// やりの電磁弁を止める
-#if SPEAR_MECHANISM == SPEAR_MECHANISM_OTSUKI
+  // やりの電磁弁を止める
   spear_hand1_valve(false);
   spear_hand2_valve(false);
   spear_hand_push_valve(false);
-#elif SPEAR_MECHANISM == SPEAR_MECHANISM_CHIDA
-  spear_u1_valve(false);
-  spear_d1_valve(false);
-  spear_u2_valve(false);
-  spear_d2_valve(false);
-#endif
 }
 
 // --- 各状態のタスク ---
@@ -2402,7 +2089,6 @@ void R1MainNode::manual_mode2_collect_pole_task(void)
 {
   int & step = manual_mode2_collect_pole_task_step_;
   RCLCPP_INFO(this->get_logger(), "manual_mode2_collect_pole_task step: %d", step);
-#if SPEAR_MECHANISM == SPEAR_MECHANISM_OTSUKI
   if (step == 1) {
     kfs_robot_start_act();
     spear_y_pos_ref(SPEAR_Y_COLLECT1_POS);
@@ -2424,55 +2110,6 @@ void R1MainNode::manual_mode2_collect_pole_task(void)
     RCLCPP_INFO(this->get_logger(), "pole collect task completed");
     step = 1;
   }
-#elif SPEAR_MECHANISM == SPEAR_MECHANISM_CHIDA
-// if (step == 1) {
-//   spear_roll_pos_ref(SPEAR_ROLL_VERTICAL_ANGLE);
-//   spear_x_pos_ref(SPEAR_X_MIDDLE_POS);
-//   spear_pitch1_pos_ref(SPEAR_PITCH1_VERTICAL_ANGLE);
-//   spear_pitch2_pos_ref(SPEAR_PITCH2_VERTICAL_ANGLE);
-//   spear_y_pos_ref(SPEAR_Y_EXPAND_POS);
-//   spear_u1_valve(true);
-//   spear_d1_valve(true);
-//   spear_u2_valve(true);
-//   spear_d2_valve(true);
-//   spear1_pos_ref(SPEAR1_COLLECT1_POS);
-//   spear2_pos_ref(SPEAR2_COLLECT1_POS);
-//   step++;
-// } else if (step == 2) {
-//   spear_d1_valve(false);
-//   spear_d2_valve(false);
-//   step++;
-// } else if (step == 3) {
-//   spear1_pos_ref(SPEAR1_COLLECT3_POS);
-//   spear2_pos_ref(SPEAR2_COLLECT3_POS);
-//   step++;
-// } else if (step == 4) {
-//   spear_u1_valve(false);
-//   spear_u2_valve(false);
-//   step++;
-// } else if (step == 5) {
-//   // TODO: ここはゾーンによって回転方向を変えたほうがいいかも
-
-//   // step5以降は操作ミス防止のためコメントアウト
-//   // spear_roll_pos_ref(SPEAR_ROLL_INV_NORMAL_ANGLE);
-//   step++;
-// } else if (step == 6) {
-//   // spear_d1_valve(true);
-//   // spear_d2_valve(true);
-//   step++;
-// } else if (step == 7) {
-//   // spear1_pos_ref(SPEAR1_NORMAL_POS);
-//   // spear2_pos_ref(SPEAR2_NORMAL_POS);
-//   // spear_pitch1_pos_ref(SPEAR_PITCH1_NORMAL_ANGLE);
-//   // spear_pitch2_pos_ref(SPEAR_PITCH2_NORMAL_ANGLE);
-//   step++;
-// } else if (step == 8) {
-//   // spear_d1_valve(false);
-//   // spear_d2_valve(false);
-//   RCLCPP_INFO(this->get_logger(), "pole collect task completed");
-//   step = 1;
-// }
-#endif
 }
 
 void R1MainNode::manual_mode2_pole(void)
@@ -2503,18 +2140,15 @@ void R1MainNode::manual_mode2_pole(void)
   }
 
   if (ps4_->is_pushed_circle()) {
-    // spear2_pos_ref(spear2_position_ref_ + 0.01);
   }
 
   if (ps4_->is_pushed_cross()) {
   }
 
   if (ps4_->is_pushed_square()) {
-    // spear2_pos_ref(spear2_position_ref_ - 0.01);
   }
 
   if (ps4_->is_pushed_l1()) {
-    // spear_pitch1_pos_ref(spear_pitch1_position_ref_ - 0.05);
     if (push_valve_step == 1) {
       spear_hand_push_valve(true);
       push_valve_step++;
@@ -2525,7 +2159,6 @@ void R1MainNode::manual_mode2_pole(void)
   }
 
   if (ps4_->is_pushed_r1()) {
-    // spear_pitch1_pos_ref(spear_pitch1_position_ref_ + 0.05);
     if (hand_valve_step == 1) {
       spear_hand1_valve(true);
       spear_hand2_valve(true);
@@ -2538,99 +2171,29 @@ void R1MainNode::manual_mode2_pole(void)
   }
 
   if (ps4_->is_pushed_l2()) {
-    // spear_pitch2_pos_ref(spear_pitch2_position_ref_ - 0.05);
   }
 
   if (ps4_->is_pushed_r2()) {
     // manual_task内で、速度トリガーとして使用
-    // spear_pitch2_pos_ref(spear_pitch2_position_ref_ + 0.05);
   }
 }
 
 void R1MainNode::manual_mode3_init_move_task(int n)
 {
-  auto & timer1 = manual_mode3_timer1_;
-  auto & timer2 = manual_mode3_timer2_;
-  auto & timer3 = manual_mode3_timer3_;
-  static int _n = 0;
-  _n = n;
-#if SPEAR_MECHANISM == SPEAR_MECHANISM_OTSUKI
-// 一旦何もしない
-#elif SPEAR_MECHANISM == SPEAR_MECHANISM_CHIDA
-  auto VALVE_DELAY_TIME = 300ms;
-  auto SPEAR_MOVE_TIME = 2000ms;
-  if (timer1) {
-    timer1->cancel();
-  }
-  if (timer2) {
-    timer2->cancel();
-  }
-  if (timer3) {
-    timer3->cancel();
-  }
-  // 1. rollを回転する。電磁弁をONにする
-  spear_roll_pos_ref(SPEAR_ROLL_INV_NORMAL_ANGLE);
-  spear_d1_valve(true);
-  spear_d2_valve(true);
-  // 2. 0.3sくらいしたら、spear1とspear2をnormal_posに動かす
-  auto t1 = VALVE_DELAY_TIME;
-  timer1 = this->create_wall_timer(t1, [this]() {
-    spear1_pos_ref(SPEAR1_NORMAL_POS);
-    spear2_pos_ref(SPEAR2_NORMAL_POS);
-    if (manual_mode3_timer1_) {
-      manual_mode3_timer1_->cancel();
-    }
-  });
-
-  // 3. さらに2.0sくらいしたら、電磁弁をすべてoffにする
-  auto t2 = t1 + SPEAR_MOVE_TIME;
-  timer2 = this->create_wall_timer(t2, [this]() {
-    spear_u1_valve(false);
-    spear_d1_valve(false);
-    spear_u2_valve(false);
-    spear_d2_valve(false);
-    if (manual_mode3_timer2_) {
-      manual_mode3_timer2_->cancel();
-    }
-  });
-  // これは本来manual_mode3_make_spear_taskの内容
-  // 5. 0.3sくらいしたら、spear1とspear2をkfs_collect_posに動かす
-  auto t3 = t2 + VALVE_DELAY_TIME;
-  timer3 = this->create_wall_timer(t3, [this]() {
-    if (_n == 1) {
-      spear_x_pos_ref(SPEAR_X_MAKE_SPEAR1_POS);
-    } else if (_n == 2) {
-      spear_x_pos_ref(SPEAR_X_MAKE_SPEAR2_POS);
-    } else if (_n == 3) {
-      spear_x_pos_ref(SPEAR_X_MAKE_SPEAR3_POS);
-    } else if (_n == 4) {
-      spear_x_pos_ref(SPEAR_X_MAKE_SPEAR4_POS);
-    }
-
-    if (_n == 1) {
-      spear1_pos_ref(SPEAR1_MAKE_SPEAR_START_POS);
-    } else if (_n == 2) {
-      spear2_pos_ref(SPEAR2_MAKE_SPEAR_START_POS);
-    } else if (_n == 3) {
-      spear3_pos_ref(SPEAR3_MAKE_SPEAR_START_POS);
-    } else if (_n == 4) {
-      spear4_pos_ref(SPEAR4_MAKE_SPEAR_START_POS);
-    }
-    if (manual_mode3_timer4_) {
-      manual_mode3_timer4_->cancel();
-    }
-  });
-#endif
+  (void)n;
+  // 一旦何もしない
 }
 
 void R1MainNode::manual_mode3_make_spear_task(int n)
 {
+  // 千田機構だったときの名残で現在は使用していない
+  (void)n;
+
   int & step = manual_mode3_make_spear_task_step_;
 
   auto ROLL_DELAY = 300ms;
   auto PUSH_VALVE_DELAY = 1000ms;
   RCLCPP_INFO(this->get_logger(), "manual_mode3_make_spear_task step: %d", step);
-#if SPEAR_MECHANISM == SPEAR_MECHANISM_OTSUKI
   if (step == 1) {
     if (manual_mode3_roll_timer_) {
       manual_mode3_roll_timer_->cancel();
@@ -2705,82 +2268,6 @@ void R1MainNode::manual_mode3_make_spear_task(int n)
     step = 1;
     RCLCPP_INFO(this->get_logger(), "make spear task completed");
   }
-
-#elif SPEAR_MECHANISM == SPEAR_MECHANISM_CHIDA
-  if (step == 1) {
-    // rollを横向きにする
-    // TODO: ゾーンによって向きを変える
-    // spear_roll_pos_ref(SPEAR_ROLL_NORMAL_ANGLE);
-    spear_roll_pos_ref(SPEAR_ROLL_INV_NORMAL_ANGLE);
-    if (n == 1) {
-      spear_x_pos_ref(SPEAR_X_MAKE_SPEAR1_POS);
-    } else if (n == 2) {
-      spear_x_pos_ref(SPEAR_X_MAKE_SPEAR2_POS);
-    } else if (n == 3) {
-      spear_x_pos_ref(SPEAR_X_MAKE_SPEAR3_POS);
-    } else if (n == 4) {
-      spear_x_pos_ref(SPEAR_X_MAKE_SPEAR4_POS);
-    }
-
-    if (n == 1) {
-      spear1_pos_ref(SPEAR1_MAKE_SPEAR_START_POS);
-    } else if (n == 2) {
-      spear2_pos_ref(SPEAR2_MAKE_SPEAR_START_POS);
-    } else if (n == 3) {
-      spear3_pos_ref(SPEAR3_MAKE_SPEAR_START_POS);
-    } else if (n == 4) {
-      spear4_pos_ref(SPEAR4_MAKE_SPEAR_START_POS);
-    }
-    spear_pitch1_pos_ref(SPEAR_PITCH1_VERTICAL_ANGLE);
-    spear_pitch2_pos_ref(SPEAR_PITCH2_VERTICAL_ANGLE);
-    step++;
-  } else if (step == 2) {
-    publish_aruco_marker_id(1);
-    RCLCPP_INFO(this->get_logger(), "make spear task completed");
-    step = 1;
-  }
-  // } else if (step == 2) {
-  //   // 押し込む
-  //   if (n == 1) {
-  //     spear1_speed_ref(SPEAR1_PUSH_VEL);
-  //   } else if (n == 2) {
-  //     spear2_speed_ref(SPEAR2_PUSH_VEL);
-  //   } else if (n == 3) {
-  //     spear3_speed_ref(SPEAR3_PUSH_VEL);
-  //   } else if (n == 4) {
-  //     spear4_speed_ref(SPEAR4_PUSH_VEL);
-  //   }
-  //   step++;
-  // } else if (step == 3) {
-  //   // 現在位置で停止
-  //   if (n == 1) {
-  //     spear1_speed_mode_stop();
-  //   } else if (n == 2) {
-  //     spear2_speed_mode_stop();
-  //   } else if (n == 3) {
-  //     spear3_speed_mode_stop();
-  //   } else if (n == 4) {
-  //     spear4_speed_mode_stop();
-  //   }
-  //   step++;
-  // } else if (step == 4) {
-  //   // 位置を戻す
-  //   if (n == 1) {
-  //     spear1_pos_ref(SPEAR1_NORMAL_POS);
-  //   } else if (n == 2) {
-  //     spear2_pos_ref(SPEAR2_NORMAL_POS);
-  //   } else if (n == 3) {
-  //     spear3_pos_ref(SPEAR3_NORMAL_POS);
-  //   } else if (n == 4) {
-  //     spear4_pos_ref(SPEAR4_NORMAL_POS);
-  //   }
-  //   step++;
-  // } else if (step == 5) {
-  //   spear_roll_pos_ref(SPEAR_ROLL_VERTICAL_ANGLE);
-  //   RCLCPP_INFO(this->get_logger(), "make spear task completed");
-  //   step = 1;
-  // }
-#endif
 }
 
 void R1MainNode::manual_mode3_spear(void)
@@ -2812,7 +2299,6 @@ void R1MainNode::manual_mode3_spear(void)
   }
 
   if (ps4_->is_pushed_circle()) {
-    // spear2_pos_ref(spear2_position_ref_ + 0.01);
   }
 
   if (ps4_->is_pushed_cross()) {
@@ -2820,11 +2306,9 @@ void R1MainNode::manual_mode3_spear(void)
   }
 
   if (ps4_->is_pushed_square()) {
-    // spear2_pos_ref(spear2_position_ref_ - 0.01);
   }
 
   if (ps4_->is_pushed_l1()) {
-    // spear_pitch1_pos_ref(spear_pitch1_position_ref_ - 0.05);
     if (push_valve_step == 1) {
       spear_hand_push_valve(true);
       push_valve_step++;
@@ -2835,7 +2319,6 @@ void R1MainNode::manual_mode3_spear(void)
   }
 
   if (ps4_->is_pushed_r1()) {
-    // spear_pitch1_pos_ref(spear_pitch1_position_ref_ + 0.05);
     if (hand_valve_step == 1) {
       spear_hand1_valve(true);
       spear_hand2_valve(true);
@@ -2848,12 +2331,10 @@ void R1MainNode::manual_mode3_spear(void)
   }
 
   if (ps4_->is_pushed_l2()) {
-    // spear_pitch2_pos_ref(spear_pitch2_position_ref_ - 0.05);
   }
 
   if (ps4_->is_pushed_r2()) {
     // manual_task内で、速度トリガーとして使用
-    // spear_pitch2_pos_ref(spear_pitch2_position_ref_ + 0.05);
   }
 }
 
@@ -3209,9 +2690,6 @@ void R1MainNode::manual_mode6_r2_lift(void)
     kfs_fz_pos_ref(KFS_FZ_R2_LIFT_POS);
     kfs_rx_pos_ref(KFS_RX_R2_LIFT_POS);
     kfs_rz_pos_ref(KFS_RZ_R2_LIFT_POS);
-#if SPEAR_MECHANISM == SPEAR_MECHANISM_CHIDA
-    spear_y_pos_ref(SPEAR_Y_EXPAND_POS);
-#endif
     RCLCPP_INFO(this->get_logger(), "moved to r2_lift position");
     if (manual_mode6_r2_lift_timer_ != nullptr) {
       manual_mode6_r2_lift_timer_->cancel();
@@ -3245,8 +2723,6 @@ void R1MainNode::manual_mode6_r2_lift(void)
       kfs_fz_pos_ref(KFS_FZ_NORMAL_POS);
       kfs_rx_pos_ref(KFS_RX_NORMAL_POS);
       kfs_rz_pos_ref(KFS_RZ_NORMAL_POS);
-#if SPEAR_MECHANISM == SPEAR_MECHANISM_CHIDA
-#endif
       if (manual_mode6_r2_lift_timer_ != nullptr) {
         manual_mode6_r2_lift_timer_->cancel();
       }
@@ -3295,10 +2771,11 @@ void R1MainNode::manual_mode6_r2_lift(void)
  */
 void R1MainNode::manual_mode7_spear_attack_task(int n, int m)
 {
+  // 千田機構だったときの名残で引数にnがあるが、現在は使用していない
   (void)n;
+
   int & step = manual_mode7_spear_attack_task_step_;
   RCLCPP_INFO(this->get_logger(), "manual_mode7_spear_attack_task step: %d", step);
-#if SPEAR_MECHANISM == SPEAR_MECHANISM_OTSUKI
   if (step == 1) {
     kfs_fx_pos_ref(KFS_FX_NORMAL_POS);
     kfs_fz_pos_ref(KFS_FZ_NORMAL_POS);
@@ -3342,78 +2819,14 @@ void R1MainNode::manual_mode7_spear_attack_task(int n, int m)
     step = 1;
     RCLCPP_INFO(this->get_logger(), "spear attack task completed");
   }
-#elif SPEAR_MECHANISM == SPEAR_MECHANISM_CHIDA
-  if (step == 1) {
-    kfs_fx_pos_ref(KFS_FX_NORMAL_POS);
-    kfs_fz_pos_ref(KFS_FZ_NORMAL_POS);
-    kfs_fyaw_pos_ref(KFS_FYAW_NORMAL_ANGLE);
-    kfs_rx_pos_ref(KFS_RX_NORMAL_POS);
-    kfs_rz_pos_ref(KFS_RZ_NORMAL_POS);
-    kfs_ryaw_pos_ref(KFS_RYAW_NORMAL_ANGLE);
-    step++;
-  } else if (step == 2) {
-    spear_x_pos_ref(SPEAR_X_NORMAL_POS);
-    spear1_pos_ref(SPEAR1_NORMAL_POS);
-    spear2_pos_ref(SPEAR2_NORMAL_POS);
-    if (m == 1) {
-      // 下段を狙う
-      spear_roll_pos_ref(SPEAR_ROLL_LOW_ATTACK_ANGLE);
-    } else if (m == 2) {
-      // 中段を狙う
-      spear_roll_pos_ref(SPEAR_ROLL_MIDDLE_ATTACK_ANGLE);
-    } else if (m == 3) {
-      // 上段を狙う
-      spear_roll_pos_ref(SPEAR_ROLL_HIGH_ATTACK_ANGLE);
-    }
-    step++;
-  } else if (step == 3) {
-    if (n == 1) {
-      if (m == 1) {
-        // 下段を狙う
-        spear1_pos_ref(SPEAR1_LOW_ATTACK_POS);
-      } else if (m == 2) {
-        // 中段を狙う
-        spear1_pos_ref(SPEAR1_MIDDLE_ATTACK_POS);
-      } else if (m == 3) {
-        // 上段を狙う
-        spear1_pos_ref(SPEAR1_HIGH_ATTACK_POS);
-      }
-    } else if (n == 2) {
-      if (m == 1) {
-        // 下段を狙う
-        spear2_pos_ref(SPEAR2_LOW_ATTACK_POS);
-      } else if (m == 2) {
-        // 中段を狙う
-        spear2_pos_ref(SPEAR2_MIDDLE_ATTACK_POS);
-      } else if (m == 3) {
-        // 上段を狙う
-        spear2_pos_ref(SPEAR2_HIGH_ATTACK_POS);
-      }
-    } else if (n == 3) {
-    } else if (n == 4) {
-    }
-    step++;
-  } else if (step == 4) {
-    if (n == 1) {
-      spear1_pos_ref(SPEAR1_NORMAL_POS);
-    } else if (n == 2) {
-      spear2_pos_ref(SPEAR2_NORMAL_POS);
-    } else if (n == 3) {
-      spear3_pos_ref(SPEAR3_NORMAL_POS);
-    } else if (n == 4) {
-      spear4_pos_ref(SPEAR4_NORMAL_POS);
-    }
-    spear_roll_pos_ref(SPEAR_ROLL_VERTICAL_ANGLE);
-    step = 1;
-    RCLCPP_INFO(this->get_logger(), "spear attack task completed");
-  }
-#endif
 }
 
 void R1MainNode::manual_mode7_spear_throw_away_task(int n)
 {
+  // 千田機構だったときの名残で引数にnがあるが、現在は使用していない
+  (void)n;
+
   int & step = manual_mode7_spear_throw_away_task_step_;
-#if SPEAR_MECHANISM == SPEAR_MECHANISM_OTSUKI
   if (step == 1) {
     // KFS回収機構はスタート時の高い位置に移動させる
     kfs_fx_pos_ref(KFS_FX_START_POS);
@@ -3450,35 +2863,6 @@ void R1MainNode::manual_mode7_spear_throw_away_task(int n)
     step = 1;
     RCLCPP_INFO(this->get_logger(), "spear throw away task completed");
   }
-#elif SPEAR_MECHANISM == SPEAR_MECHANISM_CHIDA
-  if (step == 1) {
-    kfs_fx_pos_ref(KFS_FX_NORMAL_POS);
-    kfs_fz_pos_ref(KFS_FZ_NORMAL_POS);
-    kfs_fyaw_pos_ref(KFS_FYAW_NORMAL_ANGLE);
-    kfs_rx_pos_ref(KFS_RX_NORMAL_POS);
-    kfs_rz_pos_ref(KFS_RZ_NORMAL_POS);
-    kfs_ryaw_pos_ref(KFS_RYAW_NORMAL_ANGLE);
-    step++;
-  } else if (step == 2) {
-    spear_roll_pos_ref(SPEAR_ROLL_NORMAL_ANGLE);
-    step++;
-  } else if (step == 3) {
-    if (n == 1) {
-      spear_u1_valve(true);
-      spear_d1_valve(true);
-    } else if (n == 2) {
-      spear_u2_valve(true);
-      spear_d2_valve(true);
-    } else if (n == 3) {
-    } else if (n == 4) {
-    }
-    step++;
-  } else if (step == 4) {
-    spear_roll_pos_ref(SPEAR_ROLL_VERTICAL_ANGLE);
-    step = 1;
-    RCLCPP_INFO(this->get_logger(), "spear throw away task completed");
-  }
-#endif
 }
 
 void R1MainNode::manual_mode7_spear_attack(void)
@@ -3504,25 +2888,26 @@ void R1MainNode::manual_mode7_spear_attack(void)
   }
 
   if (ps4_->is_pushed_triangle()) {
+    // 番号は千田機構だったときの名残で2を指定。現在、この指定には意味はない。
     manual_mode7_spear_attack_task(2, 2);
   }
 
   if (ps4_->is_pushed_circle()) {
+    // 番号は千田機構だったときの名残で2を指定。現在、この指定には意味はない。
     manual_mode7_spear_attack_task(2, 1);
-    // spear2_pos_ref(spear2_position_ref_ + 0.01);
   }
 
   if (ps4_->is_pushed_cross()) {
+    // 番号は千田機構だったときの名残で2を指定。現在、この指定には意味はない。
     manual_mode7_spear_throw_away_task(2);
   }
 
   if (ps4_->is_pushed_square()) {
+    // 番号は千田機構だったときの名残で2を指定。現在、この指定には意味はない。
     manual_mode7_spear_attack_task(2, 3);
-    // spear2_pos_ref(spear2_position_ref_ - 0.01);
   }
 
   if (ps4_->is_pushed_l1()) {
-    // spear_pitch1_pos_ref(spear_pitch1_position_ref_ - 0.05);
     if (push_valve_step == 1) {
       spear_hand_push_valve(true);
       push_valve_step = 2;
@@ -3533,7 +2918,6 @@ void R1MainNode::manual_mode7_spear_attack(void)
   }
 
   if (ps4_->is_pushed_r1()) {
-    // spear_pitch1_pos_ref(spear_pitch1_position_ref_ + 0.05);
     if (hand_valve_step == 1) {
       spear_hand1_valve(true);
       spear_hand2_valve(true);
@@ -3546,11 +2930,9 @@ void R1MainNode::manual_mode7_spear_attack(void)
   }
 
   if (ps4_->is_pushed_l2()) {
-    // spear_pitch2_pos_ref(spear_pitch2_position_ref_ - 0.05);
   }
 
   if (ps4_->is_pushed_r2()) {
-    // spear_pitch2_pos_ref(spear_pitch2_position_ref_ + 0.05);
   }
 }
 
@@ -3580,29 +2962,6 @@ void R1MainNode::auto_collect_kfs_task(void)
 
   auto update_wall_sensor_status = [&](int target_forest, int within_index) {
     int kfs_height = calc_height(target_forest);
-    // double sensor_value = 0.0;
-    // if (within_index == FKFS) {
-    //   if (kfs_height == HEIGHT_LOW) {
-    //     sensor_value = scan_fl_data_;
-    //   } else if (kfs_height == HEIGHT_MIDDLE) {
-    //     sensor_value = scan_fm_data_;
-    //   } else if (kfs_height == HEIGHT_HIGH) {
-    //     sensor_value = scan_fh_data_;
-    //   }
-    // } else if (within_index == RKFS) {
-    //   if (kfs_height == HEIGHT_LOW) {
-    //     sensor_value = scan_rl_data_;
-    //   } else if (kfs_height == HEIGHT_MIDDLE) {
-    //     sensor_value = scan_rm_data_;
-    //   } else if (kfs_height == HEIGHT_HIGH) {
-    //     sensor_value = scan_rh_data_;
-    //   }
-    // }
-    // bool sensor_detect = (sensor_value > WALL_SENSOR_DISTANCE_THRESHOLD);
-    // if (sensor_detect && wall_sensor_detected_[target_forest - 1] == false) {
-    //   wall_sensor_detect_start_time_[target_forest - 1] = this->now();
-    // }
-    // wall_sensor_detected_[target_forest - 1] = sensor_detect;
     bool wall_detected = false;
     double sensor_value_low = 0.0;
     double sensor_value_middle = 0.0;
@@ -3704,6 +3063,7 @@ void R1MainNode::auto_collect_kfs_task(void)
 
     // within関連はメンバー変数。名前が長いので、参照として短い名前で扱う。
     int within_index = (mechanism_type == "front_kfs") ? FKFS : RKFS;
+    // 短い別名をつける。よくわからないけど、bool型はstd::vector<bool>::reference型で参照を取る必要があるらしい
     std::vector<bool>::reference within =
       kfs_auto_collect_within_[target_forest_number - 1][within_index];
     std::vector<bool>::reference prev_within =
@@ -3814,7 +3174,8 @@ void R1MainNode::auto_collect_kfs_task(void)
             "odom_x=%.2f, "
             "odom_y=%.2f, sensor_value_low=%.2f, sensor_value_middle=%.2f, wall_detected=%d",
             step, target_forest_number, mechanism_type.c_str(), map_x, map_y, odom_x, odom_y,
-            log_sensor_low, log_sensor_middle, wall_sensor_detected_[target_forest_number - 1]);
+            log_sensor_low, log_sensor_middle,
+            (int)wall_sensor_detected_[target_forest_number - 1]);
           if (is_detect_wall(target_forest_number)) {
             // 壁検出位置の座標を更新（odom座標系）
             wall_detect_pos_[target_forest_number - 1] = odometry_;
@@ -4562,17 +3923,9 @@ void R1MainNode::main_task(void)
         // MODE2のときはACT1_STARTを開始する
         start_auto_chassis(ChassisAct::ACT1_START, std::vector<int>{}, std::vector<std::string>{});
         started_auto = true;
-#if SPEAR_MECHANISM == SPEAR_MECHANISM_OTSUKI
         manual_mode3_make_spear_task_step_ = DEFAULT_STEP;
-        // 番号の指定は適当
+        // 番号の指定は千田機構だったときの名残で2を指定
         manual_mode3_make_spear_task(2);
-#elif SPEAR_MECHANISM == SPEAR_MECHANISM_CHIDA
-        // ここだけは特例でステップを他よりも1つ進める
-        manual_mode3_make_spear_task_step_ = DEFAULT_STEP + 1;
-        // mode2の終わりとmode3の最初のタスクを合体して実行する
-        manual_mode3_init_move_task(2);
-        manual_mode3_make_spear_task(2);
-#endif
 
       } else if (current_state.operation_mode == OperationMode::MODE3_SPEAR) {
         // MODE3のときはOUTER_ACTIVEのときはACT4_STARTを、INNER_ACTIVEのときはACT2_STARTを開始する

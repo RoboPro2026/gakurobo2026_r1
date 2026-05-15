@@ -61,7 +61,7 @@ constexpr const char * kRobstridePositionControlType = "PP";
 // Robomas / GPIO は board_id 1..N を使用する。
 // Power / LED はそれぞれ 1 台だけを単独で扱う。
 constexpr int kSabacanRobomasNumber = 8;
-constexpr int kSabacanGpioNumber = 3;
+constexpr int kSabacanGpioNumber = 2;
 constexpr int kSabacanRobstrideNumber = 1;
 constexpr int kSabacanPowerNumber = 1;
 constexpr int kSabacanLedNumber = 1;
@@ -2512,11 +2512,6 @@ private:
     make_linear_motion_channel({4, 1}, "kfs_rz"),
     // 大槻機構
     make_linear_motion_channel({8, 0}, "spear_y"),
-    // 千田機構
-    // make_linear_motion_channel({5, 0}, "spear1"),
-    // make_linear_motion_channel({5, 1}, "spear2"),
-    // make_linear_motion_channel({5, 2}, "spear_x"),
-    // make_linear_motion_channel({6, 1}, "spear_y"),
     make_linear_motion_channel({3, 3}, "r2_flift"),
     make_linear_motion_channel({4, 3}, "r2_rlift"),
   };
@@ -2526,10 +2521,6 @@ private:
     // 大槻機構
     make_angle_motion_channel({8, 1}, "spear_roll1"),
     make_angle_motion_channel({8, 2}, "spear_roll2"),
-    // 千田機構
-    // make_angle_motion_channel({6, 2}, "spear_pitch1"),
-    // make_angle_motion_channel({6, 3}, "spear_pitch2"),
-    // // spear_rollはrobstride
     // make_angle_motion_channel({1, -1}, "spear_roll", MotorControllerType::Robstride)
   };
 
@@ -2542,12 +2533,6 @@ private:
     make_gpio_float_output_channel({1, 4}, "spear_hand1_valve"),
     make_gpio_float_output_channel({1, 5}, "spear_hand2_valve"),
     make_gpio_float_output_channel({1, 6}, "spear_hand_push_valve"),
-    // 千田機構
-    // make_gpio_float_output_channel({2, 0}, "spear_u1_valve"),
-    // make_gpio_float_output_channel({2, 1}, "spear_d1_valve"),
-    // make_gpio_float_output_channel({2, 2}, "spear_u2_valve"),
-    // make_gpio_float_output_channel({2, 3}, "spear_d2_valve"),
-    // 電磁弁は何個つながるかわからないので一旦ここで止めとく
   };
   std::vector<GpioIntOutputChannel> gpio_int_output_channels_{
     // make_gpio_int_output_channel({3, 0}, "pole_servo1"),
