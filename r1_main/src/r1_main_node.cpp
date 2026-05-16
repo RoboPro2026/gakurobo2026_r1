@@ -1305,7 +1305,7 @@ void R1MainNode::r1_kfs_mechanism_ref_callback(const std_msgs::msg::Int32::Share
   }
   // RKFS
   else if (ref == R1KfsMechanismRef::RKFS_RACK) {
-    kfs_rx_pos_ref(KFS_RX_EXPAND_POS);
+    kfs_rx_pos_ref(KFS_RX_PUT_POS);
     kfs_rz_pos_ref(KFS_RZ_PUT_POS);
     kfs_ryaw_pos_ref(KFS_RYAW_SIDE_ANGLE);
     kfs_rear_pump(1.0);
