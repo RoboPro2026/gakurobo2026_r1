@@ -366,6 +366,7 @@ public:
   double KFS_FX_LOW_MECH_LOCK_POS = 0.0;
   double KFS_FX_HIGH_MECH_LOCK_POS = 0.0;
   double KFS_FX_R2_LIFT_POS = 0.0;
+  double KFS_FX_GROUND_POS = 0.0;
   // fz
   double KFS_FZ_NORMAL_POS = 0.0;
   double KFS_FZ_LOW_POS = 0.0;
@@ -377,6 +378,7 @@ public:
   double KFS_FZ_LOW_MECH_LOCK_POS = 0.0;
   double KFS_FZ_HIGH_MECH_LOCK_POS = 0.0;
   double KFS_FZ_R2_LIFT_POS = 0.0;
+  double KFS_FZ_GROUND_POS = 0.0;
   // fyaw
   double KFS_FYAW_NORMAL_ANGLE = 0.0;
   double KFS_FYAW_FRONT_ANGLE = 0.0;
@@ -394,6 +396,7 @@ public:
   double KFS_RX_LOW_MECH_LOCK_POS = 0.0;
   double KFS_RX_HIGH_MECH_LOCK_POS = 0.0;
   double KFS_RX_R2_LIFT_POS = 0.0;
+  double KFS_RX_GROUND_POS = 0.0;
   // rz
   double KFS_RZ_NORMAL_POS = 0.0;
   double KFS_RZ_LOW_POS = 0.0;
@@ -405,6 +408,7 @@ public:
   double KFS_RZ_LOW_MECH_LOCK_POS = 0.0;
   double KFS_RZ_HIGH_MECH_LOCK_POS = 0.0;
   double KFS_RZ_R2_LIFT_POS = 0.0;
+  double KFS_RZ_GROUND_POS = 0.0;
   // ryaw
   double KFS_RYAW_NORMAL_ANGLE = 0.0;
   double KFS_RYAW_FRONT_ANGLE = 0.0;
@@ -705,6 +709,8 @@ public:
   void spear_y_detect_origin(void);
   void spear_roll1_detect_origin(void);
   void spear_roll2_detect_origin(void);
+
+  void detect_origin_all_actuator(void);
   // ========== センサーの取得 ==========
   bool get_kfs_fz_low_switch_status(void) { return kfs_fz_low_switch_status_; }
   bool get_kfs_rz_low_switch_status(void) { return kfs_rz_low_switch_status_; }

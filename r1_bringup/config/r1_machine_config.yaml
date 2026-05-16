@@ -173,6 +173,7 @@ r1_main_node:
     kfs_fx_low_mech_lock_pos: 0.05
     kfs_fx_high_mech_lock_pos: 0.67
     kfs_fx_r2_lift_pos: 0.35
+    kfs_fx_ground_pos: 0.45
     # fz
     kfs_fz_normal_pos: 0.005
     kfs_fz_low_pos: 0.005
@@ -184,6 +185,7 @@ r1_main_node:
     kfs_fz_low_mech_lock_pos: 0.005
     kfs_fz_high_mech_lock_pos: 0.65
     kfs_fz_r2_lift_pos: 0.005
+    kfs_fz_ground_pos: 0.005
     # fyaw
     kfs_fyaw_normal_angle: 0.0
     kfs_fyaw_front_angle: 3.141592653589793
@@ -201,6 +203,7 @@ r1_main_node:
     kfs_rx_low_mech_lock_pos: 0.05
     kfs_rx_high_mech_lock_pos: 0.67
     kfs_rx_r2_lift_pos: 0.35
+    kfs_rx_ground_pos: 0.45
     # rz
     kfs_rz_normal_pos: 0.005
     kfs_rz_low_pos: 0.005
@@ -212,6 +215,7 @@ r1_main_node:
     kfs_rz_low_mech_lock_pos: 0.005
     kfs_rz_high_mech_lock_pos: 0.65
     kfs_rz_r2_lift_pos: 0.005
+    kfs_rz_ground_pos: 0.005
     # ryaw
     kfs_ryaw_normal_angle: 0.0
     kfs_ryaw_front_angle: 3.141592653589793

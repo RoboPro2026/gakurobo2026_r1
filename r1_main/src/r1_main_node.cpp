@@ -617,6 +617,7 @@ R1MainNode::R1MainNode() : Node("r1_main_node")
   declare_and_get_parameter("kfs_fx_low_mech_lock_pos", KFS_FX_LOW_MECH_LOCK_POS);
   declare_and_get_parameter("kfs_fx_high_mech_lock_pos", KFS_FX_HIGH_MECH_LOCK_POS);
   declare_and_get_parameter("kfs_fx_r2_lift_pos", KFS_FX_R2_LIFT_POS);
+  declare_and_get_parameter("kfs_fx_ground_pos", KFS_FX_GROUND_POS);
   // fz
   declare_and_get_parameter("kfs_fz_normal_pos", KFS_FZ_NORMAL_POS);
   declare_and_get_parameter("kfs_fz_low_pos", KFS_FZ_LOW_POS);
@@ -628,6 +629,7 @@ R1MainNode::R1MainNode() : Node("r1_main_node")
   declare_and_get_parameter("kfs_fz_low_mech_lock_pos", KFS_FZ_LOW_MECH_LOCK_POS);
   declare_and_get_parameter("kfs_fz_high_mech_lock_pos", KFS_FZ_HIGH_MECH_LOCK_POS);
   declare_and_get_parameter("kfs_fz_r2_lift_pos", KFS_FZ_R2_LIFT_POS);
+  declare_and_get_parameter("kfs_fz_ground_pos", KFS_FZ_GROUND_POS);
   // fyaw
   declare_and_get_parameter("kfs_fyaw_normal_angle", KFS_FYAW_NORMAL_ANGLE);
   declare_and_get_parameter("kfs_fyaw_front_angle", KFS_FYAW_FRONT_ANGLE);
@@ -645,6 +647,7 @@ R1MainNode::R1MainNode() : Node("r1_main_node")
   declare_and_get_parameter("kfs_rx_low_mech_lock_pos", KFS_RX_LOW_MECH_LOCK_POS);
   declare_and_get_parameter("kfs_rx_high_mech_lock_pos", KFS_RX_HIGH_MECH_LOCK_POS);
   declare_and_get_parameter("kfs_rx_r2_lift_pos", KFS_RX_R2_LIFT_POS);
+  declare_and_get_parameter("kfs_rx_ground_pos", KFS_RX_GROUND_POS);
   // rz
   declare_and_get_parameter("kfs_rz_normal_pos", KFS_RZ_NORMAL_POS);
   declare_and_get_parameter("kfs_rz_low_pos", KFS_RZ_LOW_POS);
@@ -656,6 +659,7 @@ R1MainNode::R1MainNode() : Node("r1_main_node")
   declare_and_get_parameter("kfs_rz_low_mech_lock_pos", KFS_RZ_LOW_MECH_LOCK_POS);
   declare_and_get_parameter("kfs_rz_high_mech_lock_pos", KFS_RZ_HIGH_MECH_LOCK_POS);
   declare_and_get_parameter("kfs_rz_r2_lift_pos", KFS_RZ_R2_LIFT_POS);
+  declare_and_get_parameter("kfs_rz_ground_pos", KFS_RZ_GROUND_POS);
   // ryaw
   declare_and_get_parameter("kfs_ryaw_normal_angle", KFS_RYAW_NORMAL_ANGLE);
   declare_and_get_parameter("kfs_ryaw_front_angle", KFS_RYAW_FRONT_ANGLE);
@@ -1254,22 +1258,93 @@ void R1MainNode::r1_kfs_mechanism_ref_callback(const std_msgs::msg::Int32::Share
   RCLCPP_INFO(
     this->get_logger(), "received /r1_kfs_mechanism_ref = %d(%s)", r1_kfs_mechanism_ref_,
     s.c_str());
+  // アクチュエータを動かす
+  // FKFS
+  if (ref == R1KfsMechanismRef::FKFS_RACK) {
+    kfs_fx_pos_ref(KFS_FX_PUT_POS);
+    kfs_fz_pos_ref(KFS_FZ_PUT_POS);
+    kfs_fyaw_pos_ref(KFS_FYAW_SIDE_ANGLE);
+  } else if (ref == R1KfsMechanismRef::FKFS_HIGH) {
+    kfs_fx_pos_ref(KFS_FX_EXPAND_POS);
+    kfs_fz_pos_ref(KFS_FZ_HIGH_POS);
+    // fyawは動かさない
+  } else if (ref == R1KfsMechanismRef::FKFS_MIDDLE) {
+    kfs_fx_pos_ref(KFS_FX_EXPAND_POS);
+    kfs_fz_pos_ref(KFS_FZ_MIDDLE_POS);
+    // fyawは動かさない
+  } else if (ref == R1KfsMechanismRef::FKFS_LOW) {
+    kfs_fx_pos_ref(KFS_FX_EXPAND_POS);
+    kfs_fz_pos_ref(KFS_FZ_LOW_POS);
+    // fyawは動かさない
+  } else if (ref == R1KfsMechanismRef::FKFS_GROUND) {
+    kfs_fx_pos_ref(KFS_FX_GROUND_POS);
+    kfs_fz_pos_ref(KFS_FZ_GROUND_POS);
+    kfs_fyaw_pos_ref(KFS_FYAW_SIDE_ANGLE);
+  } else if (ref == R1KfsMechanismRef::FKFS_STORAGE) {
+    kfs_fx_pos_ref(KFS_FX_STORAGE_POS);
+    kfs_fz_pos_ref(KFS_FZ_STORAGE_POS);
+    kfs_fyaw_pos_ref(KFS_FYAW_SIDE_ANGLE);
+  } else if (ref == R1KfsMechanismRef::FKFS_COLLECT_START_POS) {
+    kfs_fx_pos_ref(KFS_FX_START_POS);
+    kfs_fz_pos_ref(KFS_FZ_START_POS);
+    kfs_fyaw_pos_ref(KFS_FYAW_START_ANGLE);
+  }
+  // RKFS
+  else if (ref == R1KfsMechanismRef::RKFS_RACK) {
+    kfs_rx_pos_ref(KFS_RX_EXPAND_POS);
+    kfs_rz_pos_ref(KFS_RZ_PUT_POS);
+    kfs_ryaw_pos_ref(KFS_RYAW_SIDE_ANGLE);
+  } else if (ref == R1KfsMechanismRef::RKFS_HIGH) {
+    kfs_rx_pos_ref(KFS_RX_EXPAND_POS);
+    kfs_rz_pos_ref(KFS_RZ_HIGH_POS);
+    // ryawは動かさない
+  } else if (ref == R1KfsMechanismRef::RKFS_MIDDLE) {
+    kfs_rx_pos_ref(KFS_RX_EXPAND_POS);
+    kfs_rz_pos_ref(KFS_RZ_MIDDLE_POS);
+    // ryawは動かさない
+  } else if (ref == R1KfsMechanismRef::RKFS_LOW) {
+    kfs_rx_pos_ref(KFS_RX_EXPAND_POS);
+    kfs_rz_pos_ref(KFS_RZ_LOW_POS);
+    // ryawは動かさない
+  } else if (ref == R1KfsMechanismRef::RKFS_GROUND) {
+    kfs_rx_pos_ref(KFS_RX_GROUND_POS);
+    kfs_rz_pos_ref(KFS_RZ_GROUND_POS);
+    kfs_ryaw_pos_ref(KFS_RYAW_SIDE_ANGLE);
+  } else if (ref == R1KfsMechanismRef::RKFS_STORAGE) {
+    kfs_rx_pos_ref(KFS_RX_STORAGE_POS);
+    kfs_rz_pos_ref(KFS_RZ_STORAGE_POS);
+    kfs_ryaw_pos_ref(KFS_RYAW_SIDE_ANGLE);
+  } else if (ref == R1KfsMechanismRef::RKFS_COLLECT_START_POS) {
+    kfs_rx_pos_ref(KFS_RX_START_POS);
+    kfs_rz_pos_ref(KFS_RZ_START_POS);
+    kfs_ryaw_pos_ref(KFS_RYAW_START_ANGLE);
+  }
 }
 
 void R1MainNode::r1_retry_collect_callback(const std_msgs::msg::Int32::SharedPtr msg)
 {
+  (void)msg;
   RCLCPP_INFO(this->get_logger(), "received /r1_retry_collect");
+  // KFS回収関連のパラメータをリセットする
+  reset_kfs_auto_collect_tracking();
+  // KFS回収機構を回収初期位置に移動
+  kfs_collect_start_act();
 }
 
 void R1MainNode::r1_collect_3rd_kfs_callback(const std_msgs::msg::Int32::SharedPtr msg)
 {
   r1_collect_3rd_kfs_ = msg->data;
   RCLCPP_INFO(this->get_logger(), "received /r1_collect_3rd_kfs = %d", r1_collect_3rd_kfs_);
+  // とりあえず、KFS回収機構を回収初期位置に移動
+  kfs_collect_start_act();
+  // TODO: 今後3つ目回収に必要な処理をかくこと
 }
 
 void R1MainNode::r1_initialize_all_actuator_callback(const std_msgs::msg::Int32::SharedPtr msg)
 {
+  (void)msg;
   RCLCPP_INFO(this->get_logger(), "received /r1_initialize_all_actuator");
+  detect_origin_all_actuator();
 }
 
 void R1MainNode::publish_r1_machine_initialize(void)
@@ -2057,6 +2132,21 @@ void R1MainNode::idle_task(void)
 }
 
 void R1MainNode::emergency_task(void) {}
+
+void R1MainNode::detect_origin_all_actuator(void)
+{
+  kfs_fx_detect_origin();
+  kfs_fz_detect_origin();
+  kfs_fyaw_detect_origin();
+  kfs_rx_detect_origin();
+  kfs_rz_detect_origin();
+  kfs_ryaw_detect_origin();
+  r2_flift_detect_origin();
+  r2_rlift_detect_origin();
+  spear_y_detect_origin();
+  spear_roll1_set_angle(0.0);
+  spear_roll2_set_angle(0.0);
+}
 
 void R1MainNode::manual_mode1_detect_origin(void)
 {
