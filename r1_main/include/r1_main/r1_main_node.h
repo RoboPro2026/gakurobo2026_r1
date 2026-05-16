@@ -798,6 +798,8 @@ public:
   // 壁検出の距離は近距離なので、map座標系ではなく、odom座標系で処理を行う
   // ただし、おおよその壁の位置の探索のみmap座標系で行う
   std::vector<nav_msgs::msg::Odometry> wall_detect_pos_ = std::vector<nav_msgs::msg::Odometry>(12);
+  // map->base_link TF 未受信時の警告を間引くための最終出力時刻
+  rclcpp::Time last_tf_warn_time_ = this->now();
   // 最後に自動回収を行った時刻
   std::vector<rclcpp::Time> last_auto_collect_kfs_time_ =
     std::vector<rclcpp::Time>(2, rclcpp::Time(0));

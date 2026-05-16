@@ -1820,9 +1820,14 @@ void R1MainNode::publish_pending_auto_robot_move_if_ready(void)
     return;
   }
   if (!is_localization_ready()) {
-    RCLCPP_WARN_THROTTLE(
-      this->get_logger(), *this->get_clock(), 1000,
-      "Waiting for localization: map->base_link TF is not available yet.");
+    auto now = this->now();
+    if ((now - last_tf_warn_time_).seconds() >= 1.0) {
+      last_tf_warn_time_ = now;
+      // r1_log_warn("map->base_link 利用不可");
+      RCLCPP_WARN(
+        this->get_logger(),
+        "map->base_link is not available yet. Cannot publish pending robot move.");
+    }
     return;
   }
 
@@ -1954,6 +1959,14 @@ void R1MainNode::timer_callback(void)
     op_mode_msg.data = static_cast<int32_t>(current_op_mode);
     r1_operation_mode_publisher_->publish(op_mode_msg);
     last_published_operation_mode_ = current_op_mode;
+  }
+  // map->base_link TF が来ていない間は一定間隔で警告を出す
+  if (!is_localization_ready()) {
+    auto now = this->now();
+    if ((now - last_tf_warn_time_).seconds() >= 1.0) {
+      last_tf_warn_time_ = now;
+      r1_log_warn("map->base_link 利用不可");
+    }
   }
   // タスクを実行
   // ps4_->print_data();
