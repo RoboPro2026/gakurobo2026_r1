@@ -11,6 +11,7 @@
 
 #pragma once
 
+#include <cstdarg>
 #include <cstdint>
 #include <functional>
 #include <map>
@@ -281,7 +282,10 @@ public:
   rclcpp::Subscription<std_msgs::msg::Int32>::SharedPtr r1_initialize_all_actuator_subscription_;
 
   rclcpp::Publisher<std_msgs::msg::Int32>::SharedPtr r1_operation_mode_publisher_;
-  rclcpp::Publisher<std_msgs::msg::String>::SharedPtr r1_log_message_publisher_;
+  // rclcpp::Publisher<std_msgs::msg::String>::SharedPtr r1_log_message_publisher_;
+  rclcpp::Publisher<std_msgs::msg::String>::SharedPtr r1_log_message_info_publisher_;
+  rclcpp::Publisher<std_msgs::msg::String>::SharedPtr r1_log_message_warn_publisher_;
+  rclcpp::Publisher<std_msgs::msg::String>::SharedPtr r1_log_message_error_publisher_;
   OperationMode last_published_operation_mode_{OperationMode::MODE1_DETECT_ORIGIN};
 
   // zone
@@ -574,7 +578,13 @@ public:
   void r1_retry_collect_callback(const std_msgs::msg::Int32::SharedPtr msg);
   void r1_collect_3rd_kfs_callback(const std_msgs::msg::Int32::SharedPtr msg);
   void r1_initialize_all_actuator_callback(const std_msgs::msg::Int32::SharedPtr msg);
-  void publish_r1_log(const std::string & message);
+  // void publish_r1_log(const std::string & message);
+  // スマホにログ出力する関数
+  // よくわからないけど、__attribute__((format(printf, 2, 3)));をつけると、型ミスをしていたときにコンパイラが警告を出してくれるらしい
+  void r1_log_info(const char * fmt, ...) __attribute__((format(printf, 2, 3)));
+  void r1_log_warn(const char * fmt, ...) __attribute__((format(printf, 2, 3)));
+  void r1_log_error(const char * fmt, ...) __attribute__((format(printf, 2, 3)));
+
   bool is_localization_ready(void);
   void request_auto_robot_move(
     ChassisAct act, std::vector<int> forest_order, std::vector<std::string> kfs_mechanism_type);

@@ -556,7 +556,15 @@ R1MainNode::R1MainNode() : Node("r1_main_node")
   // スマホ通信
   r1_operation_mode_publisher_ =
     this->create_publisher<std_msgs::msg::Int32>("/r1_operation_mode", 10);
-  r1_log_message_publisher_ = this->create_publisher<std_msgs::msg::String>("/r1_log_message", 10);
+  // r1_log_message_publisher_ = this->create_publisher<std_msgs::msg::String>("/r1_log_message", 10);
+
+  r1_log_message_info_publisher_ =
+    this->create_publisher<std_msgs::msg::String>("/r1_log_message_info", 10);
+  r1_log_message_warn_publisher_ =
+    this->create_publisher<std_msgs::msg::String>("/r1_log_message_warn", 10);
+  r1_log_message_error_publisher_ =
+    this->create_publisher<std_msgs::msg::String>("/r1_log_message_error", 10);
+
   r1_init_parameter_subscription_ = this->create_subscription<r1_msgs::msg::R1InitParameter>(
     "/r1_init_parameter", 10,
     std::bind(&R1MainNode::r1_init_parameter_callback, this, std::placeholders::_1));
@@ -820,6 +828,12 @@ R1MainNode::R1MainNode() : Node("r1_main_node")
   for (int i = 0; i < 12; i++) {
     wall_sensor_detect_start_time_[i] = this->now();
   }
+
+  // ログのテスト出力
+  r1_log_info("r1_main_node起動");
+  r1_log_info("★テスト r1_log_info★");
+  r1_log_warn("★テスト r1_log_warn★");
+  r1_log_error("★テスト r1_log_error★");
 }
 
 void R1MainNode::imu_callback(const sensor_msgs::msg::Imu::SharedPtr msg)
@@ -1215,7 +1229,7 @@ void R1MainNode::r1_init_parameter_callback(const r1_msgs::msg::R1InitParameter:
   s += std::string("enable_kfs_auto_chassis: ") +
        (r1_init_parameter_.enable_kfs_auto_chassis ? "true" : "false") + "\n";
   RCLCPP_INFO(this->get_logger(), "received /r1_init_parameter:\n%s", s.c_str());
-  publish_r1_log("Initialize received: zone=" + r1_init_parameter_.zone);
+  r1_log_info("Initialize received: zone=%s", r1_init_parameter_.zone.c_str());
 }
 
 void R1MainNode::r1_collect_kfs_callback(const r1_msgs::msg::R1CollectKfs::SharedPtr msg)
@@ -1240,7 +1254,7 @@ void R1MainNode::r1_collect_kfs_callback(const r1_msgs::msg::R1CollectKfs::Share
     }
   }
   RCLCPP_INFO(this->get_logger(), "received /r1_collect_kfs:\n%s", s.c_str());
-  publish_r1_log("Collect KFS order received");
+  r1_log_info("Collect KFS order received");
 }
 
 void R1MainNode::r1_kfs_mechanism_ref_callback(const std_msgs::msg::Int32::SharedPtr msg)
@@ -1717,11 +1731,56 @@ void R1MainNode::publish_aruco_marker_id(int id)
   RCLCPP_INFO(this->get_logger(), "publish aruco marker id: %d", id);
 }
 
-void R1MainNode::publish_r1_log(const std::string & message)
+// void R1MainNode::publish_r1_log(const std::string & message)
+// {
+//   std_msgs::msg::String msg;
+//   msg.data = message;
+//   r1_log_message_publisher_->publish(msg);
+// }
+
+void R1MainNode::r1_log_info(const char * fmt, ...)
 {
+  // printf と同じ書式でフォーマットしてバッファに展開
+  va_list args;
+  va_start(args, fmt);
+  char buf[512];
+  vsnprintf(buf, sizeof(buf), fmt, args);
+  va_end(args);
+  // ROS ログと /r1_log_message_info トピックの両方に出力
+  RCLCPP_INFO(this->get_logger(), "%s", buf);
   std_msgs::msg::String msg;
-  msg.data = message;
-  r1_log_message_publisher_->publish(msg);
+  msg.data = buf;
+  r1_log_message_info_publisher_->publish(msg);
+}
+
+void R1MainNode::r1_log_warn(const char * fmt, ...)
+{
+  // printf と同じ書式でフォーマットしてバッファに展開
+  va_list args;
+  va_start(args, fmt);
+  char buf[512];
+  vsnprintf(buf, sizeof(buf), fmt, args);
+  va_end(args);
+  // ROS ログと /r1_log_message_warn トピックの両方に出力
+  RCLCPP_WARN(this->get_logger(), "%s", buf);
+  std_msgs::msg::String msg;
+  msg.data = buf;
+  r1_log_message_warn_publisher_->publish(msg);
+}
+
+void R1MainNode::r1_log_error(const char * fmt, ...)
+{
+  // printf と同じ書式でフォーマットしてバッファに展開
+  va_list args;
+  va_start(args, fmt);
+  char buf[512];
+  vsnprintf(buf, sizeof(buf), fmt, args);
+  va_end(args);
+  // ROS ログと /r1_log_message_error トピックの両方に出力
+  RCLCPP_ERROR(this->get_logger(), "%s", buf);
+  std_msgs::msg::String msg;
+  msg.data = buf;
+  r1_log_message_error_publisher_->publish(msg);
 }
 
 bool R1MainNode::is_localization_ready(void)
@@ -2256,7 +2315,8 @@ void R1MainNode::manual_mode1_detect_origin(void)
 void R1MainNode::manual_mode2_collect_pole_task(void)
 {
   int & step = manual_mode2_collect_pole_task_step_;
-  RCLCPP_INFO(this->get_logger(), "manual_mode2_collect_pole_task step: %d", step);
+  // RCLCPP_INFO(this->get_logger(), "manual_mode2_collect_pole_task step: %d", step);
+  r1_log_info("mode2 ポール step%d", step);
   if (step == 1) {
     kfs_robot_start_act();
     spear_y_pos_ref(SPEAR_Y_COLLECT1_POS);
@@ -2275,7 +2335,7 @@ void R1MainNode::manual_mode2_collect_pole_task(void)
     step++;
   } else if (step == 4) {
     spear_hand_push_valve(false);
-    RCLCPP_INFO(this->get_logger(), "pole collect task completed");
+    r1_log_info("mode2 ポール 完了");
     step = 1;
   }
 }
@@ -2361,7 +2421,8 @@ void R1MainNode::manual_mode3_make_spear_task(int n)
 
   auto ROLL_DELAY = 300ms;
   auto PUSH_VALVE_DELAY = 1000ms;
-  RCLCPP_INFO(this->get_logger(), "manual_mode3_make_spear_task step: %d", step);
+  // RCLCPP_INFO(this->get_logger(), "manual_mode3_make_spear_task step: %d", step);
+  r1_log_info("mode3 やり step%d", step);
   if (step == 1) {
     if (manual_mode3_roll_timer_) {
       manual_mode3_roll_timer_->cancel();
@@ -2434,7 +2495,8 @@ void R1MainNode::manual_mode3_make_spear_task(int n)
         }
       });
     step = 1;
-    RCLCPP_INFO(this->get_logger(), "make spear task completed");
+    // RCLCPP_INFO(this->get_logger(), "make spear task completed");
+    r1_log_info("mode3 やり 完了");
   }
 }
 
@@ -2943,7 +3005,8 @@ void R1MainNode::manual_mode7_spear_attack_task(int n, int m)
   (void)n;
 
   int & step = manual_mode7_spear_attack_task_step_;
-  RCLCPP_INFO(this->get_logger(), "manual_mode7_spear_attack_task step: %d", step);
+  // RCLCPP_INFO(this->get_logger(), "manual_mode7_spear_attack_task step: %d", step);
+  r1_log_info("mode7 やり攻撃 step%d", step);
   if (step == 1) {
     kfs_fx_pos_ref(KFS_FX_NORMAL_POS);
     kfs_fz_pos_ref(KFS_FZ_NORMAL_POS);
@@ -2987,7 +3050,8 @@ void R1MainNode::manual_mode7_spear_attack_task(int n, int m)
     // spear_yは攻撃動作前の位置に戻す
     spear_y_pos_ref(SPEAR_Y_MAKE_SPEAR_POS);
     step = 1;
-    RCLCPP_INFO(this->get_logger(), "spear attack task completed");
+    // RCLCPP_INFO(this->get_logger(), "spear attack task completed");
+    r1_log_info("mode7 やり攻撃 完了");
   }
 }
 
@@ -2997,6 +3061,8 @@ void R1MainNode::manual_mode7_spear_throw_away_task(int n)
   (void)n;
 
   int & step = manual_mode7_spear_throw_away_task_step_;
+  r1_log_info("mode7 やり廃棄 step%d", step);
+
   if (step == 1) {
     // KFS回収機構はスタート時の高い位置に移動させる
     kfs_fx_pos_ref(KFS_FX_START_POS);
@@ -3033,7 +3099,8 @@ void R1MainNode::manual_mode7_spear_throw_away_task(int n)
     // spear_yは攻撃動作前の位置に戻す
     spear_y_pos_ref(SPEAR_Y_MAKE_SPEAR_POS);
     step = 1;
-    RCLCPP_INFO(this->get_logger(), "spear throw away task completed");
+    r1_log_info("mode7 やり廃棄 完了");
+    // RCLCPP_INFO(this->get_logger(), "spear throw away task completed");
   }
 }
 
@@ -3569,8 +3636,8 @@ void R1MainNode::auto_collect_kfs_task(void)
     if (
       prev_fkfs_step != auto_collect_kfs_fkfs_step_ ||
       prev_rkfs_step != auto_collect_kfs_rkfs_step_) {
-      RCLCPP_INFO(
-        this->get_logger(), "%d forest %s kfs auto collect step: %d -> %d", target_forest_number,
+      r1_log_info(
+        "%d forest %s kfs auto collect step: %d -> %d", target_forest_number,
         mechanism_type.c_str(), (within_index == FKFS) ? prev_fkfs_step : prev_rkfs_step, step);
       prev_fkfs_step = auto_collect_kfs_fkfs_step_;
       prev_rkfs_step = auto_collect_kfs_rkfs_step_;
