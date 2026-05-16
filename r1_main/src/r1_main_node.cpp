@@ -1356,7 +1356,9 @@ void R1MainNode::r1_retry_collect_callback(const std_msgs::msg::Int32::SharedPtr
   // KFS回収関連のパラメータをリセットする
   reset_kfs_auto_collect_tracking();
   // KFS回収機構を回収初期位置に移動
-  kfs_collect_start_act();
+  // 初期化動作を行うときは、ポンプを止めると既に保持しているKFSを落としてしまう。
+  // そのため引数をtrueにすることで、ポンプは動かしたままにする。
+  kfs_collect_start_act(true);
 }
 
 void R1MainNode::r1_collect_3rd_kfs_callback(const std_msgs::msg::Int32::SharedPtr msg)
@@ -1364,7 +1366,9 @@ void R1MainNode::r1_collect_3rd_kfs_callback(const std_msgs::msg::Int32::SharedP
   r1_collect_3rd_kfs_ = msg->data;
   RCLCPP_INFO(this->get_logger(), "received /r1_collect_3rd_kfs = %d", r1_collect_3rd_kfs_);
   // とりあえず、KFS回収機構を回収初期位置に移動
-  kfs_collect_start_act();
+  // 初期化動作を行うときは、ポンプを止めると既に保持しているKFSを落としてしまう。
+  // そのため引数をtrueにすることで、ポンプは動かしたままにする。
+  kfs_collect_start_act(true);
   // TODO: 今後3つ目回収に必要な処理をかくこと
 }
 
@@ -2067,7 +2071,7 @@ void R1MainNode::kfs_robot_start_act(void)
   kfs_ryaw_pos_ref(KFS_RYAW_START_ANGLE);
 }
 
-void R1MainNode::kfs_collect_start_act(void)
+void R1MainNode::kfs_collect_start_act(bool enable_pump)
 {
   auto ROLL_DELAY = 300ms;
   auto PUSH_VALVE_DELAY = 1000ms;
@@ -2096,7 +2100,7 @@ void R1MainNode::kfs_collect_start_act(void)
   });
 
   kfs_collect_start_act_push_valve_timer_ =
-    this->create_wall_timer(ROLL_DELAY + PUSH_VALVE_DELAY, [this]() {
+    this->create_wall_timer(ROLL_DELAY + PUSH_VALVE_DELAY, [this, enable_pump]() {
       // 3. hand_push_valveをoffにし、やり回収機構を引っ込める
       spear_hand_push_valve(false);
       // 4. KFS回収用アクチュエータを回収位置位置に移動
@@ -2124,8 +2128,13 @@ void R1MainNode::kfs_collect_start_act(void)
         kfs_fyaw_move_front_mech_lock();
         kfs_ryaw_move_front_mech_lock();
       }
-      kfs_front_pump(0.0);
-      kfs_rear_pump(0.0);
+      if (enable_pump) {
+        kfs_front_pump(1.0);
+        kfs_rear_pump(1.0);
+      } else {
+        kfs_front_pump(0.0);
+        kfs_rear_pump(0.0);
+      }
       if (kfs_collect_start_act_push_valve_timer_) {
         kfs_collect_start_act_push_valve_timer_->cancel();
       }
@@ -2975,6 +2984,8 @@ void R1MainNode::manual_mode7_spear_attack_task(int n, int m)
     spear_hand_push_valve(false);
     spear_roll1_pos_ref(SPEAR_ROLL1_VERTICAL_ANGLE);
     spear_roll2_pos_ref(SPEAR_ROLL2_VERTICAL_ANGLE);
+    // spear_yは攻撃動作前の位置に戻す
+    spear_y_pos_ref(SPEAR_Y_MAKE_SPEAR_POS);
     step = 1;
     RCLCPP_INFO(this->get_logger(), "spear attack task completed");
   }
@@ -3019,6 +3030,8 @@ void R1MainNode::manual_mode7_spear_throw_away_task(int n)
     spear_hand2_valve(false);
     spear_roll1_pos_ref(SPEAR_ROLL1_VERTICAL_ANGLE);
     spear_roll2_pos_ref(SPEAR_ROLL2_VERTICAL_ANGLE);
+    // spear_yは攻撃動作前の位置に戻す
+    spear_y_pos_ref(SPEAR_Y_MAKE_SPEAR_POS);
     step = 1;
     RCLCPP_INFO(this->get_logger(), "spear throw away task completed");
   }

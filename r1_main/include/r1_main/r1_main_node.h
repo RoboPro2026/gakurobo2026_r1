@@ -688,7 +688,7 @@ public:
   void kfs_robot_start_act(void);
   rclcpp::TimerBase::SharedPtr kfs_collect_start_act_roll_timer_;
   rclcpp::TimerBase::SharedPtr kfs_collect_start_act_push_valve_timer_;
-  void kfs_collect_start_act(void);
+  void kfs_collect_start_act(bool enable_pump = false);
 
   // 動いていたら危険なアクチュエータは停止する
   // 位置制御は止められないので、そのまま
