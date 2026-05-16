@@ -173,7 +173,7 @@ r1_main_node:
     kfs_fx_low_mech_lock_pos: 0.05
     kfs_fx_high_mech_lock_pos: 0.67
     kfs_fx_r2_lift_pos: 0.35
-    kfs_fx_ground_pos: 0.45
+    kfs_fx_ground_pos: 0.35
     # fz
     kfs_fz_normal_pos: 0.005
     kfs_fz_low_pos: 0.005
@@ -203,7 +203,7 @@ r1_main_node:
     kfs_rx_low_mech_lock_pos: 0.05
     kfs_rx_high_mech_lock_pos: 0.67
     kfs_rx_r2_lift_pos: 0.35
-    kfs_rx_ground_pos: 0.45
+    kfs_rx_ground_pos: 0.35
     # rz
     kfs_rz_normal_pos: 0.005
     kfs_rz_low_pos: 0.005
