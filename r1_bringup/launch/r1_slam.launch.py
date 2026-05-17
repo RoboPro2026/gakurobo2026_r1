@@ -1,5 +1,4 @@
 import os
-import sys
 
 import yaml
 from ament_index_python.packages import get_package_share_directory
@@ -13,9 +12,6 @@ from launch_ros.actions import LifecycleNode, Node
 from launch_ros.event_handlers import OnStateTransition
 from launch_ros.events.lifecycle import ChangeState
 from lifecycle_msgs.msg import Transition
-
-sys.path.append(os.path.dirname(__file__))
-from lidar_reset import reset_lidar
 
 
 def generate_launch_description():
@@ -35,13 +31,6 @@ def generate_launch_description():
         slam_params = yaml.safe_load(f)
     lidar1_port = slam_params["urg_node2_1"]["ros__parameters"]["serial_port"]
     lidar2_port = slam_params["urg_node2_2"]["ros__parameters"]["serial_port"]
-
-    # urg_node2 起動前に LiDAR へ QT コマンド（計測停止）を送信する
-    # 理由: URG が連続スキャン中のまま前セッションが終了した場合、
-    #        urg_open() 内の clear_urg_communication_buffer() がデータを
-    #        読み続けて無限ループに陥るため、事前に停止させる
-    # reset_lidar(lidar1_port)
-    # reset_lidar(lidar2_port)
 
     # urg_node2をライフサイクルノードとして起動
     urg_node2_1 = LifecycleNode(
@@ -128,22 +117,6 @@ def generate_launch_description():
             ],
         ),
         condition=IfCondition("true"),
-    )
-
-    lidar_lifecycle_watchdog = Node(
-        package="r1_bringup",
-        executable="lidar_lifecycle_watchdog_node",
-        name="lidar_lifecycle_watchdog_node",
-        output="screen",
-        parameters=[
-            {
-                "node_names": ["urg_node2_1", "urg_node2_2"],
-                "check_period": 1.0,
-                "service_timeout": 3.0,
-                "retry_interval": 2.0,
-                "startup_grace_period": 3.0,
-            }
-        ],
     )
 
     lidar1_tf_node = Node(
@@ -262,7 +235,6 @@ def generate_launch_description():
             urg_node2_2_configure_event_handler,
             urg_node2_1_activate_event_handler,
             urg_node2_2_activate_event_handler,
-            # lidar_lifecycle_watchdog,
             lidar1_tf_node,
             lidar2_tf_node,
             # slam_toolbox,

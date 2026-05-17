@@ -507,8 +507,16 @@ def generate_launch_description():
         condition=IfCondition(use_aruco_display),
     )
 
+    remote_debug_node = Node(
+        package="r1_bringup",
+        executable="remote_debug_node.py",
+        name="remote_debug_node",
+        arguments=["--ros-args", "--log-level", "info"],
+    )
+
     # r1_mainのノードの起動を遅延させる
     common_nodes = [
+        remote_debug_node,
         # 単眼Lidar
         # ydlidar_fh_node,
         ydlidar_fm_node,
