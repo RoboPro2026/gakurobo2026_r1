@@ -2645,7 +2645,7 @@ void R1MainNode::manual_mode4_fkfs(void)
       if (manual_mode4_front_valve_timer_) {
         manual_mode4_front_valve_timer_->cancel();
       }
-      manual_mode4_front_valve_timer_ = this->create_wall_timer(250ms, [this]() {
+      manual_mode4_front_valve_timer_ = this->create_wall_timer(700ms, [this]() {
         kfs_front_valve(false);
         if (manual_mode4_front_valve_timer_) {
           manual_mode4_front_valve_timer_->cancel();
@@ -2811,7 +2811,7 @@ void R1MainNode::manual_mode5_rkfs(void)
       if (manual_mode5_rear_valve_timer_) {
         manual_mode5_rear_valve_timer_->cancel();
       }
-      manual_mode5_rear_valve_timer_ = this->create_wall_timer(250ms, [this]() {
+      manual_mode5_rear_valve_timer_ = this->create_wall_timer(700ms, [this]() {
         kfs_rear_valve(false);
         if (manual_mode5_rear_valve_timer_) {
           manual_mode5_rear_valve_timer_->cancel();
