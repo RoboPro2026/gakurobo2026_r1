@@ -225,6 +225,8 @@ r1_main_node:
     kfs_ryaw_low_mech_lock_angle: 0.05
     kfs_ryaw_high_mech_lock_angle: 3.1
 
+    # 真空用電磁弁の遅延時間[s]
+    kfs_valve_delay_time: 1.0
     # ========== 展開 ==========
     # R2昇降
     r2_flift_normal_pos: 0.05

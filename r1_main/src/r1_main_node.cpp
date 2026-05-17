@@ -676,6 +676,8 @@ R1MainNode::R1MainNode() : Node("r1_main_node")
   declare_and_get_parameter("kfs_ryaw_start_angle", KFS_RYAW_START_ANGLE);
   declare_and_get_parameter("kfs_ryaw_low_mech_lock_angle", KFS_RYAW_LOW_MECH_LOCK_ANGLE);
   declare_and_get_parameter("kfs_ryaw_high_mech_lock_angle", KFS_RYAW_HIGH_MECH_LOCK_ANGLE);
+  // 真空用電磁弁の遅延時間[s]
+  declare_and_get_parameter("kfs_valve_delay_time", KFS_VALVE_DELAY_TIME);
 
   // ========== 展開 ==========
   // R2昇降
@@ -2645,12 +2647,13 @@ void R1MainNode::manual_mode4_fkfs(void)
       if (manual_mode4_front_valve_timer_) {
         manual_mode4_front_valve_timer_->cancel();
       }
-      manual_mode4_front_valve_timer_ = this->create_wall_timer(700ms, [this]() {
-        kfs_front_valve(false);
-        if (manual_mode4_front_valve_timer_) {
-          manual_mode4_front_valve_timer_->cancel();
-        }
-      });
+      auto delay_time = manual_mode4_front_valve_timer_ =
+        this->create_wall_timer(std::chrono::duration<double>(KFS_VALVE_DELAY_TIME), [this]() {
+          kfs_front_valve(false);
+          if (manual_mode4_front_valve_timer_) {
+            manual_mode4_front_valve_timer_->cancel();
+          }
+        });
       front_pump_step = 1;
     }
   }
@@ -2811,12 +2814,13 @@ void R1MainNode::manual_mode5_rkfs(void)
       if (manual_mode5_rear_valve_timer_) {
         manual_mode5_rear_valve_timer_->cancel();
       }
-      manual_mode5_rear_valve_timer_ = this->create_wall_timer(700ms, [this]() {
-        kfs_rear_valve(false);
-        if (manual_mode5_rear_valve_timer_) {
-          manual_mode5_rear_valve_timer_->cancel();
-        }
-      });
+      manual_mode5_rear_valve_timer_ =
+        this->create_wall_timer(std::chrono::duration<double>(KFS_VALVE_DELAY_TIME), [this]() {
+          kfs_rear_valve(false);
+          if (manual_mode5_rear_valve_timer_) {
+            manual_mode5_rear_valve_timer_->cancel();
+          }
+        });
       rear_pump_step = 1;
     }
   }

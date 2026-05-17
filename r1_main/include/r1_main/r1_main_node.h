@@ -421,6 +421,10 @@ public:
   double KFS_RYAW_START_ANGLE = 0.0;
   double KFS_RYAW_LOW_MECH_LOCK_ANGLE = 0.0;
   double KFS_RYAW_HIGH_MECH_LOCK_ANGLE = 0.0;
+
+  // 真空用電磁弁の遅延時間[s]
+  double KFS_VALVE_DELAY_TIME = 0.0;
+
   // R2昇降
   double R2_FLIFT_NORMAL_POS = 0.0;
   double R2_FLIFT_UP_POS = 0.0;
