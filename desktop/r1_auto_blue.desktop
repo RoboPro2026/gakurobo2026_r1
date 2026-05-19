@@ -1,0 +1,9 @@
+[Desktop Entry]
+Version=1.0
+Type=Application
+Name=R1 Auto (Blue)
+Comment=R1 自動制御 bringup - blueゾーン
+Exec=gnome-terminal -- bash -c "cd $HOME/ros2_ws && bash src/gakurobo2026_r1/scripts/r1_auto.bash blue true; exec bash"
+Icon=r1_auto_blue
+Terminal=false
+Categories=Application;

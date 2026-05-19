@@ -1,0 +1,9 @@
+[Desktop Entry]
+Version=1.0
+Type=Application
+Name=R1 Stop
+Comment=R1 ノードを停止する
+Exec=bash -c "bash $HOME/ros2_ws/src/gakurobo2026_r1/scripts/r1_stop.bash"
+Icon=r1_stop
+Terminal=false
+Categories=Application;

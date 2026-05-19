@@ -71,12 +71,33 @@ cd ~/ros2_ws/src/gakurobo2026_r1
   - 第 1 引数でゾーンを指定できます（省略時は `blue`）。
 - [`scripts/record.bash`](./scripts/record.bash)
   - CAN 関連 topic を除外して bag を記録します。
+- [`scripts/r1_desktop_setup.bash`](./scripts/r1_desktop_setup.bash)
+  - GNOME デスクトップに blue/red ゾーン用のアイコンをシンボリックリンクで配置します。
 
 補足:
 
 - `r1_manual.bash` / `r1_auto.bash` は `~/ros2_ws` を前提にしています。
 - `r1_setup.bash` は `sudo` を使うため、実行時にパスワード入力が必要です。
 - LiDAR を無効にしたい、ArUco 表示を足したい、シミュレーションで起動したい、といったときだけ `ros2 launch` を直接使う運用にすると整理しやすくなります。
+
+## デスクトップアイコン
+
+GNOME デスクトップにアイコンを置くと、ダブルクリック一発で起動できます。  
+`.desktop` ファイルの本体はこのリポジトリ内に置き、デスクトップにはシンボリックリンクを張る構成にしています。  
+内容を変更したい場合は、このリポジトリ内のファイルだけ編集すれば反映されます。
+
+### 初回セットアップ
+```bash
+bash ~/ros2_ws/src/gakurobo2026_r1/scripts/r1_desktop_setup.bash
+```
+
+### アイコン一覧
+
+| ファイル | 内容 |
+|---|---|
+| `desktop/r1_auto_blue.desktop` | 自動機 blueゾーン（`r1_auto.bash blue`） |
+| `desktop/r1_auto_red.desktop` | 自動機 redゾーン（`r1_auto.bash red`） |
+| `desktop/r1_stop.desktop` | 全ノードをクリーンシャットダウン（`Ctrl+C` 相当） |
 
 パッケージの役割は次のとおりです。  
 
