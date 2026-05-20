@@ -149,12 +149,19 @@ class ArucoDisplayNode(Node):
             image_rotation_degrees=self.image_rotation_degrees,
             marker_geometry=self.marker_geometry,
         )
-        self._move_window_to_screen()
-        if self.fullscreen:
-            self.window.showFullScreen()
+        if self.screen_name != "" and not self._screen_exists(self.screen_name):
+            available = ", ".join(s.name() for s in QApplication.screens())
+            self.get_logger().warning(
+                f"screen_name '{self.screen_name}' was not found "
+                f"(available: {available}). Window will not be displayed."
+            )
         else:
-            self.window.show()
-            QTimer.singleShot(0, self._move_window_to_screen)
+            self._move_window_to_screen()
+            if self.fullscreen:
+                self.window.showFullScreen()
+            else:
+                self.window.show()
+                QTimer.singleShot(0, self._move_window_to_screen)
 
         self.subscription = self.create_subscription(
             Int32,
@@ -201,6 +208,9 @@ class ArucoDisplayNode(Node):
             f"width={self.marker_geometry.width()}, "
             f"height={self.marker_geometry.height()}"
         )
+
+    def _screen_exists(self, name: str) -> bool:
+        return any(s.name() == name for s in QApplication.screens())
 
     def _move_window_to_screen(self) -> None:
         if self.screen_name == "":

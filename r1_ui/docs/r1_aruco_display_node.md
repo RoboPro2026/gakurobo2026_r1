@@ -21,7 +21,7 @@ GUI ライブラリは `gakurobo2026_r1` 内の既存 GUI に合わせて `PyQt6
 | `initial_marker_id` | integer | `0` | 起動直後に表示するマーカ ID です。 |
 | `marker_image_dir` | string | `share/r1_ui/aruco_marker` | `marker_<marker_id>.png` を探すディレクトリです。 |
 | `fullscreen` | bool | `false` | `true` のとき全画面表示します。 |
-| `screen_name` | string | `""` | 表示先画面の名前です。空文字のときはQtのデフォルト画面を使います。非全画面表示でも指定できます。 |
+| `screen_name` | string | `""` | 表示先画面の名前です。空文字のときはQtのデフォルト画面を使います。指定した画面が見つからない場合はウィンドウを表示しません。非全画面表示でも指定できます。 |
 | `image_rotation_degrees` | integer | `0` | 表示画像の回転角度 [deg] です。モニターを上下逆に取り付けた場合は `180` を指定します。 |
 | `marker_x` | integer | `-1` | マーカ表示矩形の左上 X 座標 [px] です。`-1` のときは従来どおり中央表示します。 |
 | `marker_y` | integer | `-1` | マーカ表示矩形の左上 Y 座標 [px] です。`-1` のときは従来どおり中央表示します。 |
@@ -201,7 +201,7 @@ export DBUS_SESSION_BUS_ADDRESS=unix:path=$XDG_RUNTIME_DIR/bus
 ## 注意点
 
 - 対応する `marker_<marker_id>.png` がない場合、表示は更新されません。
-- `screen_name` は `scripts/list_screen_names.py` に表示される `name=...` の値を指定してください。存在しない名前を指定した場合は warning を出し、Qt のデフォルト画面で表示します。
+- `screen_name` は `scripts/list_screen_names.py` に表示される `name=...` の値を指定してください。存在しない名前を指定した場合は warning を出し、ウィンドウを表示しません。
 - `marker_x` / `marker_y` / `marker_width` / `marker_height` は全画面内でのマーカ表示位置を固定したいときに使います。4つのうち一部だけ指定した場合や、負の座標、0以下の幅・高さはエラーになります。
 - SSH から直接起動する場合でも、ロボット PC 側の GUI セッションへ接続できる `DISPLAY` または `WAYLAND_DISPLAY` が必要です。
 - このノードは `std_msgs/msg/Int32` を入力としているため、将来「画像種類」と「マーカ ID」を別管理したくなったら、専用 message に拡張したほうが扱いやすくなります。
