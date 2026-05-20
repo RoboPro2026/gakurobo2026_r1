@@ -151,7 +151,7 @@ class ArucoDisplayNode(Node):
         )
         if self.screen_name != "" and not self._screen_exists(self.screen_name):
             available = ", ".join(s.name() for s in QApplication.screens())
-            self.get_logger().warning(
+            self.get_logger().error(
                 f"screen_name '{self.screen_name}' was not found "
                 f"(available: {available}). Window will not be displayed."
             )
