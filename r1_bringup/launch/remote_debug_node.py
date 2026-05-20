@@ -13,13 +13,13 @@ rosbridge 経由で MSI Claw から各種デバッグ機能を制御する。
     /enable_publish_rosout (std_msgs/Bool): true で /rosout の転送を開始、false で停止。
     /rosout (rcl_interfaces/Log)         : ROS ログ集約トピック。
   Publish:
-    /r1_rosout_bridge (rcl_interfaces/Log): 転送先。rosbridge 経由で MSI Claw から購読する。
+    /r1_rosout_bridge_text (std_msgs/String): 転送先。rosbridge 経由で MSI Claw から購読する。
 """
 
 import os
 import signal
 import subprocess
-from typing import Optional
+from typing import List, Optional
 
 import rclpy
 from rclpy.node import Node
@@ -36,6 +36,16 @@ _WORKSPACE_DIR = os.path.expanduser("~/ros2_ws")
 _CAN_TOPIC_REGEX = r'.*(sabacan|from_can_bus|to_can_bus).*'
 
 _ROSOUT_QOS_DEPTH = 1000
+_ROSOUT_TEXT_FLUSH_INTERVAL = 0.1  # [s]
+_ROSOUT_LEVEL_NAMES = {10: "DEBUG", 20: "INFO", 30: "WARN", 40: "ERROR", 50: "FATAL"}
+_ROSOUT_LEVEL_COLORS = {
+    10: "",  # DEBUG: default
+    20: "",  # INFO: default
+    30: "\033[33m",  # WARN: yellow
+    40: "\033[31m",  # ERROR: red
+    50: "\033[1;31m",  # FATAL: bold red
+}
+_ANSI_RESET = "\033[0m"
 
 # ros2 bag は終了時に metadata.yaml を書き出すため、停止後に少し待つ。
 _RECORD_STOP_TIMEOUT = 5.0  # [s]
@@ -47,14 +57,15 @@ class RemoteDebugNode(Node):
 
         self._record_proc: Optional[subprocess.Popen] = None
         self._enable_publish_rosout: bool = False
+        self._rosout_text_buffer: List[str] = []
 
         # ----- rosbag recording -----
         self.create_subscription(String, "/record_start", self._on_record_start, 10)
         self.create_subscription(Empty, "/record_stop", self._on_record_stop, 10)
 
         # ----- rosout bridge -----
-        self._rosout_bridge_pub = self.create_publisher(
-            RosoutLog, "/r1_rosout_bridge", QoSProfile(depth=_ROSOUT_QOS_DEPTH)
+        self._rosout_bridge_text_pub = self.create_publisher(
+            String, "/r1_rosout_bridge_text", QoSProfile(depth=_ROSOUT_QOS_DEPTH)
         )
         self.create_subscription(
             Bool, "/enable_publish_rosout", self._on_enable_publish_rosout, 10
@@ -62,6 +73,7 @@ class RemoteDebugNode(Node):
         self.create_subscription(
             RosoutLog, "/rosout", self._on_rosout, QoSProfile(depth=_ROSOUT_QOS_DEPTH)
         )
+        self.create_timer(_ROSOUT_TEXT_FLUSH_INTERVAL, self._flush_rosout_text_buffer)
 
         self.get_logger().info("remote_debug_node started")
 
@@ -124,6 +136,8 @@ class RemoteDebugNode(Node):
     # ------------------------------------------------------------------
 
     def _on_enable_publish_rosout(self, msg: Bool) -> None:
+        if not msg.data:
+            self._flush_rosout_text_buffer()
         self._enable_publish_rosout = msg.data
         self.get_logger().info(
             f"enable_publish_rosout: {'true' if msg.data else 'false'}"
@@ -131,7 +145,20 @@ class RemoteDebugNode(Node):
 
     def _on_rosout(self, msg: RosoutLog) -> None:
         if self._enable_publish_rosout:
-            self._rosout_bridge_pub.publish(msg)
+            self._rosout_text_buffer.append(self._format_rosout(msg))
+
+    def _flush_rosout_text_buffer(self) -> None:
+        if not self._rosout_text_buffer:
+            return
+        msg = String()
+        msg.data = "\n".join(self._rosout_text_buffer)
+        self._rosout_text_buffer.clear()
+        self._rosout_bridge_text_pub.publish(msg)
+
+    def _format_rosout(self, msg: RosoutLog) -> str:
+        level = _ROSOUT_LEVEL_NAMES.get(msg.level, f"LV{msg.level}")
+        color = _ROSOUT_LEVEL_COLORS.get(msg.level, "")
+        return f"{color}[{level}] [{msg.name}]: {msg.msg}{_ANSI_RESET}"
 
     # ------------------------------------------------------------------
     # lifecycle

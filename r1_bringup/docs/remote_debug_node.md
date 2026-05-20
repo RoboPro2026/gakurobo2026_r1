@@ -6,8 +6,8 @@ MSI Claw から rosbridge 経由でロボットの状態を遠隔デバッグす
 
 - `/record_start` を受信して `ros2 bag record` を起動する
 - `/record_stop` を受信して録画を停止する
-- `/enable_publish_rosout` で制御される `/rosout` → `/r1_rosout_bridge` の転送を行う
-  - 転送は 200ms ごとにバッファをまとめて送信（rosbridge への負荷軽減のため）
+- `/enable_publish_rosout` で制御される `/rosout` → `/r1_rosout_bridge_text` の転送を行う
+  - rosbridge のメッセージ数を減らすため、短時間分のログ行を1つの `std_msgs/String` にまとめて送信する
 
 ## トピック
 
@@ -24,7 +24,7 @@ MSI Claw から rosbridge 経由でロボットの状態を遠隔デバッグす
 
 | トピック名 | 型 | 説明 |
 |---|---|---|
-| `/r1_rosout_bridge` | `rcl_interfaces/Log` | rosbridge 経由で MSI Claw から購読する転送先 |
+| `/r1_rosout_bridge_text` | `std_msgs/String` | rosbridge 経由で MSI Claw から購読する転送先。複数ログ行を改行区切りで含む |
 
 ## 録画の仕様
 
@@ -36,5 +36,6 @@ MSI Claw から rosbridge 経由でロボットの状態を遠隔デバッグす
 ## rosout 転送の仕様
 
 - `/enable_publish_rosout` が `false`（既定値）の間は `/rosout` を購読しても転送しない
-- 有効化されると `/rosout` に届いたメッセージを 200ms ごとにまとめて `/r1_rosout_bridge` に転送する
+- 有効化されると `/rosout` に届いたメッセージを文字列化し、短時間分をまとめて `/r1_rosout_bridge_text` に転送する
+- `WARN`、`ERROR`、`FATAL` はANSIカラー付き文字列として転送する
 - 試合中など不要なときは `false` のままにしておくことで rosbridge への負荷をゼロにできる

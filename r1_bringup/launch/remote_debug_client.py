@@ -41,16 +41,6 @@ import time
 
 import roslibpy
 
-_ROSOUT_LEVEL_NAMES = {10: "DEBUG", 20: "INFO", 30: "WARN", 40: "ERROR", 50: "FATAL"}
-_ROSOUT_LEVEL_COLORS = {
-    10: "",  # DEBUG:  デフォルト
-    20: "",  # INFO:   デフォルト
-    30: "\033[33m",  # WARN:   yellow
-    40: "\033[31m",  # ERROR:  red
-    50: "\033[1;31m",  # FATAL:  bold red
-}
-_ANSI_RESET = "\033[0m"
-
 _DEFAULT_HOST = "localhost"
 _DEFAULT_PORT = 9090
 _POST_PUBLISH_DELAY = 0.2  # publish 後にメッセージが届くまでの待機 [s]
@@ -72,7 +62,7 @@ class RemoteDebugClient:
             self._ros, "/enable_publish_rosout", "std_msgs/Bool"
         )
         self._rosout_sub = roslibpy.Topic(
-            self._ros, "/r1_rosout_bridge", "rcl_interfaces/Log"
+            self._ros, "/r1_rosout_bridge_text", "std_msgs/String"
         )
 
     def connect(self) -> None:
@@ -110,12 +100,9 @@ class RemoteDebugClient:
         print(f"rosout 転送: {'有効' if enable else '無効'}")
 
     def _on_rosout_bridge(self, msg: dict) -> None:
-        level_num = msg.get("level", 20)
-        level = _ROSOUT_LEVEL_NAMES.get(level_num, f"LV{level_num}")
-        color = _ROSOUT_LEVEL_COLORS.get(level_num, "")
-        name = msg.get("name", "")
-        text = msg.get("msg", "")
-        print(f"{color}[{level}] [{name}]: {text}{_ANSI_RESET}", flush=True)
+        text = msg.get("data", "")
+        if text:
+            print(text, flush=True)
 
     # ------------------------------------------------------------------
     # コマンド実装
