@@ -16,5 +16,6 @@ export DBUS_SESSION_BUS_ADDRESS=unix:path=$XDG_RUNTIME_DIR/bus
 #       ./r1_auto.bash             → blueゾーン・PS4コントローラ
 ZONE="${1:-blue}"
 USE_PHONE="${2:-false}"
+export RCUTILS_COLORIZED_OUTPUT=1
 echo "========== R1 bringup start (zone: $ZONE, use_phone: $USE_PHONE) =========="
 ros2 launch r1_bringup r1_bringup.launch.py use_sim:=false use_lidar:=true robot_control_mode:=auto use_aruco_display:=true zone:=$ZONE use_phone:=$USE_PHONE
