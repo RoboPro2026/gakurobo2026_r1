@@ -7,19 +7,19 @@ session / start コマンドは rosbridge を起動して常駐し、Ctrl+C で�
 stop / rosout-on / rosout-off は one-shot で終了する。
 
 Usage:
-  remote_debug_client.py session [--bag BAG_NAME] [--delay SEC] [--rosbridge-delay SEC]
+  ros2 run r1_bringup remote_debug_client.py session [--bag BAG_NAME] [--delay SEC] [--rosbridge-delay SEC]
       rosbridge 起動 → rosout 有効化 → --delay 秒待機 → 録画開始 → Ctrl+C で全停止。
 
-  remote_debug_client.py start [--bag BAG_NAME] [--rosbridge-delay SEC]
+  ros2 run r1_bringup remote_debug_client.py start [--bag BAG_NAME] [--rosbridge-delay SEC]
       rosbridge 起動 → 録画開始（rosout は有効化しない）→ Ctrl+C で全停止。
 
-  remote_debug_client.py stop
+  ros2 run r1_bringup remote_debug_client.py stop
       録画停止（one-shot、rosbridge は起動しない）。
 
-  remote_debug_client.py rosout-on
+  ros2 run r1_bringup remote_debug_client.py rosout-on
       rosout 転送有効化（one-shot、rosbridge は起動しない）。
 
-  remote_debug_client.py rosout-off
+  ros2 run r1_bringup remote_debug_client.py rosout-off
       rosout 転送無効化（one-shot、rosbridge は起動しない）。
 
 Example:
@@ -223,7 +223,8 @@ def main() -> None:
             client.set_rosout(False)
     finally:
         client.destroy_node()
-        rclpy.shutdown()
+        if rclpy.ok():
+            rclpy.shutdown()
 
 
 if __name__ == "__main__":

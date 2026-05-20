@@ -214,6 +214,9 @@ def generate_launch_description():
         executable="lifecycle_manager",
         name="lifecycle_manager_localization",
         output="screen",
+        # SIGINT→SIGTERMの待ち時間（デフォルト: 5）、SIGTERM→SIGKILLの待ち時間（デフォルト: 5）
+        sigterm_timeout="2",
+        sigkill_timeout="2",
         parameters=[
             {
                 "autostart": True,
