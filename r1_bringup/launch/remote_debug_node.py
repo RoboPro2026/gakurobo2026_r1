@@ -36,8 +36,10 @@ _WORKSPACE_DIR = os.path.expanduser("~/ros2_ws")
 # 名前のどこかに sabacan/from_can_bus/to_can_bus を含む topic を除外する。
 _CAN_TOPIC_REGEX = r'.*(sabacan|from_can_bus|to_can_bus).*'
 
-# rosout バッファのフラッシュ間隔
-_ROSOUT_FLUSH_INTERVAL = 0.2  # [s]
+# rosout バッファのフラッシュ間隔。
+# rosbag2_recorder の subscription 開始ログのような短時間バーストを落としにくくする。
+_ROSOUT_FLUSH_INTERVAL = 0.05  # [s]
+_ROSOUT_QOS_DEPTH = 1000
 
 # ros2 bag は終了時に metadata.yaml を書き出すため、停止後に少し待つ。
 _RECORD_STOP_TIMEOUT = 5.0  # [s]
@@ -57,13 +59,13 @@ class RemoteDebugNode(Node):
 
         # ----- rosout bridge -----
         self._rosout_bridge_pub = self.create_publisher(
-            RosoutLog, "/r1_rosout_bridge", QoSProfile(depth=50)
+            RosoutLog, "/r1_rosout_bridge", QoSProfile(depth=_ROSOUT_QOS_DEPTH)
         )
         self.create_subscription(
             Bool, "/enable_publish_rosout", self._on_enable_publish_rosout, 10
         )
         self.create_subscription(
-            RosoutLog, "/rosout", self._on_rosout, QoSProfile(depth=50)
+            RosoutLog, "/rosout", self._on_rosout, QoSProfile(depth=_ROSOUT_QOS_DEPTH)
         )
         self.create_timer(_ROSOUT_FLUSH_INTERVAL, self._flush_rosout_buffer)
 
