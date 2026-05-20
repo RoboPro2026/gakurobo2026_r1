@@ -1274,6 +1274,35 @@ void R1MainNode::r1_kfs_mechanism_ref_callback(const std_msgs::msg::Int32::Share
   RCLCPP_INFO(
     this->get_logger(), "received /r1_kfs_mechanism_ref = %d(%s)", r1_kfs_mechanism_ref_,
     s.c_str());
+
+  // 回収プランがアクティブな場合、step4と同様にzone/is_innerに基づいてYAWを回転させる
+  const bool is_collect_active = kfs_auto_collect_plan_.status != KfsAutoCollectStatus::NONE;
+  const bool is_inner = kfs_auto_collect_plan_.status == KfsAutoCollectStatus::INNER_ACTIVE;
+
+  auto apply_fyaw = [&]() {
+    if (!is_collect_active) return;
+    if (zone_ == "blue" && is_inner)
+      kfs_fyaw_move_front_mech_lock();
+    else if (zone_ == "blue" && !is_inner)
+      kfs_fyaw_move_rear_mech_lock();
+    else if (zone_ == "red" && is_inner)
+      kfs_fyaw_move_rear_mech_lock();
+    else if (zone_ == "red" && !is_inner)
+      kfs_fyaw_move_front_mech_lock();
+  };
+
+  auto apply_ryaw = [&]() {
+    if (!is_collect_active) return;
+    if (zone_ == "blue" && is_inner)
+      kfs_ryaw_move_front_mech_lock();
+    else if (zone_ == "blue" && !is_inner)
+      kfs_ryaw_move_rear_mech_lock();
+    else if (zone_ == "red" && is_inner)
+      kfs_ryaw_move_rear_mech_lock();
+    else if (zone_ == "red" && !is_inner)
+      kfs_ryaw_move_front_mech_lock();
+  };
+
   // アクチュエータを動かす
   // FKFS
   if (ref == R1KfsMechanismRef::FKFS_RACK) {
@@ -1285,19 +1314,22 @@ void R1MainNode::r1_kfs_mechanism_ref_callback(const std_msgs::msg::Int32::Share
   } else if (ref == R1KfsMechanismRef::FKFS_HIGH) {
     kfs_fx_pos_ref(KFS_FX_EXPAND_POS);
     kfs_fz_pos_ref(KFS_FZ_HIGH_POS);
-    // fyawは動かさない
+    // 回収プランに基づいてYAWを回転させる
+    apply_fyaw();
     kfs_front_pump(1.0);
     kfs_front_valve(false);
   } else if (ref == R1KfsMechanismRef::FKFS_MIDDLE) {
     kfs_fx_pos_ref(KFS_FX_EXPAND_POS);
     kfs_fz_pos_ref(KFS_FZ_MIDDLE_POS);
-    // fyawは動かさない
+    // 回収プランに基づいてYAWを回転させる
+    apply_fyaw();
     kfs_front_pump(1.0);
     kfs_front_valve(false);
   } else if (ref == R1KfsMechanismRef::FKFS_LOW) {
     kfs_fx_pos_ref(KFS_FX_EXPAND_POS);
     kfs_fz_pos_ref(KFS_FZ_LOW_POS);
-    // fyawは動かさない
+    // 回収プランに基づいてYAWを回転させる
+    apply_fyaw();
     kfs_front_pump(1.0);
     kfs_front_valve(false);
   } else if (ref == R1KfsMechanismRef::FKFS_GROUND) {
@@ -1329,19 +1361,22 @@ void R1MainNode::r1_kfs_mechanism_ref_callback(const std_msgs::msg::Int32::Share
   } else if (ref == R1KfsMechanismRef::RKFS_HIGH) {
     kfs_rx_pos_ref(KFS_RX_EXPAND_POS);
     kfs_rz_pos_ref(KFS_RZ_HIGH_POS);
-    // ryawは動かさない
+    // 回収プランに基づいてYAWを回転させる
+    apply_ryaw();
     kfs_rear_pump(1.0);
     kfs_rear_valve(false);
   } else if (ref == R1KfsMechanismRef::RKFS_MIDDLE) {
     kfs_rx_pos_ref(KFS_RX_EXPAND_POS);
     kfs_rz_pos_ref(KFS_RZ_MIDDLE_POS);
-    // ryawは動かさない
+    // 回収プランに基づいてYAWを回転させる
+    apply_ryaw();
     kfs_rear_pump(1.0);
     kfs_rear_valve(false);
   } else if (ref == R1KfsMechanismRef::RKFS_LOW) {
     kfs_rx_pos_ref(KFS_RX_EXPAND_POS);
     kfs_rz_pos_ref(KFS_RZ_LOW_POS);
-    // ryawは動かさない
+    // 回収プランに基づいてYAWを回転させる
+    apply_ryaw();
     kfs_rear_pump(1.0);
     kfs_rear_valve(false);
   } else if (ref == R1KfsMechanismRef::RKFS_GROUND) {
