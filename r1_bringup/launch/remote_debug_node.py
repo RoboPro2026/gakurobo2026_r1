@@ -14,13 +14,12 @@ rosbridge 経由で MSI Claw から各種デバッグ機能を制御する。
     /rosout (rcl_interfaces/Log)         : ROS ログ集約トピック。
   Publish:
     /r1_rosout_bridge (rcl_interfaces/Log): 転送先。rosbridge 経由で MSI Claw から購読する。
-                                            200ms ごとにバッファをまとめて転送（負荷軽減）。
 """
 
 import os
 import signal
 import subprocess
-from typing import List, Optional
+from typing import Optional
 
 import rclpy
 from rclpy.node import Node
@@ -36,9 +35,6 @@ _WORKSPACE_DIR = os.path.expanduser("~/ros2_ws")
 # 名前のどこかに sabacan/from_can_bus/to_can_bus を含む topic を除外する。
 _CAN_TOPIC_REGEX = r'.*(sabacan|from_can_bus|to_can_bus).*'
 
-# rosout バッファのフラッシュ間隔。
-# rosbag2_recorder の subscription 開始ログのような短時間バーストを落としにくくする。
-_ROSOUT_FLUSH_INTERVAL = 0.05  # [s]
 _ROSOUT_QOS_DEPTH = 1000
 
 # ros2 bag は終了時に metadata.yaml を書き出すため、停止後に少し待つ。
@@ -51,7 +47,6 @@ class RemoteDebugNode(Node):
 
         self._record_proc: Optional[subprocess.Popen] = None
         self._enable_publish_rosout: bool = False
-        self._rosout_buffer: List[RosoutLog] = []
 
         # ----- rosbag recording -----
         self.create_subscription(String, "/record_start", self._on_record_start, 10)
@@ -67,7 +62,6 @@ class RemoteDebugNode(Node):
         self.create_subscription(
             RosoutLog, "/rosout", self._on_rosout, QoSProfile(depth=_ROSOUT_QOS_DEPTH)
         )
-        self.create_timer(_ROSOUT_FLUSH_INTERVAL, self._flush_rosout_buffer)
 
         self.get_logger().info("remote_debug_node started")
 
@@ -137,14 +131,7 @@ class RemoteDebugNode(Node):
 
     def _on_rosout(self, msg: RosoutLog) -> None:
         if self._enable_publish_rosout:
-            self._rosout_buffer.append(msg)
-
-    def _flush_rosout_buffer(self) -> None:
-        if not self._rosout_buffer:
-            return
-        for msg in self._rosout_buffer:
             self._rosout_bridge_pub.publish(msg)
-        self._rosout_buffer.clear()
 
     # ------------------------------------------------------------------
     # lifecycle
