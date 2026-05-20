@@ -218,6 +218,7 @@ def generate_launch_description():
             {
                 "autostart": True,
                 "node_names": ["map_server", "amcl"],
+                "bond_timeout": 2.0,
             }
         ],
     )
