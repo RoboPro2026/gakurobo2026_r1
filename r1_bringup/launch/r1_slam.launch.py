@@ -218,6 +218,8 @@ def generate_launch_description():
             {
                 "autostart": True,
                 "node_names": ["map_server", "amcl"],
+                # SIGINTで全ノードに同時シグナルが届くと管理ノードが先に落ちてサービスコールが詰まるため、
+                # ボンド切れの検知を早めてシャットダウン遅延を抑える（デフォルト: 4.0）
                 "bond_timeout": 2.0,
             }
         ],
