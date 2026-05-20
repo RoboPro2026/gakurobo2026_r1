@@ -30,11 +30,17 @@ from std_msgs.msg import Bool, Empty, String
 
 _WORKSPACE_DIR = os.path.expanduser("~/ros2_ws")
 
-# record.bash と同じ CAN 系 topic 除外 regex
-_CAN_TOPIC_REGEX = r'(^|/)(sabacan_[^/]*|(from|to)_can_bus[^/]*)$'
+# record.bash と同じ CAN 系 topic 除外 regex。
+# ros2 bag の --exclude は topic 名全体に対して評価されるため、
+# "/sabacan_robomas_ref8/motor2" のような子 topic も含めて、
+# 名前のどこかに sabacan/from_can_bus/to_can_bus を含む topic を除外する。
+_CAN_TOPIC_REGEX = r'.*(sabacan|from_can_bus|to_can_bus).*'
 
 # rosout バッファのフラッシュ間隔
 _ROSOUT_FLUSH_INTERVAL = 0.2  # [s]
+
+# ros2 bag は終了時に metadata.yaml を書き出すため、停止後に少し待つ。
+_RECORD_STOP_TIMEOUT = 5.0  # [s]
 
 
 class RemoteDebugNode(Node):
@@ -82,7 +88,11 @@ class RemoteDebugNode(Node):
         if bag_name:
             cmd += ["-o", bag_name]
 
-        self._record_proc = subprocess.Popen(cmd, cwd=_WORKSPACE_DIR)
+        # ros2 CLI とその子プロセスをまとめて停止できるように、
+        # 録画プロセスは専用の process group で起動する。
+        self._record_proc = subprocess.Popen(
+            cmd, cwd=_WORKSPACE_DIR, start_new_session=True
+        )
         self.get_logger().info(
             f'Recording started (bag: "{bag_name if bag_name else "auto"}")'
         )
@@ -96,13 +106,20 @@ class RemoteDebugNode(Node):
     def _stop_recording(self) -> None:
         if not self._is_recording():
             return
-        # SIGINT で ros2 bag record を正常終了させる
-        self._record_proc.send_signal(signal.SIGINT)
+        proc = self._record_proc
+        if proc is None:
+            return
+
+        # SIGINT で ros2 bag record を正常終了させる。process group 全体へ送ることで、
+        # ros2 CLI 配下の recorder まで Ctrl+C 相当の停止要求を届ける。
+        os.killpg(proc.pid, signal.SIGINT)
         try:
-            self._record_proc.wait(timeout=5.0)
+            return_code = proc.wait(timeout=_RECORD_STOP_TIMEOUT)
+            self.get_logger().info(f"Recording process exited: {return_code}")
         except subprocess.TimeoutExpired:
-            self._record_proc.kill()
-            self._record_proc.wait()
+            self.get_logger().error("Recording process did not stop, killing it")
+            os.killpg(proc.pid, signal.SIGKILL)
+            proc.wait()
         self._record_proc = None
         self.get_logger().info("Recording stopped")
 

@@ -29,7 +29,7 @@ MSI Claw から rosbridge 経由でロボットの状態を遠隔デバッグす
 ## 録画の仕様
 
 - `ros2 bag record -a --exclude <CAN_TOPIC_REGEX>` を実行する
-- CAN 系トピック（`sabacan_*`、`from_can_bus*`、`to_can_bus*`）は除外される
+- CAN 系トピック（名前に `sabacan`、`from_can_bus`、`to_can_bus` を含むもの）は除外される
 - 作業ディレクトリは `~/ros2_ws`
 - バッグ名を省略した場合は `ros2 bag` が自動生成する名前を使用する
 

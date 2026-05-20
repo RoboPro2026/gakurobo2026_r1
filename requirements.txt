@@ -4,6 +4,13 @@ numpy==2.2.6
 opencv-contrib-python
 PyYAML
 
+# rosbridge関連
+roslibpy
+tornado
+netifaces
+pymongo
+cbor2
+
 # ROS 2 Humble build-time Python dependencies for colcon in .venv
 catkin_pkg
 empy<4

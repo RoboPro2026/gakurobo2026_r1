@@ -395,7 +395,7 @@ git submodule update --init --recursive
 ### apt
 
 ```bash
-sudo apt install -y python3-rosdep2 ros-humble-magic-enum ros-humble-xacro ros-humble-slam-toolbox ros-humble-navigation2 ros-humble-nav2-bringup ros-humble-laser-filters ros-humble-rosbridge-server
+sudo apt install -y python3-rosdep2 ros-humble-magic-enum ros-humble-xacro ros-humble-slam-toolbox ros-humble-navigation2 ros-humble-nav2-bringup ros-humble-laser-filters ros-humble-rosbridge-server python3-tornado python3-netifaces
 sudo apt install -y libeigen3-dev
 sudo apt install -y pybind11-dev
 ```
