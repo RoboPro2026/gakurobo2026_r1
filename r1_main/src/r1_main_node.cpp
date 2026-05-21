@@ -1409,7 +1409,8 @@ void R1MainNode::r1_retry_collect_callback(const std_msgs::msg::Int32::SharedPtr
   // KFS回収機構を回収初期位置に移動
   // 初期化動作を行うときは、ポンプを止めると既に保持しているKFSを落としてしまう。
   // そのため引数をtrueにすることで、ポンプは動かしたままにする。
-  kfs_collect_start_act(true);
+  // またリトライのときはrollは回転しないので、push_valveは操作しない
+  kfs_collect_start_act(true, false);
 }
 
 void R1MainNode::r1_collect_3rd_kfs_callback(const std_msgs::msg::Int32::SharedPtr msg)
@@ -1417,9 +1418,9 @@ void R1MainNode::r1_collect_3rd_kfs_callback(const std_msgs::msg::Int32::SharedP
   r1_collect_3rd_kfs_ = msg->data;
   RCLCPP_INFO(this->get_logger(), "received /r1_collect_3rd_kfs = %d", r1_collect_3rd_kfs_);
   // とりあえず、KFS回収機構を回収初期位置に移動
-  // 初期化動作を行うときは、ポンプを止めると既に保持しているKFSを落としてしまう。
-  // そのため引数をtrueにすることで、ポンプは動かしたままにする。
-  kfs_collect_start_act(true);
+  // ポンプは一旦止める
+  // rollは回転しないので、push_valveは操作しない
+  kfs_collect_start_act(false, false);
   // TODO: 今後3つ目回収に必要な処理をかくこと
 }
 
@@ -2180,7 +2181,7 @@ void R1MainNode::kfs_robot_start_act(void)
   kfs_ryaw_pos_ref(KFS_RYAW_START_ANGLE);
 }
 
-void R1MainNode::kfs_collect_start_act(bool enable_pump)
+void R1MainNode::kfs_collect_start_act(bool enable_pump, bool enable_push_valve)
 {
   auto ROLL_DELAY = 300ms;
   auto PUSH_VALVE_DELAY = 1000ms;
@@ -2208,13 +2209,12 @@ void R1MainNode::kfs_collect_start_act(bool enable_pump)
     }
   });
 
-  kfs_collect_start_act_push_valve_timer_ =
-    this->create_wall_timer(ROLL_DELAY + PUSH_VALVE_DELAY, [this, enable_pump]() {
-      // 3. hand_push_valveをoffにし、やり回収機構を引っ込める
-      spear_hand_push_valve(false);
-      // 4. KFS回収用アクチュエータを回収位置位置に移動
-      kfs_fx_pos_ref(KFS_FX_START_POS);
-      kfs_rx_pos_ref(KFS_RX_START_POS);
+  kfs_collect_start_act_push_valve_timer_ = this->create_wall_timer(
+    ROLL_DELAY + PUSH_VALVE_DELAY, [this, enable_pump, enable_push_valve]() {
+      // KFS回収用アクチュエータを回収位置位置に移動
+      // STORAGE_POSとSTART_POSのどっちにすればいいかよくわからないので、適当にSTART_POSにしている
+      kfs_fx_pos_ref(KFS_FX_STORAGE_POS);
+      kfs_rx_pos_ref(KFS_RX_STORAGE_POS);
       kfs_fz_pos_ref(KFS_FZ_STORAGE_POS);
       kfs_rz_pos_ref(KFS_RZ_STORAGE_POS);
       bool is_inner =
@@ -2243,6 +2243,10 @@ void R1MainNode::kfs_collect_start_act(bool enable_pump)
       } else {
         kfs_front_pump(0.0);
         kfs_rear_pump(0.0);
+      }
+      if (enable_push_valve) {
+        // hand_push_valveをoffにし、やり回収機構を引っ込める
+        spear_hand_push_valve(false);
       }
       if (kfs_collect_start_act_push_valve_timer_) {
         kfs_collect_start_act_push_valve_timer_->cancel();
