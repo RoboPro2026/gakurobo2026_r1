@@ -3104,6 +3104,8 @@ void R1MainNode::manual_mode7_spear_attack_task(int n, int m)
     kfs_rx_pos_ref(KFS_RX_NORMAL_POS);
     kfs_rz_pos_ref(KFS_RZ_NORMAL_POS);
     kfs_ryaw_pos_ref(KFS_RYAW_SIDE_ANGLE);
+    // 念の為push_valveはfalseにしておく
+    spear_hand_push_valve(false);
     if (m == 1) {
       // 下段を狙う
       spear_y_pos_ref(SPEAR_Y_LOW_ATTACK_POS);
@@ -3130,7 +3132,7 @@ void R1MainNode::manual_mode7_spear_attack_task(int n, int m)
       spear_roll2_pos_ref(SPEAR_ROLL2_HIGH_ATTACK_ANGLE);
     }
     if (n == 2 || n == 3) {
-      spear_hand_push_valve(true);
+      // spear_hand_push_valve(true);
     }
     step++;
   } else if (step == 3) {

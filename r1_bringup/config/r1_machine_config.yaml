@@ -243,27 +243,27 @@ r1_main_node:
     spear_y_make_spear_pos: 0.44
     spear_y_low_attack_pos: 0.65
     spear_y_middle_attack_pos: 0.65
-    spear_y_high_attack_pos: 0.74
+    spear_y_high_attack_pos: 0.76
     spear_y_throw_away_pos: 0.05
     spear_roll1_normal_angle: 0.0
     spear_roll1_vertical_angle: 0.0
     spear_roll1_horizontal_angle: 1.5707963267948966
     spear_roll1_inv_horizontal_angle: -1.5707963267948966
     red_spear_roll1_low_attack_angle: -1.5707963267948966
-    red_spear_roll1_middle_attack_angle: -1.0
+    red_spear_roll1_middle_attack_angle: -1.2
     red_spear_roll1_high_attack_angle: -0.8
     blue_spear_roll1_low_attack_angle: 1.5707963267948966
-    blue_spear_roll1_middle_attack_angle: 1.0
+    blue_spear_roll1_middle_attack_angle: 1.2
     blue_spear_roll1_high_attack_angle: 0.8
     spear_roll2_normal_angle: 0.0
     spear_roll2_vertical_angle: 0.0
     spear_roll2_horizontal_angle: 1.5707963267948966
     spear_roll2_inv_horizontal_angle: -1.5707963267948966
     red_spear_roll2_low_attack_angle: -1.5707963267948966
-    red_spear_roll2_middle_attack_angle: -1.0
+    red_spear_roll2_middle_attack_angle: -1.2
     red_spear_roll2_high_attack_angle: -0.8
     blue_spear_roll2_low_attack_angle: 1.5707963267948966
-    blue_spear_roll2_middle_attack_angle: 1.0
+    blue_spear_roll2_middle_attack_angle: 1.2
     blue_spear_roll2_high_attack_angle: 0.8
     # ========== KFS回収の移動関連 ==========
     # KFSが置かれている場所
