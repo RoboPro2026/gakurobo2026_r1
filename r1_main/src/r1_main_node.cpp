@@ -2624,6 +2624,7 @@ void R1MainNode::manual_mode4_fkfs(void)
   int & fz_step = manual_mode4_fz_step_;
   int & fyaw_step = manual_mode4_fyaw_step_;
   int & front_pump_step = manual_mode4_front_pump_step_;
+  int & l2_r2_trigger_step = manual_mode4_l2_r2_trigger_step_;
 
   if (ps4_->is_pushed_up()) {
     // 1段上のkfs_fz位置へ移動
@@ -2783,6 +2784,22 @@ void R1MainNode::manual_mode4_fkfs(void)
   if (ps4_->is_pushed_r2()) {
     // manual_task内で、速度トリガーとして使用
   }
+
+  if (ps4_->is_pushing_l2() && ps4_->is_pushing_r2()) {
+    if (l2_r2_trigger_step == DEFAULT_STEP) {
+      // 回収初期値に戻す
+      kfs_fx_pos_ref(KFS_FX_START_POS);
+      kfs_fz_pos_ref(KFS_FZ_START_POS);
+      kfs_fyaw_pos_ref(KFS_FYAW_START_ANGLE);
+      kfs_rx_pos_ref(KFS_RX_START_POS);
+      kfs_rz_pos_ref(KFS_RZ_START_POS);
+      kfs_ryaw_pos_ref(KFS_RYAW_START_ANGLE);
+      // 真空ポンプ関連の指令値は、操縦ミスでKFSを落とすのを防止するため、操作しない。
+      l2_r2_trigger_step = 2;
+    }
+  } else {
+    l2_r2_trigger_step = DEFAULT_STEP;
+  }
 }
 
 void R1MainNode::manual_mode5_rkfs(void)
@@ -2791,6 +2808,7 @@ void R1MainNode::manual_mode5_rkfs(void)
   int & rz_step = manual_mode5_rz_step_;
   int & ryaw_step = manual_mode5_ryaw_step_;
   int & rear_pump_step = manual_mode5_rear_pump_step_;
+  int & l2_r2_trigger_step = manual_mode5_l2_r2_trigger_step_;
 
   if (ps4_->is_pushed_up()) {
     // 1段上のkfs_rz位置へ移動
@@ -2950,6 +2968,22 @@ void R1MainNode::manual_mode5_rkfs(void)
 
   if (ps4_->is_pushed_r2()) {
     // manual_task内で、速度トリガーとして使用
+  }
+
+  if (ps4_->is_pushing_l2() && ps4_->is_pushing_r2()) {
+    if (l2_r2_trigger_step == DEFAULT_STEP) {
+      // 回収初期値に戻す
+      kfs_fx_pos_ref(KFS_FX_START_POS);
+      kfs_fz_pos_ref(KFS_FZ_START_POS);
+      kfs_fyaw_pos_ref(KFS_FYAW_START_ANGLE);
+      kfs_rx_pos_ref(KFS_RX_START_POS);
+      kfs_rz_pos_ref(KFS_RZ_START_POS);
+      kfs_ryaw_pos_ref(KFS_RYAW_START_ANGLE);
+      // 真空ポンプ関連の指令値は、操縦ミスでKFSを落とすのを防止するため、操作しない。
+      l2_r2_trigger_step = 2;
+    }
+  } else {
+    l2_r2_trigger_step = DEFAULT_STEP;
   }
 }
 
@@ -3160,6 +3194,7 @@ void R1MainNode::manual_mode7_spear_attack(void)
 {
   auto & hand_valve_step = manual_mode7_hand_valve_step_;
   auto & push_valve_step = manual_mode7_push_valve_step_;
+  int & l2_r2_trigger_step = manual_mode7_l2_r2_trigger_step_;
   if (ps4_->is_pushed_up()) {
     spear_y_pos_ref(spear_y_position_ref_ + 0.01);
   }
@@ -3224,6 +3259,22 @@ void R1MainNode::manual_mode7_spear_attack(void)
   }
 
   if (ps4_->is_pushed_r2()) {
+  }
+
+  if (ps4_->is_pushing_l2() && ps4_->is_pushing_r2()) {
+    if (l2_r2_trigger_step == DEFAULT_STEP) {
+      // 回収初期値に戻す
+      kfs_fx_pos_ref(KFS_FX_START_POS);
+      kfs_fz_pos_ref(KFS_FZ_START_POS);
+      kfs_fyaw_pos_ref(KFS_FYAW_START_ANGLE);
+      kfs_rx_pos_ref(KFS_RX_START_POS);
+      kfs_rz_pos_ref(KFS_RZ_START_POS);
+      kfs_ryaw_pos_ref(KFS_RYAW_START_ANGLE);
+      // 真空ポンプ関連の指令値は、操縦ミスでKFSを落とすのを防止するため、操作しない。
+      l2_r2_trigger_step = 2;
+    }
+  } else {
+    l2_r2_trigger_step = DEFAULT_STEP;
   }
 }
 
@@ -3975,14 +4026,17 @@ void R1MainNode::reset_step(void)
   manual_mode4_fz_step_ = DEFAULT_STEP;
   manual_mode4_fyaw_step_ = DEFAULT_STEP;
   manual_mode4_front_pump_step_ = DEFAULT_STEP;
+  manual_mode4_l2_r2_trigger_step_ = DEFAULT_STEP;
   manual_mode5_rx_step_ = DEFAULT_STEP;
   manual_mode5_rz_step_ = DEFAULT_STEP;
   manual_mode5_ryaw_step_ = DEFAULT_STEP;
   manual_mode5_rear_pump_step_ = DEFAULT_STEP;
+  manual_mode5_l2_r2_trigger_step_ = DEFAULT_STEP;
   manual_mode6_aruco_marker_step_ = DEFAULT_STEP;
   manual_mode6_r2_lift_step_ = DEFAULT_STEP;
   manual_mode7_spear_attack_task_step_ = DEFAULT_STEP;
   manual_mode7_spear_throw_away_task_step_ = DEFAULT_STEP;
+  manual_mode7_l2_r2_trigger_step_ = DEFAULT_STEP;
   manual_mode7_hand_valve_step_ = DEFAULT_STEP;
   manual_mode7_push_valve_step_ = DEFAULT_STEP;
   chassis_rotate90 = false;
