@@ -240,7 +240,7 @@ r1_main_node:
     spear_y_normal_pos: 0.05
     spear_y_collect1_pos: 0.07
     spear_y_collect2_pos: 0.17
-    spear_y_make_spear_pos: 0.44
+    spear_y_make_spear_pos: 0.36
     spear_y_low_attack_pos: 0.65
     spear_y_middle_attack_pos: 0.65
     spear_y_high_attack_pos: 0.76
