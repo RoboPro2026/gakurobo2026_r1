@@ -718,12 +718,12 @@ R1MainNode::R1MainNode() : Node("r1_main_node")
   declare_and_get_parameter("spear_roll2_red_low_attack_angle", SPEAR_ROLL2_RED_LOW_ATTACK_ANGLE);
   declare_and_get_parameter(
     "spear_roll2_red_middle_attack_angle", SPEAR_ROLL2_RED_MIDDLE_ATTACK_ANGLE);
-  declare_and_get_parameter("spear_roll2_red_high_ATTACK_ANGLE", SPEAR_ROLL2_RED_HIGH_ATTACK_ANGLE);
+  declare_and_get_parameter("spear_roll2_red_high_attack_angle", SPEAR_ROLL2_RED_HIGH_ATTACK_ANGLE);
   declare_and_get_parameter("spear_roll2_blue_low_attack_angle", SPEAR_ROLL2_BLUE_LOW_ATTACK_ANGLE);
   declare_and_get_parameter(
     "spear_roll2_blue_middle_attack_angle", SPEAR_ROLL2_BLUE_MIDDLE_ATTACK_ANGLE);
   declare_and_get_parameter(
-    "spear_roll2_blue_high_ATTACK_ANGLE", SPEAR_ROLL2_BLUE_HIGH_ATTACK_ANGLE);
+    "spear_roll2_blue_high_attack_angle", SPEAR_ROLL2_BLUE_HIGH_ATTACK_ANGLE);
 
   for (int i = 0; i < 12; i++) {
     const std::string idx = std::to_string(i + 1);
