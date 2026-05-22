@@ -249,22 +249,22 @@ r1_main_node:
     spear_roll1_vertical_angle: 0.0
     spear_roll1_horizontal_angle: 1.5707963267948966
     spear_roll1_inv_horizontal_angle: -1.5707963267948966
-    red_spear_roll1_low_attack_angle: -1.5707963267948966
-    red_spear_roll1_middle_attack_angle: -1.2
-    red_spear_roll1_high_attack_angle: -0.8
-    blue_spear_roll1_low_attack_angle: 1.5707963267948966
-    blue_spear_roll1_middle_attack_angle: 1.2
-    blue_spear_roll1_high_attack_angle: 0.8
+    spear_roll1_red_low_attack_angle: -1.5707963267948966
+    spear_roll1_red_middle_attack_angle: -1.2
+    spear_roll1_red_high_attack_angle: -0.8
+    spear_roll1_blue_low_attack_angle: 1.5707963267948966
+    spear_roll1_blue_middle_attack_angle: 1.2
+    spear_roll1_blue_high_attack_angle: 0.8
     spear_roll2_normal_angle: 0.0
     spear_roll2_vertical_angle: 0.0
     spear_roll2_horizontal_angle: 1.5707963267948966
     spear_roll2_inv_horizontal_angle: -1.5707963267948966
-    red_spear_roll2_low_attack_angle: -1.5707963267948966
-    red_spear_roll2_middle_attack_angle: -1.2
-    red_spear_roll2_high_attack_angle: -0.8
-    blue_spear_roll2_low_attack_angle: 1.5707963267948966
-    blue_spear_roll2_middle_attack_angle: 1.2
-    blue_spear_roll2_high_attack_angle: 0.8
+    spear_roll2_red_low_attack_angle: -1.5707963267948966
+    spear_roll2_red_middle_attack_angle: -1.2
+    spear_roll2_red_high_attack_angle: -0.8
+    spear_roll2_blue_low_attack_angle: 1.5707963267948966
+    spear_roll2_blue_middle_attack_angle: 1.2
+    spear_roll2_blue_high_attack_angle: 0.8
     # ========== KFS回収の移動関連 ==========
     # KFSが置かれている場所
     # KFS回収範囲の長方形サイズ [m]
@@ -290,7 +290,7 @@ r1_main_node:
     # その間は進行方向に進み続ける。
     move_distance_after_wall_detect: 0.35
     # 壁の検出範囲のサイズ [m]
-    wall_sensor_detect_height: 0.4
+    wall_sensor_detect_height: 0.5
     wall_sensor_detect_width: 0.6
     # 壁検出の遅延距離オフセット [m]
     # センサーが反応したときに展開すると回収機構がぶつかる方のセンサーに適用される

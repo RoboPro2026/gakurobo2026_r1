@@ -701,29 +701,29 @@ R1MainNode::R1MainNode() : Node("r1_main_node")
   declare_and_get_parameter("spear_roll1_vertical_angle", SPEAR_ROLL1_VERTICAL_ANGLE);
   declare_and_get_parameter("spear_roll1_horizontal_angle", SPEAR_ROLL1_HORIZONTAL_ANGLE);
   declare_and_get_parameter("spear_roll1_inv_horizontal_angle", SPEAR_ROLL1_INV_HORIZONTAL_ANGLE);
-  this->declare_parameter<double>("blue_spear_roll1_low_attack_angle", 0.0);
-  this->declare_parameter<double>("blue_spear_roll1_middle_attack_angle", 0.0);
-  this->declare_parameter<double>("blue_spear_roll1_high_attack_angle", 0.0);
-  this->declare_parameter<double>("red_spear_roll1_low_attack_angle", 0.0);
-  this->declare_parameter<double>("red_spear_roll1_middle_attack_angle", 0.0);
-  this->declare_parameter<double>("red_spear_roll1_high_attack_angle", 0.0);
-  this->get_parameter(zone_ + "_spear_roll1_low_attack_angle", SPEAR_ROLL1_LOW_ATTACK_ANGLE);
-  this->get_parameter(zone_ + "_spear_roll1_middle_attack_angle", SPEAR_ROLL1_MIDDLE_ATTACK_ANGLE);
-  this->get_parameter(zone_ + "_spear_roll1_high_attack_angle", SPEAR_ROLL1_HIGH_ATTACK_ANGLE);
+  declare_and_get_parameter("spear_roll1_red_low_attack_angle", SPEAR_ROLL1_RED_LOW_ATTACK_ANGLE);
+  declare_and_get_parameter(
+    "spear_roll1_red_middle_attack_angle", SPEAR_ROLL1_RED_MIDDLE_ATTACK_ANGLE);
+  declare_and_get_parameter("spear_roll1_red_high_attack_angle", SPEAR_ROLL1_RED_HIGH_ATTACK_ANGLE);
+  declare_and_get_parameter("spear_roll1_blue_low_attack_angle", SPEAR_ROLL1_BLUE_LOW_ATTACK_ANGLE);
+  declare_and_get_parameter(
+    "spear_roll1_blue_middle_attack_angle", SPEAR_ROLL1_BLUE_MIDDLE_ATTACK_ANGLE);
+  declare_and_get_parameter(
+    "spear_roll1_blue_high_attack_angle", SPEAR_ROLL1_BLUE_HIGH_ATTACK_ANGLE);
   // spear_roll2
   declare_and_get_parameter("spear_roll2_normal_angle", SPEAR_ROLL2_NORMAL_ANGLE);
   declare_and_get_parameter("spear_roll2_vertical_angle", SPEAR_ROLL2_VERTICAL_ANGLE);
   declare_and_get_parameter("spear_roll2_horizontal_angle", SPEAR_ROLL2_HORIZONTAL_ANGLE);
   declare_and_get_parameter("spear_roll2_inv_horizontal_angle", SPEAR_ROLL2_INV_HORIZONTAL_ANGLE);
-  this->declare_parameter<double>("blue_spear_roll2_low_attack_angle", 0.0);
-  this->declare_parameter<double>("blue_spear_roll2_middle_attack_angle", 0.0);
-  this->declare_parameter<double>("blue_spear_roll2_high_attack_angle", 0.0);
-  this->declare_parameter<double>("red_spear_roll2_low_attack_angle", 0.0);
-  this->declare_parameter<double>("red_spear_roll2_middle_attack_angle", 0.0);
-  this->declare_parameter<double>("red_spear_roll2_high_attack_angle", 0.0);
-  this->get_parameter(zone_ + "_spear_roll2_low_attack_angle", SPEAR_ROLL2_LOW_ATTACK_ANGLE);
-  this->get_parameter(zone_ + "_spear_roll2_middle_attack_angle", SPEAR_ROLL2_MIDDLE_ATTACK_ANGLE);
-  this->get_parameter(zone_ + "_spear_roll2_high_attack_angle", SPEAR_ROLL2_HIGH_ATTACK_ANGLE);
+  declare_and_get_parameter("spear_roll2_red_low_attack_angle", SPEAR_ROLL2_RED_LOW_ATTACK_ANGLE);
+  declare_and_get_parameter(
+    "spear_roll2_red_middle_attack_angle", SPEAR_ROLL2_RED_MIDDLE_ATTACK_ANGLE);
+  declare_and_get_parameter("spear_roll2_red_high_ATTACK_ANGLE", SPEAR_ROLL2_RED_HIGH_ATTACK_ANGLE);
+  declare_and_get_parameter("spear_roll2_blue_low_attack_angle", SPEAR_ROLL2_BLUE_LOW_ATTACK_ANGLE);
+  declare_and_get_parameter(
+    "spear_roll2_blue_middle_attack_angle", SPEAR_ROLL2_BLUE_MIDDLE_ATTACK_ANGLE);
+  declare_and_get_parameter(
+    "spear_roll2_blue_high_ATTACK_ANGLE", SPEAR_ROLL2_BLUE_HIGH_ATTACK_ANGLE);
 
   for (int i = 0; i < 12; i++) {
     const std::string idx = std::to_string(i + 1);
@@ -3089,15 +3089,19 @@ void R1MainNode::manual_mode6_r2_lift(void)
  * @param n 何個目の機構を動かすか。
  * @param m どの高さを狙うか。m==1で下段、m==2で中段、m==3で上段を狙う
  */
-void R1MainNode::manual_mode7_spear_attack_task(int n, int m)
+void R1MainNode::manual_mode7_spear_attack_task(int n, int m, bool _reverse_trigger)
 {
   // 千田機構だったときの名残で引数にnがあるが、現在は使用していない
   (void)n;
+
+  static bool reverse_trigger = false;
 
   int & step = manual_mode7_spear_attack_task_step_;
   // RCLCPP_INFO(this->get_logger(), "manual_mode7_spear_attack_task step: %d", step);
   r1_log_info("mode7 やり攻撃 step%d", step);
   if (step == 1) {
+    // reverse_triggerを更新
+    reverse_trigger = _reverse_trigger;
     kfs_fx_pos_ref(KFS_FX_NORMAL_POS);
     kfs_fz_pos_ref(KFS_FZ_NORMAL_POS);
     kfs_fyaw_pos_ref(KFS_FYAW_SIDE_ANGLE);
@@ -3118,18 +3122,46 @@ void R1MainNode::manual_mode7_spear_attack_task(int n, int m)
     }
     step++;
   } else if (step == 2) {
+    // reverse_triggerがfalseのときのみもう一度更新
+    // こうすることでstep1とstep2のどちらかのみでも、reverse_triggerの値を更新できる
+    if (!reverse_trigger) {
+      reverse_trigger = _reverse_trigger;
+    }
+    bool is_red = (zone_ == "red");
+    // reverse_triggerがtrueのときは、is_redを反転させる
+    if (reverse_trigger) {
+      is_red = !is_red;
+      RCLCPP_INFO(
+        this->get_logger(), "spear attack task: reverse_trigger is true, is_red is reversed to %s",
+        is_red ? "true" : "false");
+    }
     if (m == 1) {
       // 下段を狙う
-      spear_roll1_pos_ref(SPEAR_ROLL1_LOW_ATTACK_ANGLE);
-      spear_roll2_pos_ref(SPEAR_ROLL2_LOW_ATTACK_ANGLE);
+      if (is_red) {
+        spear_roll1_pos_ref(SPEAR_ROLL1_RED_LOW_ATTACK_ANGLE);
+        spear_roll2_pos_ref(SPEAR_ROLL2_RED_LOW_ATTACK_ANGLE);
+      } else {
+        spear_roll1_pos_ref(SPEAR_ROLL1_BLUE_LOW_ATTACK_ANGLE);
+        spear_roll2_pos_ref(SPEAR_ROLL2_BLUE_LOW_ATTACK_ANGLE);
+      }
     } else if (m == 2) {
       // 中段を狙う
-      spear_roll1_pos_ref(SPEAR_ROLL1_MIDDLE_ATTACK_ANGLE);
-      spear_roll2_pos_ref(SPEAR_ROLL2_MIDDLE_ATTACK_ANGLE);
+      if (is_red) {
+        spear_roll1_pos_ref(SPEAR_ROLL1_RED_MIDDLE_ATTACK_ANGLE);
+        spear_roll2_pos_ref(SPEAR_ROLL2_RED_MIDDLE_ATTACK_ANGLE);
+      } else {
+        spear_roll1_pos_ref(SPEAR_ROLL1_BLUE_MIDDLE_ATTACK_ANGLE);
+        spear_roll2_pos_ref(SPEAR_ROLL2_BLUE_MIDDLE_ATTACK_ANGLE);
+      }
     } else if (m == 3) {
       // 上段を狙う
-      spear_roll1_pos_ref(SPEAR_ROLL1_HIGH_ATTACK_ANGLE);
-      spear_roll2_pos_ref(SPEAR_ROLL2_HIGH_ATTACK_ANGLE);
+      if (is_red) {
+        spear_roll1_pos_ref(SPEAR_ROLL1_RED_HIGH_ATTACK_ANGLE);
+        spear_roll2_pos_ref(SPEAR_ROLL2_RED_HIGH_ATTACK_ANGLE);
+      } else {
+        spear_roll1_pos_ref(SPEAR_ROLL1_BLUE_HIGH_ATTACK_ANGLE);
+        spear_roll2_pos_ref(SPEAR_ROLL2_BLUE_HIGH_ATTACK_ANGLE);
+      }
     }
     if (n == 2 || n == 3) {
       // spear_hand_push_valve(true);
@@ -3219,14 +3251,16 @@ void R1MainNode::manual_mode7_spear_attack(void)
     spear_roll2_pos_ref(spear_roll2_position_ref_ - 0.01);
   }
 
+  bool reverse_trigger = ps4_->is_pushing_l2();
+
   if (ps4_->is_pushed_triangle()) {
     // 番号は千田機構だったときの名残で2を指定。現在、この指定には意味はない。
-    manual_mode7_spear_attack_task(2, 2);
+    manual_mode7_spear_attack_task(2, 2, reverse_trigger);
   }
 
   if (ps4_->is_pushed_circle()) {
     // 番号は千田機構だったときの名残で2を指定。現在、この指定には意味はない。
-    manual_mode7_spear_attack_task(2, 1);
+    manual_mode7_spear_attack_task(2, 1, reverse_trigger);
   }
 
   if (ps4_->is_pushed_cross()) {
@@ -3236,7 +3270,7 @@ void R1MainNode::manual_mode7_spear_attack(void)
 
   if (ps4_->is_pushed_square()) {
     // 番号は千田機構だったときの名残で2を指定。現在、この指定には意味はない。
-    manual_mode7_spear_attack_task(2, 3);
+    manual_mode7_spear_attack_task(2, 3, reverse_trigger);
   }
 
   if (ps4_->is_pushed_l1()) {
@@ -3262,6 +3296,7 @@ void R1MainNode::manual_mode7_spear_attack(void)
   }
 
   if (ps4_->is_pushed_l2()) {
+    // spear_attack_task内で、reverse_triggerとして使用
   }
 
   if (ps4_->is_pushed_r2()) {

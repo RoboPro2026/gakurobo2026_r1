@@ -448,17 +448,23 @@ public:
   double SPEAR_ROLL1_VERTICAL_ANGLE = 0.0;
   double SPEAR_ROLL1_HORIZONTAL_ANGLE = 0.0;
   double SPEAR_ROLL1_INV_HORIZONTAL_ANGLE = 0.0;
-  double SPEAR_ROLL1_LOW_ATTACK_ANGLE = 0.0;
-  double SPEAR_ROLL1_MIDDLE_ATTACK_ANGLE = 0.0;
-  double SPEAR_ROLL1_HIGH_ATTACK_ANGLE = 0.0;
+  double SPEAR_ROLL1_RED_LOW_ATTACK_ANGLE = 0.0;
+  double SPEAR_ROLL1_RED_MIDDLE_ATTACK_ANGLE = 0.0;
+  double SPEAR_ROLL1_RED_HIGH_ATTACK_ANGLE = 0.0;
+  double SPEAR_ROLL1_BLUE_LOW_ATTACK_ANGLE = 0.0;
+  double SPEAR_ROLL1_BLUE_MIDDLE_ATTACK_ANGLE = 0.0;
+  double SPEAR_ROLL1_BLUE_HIGH_ATTACK_ANGLE = 0.0;
   // spear roll2
   double SPEAR_ROLL2_NORMAL_ANGLE = 0.0;
   double SPEAR_ROLL2_VERTICAL_ANGLE = 0.0;
   double SPEAR_ROLL2_HORIZONTAL_ANGLE = 0.0;
   double SPEAR_ROLL2_INV_HORIZONTAL_ANGLE = 0.0;
-  double SPEAR_ROLL2_LOW_ATTACK_ANGLE = 0.0;
-  double SPEAR_ROLL2_MIDDLE_ATTACK_ANGLE = 0.0;
-  double SPEAR_ROLL2_HIGH_ATTACK_ANGLE = 0.0;
+  double SPEAR_ROLL2_RED_LOW_ATTACK_ANGLE = 0.0;
+  double SPEAR_ROLL2_RED_MIDDLE_ATTACK_ANGLE = 0.0;
+  double SPEAR_ROLL2_RED_HIGH_ATTACK_ANGLE = 0.0;
+  double SPEAR_ROLL2_BLUE_LOW_ATTACK_ANGLE = 0.0;
+  double SPEAR_ROLL2_BLUE_MIDDLE_ATTACK_ANGLE = 0.0;
+  double SPEAR_ROLL2_BLUE_HIGH_ATTACK_ANGLE = 0.0;
 
   // 内回り/外回りでKFS回収の判定に使う長方形中心の座標 [x, y, yaw]
   // yaw=0 のときは map 座標系に平行で、yaw を与えるとその分だけ長方形が回転する
@@ -747,7 +753,7 @@ public:
   void manual_mode5_rkfs(void);
   void manual_mode6_r2_lift(void);
   void manual_mode7_spear_attack(void);
-  void manual_mode7_spear_attack_task(int n, int m);
+  void manual_mode7_spear_attack_task(int n, int m, bool _reverse_trigger);
   void manual_mode7_spear_throw_away_task(int n);
   void manual_mode8_auto_collect_kfs(void);
   void manual_mode9_auto_chassis(void);
