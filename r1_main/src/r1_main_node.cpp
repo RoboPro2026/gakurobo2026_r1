@@ -2194,11 +2194,14 @@ void R1MainNode::kfs_collect_start_act(bool enable_pump, bool enable_push_valve)
     kfs_collect_start_act_push_valve_timer_->cancel();
   }
 
-  // 1. spear_yを移動。push_valveをtrueにし、槍回収機構を押し出す。
+  // spear_yを移動。push_valveをtrueにし、槍回収機構を押し出す。
   spear_y_pos_ref(SPEAR_Y_MAKE_SPEAR_POS);
-  spear_hand_push_valve(true);
   // arucoマーカをもとに戻す
   publish_aruco_marker_id(0);
+  if (enable_push_valve) {
+    // hand_push_valveをtrueにし、やり回収機構を押し出す
+    spear_hand_push_valve(true);
+  }
 
   // 2. 少ししたら、rollを垂直にする
   kfs_collect_start_act_roll_timer_ = this->create_wall_timer(ROLL_DELAY, [this]() {
