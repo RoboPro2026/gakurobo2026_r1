@@ -2178,14 +2178,21 @@ void R1MainNode::spear_hand_push_valve(bool on)
   publish_gpio_pwm_output("spear_hand_push_valve", on ? 1.0 : 0.0);
 }
 
-void R1MainNode::kfs_robot_start_act(void)
+void R1MainNode::kfs_robot_start_act(bool is_start_zone)
 {
   kfs_fx_pos_ref(KFS_FX_START_POS);
   kfs_rx_pos_ref(KFS_RX_START_POS);
   kfs_fz_pos_ref(KFS_FZ_START_POS);
   kfs_rz_pos_ref(KFS_RZ_START_POS);
-  kfs_fyaw_pos_ref(KFS_FYAW_START_ANGLE);
-  kfs_ryaw_pos_ref(KFS_RYAW_START_ANGLE);
+  if (is_start_zone) {
+    // スタートゾーンのときは展開制限範囲内に収めるためにメカロックにぶつける
+    kfs_fyaw_move_front_mech_lock();
+    kfs_ryaw_move_front_mech_lock();
+  } else {
+    // スタートゾーンから出たら、yawは90度にする
+    kfs_fyaw_pos_ref(KFS_FYAW_START_ANGLE);
+    kfs_ryaw_pos_ref(KFS_RYAW_START_ANGLE);
+  }
 }
 
 void R1MainNode::kfs_collect_start_act(bool enable_pump, bool enable_push_valve)
@@ -2347,7 +2354,7 @@ void R1MainNode::manual_mode1_detect_origin(void)
 
   if (ps4_->is_pushed_l1()) {
     // spear1_detect_origin();
-    kfs_robot_start_act();
+    kfs_robot_start_act(true);
     spear_y_pos_ref(SPEAR_Y_COLLECT1_POS);
     spear_roll1_pos_ref(SPEAR_ROLL1_VERTICAL_ANGLE);
     spear_roll2_pos_ref(SPEAR_ROLL2_VERTICAL_ANGLE);

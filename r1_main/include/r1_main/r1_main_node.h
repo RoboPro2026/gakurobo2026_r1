@@ -706,7 +706,7 @@ public:
   void spear_hand_push_valve(bool on);
   // ========== 各動作の関数 ==========
 
-  void kfs_robot_start_act(void);
+  void kfs_robot_start_act(bool is_start_zone = false);
   rclcpp::TimerBase::SharedPtr kfs_collect_start_act_roll_timer_;
   rclcpp::TimerBase::SharedPtr kfs_collect_start_act_push_valve_timer_;
   void kfs_collect_start_act(bool enable_pump = false, bool enable_push_valve = true);
