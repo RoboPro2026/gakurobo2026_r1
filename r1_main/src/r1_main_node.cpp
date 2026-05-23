@@ -692,6 +692,7 @@ R1MainNode::R1MainNode() : Node("r1_main_node")
   declare_and_get_parameter("spear_y_collect1_pos", SPEAR_Y_COLLECT1_POS);
   declare_and_get_parameter("spear_y_collect2_pos", SPEAR_Y_COLLECT2_POS);
   declare_and_get_parameter("spear_y_make_spear_pos", SPEAR_Y_MAKE_SPEAR_POS);
+  declare_and_get_parameter("spear_y_collect_kfs_pos", SPEAR_Y_COLLECT_KFS_POS);
   declare_and_get_parameter("spear_y_low_attack_pos", SPEAR_Y_LOW_ATTACK_POS);
   declare_and_get_parameter("spear_y_middle_attack_pos", SPEAR_Y_MIDDLE_ATTACK_POS);
   declare_and_get_parameter("spear_y_high_attack_pos", SPEAR_Y_HIGH_ATTACK_POS);
@@ -2200,8 +2201,8 @@ void R1MainNode::kfs_collect_start_act(bool enable_pump, bool enable_push_valve)
     kfs_collect_start_act_push_valve_timer_->cancel();
   }
 
-  // spear_yを移動。push_valveをtrueにし、槍回収機構を押し出す。
-  spear_y_pos_ref(SPEAR_Y_MAKE_SPEAR_POS);
+  // spear_yを移動。push_valveをtrueにし、槍回収機構をKFS回収時用の高さに移動する
+  spear_y_pos_ref(SPEAR_Y_COLLECT_KFS_POS);
   // arucoマーカをもとに戻す
   publish_aruco_marker_id(0);
   if (enable_push_valve) {
@@ -2352,7 +2353,8 @@ void R1MainNode::manual_mode1_detect_origin(void)
     spear_roll2_pos_ref(SPEAR_ROLL2_VERTICAL_ANGLE);
     spear_hand1_valve(true);
     spear_hand2_valve(true);
-    spear_hand_push_valve(true);
+    // hand_push_valveはfalseにする。理由は展開制限に引っかかるから
+    spear_hand_push_valve(false);
   }
 
   if (ps4_->is_pushed_r1()) {
