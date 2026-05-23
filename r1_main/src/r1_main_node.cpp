@@ -1232,6 +1232,12 @@ void R1MainNode::r1_init_parameter_callback(const r1_msgs::msg::R1InitParameter:
        (r1_init_parameter_.enable_kfs_auto_chassis ? "true" : "false") + "\n";
   RCLCPP_INFO(this->get_logger(), "received /r1_init_parameter:\n%s", s.c_str());
   r1_log_info("Initialize received: zone=%s", r1_init_parameter_.zone.c_str());
+  if (r1_init_parameter_.zone != zone_) {
+    r1_log_error("ゾーンエラー");
+    r1_log_error(
+      "Received zone '%s' does not match expected zone '%s'", r1_init_parameter_.zone.c_str(),
+      zone_.c_str());
+  }
 }
 
 void R1MainNode::r1_collect_kfs_callback(const r1_msgs::msg::R1CollectKfs::SharedPtr msg)
@@ -3241,8 +3247,8 @@ void R1MainNode::manual_mode7_spear_attack(void)
   }
 
   if (ps4_->is_pushed_right()) {
-    spear_roll1_pos_ref(spear_roll1_position_ref_ + 0.01);
-    spear_roll2_pos_ref(spear_roll2_position_ref_ + 0.01);
+    spear_roll1_pos_ref(spear_roll1_position_ref_ + 0.05);
+    spear_roll2_pos_ref(spear_roll2_position_ref_ + 0.05);
   }
 
   if (ps4_->is_pushed_down()) {
@@ -3250,8 +3256,8 @@ void R1MainNode::manual_mode7_spear_attack(void)
   }
 
   if (ps4_->is_pushed_left()) {
-    spear_roll1_pos_ref(spear_roll1_position_ref_ - 0.01);
-    spear_roll2_pos_ref(spear_roll2_position_ref_ - 0.01);
+    spear_roll1_pos_ref(spear_roll1_position_ref_ - 0.05);
+    spear_roll2_pos_ref(spear_roll2_position_ref_ - 0.05);
   }
 
   bool reverse_trigger = ps4_->is_pushing_l2();

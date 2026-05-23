@@ -251,20 +251,20 @@ r1_main_node:
     spear_roll1_inv_horizontal_angle: -1.5707963267948966
     spear_roll1_red_low_attack_angle: -1.5707963267948966
     spear_roll1_red_middle_attack_angle: -1.2
-    spear_roll1_red_high_attack_angle: -0.8
+    spear_roll1_red_high_attack_angle: -0.67
     spear_roll1_blue_low_attack_angle: 1.5707963267948966
     spear_roll1_blue_middle_attack_angle: 1.2
-    spear_roll1_blue_high_attack_angle: 0.8
+    spear_roll1_blue_high_attack_angle: 0.67
     spear_roll2_normal_angle: 0.0
     spear_roll2_vertical_angle: 0.0
     spear_roll2_horizontal_angle: 1.5707963267948966
     spear_roll2_inv_horizontal_angle: -1.5707963267948966
     spear_roll2_red_low_attack_angle: -1.5707963267948966
     spear_roll2_red_middle_attack_angle: -1.2
-    spear_roll2_red_high_attack_angle: -0.8
+    spear_roll2_red_high_attack_angle: -0.67
     spear_roll2_blue_low_attack_angle: 1.5707963267948966
     spear_roll2_blue_middle_attack_angle: 1.2
-    spear_roll2_blue_high_attack_angle: 0.8
+    spear_roll2_blue_high_attack_angle: 0.67
     # ========== KFS回収の移動関連 ==========
     # KFSが置かれている場所
     # KFS回収範囲の長方形サイズ [m]
