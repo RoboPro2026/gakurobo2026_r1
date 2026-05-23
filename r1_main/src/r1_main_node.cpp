@@ -2186,8 +2186,8 @@ void R1MainNode::kfs_robot_start_act(bool is_start_zone)
   kfs_rz_pos_ref(KFS_RZ_START_POS);
   if (is_start_zone) {
     // スタートゾーンのときは展開制限範囲内に収めるためにメカロックにぶつける
-    kfs_fyaw_move_front_mech_lock();
-    kfs_ryaw_move_front_mech_lock();
+    kfs_fyaw_move_rear_mech_lock();
+    kfs_ryaw_move_rear_mech_lock();
   } else {
     // スタートゾーンから出たら、yawは90度にする
     kfs_fyaw_pos_ref(KFS_FYAW_START_ANGLE);
