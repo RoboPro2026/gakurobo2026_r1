@@ -2668,13 +2668,25 @@ void R1MainNode::manual_mode4_fkfs(void)
   }
 
   if (ps4_->is_pushed_right()) {
-    kfs_fx_pos_ref(KFS_FX_PUT_POS);
-    kfs_fz_pos_ref(KFS_FZ_PUT_POS);
-    kfs_fyaw_pos_ref(KFS_FYAW_SIDE_ANGLE);
-    kfs_rx_pos_ref(KFS_RX_NORMAL_POS);
-    kfs_rz_pos_ref(KFS_RZ_PUT_POS);
-    kfs_ryaw_pos_ref(KFS_RYAW_SIDE_ANGLE);
-    RCLCPP_INFO(this->get_logger(), "moved to front_kfs put position");
+    if (ps4_->is_pushing_l2()) {
+      // 地面に置かれたものを回収
+      kfs_fx_pos_ref(KFS_FX_GROUND_POS);
+      kfs_fz_pos_ref(KFS_FZ_GROUND_POS);
+      kfs_fyaw_pos_ref(KFS_FYAW_SIDE_ANGLE);
+      kfs_rx_pos_ref(KFS_RX_NORMAL_POS);
+      kfs_rz_pos_ref(KFS_RZ_PUT_POS);
+      kfs_ryaw_pos_ref(KFS_RYAW_SIDE_ANGLE);
+      RCLCPP_INFO(this->get_logger(), "moved to rear_kfs ground position");
+    } else {
+      // put動作
+      kfs_fx_pos_ref(KFS_FX_PUT_POS);
+      kfs_fz_pos_ref(KFS_FZ_PUT_POS);
+      kfs_fyaw_pos_ref(KFS_FYAW_SIDE_ANGLE);
+      kfs_rx_pos_ref(KFS_RX_NORMAL_POS);
+      kfs_rz_pos_ref(KFS_RZ_PUT_POS);
+      kfs_ryaw_pos_ref(KFS_RYAW_SIDE_ANGLE);
+      RCLCPP_INFO(this->get_logger(), "moved to front_kfs put position");
+    }
   }
 
   if (ps4_->is_pushed_down()) {
@@ -2852,13 +2864,25 @@ void R1MainNode::manual_mode5_rkfs(void)
   }
 
   if (ps4_->is_pushed_right()) {
-    RCLCPP_INFO(this->get_logger(), "moved to rear_kfs put position");
-    kfs_fx_pos_ref(KFS_FX_NORMAL_POS);
-    kfs_fz_pos_ref(KFS_FZ_PUT_POS);
-    kfs_fyaw_pos_ref(KFS_FYAW_SIDE_ANGLE);
-    kfs_rx_pos_ref(KFS_RX_PUT_POS);
-    kfs_rz_pos_ref(KFS_RZ_PUT_POS);
-    kfs_ryaw_pos_ref(KFS_RYAW_SIDE_ANGLE);
+    if (ps4_->is_pushing_l2()) {
+      // 地面に置かれたものを回収
+      kfs_fx_pos_ref(KFS_FX_NORMAL_POS);
+      kfs_fz_pos_ref(KFS_FZ_PUT_POS);
+      kfs_fyaw_pos_ref(KFS_FYAW_SIDE_ANGLE);
+      kfs_rx_pos_ref(KFS_RX_GROUND_POS);
+      kfs_rz_pos_ref(KFS_RZ_GROUND_POS);
+      kfs_ryaw_pos_ref(KFS_RYAW_SIDE_ANGLE);
+      RCLCPP_INFO(this->get_logger(), "moved to rear_kfs ground position");
+    } else {
+      // put動作
+      kfs_fx_pos_ref(KFS_FX_NORMAL_POS);
+      kfs_fz_pos_ref(KFS_FZ_PUT_POS);
+      kfs_fyaw_pos_ref(KFS_FYAW_SIDE_ANGLE);
+      kfs_rx_pos_ref(KFS_RX_PUT_POS);
+      kfs_rz_pos_ref(KFS_RZ_PUT_POS);
+      kfs_ryaw_pos_ref(KFS_RYAW_SIDE_ANGLE);
+      RCLCPP_INFO(this->get_logger(), "moved to rear_kfs put position");
+    }
   }
 
   if (ps4_->is_pushed_down()) {
