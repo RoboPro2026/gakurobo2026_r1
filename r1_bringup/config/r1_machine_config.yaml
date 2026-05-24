@@ -237,14 +237,14 @@ r1_main_node:
     r2_rlift_down_pos: 0.0
 
     # ========== やり ==========
-    spear_y_normal_pos: 0.05
-    spear_y_collect1_pos: 0.07
-    spear_y_collect2_pos: 0.17
+    spear_y_normal_pos: 0.11
+    spear_y_collect1_pos: 0.11
+    spear_y_collect2_pos: 0.16
     spear_y_make_spear_pos: 0.4
     spear_y_collect_kfs_pos: 0.5
     spear_y_low_attack_pos: 0.65
     spear_y_middle_attack_pos: 0.65
-    spear_y_high_attack_pos: 0.76
+    spear_y_high_attack_pos: 0.765
     spear_y_throw_away_pos: 0.05
     spear_roll1_normal_angle: 0.0
     spear_roll1_vertical_angle: 0.0
