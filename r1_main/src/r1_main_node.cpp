@@ -2536,6 +2536,7 @@ void R1MainNode::manual_mode3_make_spear_task(int n)
     step++;
   } else if (step == 2) {
     publish_aruco_marker_id(1);
+    r1_log_info("aruco_id 1");
     step++;
   } else if (step == 3) {
     if (manual_mode3_roll_timer_) {
