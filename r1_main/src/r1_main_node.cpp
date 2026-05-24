@@ -1392,13 +1392,14 @@ void R1MainNode::apply_r1_kfs_mechanism_ref(R1KfsMechanismRef ref)
     kfs_rear_valve(false);
   } else {
     // このときはエラー
-    RCLCPP_ERROR(this->get_logger(), "Unknown R1KfsMechanismRef value: %d", ref);
+    RCLCPP_ERROR(this->get_logger(), "Unknown R1KfsMechanismRef value: %d", static_cast<int>(ref));
     return;
   }
   // ログを出力
   auto enum_name = magic_enum::enum_name(ref);
   std::string s{enum_name};
-  RCLCPP_INFO(this->get_logger(), "Applied R1KfsMechanismRef = %d(%s)", ref, s.c_str());
+  RCLCPP_INFO(
+    this->get_logger(), "Applied R1KfsMechanismRef = %d(%s)", static_cast<int>(ref), s.c_str());
 }
 
 void R1MainNode::r1_kfs_mechanism_ref_callback(const std_msgs::msg::Int32::SharedPtr msg)
@@ -2592,21 +2593,47 @@ void R1MainNode::manual_mode3_spear(void)
   auto & push_valve_step = manual_mode3_push_valve_step_;
 
   if (ps4_->is_pushed_up()) {
-    spear_y_pos_ref(spear_y_position_ref_ + 0.002);
+    if (ps4_->is_pushing_l2()) {
+      // 微調整
+      spear_y_pos_ref(spear_y_position_ref_ + 0.002);
+    } else {
+      // 通常調整
+      spear_y_pos_ref(spear_y_position_ref_ + 0.01);
+    }
   }
 
   if (ps4_->is_pushed_right()) {
-    spear_roll1_pos_ref(spear_roll1_position_ref_ + 0.01);
-    spear_roll2_pos_ref(spear_roll2_position_ref_ + 0.01);
+    if (ps4_->is_pushing_l2()) {
+      // 微調整
+      spear_roll1_pos_ref(spear_roll1_position_ref_ + 0.01);
+      spear_roll2_pos_ref(spear_roll2_position_ref_ + 0.01);
+    } else {
+      // 通常調整
+      spear_roll1_pos_ref(spear_roll1_position_ref_ + 0.03);
+      spear_roll2_pos_ref(spear_roll2_position_ref_ + 0.03);
+    }
   }
 
   if (ps4_->is_pushed_down()) {
-    spear_y_pos_ref(spear_y_position_ref_ - 0.002);
+    if (ps4_->is_pushing_l2()) {
+      // 微調整
+      spear_y_pos_ref(spear_y_position_ref_ - 0.002);
+    } else {
+      // 通常調整
+      spear_y_pos_ref(spear_y_position_ref_ - 0.01);
+    }
   }
 
   if (ps4_->is_pushed_left()) {
-    spear_roll1_pos_ref(spear_roll1_position_ref_ - 0.01);
-    spear_roll2_pos_ref(spear_roll2_position_ref_ - 0.01);
+    if (ps4_->is_pushing_l2()) {
+      // 微調整
+      spear_roll1_pos_ref(spear_roll1_position_ref_ - 0.01);
+      spear_roll2_pos_ref(spear_roll2_position_ref_ - 0.01);
+    } else {
+      // 通常調整
+      spear_roll1_pos_ref(spear_roll1_position_ref_ - 0.03);
+      spear_roll2_pos_ref(spear_roll2_position_ref_ - 0.03);
+    }
   }
 
   if (ps4_->is_pushed_triangle()) {
