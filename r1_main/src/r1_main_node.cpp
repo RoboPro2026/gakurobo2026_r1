@@ -1266,22 +1266,8 @@ void R1MainNode::r1_collect_kfs_callback(const r1_msgs::msg::R1CollectKfs::Share
   r1_log_info("Collect KFS order received");
 }
 
-void R1MainNode::r1_kfs_mechanism_ref_callback(const std_msgs::msg::Int32::SharedPtr msg)
+void R1MainNode::apply_r1_kfs_mechanism_ref(R1KfsMechanismRef ref)
 {
-  r1_kfs_mechanism_ref_ = msg->data;
-  R1KfsMechanismRef ref = static_cast<R1KfsMechanismRef>(r1_kfs_mechanism_ref_);
-  auto enum_name = magic_enum::enum_name(ref);
-  if (enum_name.empty()) {
-    RCLCPP_ERROR(
-      this->get_logger(), "received /r1_kfs_mechanism_ref = %d (unknown enum value)",
-      r1_kfs_mechanism_ref_);
-    return;
-  }
-  std::string s{enum_name};
-  RCLCPP_INFO(
-    this->get_logger(), "received /r1_kfs_mechanism_ref = %d(%s)", r1_kfs_mechanism_ref_,
-    s.c_str());
-
   // 回収プランがアクティブな場合、step4と同様にzone/is_innerに基づいてYAWを回転させる
   const bool is_collect_active = kfs_auto_collect_plan_.status != KfsAutoCollectStatus::NONE;
   const bool is_inner = kfs_auto_collect_plan_.status == KfsAutoCollectStatus::INNER_ACTIVE;
@@ -1404,7 +1390,34 @@ void R1MainNode::r1_kfs_mechanism_ref_callback(const std_msgs::msg::Int32::Share
     kfs_ryaw_pos_ref(KFS_RYAW_START_ANGLE);
     kfs_rear_pump(1.0);
     kfs_rear_valve(false);
+  } else {
+    // このときはエラー
+    RCLCPP_ERROR(this->get_logger(), "Unknown R1KfsMechanismRef value: %d", ref);
+    return;
   }
+  // ログを出力
+  auto enum_name = magic_enum::enum_name(ref);
+  std::string s{enum_name};
+  RCLCPP_INFO(this->get_logger(), "Applied R1KfsMechanismRef = %d(%s)", ref, s.c_str());
+}
+
+void R1MainNode::r1_kfs_mechanism_ref_callback(const std_msgs::msg::Int32::SharedPtr msg)
+{
+  r1_kfs_mechanism_ref_ = msg->data;
+  R1KfsMechanismRef ref = static_cast<R1KfsMechanismRef>(r1_kfs_mechanism_ref_);
+  auto enum_name = magic_enum::enum_name(ref);
+  if (enum_name.empty()) {
+    RCLCPP_ERROR(
+      this->get_logger(), "received /r1_kfs_mechanism_ref = %d (unknown enum value)",
+      r1_kfs_mechanism_ref_);
+    return;
+  }
+  std::string s{enum_name};
+  RCLCPP_INFO(
+    this->get_logger(), "received /r1_kfs_mechanism_ref = %d(%s)", r1_kfs_mechanism_ref_,
+    s.c_str());
+
+  apply_r1_kfs_mechanism_ref(ref);
 }
 
 void R1MainNode::r1_retry_collect_callback(const std_msgs::msg::Int32::SharedPtr msg)
@@ -2650,33 +2663,34 @@ void R1MainNode::manual_mode4_fkfs(void)
   int & l2_r2_trigger_step = manual_mode4_l2_r2_trigger_step_;
 
   if (ps4_->is_pushed_up()) {
-    // 1段上のkfs_fz位置へ移動
-    fz_step++;
-    if (fz_step > 4) {
-      fz_step = 4;
-    }
-    RCLCPP_INFO(this->get_logger(), "fz_step: %d", fz_step);
-    if (fz_step == 1) {
-      kfs_fz_pos_ref(KFS_FZ_LOW_POS);
-    } else if (fz_step == 2) {
-      kfs_fz_pos_ref(KFS_FZ_MIDDLE_POS);
-    } else if (fz_step == 3) {
-      kfs_fz_pos_ref(KFS_FZ_HIGH_POS);
-    } else if (fz_step == 4) {
-      kfs_fz_pos_ref(KFS_FZ_PUT_POS);
+    if (ps4_->is_pushing_l2()) {
+      // 上段回収
+      R1KfsMechanismRef ref = R1KfsMechanismRef::FKFS_HIGH;
+      apply_r1_kfs_mechanism_ref(ref);
+    } else {
+      // 1段上のkfs_fz位置へ移動
+      fz_step++;
+      if (fz_step > 4) {
+        fz_step = 4;
+      }
+      RCLCPP_INFO(this->get_logger(), "fz_step: %d", fz_step);
+      if (fz_step == 1) {
+        kfs_fz_pos_ref(KFS_FZ_LOW_POS);
+      } else if (fz_step == 2) {
+        kfs_fz_pos_ref(KFS_FZ_MIDDLE_POS);
+      } else if (fz_step == 3) {
+        kfs_fz_pos_ref(KFS_FZ_HIGH_POS);
+      } else if (fz_step == 4) {
+        kfs_fz_pos_ref(KFS_FZ_PUT_POS);
+      }
     }
   }
 
   if (ps4_->is_pushed_right()) {
     if (ps4_->is_pushing_l2()) {
       // 地面に置かれたものを回収
-      kfs_fx_pos_ref(KFS_FX_GROUND_POS);
-      kfs_fz_pos_ref(KFS_FZ_GROUND_POS);
-      kfs_fyaw_pos_ref(KFS_FYAW_SIDE_ANGLE);
-      kfs_rx_pos_ref(KFS_RX_NORMAL_POS);
-      kfs_rz_pos_ref(KFS_RZ_PUT_POS);
-      kfs_ryaw_pos_ref(KFS_RYAW_SIDE_ANGLE);
-      RCLCPP_INFO(this->get_logger(), "moved to rear_kfs ground position");
+      R1KfsMechanismRef ref = R1KfsMechanismRef::FKFS_GROUND;
+      apply_r1_kfs_mechanism_ref(ref);
     } else {
       // put動作
       kfs_fx_pos_ref(KFS_FX_PUT_POS);
@@ -2690,115 +2704,135 @@ void R1MainNode::manual_mode4_fkfs(void)
   }
 
   if (ps4_->is_pushed_down()) {
-    // 1段下のkfs_fz位置へ移動
-    fz_step--;
-    if (fz_step < 1) {
-      fz_step = 1;
-    }
-    RCLCPP_INFO(this->get_logger(), "fz_step: %d", fz_step);
-    if (fz_step == 1) {
-      kfs_fz_pos_ref(KFS_FZ_LOW_POS);
-    } else if (fz_step == 2) {
-      kfs_fz_pos_ref(KFS_FZ_MIDDLE_POS);
-    } else if (fz_step == 3) {
-      kfs_fz_pos_ref(KFS_FZ_HIGH_POS);
+    if (ps4_->is_pushing_l2()) {
+      // 下段回収
+      R1KfsMechanismRef ref = R1KfsMechanismRef::FKFS_LOW;
+      apply_r1_kfs_mechanism_ref(ref);
+    } else {
+      // 1段下のkfs_fz位置へ移動
+      fz_step--;
+      if (fz_step < 1) {
+        fz_step = 1;
+      }
+      RCLCPP_INFO(this->get_logger(), "fz_step: %d", fz_step);
+      if (fz_step == 1) {
+        kfs_fz_pos_ref(KFS_FZ_LOW_POS);
+      } else if (fz_step == 2) {
+        kfs_fz_pos_ref(KFS_FZ_MIDDLE_POS);
+      } else if (fz_step == 3) {
+        kfs_fz_pos_ref(KFS_FZ_HIGH_POS);
+      }
     }
   }
 
   if (ps4_->is_pushed_left()) {
-    // front_pumpを動かす。止めるときは電磁弁も一緒に動く
-    if (front_pump_step == 1) {
-      kfs_front_pump(1.0);
-      kfs_front_valve(false);
-      front_pump_step = 2;
+    if (ps4_->is_pushing_l2()) {
+      // 中段回収
+      R1KfsMechanismRef ref = R1KfsMechanismRef::FKFS_MIDDLE;
+      apply_r1_kfs_mechanism_ref(ref);
     } else {
-      kfs_front_pump(0.0);
-      kfs_front_valve(true);
-      // setTimeout風で電磁弁をOFFにする。
-      if (manual_mode4_front_valve_timer_) {
-        manual_mode4_front_valve_timer_->cancel();
+      // front_pumpを動かす。止めるときは電磁弁も一緒に動く
+      if (front_pump_step == 1) {
+        kfs_front_pump(1.0);
+        kfs_front_valve(false);
+        front_pump_step = 2;
+      } else {
+        kfs_front_pump(0.0);
+        kfs_front_valve(true);
+        // setTimeout風で電磁弁をOFFにする。
+        if (manual_mode4_front_valve_timer_) {
+          manual_mode4_front_valve_timer_->cancel();
+        }
+        auto delay_time = manual_mode4_front_valve_timer_ =
+          this->create_wall_timer(std::chrono::duration<double>(KFS_VALVE_DELAY_TIME), [this]() {
+            kfs_front_valve(false);
+            if (manual_mode4_front_valve_timer_) {
+              manual_mode4_front_valve_timer_->cancel();
+            }
+          });
+        front_pump_step = 1;
       }
-      auto delay_time = manual_mode4_front_valve_timer_ =
-        this->create_wall_timer(std::chrono::duration<double>(KFS_VALVE_DELAY_TIME), [this]() {
-          kfs_front_valve(false);
-          if (manual_mode4_front_valve_timer_) {
-            manual_mode4_front_valve_timer_->cancel();
-          }
-        });
-      front_pump_step = 1;
     }
   }
 
-  if (ps4_->is_pushing_l2() && ps4_->is_pushed_triangle()) {
-    kfs_fyaw_pos_ref(kfs_fyaw_position_ref_ + 0.05);
-  } else if (ps4_->is_pushed_triangle()) {
-    fyaw_step++;
-    if (fyaw_step > 3) {
-      fyaw_step = 3;
-    }
-    RCLCPP_INFO(this->get_logger(), "fyaw_step: %d", fyaw_step);
-    if (fyaw_step == 1) {
-      kfs_fyaw_move_rear_mech_lock();
-    } else if (fyaw_step == 2) {
-      kfs_fyaw_pos_ref(KFS_FYAW_SIDE_ANGLE);
-    } else if (fyaw_step == 3) {
-      kfs_fyaw_move_front_mech_lock();
-    }
-  }
-
-  if (ps4_->is_pushing_l2() && ps4_->is_pushed_circle()) {
-    // kfs_fxの微調整（指令値を増加）
-    kfs_fx_pos_ref(kfs_fx_position_ref_ + 0.01);
-  } else if (ps4_->is_pushed_circle()) {
-    fx_step++;
-    if (fx_step > 4) {
-      fx_step = 4;
-    }
-    RCLCPP_INFO(this->get_logger(), "fx_step: %d", fx_step);
-    if (fx_step == 1) {
-      kfs_fx_pos_ref(KFS_FX_NORMAL_POS);
-    } else if (fx_step == 2) {
-      kfs_fx_pos_ref(KFS_FX_STORAGE_POS);
-    } else if (fx_step == 3) {
-      kfs_fx_pos_ref(KFS_FX_PUT_POS);
-    } else if (fx_step == 4) {
-      kfs_fx_pos_ref(KFS_FX_EXPAND_POS);
+  if (ps4_->is_pushed_triangle()) {
+    if (ps4_->is_pushing_l2()) {
+      kfs_fyaw_pos_ref(kfs_fyaw_position_ref_ + 0.05);
+    } else {
+      if (fyaw_step > 3) {
+        fyaw_step = 3;
+      }
+      RCLCPP_INFO(this->get_logger(), "fyaw_step: %d", fyaw_step);
+      if (fyaw_step == 1) {
+        kfs_fyaw_move_rear_mech_lock();
+      } else if (fyaw_step == 2) {
+        kfs_fyaw_pos_ref(KFS_FYAW_SIDE_ANGLE);
+      } else if (fyaw_step == 3) {
+        kfs_fyaw_move_front_mech_lock();
+      }
     }
   }
 
-  if (ps4_->is_pushing_l2() && ps4_->is_pushed_cross()) {
-    kfs_fyaw_pos_ref(kfs_fyaw_position_ref_ - 0.05);
-  } else if (ps4_->is_pushed_cross()) {
-    fyaw_step--;
-    if (fyaw_step < 1) {
-      fyaw_step = 1;
-    }
-    RCLCPP_INFO(this->get_logger(), "fyaw_step: %d", fyaw_step);
-    if (fyaw_step == 1) {
-      kfs_fyaw_move_rear_mech_lock();
-    } else if (fyaw_step == 2) {
-      kfs_fyaw_pos_ref(KFS_FYAW_SIDE_ANGLE);
-    } else if (fyaw_step == 3) {
-      kfs_fyaw_move_front_mech_lock();
+  if (ps4_->is_pushed_circle()) {
+    if (ps4_->is_pushing_l2()) {
+      // kfs_fxの微調整（指令値を増加）
+      kfs_fx_pos_ref(kfs_fx_position_ref_ + 0.01);
+    } else {
+      fx_step++;
+      if (fx_step > 4) {
+        fx_step = 4;
+      }
+      RCLCPP_INFO(this->get_logger(), "fx_step: %d", fx_step);
+      if (fx_step == 1) {
+        kfs_fx_pos_ref(KFS_FX_NORMAL_POS);
+      } else if (fx_step == 2) {
+        kfs_fx_pos_ref(KFS_FX_STORAGE_POS);
+      } else if (fx_step == 3) {
+        kfs_fx_pos_ref(KFS_FX_PUT_POS);
+      } else if (fx_step == 4) {
+        kfs_fx_pos_ref(KFS_FX_EXPAND_POS);
+      }
     }
   }
-  if (ps4_->is_pushing_l2() && ps4_->is_pushed_square()) {
-    // kfs_fxの微調整（指令値を減少）
-    kfs_fx_pos_ref(kfs_fx_position_ref_ - 0.01);
-  } else if (ps4_->is_pushed_square()) {
-    fx_step--;
-    if (fx_step < 1) {
-      fx_step = 1;
+
+  if (ps4_->is_pushed_cross()) {
+    if (ps4_->is_pushing_l2()) {
+      kfs_fyaw_pos_ref(kfs_fyaw_position_ref_ - 0.05);
+    } else {
+      fyaw_step--;
+      if (fyaw_step < 1) {
+        fyaw_step = 1;
+      }
+      RCLCPP_INFO(this->get_logger(), "fyaw_step: %d", fyaw_step);
+      if (fyaw_step == 1) {
+        kfs_fyaw_move_rear_mech_lock();
+      } else if (fyaw_step == 2) {
+        kfs_fyaw_pos_ref(KFS_FYAW_SIDE_ANGLE);
+      } else if (fyaw_step == 3) {
+        kfs_fyaw_move_front_mech_lock();
+      }
     }
-    RCLCPP_INFO(this->get_logger(), "fx_step: %d", fx_step);
-    if (fx_step == 1) {
-      kfs_fx_pos_ref(KFS_FX_NORMAL_POS);
-    } else if (fx_step == 2) {
-      kfs_fx_pos_ref(KFS_FX_STORAGE_POS);
-    } else if (fx_step == 3) {
-      kfs_fx_pos_ref(KFS_FX_PUT_POS);
-    } else if (fx_step == 4) {
-      kfs_fx_pos_ref(KFS_FX_EXPAND_POS);
+  }
+
+  if (ps4_->is_pushed_square()) {
+    if (ps4_->is_pushing_l2()) {
+      // kfs_fxの微調整（指令値を減少）
+      kfs_fx_pos_ref(kfs_fx_position_ref_ - 0.01);
+    } else {
+      fx_step--;
+      if (fx_step < 1) {
+        fx_step = 1;
+      }
+      RCLCPP_INFO(this->get_logger(), "fx_step: %d", fx_step);
+      if (fx_step == 1) {
+        kfs_fx_pos_ref(KFS_FX_NORMAL_POS);
+      } else if (fx_step == 2) {
+        kfs_fx_pos_ref(KFS_FX_STORAGE_POS);
+      } else if (fx_step == 3) {
+        kfs_fx_pos_ref(KFS_FX_PUT_POS);
+      } else if (fx_step == 4) {
+        kfs_fx_pos_ref(KFS_FX_EXPAND_POS);
+      }
     }
   }
 
@@ -2846,36 +2880,37 @@ void R1MainNode::manual_mode5_rkfs(void)
   int & l2_r2_trigger_step = manual_mode5_l2_r2_trigger_step_;
 
   if (ps4_->is_pushed_up()) {
-    // 1段上のkfs_rz位置へ移動
-    rz_step++;
-    if (rz_step > 4) {
-      rz_step = 4;
-    }
-    RCLCPP_INFO(this->get_logger(), "rz_step: %d", rz_step);
-    if (rz_step == 1) {
-      kfs_rz_pos_ref(KFS_RZ_LOW_POS);
-    } else if (rz_step == 2) {
-      kfs_rz_pos_ref(KFS_RZ_MIDDLE_POS);
-    } else if (rz_step == 3) {
-      kfs_rz_pos_ref(KFS_RZ_HIGH_POS);
-    } else if (rz_step == 4) {
-      kfs_rz_pos_ref(KFS_RZ_PUT_POS);
+    if (ps4_->is_pushing_l2()) {
+      // 上段回収
+      R1KfsMechanismRef ref = R1KfsMechanismRef::RKFS_HIGH;
+      apply_r1_kfs_mechanism_ref(ref);
+    } else {
+      // 1段上のkfs_rz位置へ移動
+      rz_step++;
+      if (rz_step > 4) {
+        rz_step = 4;
+      }
+      RCLCPP_INFO(this->get_logger(), "rz_step: %d", rz_step);
+      if (rz_step == 1) {
+        kfs_rz_pos_ref(KFS_RZ_LOW_POS);
+      } else if (rz_step == 2) {
+        kfs_rz_pos_ref(KFS_RZ_MIDDLE_POS);
+      } else if (rz_step == 3) {
+        kfs_rz_pos_ref(KFS_RZ_HIGH_POS);
+      } else if (rz_step == 4) {
+        kfs_rz_pos_ref(KFS_RZ_PUT_POS);
+      }
     }
   }
 
   if (ps4_->is_pushed_right()) {
     if (ps4_->is_pushing_l2()) {
       // 地面に置かれたものを回収
-      kfs_fx_pos_ref(KFS_FX_NORMAL_POS);
-      kfs_fz_pos_ref(KFS_FZ_PUT_POS);
-      kfs_fyaw_pos_ref(KFS_FYAW_SIDE_ANGLE);
-      kfs_rx_pos_ref(KFS_RX_GROUND_POS);
-      kfs_rz_pos_ref(KFS_RZ_GROUND_POS);
-      kfs_ryaw_pos_ref(KFS_RYAW_SIDE_ANGLE);
-      RCLCPP_INFO(this->get_logger(), "moved to rear_kfs ground position");
+      R1KfsMechanismRef ref = R1KfsMechanismRef::RKFS_GROUND;
+      apply_r1_kfs_mechanism_ref(ref);
     } else {
       // put動作
-      kfs_fx_pos_ref(KFS_FX_NORMAL_POS);
+      kfs_fx_pos_ref(KFS_FX_PUT_POS);
       kfs_fz_pos_ref(KFS_FZ_PUT_POS);
       kfs_fyaw_pos_ref(KFS_FYAW_SIDE_ANGLE);
       kfs_rx_pos_ref(KFS_RX_PUT_POS);
@@ -2886,116 +2921,136 @@ void R1MainNode::manual_mode5_rkfs(void)
   }
 
   if (ps4_->is_pushed_down()) {
-    // 1段下のkfs_rz位置へ移動
-    rz_step--;
-    if (rz_step < 1) {
-      rz_step = 1;
-    }
-    RCLCPP_INFO(this->get_logger(), "rz_step: %d", rz_step);
-    if (rz_step == 1) {
-      kfs_rz_pos_ref(KFS_RZ_LOW_POS);
-    } else if (rz_step == 2) {
-      kfs_rz_pos_ref(KFS_RZ_MIDDLE_POS);
-    } else if (rz_step == 3) {
-      kfs_rz_pos_ref(KFS_RZ_HIGH_POS);
+    if (ps4_->is_pushing_l2()) {
+      // 下段回収
+      R1KfsMechanismRef ref = R1KfsMechanismRef::RKFS_LOW;
+      apply_r1_kfs_mechanism_ref(ref);
+    } else {
+      // 1段下のkfs_rz位置へ移動
+      rz_step--;
+      if (rz_step < 1) {
+        rz_step = 1;
+      }
+      RCLCPP_INFO(this->get_logger(), "rz_step: %d", rz_step);
+      if (rz_step == 1) {
+        kfs_rz_pos_ref(KFS_RZ_LOW_POS);
+      } else if (rz_step == 2) {
+        kfs_rz_pos_ref(KFS_RZ_MIDDLE_POS);
+      } else if (rz_step == 3) {
+        kfs_rz_pos_ref(KFS_RZ_HIGH_POS);
+      }
     }
   }
 
   if (ps4_->is_pushed_left()) {
-    // rear_pumpを動かす。止めるときは電磁弁も一緒に動く
-    if (rear_pump_step == 1) {
-      kfs_rear_pump(1.0);
-      kfs_rear_valve(false);
-      rear_pump_step = 2;
+    if (ps4_->is_pushing_l2()) {
+      // 中段回収
+      R1KfsMechanismRef ref = R1KfsMechanismRef::RKFS_MIDDLE;
+      apply_r1_kfs_mechanism_ref(ref);
     } else {
-      kfs_rear_pump(0.0);
-      kfs_rear_valve(true);
-      // setTimeout風で電磁弁をOFFにする。
-      if (manual_mode5_rear_valve_timer_) {
-        manual_mode5_rear_valve_timer_->cancel();
+      // rear_pumpを動かす。止めるときは電磁弁も一緒に動く
+      if (rear_pump_step == 1) {
+        kfs_rear_pump(1.0);
+        kfs_rear_valve(false);
+        rear_pump_step = 2;
+      } else {
+        kfs_rear_pump(0.0);
+        kfs_rear_valve(true);
+        // setTimeout風で電磁弁をOFFにする。
+        if (manual_mode5_rear_valve_timer_) {
+          manual_mode5_rear_valve_timer_->cancel();
+        }
+        manual_mode5_rear_valve_timer_ =
+          this->create_wall_timer(std::chrono::duration<double>(KFS_VALVE_DELAY_TIME), [this]() {
+            kfs_rear_valve(false);
+            if (manual_mode5_rear_valve_timer_) {
+              manual_mode5_rear_valve_timer_->cancel();
+            }
+          });
+        rear_pump_step = 1;
       }
-      manual_mode5_rear_valve_timer_ =
-        this->create_wall_timer(std::chrono::duration<double>(KFS_VALVE_DELAY_TIME), [this]() {
-          kfs_rear_valve(false);
-          if (manual_mode5_rear_valve_timer_) {
-            manual_mode5_rear_valve_timer_->cancel();
-          }
-        });
-      rear_pump_step = 1;
     }
   }
 
-  if (ps4_->is_pushing_l2() && ps4_->is_pushed_triangle()) {
-    kfs_ryaw_pos_ref(kfs_ryaw_position_ref_ + 0.05);
-  } else if (ps4_->is_pushed_triangle()) {
-    ryaw_step++;
-    if (ryaw_step > 3) {
-      ryaw_step = 3;
-    }
-    RCLCPP_INFO(this->get_logger(), "ryaw_step: %d", ryaw_step);
-    if (ryaw_step == 1) {
-      kfs_ryaw_move_rear_mech_lock();
-    } else if (ryaw_step == 2) {
-      kfs_ryaw_pos_ref(KFS_RYAW_SIDE_ANGLE);
-    } else if (ryaw_step == 3) {
-      kfs_ryaw_move_front_mech_lock();
-    }
-  }
-
-  if (ps4_->is_pushing_l2() && ps4_->is_pushed_circle()) {
-    // kfs_rxの微調整（指令値を増加）
-    kfs_rx_pos_ref(kfs_rx_position_ref_ + 0.01);
-  } else if (ps4_->is_pushed_circle()) {
-    rx_step++;
-    if (rx_step > 4) {
-      rx_step = 4;
-    }
-    RCLCPP_INFO(this->get_logger(), "rx_step: %d", rx_step);
-    if (rx_step == 1) {
-      kfs_rx_pos_ref(KFS_RX_NORMAL_POS);
-    } else if (rx_step == 2) {
-      kfs_rx_pos_ref(KFS_RX_STORAGE_POS);
-    } else if (rx_step == 3) {
-      kfs_rx_pos_ref(KFS_RX_PUT_POS);
-    } else if (rx_step == 4) {
-      kfs_rx_pos_ref(KFS_RX_EXPAND_POS);
+  if (ps4_->is_pushed_triangle()) {
+    if (ps4_->is_pushing_l2()) {
+      kfs_ryaw_pos_ref(kfs_ryaw_position_ref_ + 0.05);
+    } else {
+      ryaw_step++;
+      if (ryaw_step > 3) {
+        ryaw_step = 3;
+      }
+      RCLCPP_INFO(this->get_logger(), "ryaw_step: %d", ryaw_step);
+      if (ryaw_step == 1) {
+        kfs_ryaw_move_rear_mech_lock();
+      } else if (ryaw_step == 2) {
+        kfs_ryaw_pos_ref(KFS_RYAW_SIDE_ANGLE);
+      } else if (ryaw_step == 3) {
+        kfs_ryaw_move_front_mech_lock();
+      }
     }
   }
 
-  if (ps4_->is_pushing_l2() && ps4_->is_pushed_cross()) {
-    kfs_ryaw_pos_ref(kfs_ryaw_position_ref_ - 0.05);
-  } else if (ps4_->is_pushed_cross()) {
-    ryaw_step--;
-    if (ryaw_step < 1) {
-      ryaw_step = 1;
-    }
-    RCLCPP_INFO(this->get_logger(), "ryaw_step: %d", ryaw_step);
-    if (ryaw_step == 1) {
-      kfs_ryaw_move_rear_mech_lock();
-    } else if (ryaw_step == 2) {
-      kfs_ryaw_pos_ref(KFS_RYAW_SIDE_ANGLE);
-    } else if (ryaw_step == 3) {
-      kfs_ryaw_move_front_mech_lock();
+  if (ps4_->is_pushed_circle()) {
+    if (ps4_->is_pushing_l2()) {
+      // kfs_rxの微調整（指令値を増加）
+      kfs_rx_pos_ref(kfs_rx_position_ref_ + 0.01);
+    } else {
+      rx_step++;
+      if (rx_step > 4) {
+        rx_step = 4;
+      }
+      RCLCPP_INFO(this->get_logger(), "rx_step: %d", rx_step);
+      if (rx_step == 1) {
+        kfs_rx_pos_ref(KFS_RX_NORMAL_POS);
+      } else if (rx_step == 2) {
+        kfs_rx_pos_ref(KFS_RX_STORAGE_POS);
+      } else if (rx_step == 3) {
+        kfs_rx_pos_ref(KFS_RX_PUT_POS);
+      } else if (rx_step == 4) {
+        kfs_rx_pos_ref(KFS_RX_EXPAND_POS);
+      }
     }
   }
 
-  if (ps4_->is_pushing_l2() && ps4_->is_pushed_square()) {
-    // kfs_rxの微調整（指令値を減少）
-    kfs_rx_pos_ref(kfs_rx_position_ref_ - 0.01);
-  } else if (ps4_->is_pushed_square()) {
-    rx_step--;
-    if (rx_step < 1) {
-      rx_step = 1;
+  if (ps4_->is_pushed_cross()) {
+    if (ps4_->is_pushing_l2()) {
+      kfs_ryaw_pos_ref(kfs_ryaw_position_ref_ - 0.05);
+    } else {
+      ryaw_step--;
+      if (ryaw_step < 1) {
+        ryaw_step = 1;
+      }
+      RCLCPP_INFO(this->get_logger(), "ryaw_step: %d", ryaw_step);
+      if (ryaw_step == 1) {
+        kfs_ryaw_move_rear_mech_lock();
+      } else if (ryaw_step == 2) {
+        kfs_ryaw_pos_ref(KFS_RYAW_SIDE_ANGLE);
+      } else if (ryaw_step == 3) {
+        kfs_ryaw_move_front_mech_lock();
+      }
     }
-    RCLCPP_INFO(this->get_logger(), "rx_step: %d", rx_step);
-    if (rx_step == 1) {
-      kfs_rx_pos_ref(KFS_RX_NORMAL_POS);
-    } else if (rx_step == 2) {
-      kfs_rx_pos_ref(KFS_RX_STORAGE_POS);
-    } else if (rx_step == 3) {
-      kfs_rx_pos_ref(KFS_RX_PUT_POS);
-    } else if (rx_step == 4) {
-      kfs_rx_pos_ref(KFS_RX_EXPAND_POS);
+  }
+
+  if (ps4_->is_pushed_square()) {
+    if (ps4_->is_pushing_l2()) {
+      // kfs_rxの微調整（指令値を減少）
+      kfs_rx_pos_ref(kfs_rx_position_ref_ - 0.01);
+    } else {
+      rx_step--;
+      if (rx_step < 1) {
+        rx_step = 1;
+      }
+      RCLCPP_INFO(this->get_logger(), "rx_step: %d", rx_step);
+      if (rx_step == 1) {
+        kfs_rx_pos_ref(KFS_RX_NORMAL_POS);
+      } else if (rx_step == 2) {
+        kfs_rx_pos_ref(KFS_RX_STORAGE_POS);
+      } else if (rx_step == 3) {
+        kfs_rx_pos_ref(KFS_RX_PUT_POS);
+      } else if (rx_step == 4) {
+        kfs_rx_pos_ref(KFS_RX_EXPAND_POS);
+      }
     }
   }
 

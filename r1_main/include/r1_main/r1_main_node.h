@@ -585,6 +585,7 @@ public:
   // スマホ関連
   void r1_init_parameter_callback(const r1_msgs::msg::R1InitParameter::SharedPtr msg);
   void r1_collect_kfs_callback(const r1_msgs::msg::R1CollectKfs::SharedPtr msg);
+  void apply_r1_kfs_mechanism_ref(R1KfsMechanismRef ref);
   void r1_kfs_mechanism_ref_callback(const std_msgs::msg::Int32::SharedPtr msg);
   void r1_retry_collect_callback(const std_msgs::msg::Int32::SharedPtr msg);
   void r1_collect_3rd_kfs_callback(const std_msgs::msg::Int32::SharedPtr msg);
