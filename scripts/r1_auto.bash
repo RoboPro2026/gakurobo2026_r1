@@ -6,10 +6,10 @@ source .venv/bin/activate
 source install/setup.bash
 
 # arucoマーカをssh経由でGUIを起動に必要なおまじない
-export XDG_RUNTIME_DIR=/run/user/$(id -u)
-export WAYLAND_DISPLAY=wayland-0
-export QT_QPA_PLATFORM=wayland
-export DBUS_SESSION_BUS_ADDRESS=unix:path=$XDG_RUNTIME_DIR/bus
+# export XDG_RUNTIME_DIR=/run/user/$(id -u)
+# export WAYLAND_DISPLAY=wayland-0
+# export QT_QPA_PLATFORM=wayland
+# export DBUS_SESSION_BUS_ADDRESS=unix:path=$XDG_RUNTIME_DIR/bus
 # 使い方: ./r1_auto.bash [zone] [use_phone]
 #   例: ./r1_auto.bash blue true   → blueゾーン・iPhoneコントローラ
 #       ./r1_auto.bash red         → redゾーン・PS4コントローラ

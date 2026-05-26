@@ -702,18 +702,18 @@ r1_machine_manage_node:
     # reset 完了後に各 initialize を再送してから通常制御へ戻すまでの待ち時間 [s]
     post_reset_initialize_delay_sec: 1.0
 
-r1_aruco_display_node:
-  ros__parameters:
-    spin_rate_hz: 25.0
-    marker_image_dir: "src/gakurobo2026_r1/data/aruco_marker"
-    fullscreen: true
-    screen_name: "DP-1"
-    image_rotation_degrees: 0
-    marker_x: 600
-    marker_y: 200
-    marker_width: 150
-    marker_height: 150
-    initial_marker_id: 0
+# r1_aruco_display_node:
+#   ros__parameters:
+#     spin_rate_hz: 25.0
+#     marker_image_dir: "src/gakurobo2026_r1/data/aruco_marker"
+#     fullscreen: true
+#     screen_name: "DP-1"
+#     image_rotation_degrees: 0
+#     marker_x: 600
+#     marker_y: 200
+#     marker_width: 150
+#     marker_height: 150
+#     initial_marker_id: 0
 
 r1_aruco_serial_node:
   ros__parameters:

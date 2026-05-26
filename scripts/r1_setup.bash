@@ -7,10 +7,10 @@ source .venv/bin/activate
 source install/setup.bash
 
 # arucoマーカをssh経由でGUIを起動に必要なおまじない
-export XDG_RUNTIME_DIR=/run/user/$(id -u)
-export WAYLAND_DISPLAY=wayland-0
-export QT_QPA_PLATFORM=wayland
-export DBUS_SESSION_BUS_ADDRESS=unix:path=$XDG_RUNTIME_DIR/bus
+# export XDG_RUNTIME_DIR=/run/user/$(id -u)
+# export WAYLAND_DISPLAY=wayland-0
+# export QT_QPA_PLATFORM=wayland
+# export DBUS_SESSION_BUS_ADDRESS=unix:path=$XDG_RUNTIME_DIR/bus
 
 sudo cpupower frequency-set -g performance
 
