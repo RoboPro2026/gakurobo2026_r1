@@ -293,6 +293,12 @@ public:
   // スイッチの状態
   bool kfs_fz_low_switch_status_ = false;
   bool kfs_rz_low_switch_status_ = false;
+  bool front_pressure_switch_status_ = false;
+  bool rear_pressure_switch_status_ = false;
+  bool r2_flift_low_switch_status_ = false;
+  bool r2_flift_high_switch_status_ = false;
+  bool r2_rlift_low_switch_status_ = false;
+  bool r2_rlift_high_switch_status_ = false;
   // 指令値
   double kfs_fx_position_ref_ = 0.0;
   double kfs_fz_position_ref_ = 0.0;

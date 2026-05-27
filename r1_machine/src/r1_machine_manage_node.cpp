@@ -2543,6 +2543,12 @@ private:
   std::vector<GpioInputChannel> gpio_input_channels_{
     // make_gpio_input_channel({1, 7}, "kfs_fz_low_switch"),
     // make_gpio_input_channel({1, 8}, "kfs_rz_low_switch"),
+    make_gpio_input_channel({2, 0}, "front_pressure_switch"),
+    make_gpio_input_channel({2, 1}, "rear_pressure_switch"),
+    make_gpio_input_channel({2, 2}, "r2_flift_low_switch"),
+    make_gpio_input_channel({2, 3}, "r2_flift_high_switch"),
+    make_gpio_input_channel({2, 4}, "r2_rlift_low_switch"),
+    make_gpio_input_channel({2, 5}, "r2_rlift_high_switch"),
   };
 
   // SDM15 スキャンチャネル定義。make_sdm15_channel(prefix) でデバイスを追加する。

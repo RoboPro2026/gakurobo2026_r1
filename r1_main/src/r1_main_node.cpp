@@ -495,6 +495,12 @@ R1MainNode::R1MainNode() : Node("r1_main_node")
   // センサー入力
   register_gpio_input("kfs_fz_low_switch", &kfs_fz_low_switch_status_);
   register_gpio_input("kfs_rz_low_switch", &kfs_rz_low_switch_status_);
+  register_gpio_input("front_pressure_switch", &front_pressure_switch_status_);
+  register_gpio_input("rear_pressure_switch", &rear_pressure_switch_status_);
+  register_gpio_input("r2_flift_low_switch", &r2_flift_low_switch_status_);
+  register_gpio_input("r2_flift_high_switch", &r2_flift_high_switch_status_);
+  register_gpio_input("r2_rlift_low_switch", &r2_rlift_low_switch_status_);
+  register_gpio_input("r2_rlift_high_switch", &r2_rlift_high_switch_status_);
 
   // ========== Sabacan ==========
   // 電源基板の指令値Publisher

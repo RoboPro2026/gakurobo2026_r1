@@ -1156,22 +1156,21 @@ sabacan_gpio_node_id1:
     board_id: 1
     enable_initialize: false
     publish_timer_rate: 10.0
-    pin_type: ["OUTPUT_PWM", "OUTPUT_PWM", "OUTPUT_PWM", "OUTPUT_PWM", "OUTPUT_PWM", "OUTPUT_PWM", "OUTPUT_PWM", "INPUT", "INPUT"]
-    pwm_freq: [1000, 1000, 1000, 1000, 1000, 1000, 1000, 0, 0]
-    # monitor_regはPORT_READを有効化
-    monitor_reg: 0x4
-    monitor_period: 100
-# 現在は未使用だが、将来的にGPIOを増やすときのために残している
-sabacan_gpio_node_id2:
-  ros__parameters:
-    board_id: 2
-    enable_initialize: false
-    publish_timer_rate: 10.0
     pin_type: ["OUTPUT_PWM", "OUTPUT_PWM", "OUTPUT_PWM", "OUTPUT_PWM", "OUTPUT_PWM", "OUTPUT_PWM", "OUTPUT_PWM", "OUTPUT_PWM", "OUTPUT_PWM"]
     pwm_freq: [1000, 1000, 1000, 1000, 1000, 1000, 1000, 1000, 1000]
     # monitor_regは無効化
     monitor_reg: 0
     monitor_period: 0
+sabacan_gpio_node_id2:
+  ros__parameters:
+    board_id: 2
+    enable_initialize: false
+    publish_timer_rate: 20.0
+    pin_type: ["INPUT", "INPUT", "INPUT", "INPUT", "INPUT", "INPUT", "INPUT", "INPUT", "INPUT"]
+    pwm_freq: [0, 0, 0, 0, 0, 0, 0, 0, 0]
+    # monitor_regはPORT_READを有効化
+    monitor_reg: 0x4
+    monitor_period: 50
 sabacan_power_node_id0:
   ros__parameters:
     board_id: 0
