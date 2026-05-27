@@ -192,6 +192,10 @@ def generate_launch_description():
     r1_r2_flift_node = create_r1_linear_motion_node(
         "r1_r2_flift_node",
         "r2_flift",
+        extra_remappings=[
+            ("low_switch_status", "r2_flift_low_switch_status"),
+            ("high_switch_status", "r2_flift_high_switch_status"),
+        ],
     )
     r1_kfs_rx_node = create_r1_linear_motion_node("r1_kfs_rx_node", "kfs_rx")
     r1_kfs_rz_node = create_r1_linear_motion_node(
@@ -202,6 +206,10 @@ def generate_launch_description():
     r1_r2_rlift_node = create_r1_linear_motion_node(
         "r1_r2_rlift_node",
         "r2_rlift",
+        extra_remappings=[
+            ("low_switch_status", "r2_rlift_low_switch_status"),
+            ("high_switch_status", "r2_rlift_high_switch_status"),
+        ],
     )
     r1_kfs_ryaw_node = create_r1_angle_motion_node("r1_kfs_ryaw_node", "kfs_ryaw")
 

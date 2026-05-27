@@ -230,10 +230,12 @@ r1_main_node:
     # ========== 展開 ==========
     # R2昇降
     r2_flift_normal_pos: 0.05
-    r2_flift_up_pos: 0.65
+    # r2_flift_up_pos: 0.65
+    r2_flift_up_pos: 0.2
     r2_flift_down_pos: 0.0
-    r2_lift_normal_pos: 0.05
-    r2_rlift_up_pos: 0.65
+    r2_rlift_normal_pos: 0.05
+    r2_rlift_up_pos: 0.2
+    # r2_rlift_up_pos: 0.65
     r2_rlift_down_pos: 0.0
 
     # ========== やり ==========
@@ -510,11 +512,11 @@ r1_r2_flift_node:
     pos_min: -0.1
     pos_max: 1.0
     normal_pos: 0.025
-    # モータが2回転すると、ギアが1回転して63.66pi/2 mm進むので、半径は15.915mm
-    radius: 0.015915
-    inverse_motor: true
-    use_low_switch: false
-    use_high_switch: false
+    # モータが1回転すると30pimm進むので、半径は15mm
+    radius: 0.015
+    inverse_motor: false
+    use_low_switch: true
+    use_high_switch: true
     inverse_low_switch_logic: false
     inverse_high_switch_logic: false
 # linear motion node
@@ -606,11 +608,11 @@ r1_r2_rlift_node:
     pos_min: -0.1
     pos_max: 1.0
     normal_pos: 0.025
-    # モータが2回転すると、ギアが1回転して63.66pi/2 mm進むので、半径は15.915mm
-    radius: 0.015915
+    # モータが1回転すると30pimm進むので、半径は15mm
+    radius: 0.015
     inverse_motor: false
-    use_low_switch: false
-    use_high_switch: false
+    use_low_switch: true
+    use_high_switch: true
     inverse_low_switch_logic: false
     inverse_high_switch_logic: false
 # ---------- やり ----------
