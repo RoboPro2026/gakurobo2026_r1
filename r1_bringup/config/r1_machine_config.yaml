@@ -695,6 +695,7 @@ r1_machine_manage_node:
     # 足回りの制御方式。"mecanum" または "swerve"
     # drive_mode: "swerve"
     drive_mode: "mecanum"
+    # 各種デバッグ情報の送信周期
     # シャーシ系フィードバックの publish_rate
     chassis_timer_rate: 10.0
     odometry_encoder_timer_rate: 100.0
@@ -702,9 +703,9 @@ r1_machine_manage_node:
     angle_motion_timer_rate: 10.0
     velocity_control_timer_rate: 10.0
     # GPIO入力のフィードバック情報の送信周期
-    gpio_timer_rate: 50.0
+    gpio_timer_rate: 10.0
     # SDM15のフィードバック情報の送信周期
-    stdm15_timer_rate: 50.0
+    sdm15_timer_rate: 10.0
     # sabacan_reset を順番に送る間隔 [s]
 # 一旦0.0にしてほぼ同時に送ってみる
     sabacan_reset_send_interval_sec: 0.0
