@@ -3025,7 +3025,7 @@ void R1MainNode::manual_mode5_rkfs(void)
       apply_r1_kfs_mechanism_ref(ref);
     } else {
       // put動作
-      kfs_fx_pos_ref(KFS_FX_PUT_POS);
+      kfs_fx_pos_ref(KFS_FX_NORMAL_POS);
       kfs_fz_pos_ref(KFS_FZ_PUT_POS);
       kfs_fyaw_pos_ref(KFS_FYAW_SIDE_ANGLE);
       kfs_rx_pos_ref(KFS_RX_PUT_POS);
