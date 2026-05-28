@@ -122,12 +122,12 @@ r1_chassis_velocity_control_node:
     ki_vx: 0.02
     kd_vx: 0.0
     integral_limit_vx: 0.35
-    output_limit_vx: 2.0
+    output_limit_vx: 3.5
     kp_vy: 0.4
     ki_vy: 0.02
     kd_vy: 0.0
     integral_limit_vy: 0.35
-    output_limit_vy: 2.0
+    output_limit_vy: 3.5
     kp_omega: 0.4
     ki_omega: 0.02
     kd_omega: 0.0
@@ -158,7 +158,7 @@ r1_main_node:
     chassis_low_omega: 0.2
     chassis_normal_velocity: 0.6
     chassis_normal_omega: 0.5
-    chassis_high_velocity: 2.4
+    chassis_high_velocity: 2.5
     chassis_high_omega: 1.5
     # ========== KFS回収 ==========
     # 現状だと、fx,fz,rx,rzのnormal_torqueが1Nmになっていて、長時間接触しているとC610が止まるので、falseにする
@@ -302,7 +302,7 @@ r1_main_node:
     # センサーが反応したときに展開すると回収機構がぶつかる方のセンサーに適用される
     wall_sensor_delay_offset_distance: 0.05
     # 圧力センサの反応時間閾値
-    pressure_sensor_time_threshold: 0.5
+    pressure_sensor_time_threshold: 0.15
     # 内回り/外回りのKFS回収範囲の中心座標 [x, y, yaw]
     # 内回りのときは2,1,4,7,10を通る
     red_inner_collect_kfs_center_pos:
@@ -377,7 +377,7 @@ r1_mecanum_node:
     robot_length: 0.828
   #   # 802mm
     robot_width: 0.802
-    speed_limit: 100.0
+    speed_limit: 150.0
   # モーターの出力は歯数が32（モーター側）と歯数が64（ホイール側）で組みあわせているので
   #   # 減速比は32 / 64 = 0.5
   #   # ギア比で割った値がモーターの出力となる
