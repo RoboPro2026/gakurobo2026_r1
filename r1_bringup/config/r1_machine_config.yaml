@@ -244,7 +244,7 @@ r1_main_node:
     spear_y_collect_kfs_pos: 0.5
     spear_y_low_attack_pos: 0.65
     spear_y_middle_attack_pos: 0.65
-    spear_y_high_attack_pos: 0.765
+    spear_y_high_attack_pos: 0.775
     spear_y_throw_away_pos: 0.05
     spear_roll1_normal_angle: 0.0
     spear_roll1_vertical_angle: 0.0
