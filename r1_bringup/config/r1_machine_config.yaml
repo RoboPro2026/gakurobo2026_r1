@@ -1172,12 +1172,12 @@ sabacan_gpio_node_id2:
   ros__parameters:
     board_id: 2
     enable_initialize: false
-    publish_timer_rate: 20.0
+    publish_timer_rate: 50.0
     pin_type: ["INPUT", "INPUT", "INPUT", "INPUT", "INPUT", "INPUT", "INPUT", "INPUT", "INPUT"]
     pwm_freq: [0, 0, 0, 0, 0, 0, 0, 0, 0]
     # monitor_regはPORT_READを有効化
     monitor_reg: 0x4
-    monitor_period: 50
+    monitor_period: 25
 sabacan_power_node_id0:
   ros__parameters:
     board_id: 0
