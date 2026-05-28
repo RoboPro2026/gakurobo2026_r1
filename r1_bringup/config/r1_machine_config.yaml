@@ -282,7 +282,10 @@ r1_main_node:
     # KFS回収時にセンサーを用いたの回収にするか。
     # trueのときはセンサーを用いた回収、falseのときは座標を用いた回収になる
     enable_wall_sensor: true
-    # 壁検出時に止まるようにするか。
+    # 圧力センサを使用するか
+    # 圧力センサを使用する場合、圧力センサが反応したらKFS回収成功とみなして、機構を収納する
+    # この場合、足回りの移動距離は関係ない
+    enable_pressure_sensor: true
     # 壁検出センサーの距離閾値 [m]
     wall_sensor_distance_threshold: 0.4
     # 壁検出センサーの反応時間閾値
@@ -296,6 +299,8 @@ r1_main_node:
     # 壁検出の遅延距離オフセット [m]
     # センサーが反応したときに展開すると回収機構がぶつかる方のセンサーに適用される
     wall_sensor_delay_offset_distance: 0.05
+    # 圧力センサの反応時間閾値
+    pressure_sensor_time_threshold: 0.5
     # 内回り/外回りのKFS回収範囲の中心座標 [x, y, yaw]
     # 内回りのときは2,1,4,7,10を通る
     red_inner_collect_kfs_center_pos:

@@ -769,12 +769,14 @@ R1MainNode::R1MainNode() : Node("r1_main_node")
   declare_and_get_parameter("enable_auto_collect_kfs_actuator", ENABLE_AUTO_COLLECT_KFS_ACTUATOR);
   declare_and_get_parameter("enalbe_stop_before_collect_kfs", ENABLE_STOP_BEFORE_COLLECT_KFS);
   declare_and_get_parameter("enable_wall_sensor", ENABLE_WALL_SENSOR);
+  declare_and_get_parameter("enable_pressure_sensor", ENABLE_PRESSURE_SENSOR);
   declare_and_get_parameter("wall_sensor_distance_threshold", WALL_SENSOR_DISTANCE_THRESHOLD);
   declare_and_get_parameter("wall_sensor_time_threshold", WALL_SENSOR_TIME_THRESHOLD);
   declare_and_get_parameter("move_distance_after_wall_detect", MOVE_DISTANCE_AFTER_WALL_DETECT);
   declare_and_get_parameter("wall_sensor_detect_height", WALL_SENSOR_DETECT_HEIGHT);
   declare_and_get_parameter("wall_sensor_detect_width", WALL_SENSOR_DETECT_WIDTH);
   declare_and_get_parameter("wall_sensor_delay_offset_distance", WALL_SENSOR_DELAY_OFFSET_DISTANCE);
+  declare_and_get_parameter("pressure_sensor_time_threshold", PRESSURE_SENSOR_TIME_THRESHOLD);
   parameter_callback_handle_ =
     this->add_on_set_parameters_callback([this](const std::vector<rclcpp::Parameter> & parameters) {
       rcl_interfaces::msg::SetParametersResult result;
@@ -1939,6 +1941,10 @@ void R1MainNode::reset_kfs_auto_collect_tracking(void)
     wall_sensor_detected_[i] = false;
     // odom座標系
     wall_detect_pos_[i] = nav_msgs::msg::Odometry();
+  }
+  for (int i = 0; i < 2; i++) {
+    pressure_sensor_detect_start_time_[i] = this->now();
+    pressure_sensor_detected_[i] = false;
   }
   auto_collect_kfs_fkfs_step_ = DEFAULT_STEP;
   auto_collect_kfs_rkfs_step_ = DEFAULT_STEP;
@@ -3523,6 +3529,35 @@ void R1MainNode::auto_collect_kfs_task(void)
     return false;
   };
 
+  auto update_pressure_sensor_status = [&](int kfs_mechanism) {
+    bool current_pressure_sensor_status = false;
+    // 吸着すると、センサーの出力がOFFになるため、論理を反転させる。
+    if (kfs_mechanism == FKFS) {
+      current_pressure_sensor_status = !front_pressure_switch_status_;
+    } else if (kfs_mechanism == RKFS) {
+      current_pressure_sensor_status = !rear_pressure_switch_status_;
+    }
+    // センサーが初回の反応だった場合は開始時刻を更新
+    if (current_pressure_sensor_status && !pressure_sensor_detected_[kfs_mechanism]) {
+      pressure_sensor_detect_start_time_[kfs_mechanism] = this->now();
+    }
+    pressure_sensor_detected_[kfs_mechanism] = current_pressure_sensor_status;
+  };
+
+  auto is_detect_pressure = [&](int kfs_mechanism) {
+    // 圧力センサーが一定時間以上反応している場合は物体を掴んでいると判断する
+    if (pressure_sensor_detected_[kfs_mechanism]) {
+      rclcpp::Duration detected_duration =
+        this->now() - pressure_sensor_detect_start_time_[kfs_mechanism];
+      if (detected_duration.seconds() > PRESSURE_SENSOR_TIME_THRESHOLD) {
+        return true;
+      } else {
+        return false;
+      }
+    }
+    return false;
+  };
+
   if (kfs_auto_collect_plan_.status == KfsAutoCollectStatus::NONE) {
     return;
   }
@@ -3818,9 +3853,18 @@ void R1MainNode::auto_collect_kfs_task(void)
       // 最後まで終わったら次のステップに進む
       step++;
     } else if (step == 6) {
-      // TODO: ココらへんのステップで回収に失敗したときはL2+R2同時押しで手動モードに切り替えるという実装にする
-      // 1回目で手動モード切り替え、2回目で手動モード終了にし、回収動作を終了する
-      if (ENABLE_WALL_SENSOR == true) {
+      if (ENABLE_PRESSURE_SENSOR) {
+        // 圧力センサーの値を更新
+        update_pressure_sensor_status(within_index);
+        // 圧力センサーが反応しているかを確認し、反応していれば回収完了とみなす
+        if (is_detect_pressure(within_index)) {
+          RCLCPP_INFO(
+            this->get_logger(),
+            "Step = %d, pressure detected for forest %d %s kfs, considering collect completed",
+            step, target_forest_number, mechanism_type.c_str());
+          step++;
+        }
+      } else if (ENABLE_WALL_SENSOR) {
         // 一定距離進むまで待機
         double sx = wall_detect_pos_[target_forest_number - 1].pose.pose.position.x;
         double sy = wall_detect_pos_[target_forest_number - 1].pose.pose.position.y;
@@ -3840,6 +3884,7 @@ void R1MainNode::auto_collect_kfs_task(void)
         }
       } else {
         // TODO: 座標ベースの終了判定も本当は終点のときはodom座標系のほうがいいかも
+        // 現在は過去のプログラムをそのまま引き継いでいるのでmap座標系で判別している
         if (
           is_within_rotated_rectangle(
             map_x, map_y, center_x, center_y, rect_yaw, COLLECT_KFS_WIDTH, COLLECT_KFS_HEIGHT) ==
@@ -3848,8 +3893,6 @@ void R1MainNode::auto_collect_kfs_task(void)
         }
       }
     } else if (step == 7) {
-      // TODO: ロボットが安定しないようだったら、step6の前とかにも手動操縦を挟んでもいいかも
-
       // 回収動作終了
       // 足回りの進行方向の位置制御をONにする
       if (r1_init_parameter_.enable_kfs_auto_chassis == true) {
@@ -3905,6 +3948,9 @@ void R1MainNode::auto_collect_kfs_task(void)
       // 壁センサーの状態をリセット
       wall_sensor_detected_[target_forest_number - 1] = false;
       wall_sensor_detect_start_time_[target_forest_number - 1] = this->now();
+      // 圧力センサーの状態をリセット
+      pressure_sensor_detected_[within_index] = false;
+      pressure_sensor_detect_start_time_[within_index] = this->now();
       // 回収完了済みフラグをセット
       kfs_already_collected_[target_forest_number - 1] = true;
       within = false;

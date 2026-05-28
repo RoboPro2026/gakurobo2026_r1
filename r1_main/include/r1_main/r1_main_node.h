@@ -492,6 +492,10 @@ public:
   // auto_collect_kfs_task内で単眼Lidarを用いた回収を行うか。
   // trueのときは単眼Lidarを用いた回収、falseのときは座標による回収となる
   bool ENABLE_WALL_SENSOR = true;
+  // 圧力センサを使用するか
+  // 圧力センサを使用する場合、圧力センサが反応したらKFS回収成功とみなして、機構を収納する
+  // この場合、足回りの移動距離は関係ない
+  bool ENABLE_PRESSURE_SENSOR = true;
   // 壁検出センサーの距離閾値 [m]
   double WALL_SENSOR_DISTANCE_THRESHOLD = 0.5;
   // 壁検出センサーの反応時間閾値 [s]
@@ -504,6 +508,8 @@ public:
   double WALL_SENSOR_DETECT_WIDTH = 1.0;
   // 壁検出の遅延距離オフセット [m]
   double WALL_SENSOR_DELAY_OFFSET_DISTANCE = 0.25;
+  // 圧力センサの反応時間閾値[s]
+  double PRESSURE_SENSOR_TIME_THRESHOLD = 0.5;
   // コンストラクタ
   R1MainNode();
 
@@ -826,6 +832,11 @@ public:
     std::vector<rclcpp::Time>(2, rclcpp::Time(0));
   // 回収完了済みフラグ（チャタリング防止）: forest番号-1 をインデックスとする
   std::vector<bool> kfs_already_collected_ = std::vector<bool>(12, false);
+  // 圧力センサが反応したときの時間
+  std::vector<rclcpp::Time> pressure_sensor_detect_start_time_ =
+    std::vector<rclcpp::Time>(2, rclcpp::Time(0));
+  // 圧力センサの反応状況
+  std::vector<bool> pressure_sensor_detected_ = std::vector<bool>(2, false);
   int auto_collect_kfs_fkfs_step_ = DEFAULT_STEP;
   int auto_collect_kfs_rkfs_step_ = DEFAULT_STEP;
 
