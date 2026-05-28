@@ -701,8 +701,10 @@ r1_machine_manage_node:
     linear_motion_timer_rate: 10.0
     angle_motion_timer_rate: 10.0
     velocity_control_timer_rate: 10.0
-    gpio_timer_rate: 10.0
-    stdm15_timer_rate: 10.0
+    # GPIO入力のフィードバック情報の送信周期
+    gpio_timer_rate: 50.0
+    # SDM15のフィードバック情報の送信周期
+    stdm15_timer_rate: 50.0
     # sabacan_reset を順番に送る間隔 [s]
 # 一旦0.0にしてほぼ同時に送ってみる
     sabacan_reset_send_interval_sec: 0.0
