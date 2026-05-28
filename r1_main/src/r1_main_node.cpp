@@ -770,6 +770,8 @@ R1MainNode::R1MainNode() : Node("r1_main_node")
   declare_and_get_parameter("enalbe_stop_before_collect_kfs", ENABLE_STOP_BEFORE_COLLECT_KFS);
   declare_and_get_parameter("enable_wall_sensor", ENABLE_WALL_SENSOR);
   declare_and_get_parameter("enable_pressure_sensor", ENABLE_PRESSURE_SENSOR);
+  declare_and_get_parameter(
+    "enable_r1_kfs_mechanism_ref_pressure_sensor", ENABLE_R1_KFS_MECHANISM_REF_PRESSURE_SENSOR);
   declare_and_get_parameter("wall_sensor_distance_threshold", WALL_SENSOR_DISTANCE_THRESHOLD);
   declare_and_get_parameter("wall_sensor_time_threshold", WALL_SENSOR_TIME_THRESHOLD);
   declare_and_get_parameter("move_distance_after_wall_detect", MOVE_DISTANCE_AFTER_WALL_DETECT);
@@ -1087,7 +1089,10 @@ void R1MainNode::update_kfs_led_status(void)
     front_kfs_pump_active ? KFS_PUMP_ACTIVE_BLINK_PERIOD_S : 0.0;
   const double rear_kfs_blink_period = rear_kfs_pump_active ? KFS_PUMP_ACTIVE_BLINK_PERIOD_S : 0.0;
 
-  if (front_kfs_assigned) {
+  if (kfs_manual_front_pressure_wait_ && kfs_manual_front_pressure_detected_) {
+    // 手動指令後の圧力センサ待機中に反応あり → 青。ポンプ動作中は点滅。
+    set_fkfs_led_status(0, 0, 50, front_kfs_blink_period);
+  } else if (front_kfs_assigned) {
     if (front_kfs_within) {
       // FKFS が担当範囲内に入ったら緑。ポンプ動作中は点滅。
       set_fkfs_led_status(0, 50, 0, front_kfs_blink_period);
@@ -1103,7 +1108,10 @@ void R1MainNode::update_kfs_led_status(void)
     }
   }
 
-  if (rear_kfs_assigned) {
+  if (kfs_manual_rear_pressure_wait_ && kfs_manual_rear_pressure_detected_) {
+    // 手動指令後の圧力センサ待機中に反応あり → 青。ポンプ動作中は点滅。
+    set_rkfs_led_status(0, 0, 50, rear_kfs_blink_period);
+  } else if (rear_kfs_assigned) {
     if (rear_kfs_within) {
       // RKFS が担当範囲内に入ったら緑。ポンプ動作中は点滅。
       set_rkfs_led_status(0, 50, 0, rear_kfs_blink_period);
@@ -1312,6 +1320,9 @@ void R1MainNode::apply_r1_kfs_mechanism_ref(R1KfsMechanismRef ref)
     kfs_fyaw_pos_ref(KFS_FYAW_SIDE_ANGLE);
     kfs_front_pump(1.0);
     kfs_front_valve(false);
+    // 圧力センサ待機を無効化。
+    kfs_manual_front_pressure_wait_ = false;
+    kfs_manual_rear_pressure_wait_ = false;
   } else if (ref == R1KfsMechanismRef::FKFS_HIGH) {
     kfs_fx_pos_ref(KFS_FX_EXPAND_POS);
     kfs_fz_pos_ref(KFS_FZ_HIGH_POS);
@@ -1319,6 +1330,8 @@ void R1MainNode::apply_r1_kfs_mechanism_ref(R1KfsMechanismRef ref)
     apply_fyaw();
     kfs_front_pump(1.0);
     kfs_front_valve(false);
+    kfs_manual_front_pressure_wait_ = ENABLE_R1_KFS_MECHANISM_REF_PRESSURE_SENSOR;
+    kfs_manual_front_pressure_detected_ = false;
   } else if (ref == R1KfsMechanismRef::FKFS_MIDDLE) {
     kfs_fx_pos_ref(KFS_FX_EXPAND_POS);
     kfs_fz_pos_ref(KFS_FZ_MIDDLE_POS);
@@ -1326,6 +1339,8 @@ void R1MainNode::apply_r1_kfs_mechanism_ref(R1KfsMechanismRef ref)
     apply_fyaw();
     kfs_front_pump(1.0);
     kfs_front_valve(false);
+    kfs_manual_front_pressure_wait_ = ENABLE_R1_KFS_MECHANISM_REF_PRESSURE_SENSOR;
+    kfs_manual_front_pressure_detected_ = false;
   } else if (ref == R1KfsMechanismRef::FKFS_LOW) {
     kfs_fx_pos_ref(KFS_FX_EXPAND_POS);
     kfs_fz_pos_ref(KFS_FZ_LOW_POS);
@@ -1333,24 +1348,35 @@ void R1MainNode::apply_r1_kfs_mechanism_ref(R1KfsMechanismRef ref)
     apply_fyaw();
     kfs_front_pump(1.0);
     kfs_front_valve(false);
+    kfs_manual_front_pressure_wait_ = ENABLE_R1_KFS_MECHANISM_REF_PRESSURE_SENSOR;
+    kfs_manual_front_pressure_detected_ = false;
   } else if (ref == R1KfsMechanismRef::FKFS_GROUND) {
     kfs_fx_pos_ref(KFS_FX_GROUND_POS);
     kfs_fz_pos_ref(KFS_FZ_GROUND_POS);
     kfs_fyaw_pos_ref(KFS_FYAW_SIDE_ANGLE);
     kfs_front_pump(1.0);
     kfs_front_valve(false);
+    // 圧力センサ待機を無効化。
+    kfs_manual_front_pressure_wait_ = false;
+    kfs_manual_rear_pressure_wait_ = false;
   } else if (ref == R1KfsMechanismRef::FKFS_STORAGE) {
     kfs_fx_pos_ref(KFS_FX_STORAGE_POS);
     kfs_fz_pos_ref(KFS_FZ_STORAGE_POS);
     kfs_fyaw_pos_ref(KFS_FYAW_SIDE_ANGLE);
     kfs_front_pump(1.0);
     kfs_front_valve(false);
+    // 圧力センサ待機を無効化。
+    kfs_manual_front_pressure_wait_ = false;
+    kfs_manual_rear_pressure_wait_ = false;
   } else if (ref == R1KfsMechanismRef::FKFS_COLLECT_START_POS) {
     kfs_fx_pos_ref(KFS_FX_START_POS);
     kfs_fz_pos_ref(KFS_FZ_START_POS);
     kfs_fyaw_pos_ref(KFS_FYAW_START_ANGLE);
     kfs_front_pump(1.0);
     kfs_front_valve(false);
+    // 圧力センサ待機を無効化。
+    kfs_manual_front_pressure_wait_ = false;
+    kfs_manual_rear_pressure_wait_ = false;
   }
   // RKFS
   else if (ref == R1KfsMechanismRef::RKFS_RACK) {
@@ -1359,6 +1385,7 @@ void R1MainNode::apply_r1_kfs_mechanism_ref(R1KfsMechanismRef ref)
     kfs_ryaw_pos_ref(KFS_RYAW_SIDE_ANGLE);
     kfs_rear_pump(1.0);
     kfs_rear_valve(false);
+    kfs_manual_rear_pressure_wait_ = false;
   } else if (ref == R1KfsMechanismRef::RKFS_HIGH) {
     kfs_rx_pos_ref(KFS_RX_EXPAND_POS);
     kfs_rz_pos_ref(KFS_RZ_HIGH_POS);
@@ -1366,6 +1393,8 @@ void R1MainNode::apply_r1_kfs_mechanism_ref(R1KfsMechanismRef ref)
     apply_ryaw();
     kfs_rear_pump(1.0);
     kfs_rear_valve(false);
+    kfs_manual_rear_pressure_wait_ = ENABLE_R1_KFS_MECHANISM_REF_PRESSURE_SENSOR;
+    kfs_manual_rear_pressure_detected_ = false;
   } else if (ref == R1KfsMechanismRef::RKFS_MIDDLE) {
     kfs_rx_pos_ref(KFS_RX_EXPAND_POS);
     kfs_rz_pos_ref(KFS_RZ_MIDDLE_POS);
@@ -1373,6 +1402,8 @@ void R1MainNode::apply_r1_kfs_mechanism_ref(R1KfsMechanismRef ref)
     apply_ryaw();
     kfs_rear_pump(1.0);
     kfs_rear_valve(false);
+    kfs_manual_rear_pressure_wait_ = ENABLE_R1_KFS_MECHANISM_REF_PRESSURE_SENSOR;
+    kfs_manual_rear_pressure_detected_ = false;
   } else if (ref == R1KfsMechanismRef::RKFS_LOW) {
     kfs_rx_pos_ref(KFS_RX_EXPAND_POS);
     kfs_rz_pos_ref(KFS_RZ_LOW_POS);
@@ -1380,24 +1411,35 @@ void R1MainNode::apply_r1_kfs_mechanism_ref(R1KfsMechanismRef ref)
     apply_ryaw();
     kfs_rear_pump(1.0);
     kfs_rear_valve(false);
+    kfs_manual_rear_pressure_wait_ = ENABLE_R1_KFS_MECHANISM_REF_PRESSURE_SENSOR;
+    kfs_manual_rear_pressure_detected_ = false;
   } else if (ref == R1KfsMechanismRef::RKFS_GROUND) {
     kfs_rx_pos_ref(KFS_RX_GROUND_POS);
     kfs_rz_pos_ref(KFS_RZ_GROUND_POS);
     kfs_ryaw_pos_ref(KFS_RYAW_SIDE_ANGLE);
     kfs_rear_pump(1.0);
     kfs_rear_valve(false);
+    // 圧力センサ待機を無効化。
+    kfs_manual_front_pressure_wait_ = false;
+    kfs_manual_rear_pressure_wait_ = false;
   } else if (ref == R1KfsMechanismRef::RKFS_STORAGE) {
     kfs_rx_pos_ref(KFS_RX_STORAGE_POS);
     kfs_rz_pos_ref(KFS_RZ_STORAGE_POS);
     kfs_ryaw_pos_ref(KFS_RYAW_SIDE_ANGLE);
     kfs_rear_pump(1.0);
     kfs_rear_valve(false);
+    // 圧力センサ待機を無効化。
+    kfs_manual_front_pressure_wait_ = false;
+    kfs_manual_rear_pressure_wait_ = false;
   } else if (ref == R1KfsMechanismRef::RKFS_COLLECT_START_POS) {
     kfs_rx_pos_ref(KFS_RX_START_POS);
     kfs_rz_pos_ref(KFS_RZ_START_POS);
     kfs_ryaw_pos_ref(KFS_RYAW_START_ANGLE);
     kfs_rear_pump(1.0);
     kfs_rear_valve(false);
+    // 圧力センサ待機を無効化。
+    kfs_manual_front_pressure_wait_ = false;
+    kfs_manual_rear_pressure_wait_ = false;
   } else {
     // このときはエラー
     RCLCPP_ERROR(this->get_logger(), "Unknown R1KfsMechanismRef value: %d", static_cast<int>(ref));
@@ -1427,6 +1469,38 @@ void R1MainNode::r1_kfs_mechanism_ref_callback(const std_msgs::msg::Int32::Share
     s.c_str());
 
   apply_r1_kfs_mechanism_ref(ref);
+}
+
+void R1MainNode::update_kfs_manual_pressure_sensor(void)
+{
+  auto check = [&](
+                 bool & wait, bool & detected, rclcpp::Time & start_time, bool raw_switch,
+                 R1KfsMechanismRef storage_ref) {
+    if (!wait) return;
+    // 吸着時にセンサがOFFになるため論理を反転
+    const bool current = !raw_switch;
+    if (current && !detected) {
+      start_time = this->now();
+    }
+    detected = current;
+    if (detected && (this->now() - start_time).seconds() > PRESSURE_SENSOR_TIME_THRESHOLD) {
+      RCLCPP_INFO(
+        this->get_logger(), "manual kfs pressure detected, moving to storage (%d)",
+        static_cast<int>(storage_ref));
+      apply_r1_kfs_mechanism_ref(storage_ref);
+      // apply_r1_kfs_mechanism_ref内でwait=falseになるが、明示的にリセットする
+      wait = false;
+    }
+  };
+
+  check(
+    kfs_manual_front_pressure_wait_, kfs_manual_front_pressure_detected_,
+    kfs_manual_front_pressure_start_time_, front_pressure_switch_status_,
+    R1KfsMechanismRef::FKFS_STORAGE);
+  check(
+    kfs_manual_rear_pressure_wait_, kfs_manual_rear_pressure_detected_,
+    kfs_manual_rear_pressure_start_time_, rear_pressure_switch_status_,
+    R1KfsMechanismRef::RKFS_STORAGE);
 }
 
 void R1MainNode::r1_retry_collect_callback(const std_msgs::msg::Int32::SharedPtr msg)
@@ -2042,6 +2116,7 @@ void R1MainNode::timer_callback(void)
   // タスクを実行
   // ps4_->print_data();
   main_task();
+  update_kfs_manual_pressure_sensor();
   update_kfs_led_status();
   sabacan_led_update();
 }

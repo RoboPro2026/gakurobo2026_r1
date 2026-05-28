@@ -496,6 +496,9 @@ public:
   // 圧力センサを使用する場合、圧力センサが反応したらKFS回収成功とみなして、機構を収納する
   // この場合、足回りの移動距離は関係ない
   bool ENABLE_PRESSURE_SENSOR = true;
+  // r1_kfs_mechanism_refで回収命令(LOW/MIDDLE/HIGH)を受けたときに圧力センサを使用するか
+  // trueのとき、圧力センサが反応したら自動でSTORAGE位置に移動する
+  bool ENABLE_R1_KFS_MECHANISM_REF_PRESSURE_SENSOR = false;
   // 壁検出センサーの距離閾値 [m]
   double WALL_SENSOR_DISTANCE_THRESHOLD = 0.5;
   // 壁検出センサーの反応時間閾値 [s]
@@ -555,6 +558,7 @@ public:
   void set_rkfs_led_status(uint8_t r, uint8_t g, uint8_t b, double blink_period_s = 0.0);
   void clear_led_status(void);
   void update_kfs_led_status(void);
+  void update_kfs_manual_pressure_sensor(void);
   void set_led_event(uint8_t r, uint8_t g, uint8_t b, double blink_period_s, double duration_sec);
   LedPattern resolve_base_led_pattern(void);
   LedColor resolve_led_output_color(const LedPattern & pattern, const rclcpp::Time & now) const;
@@ -837,6 +841,13 @@ public:
     std::vector<rclcpp::Time>(2, rclcpp::Time(0));
   // 圧力センサの反応状況
   std::vector<bool> pressure_sensor_detected_ = std::vector<bool>(2, false);
+  // r1_kfs_mechanism_ref 手動指令後の圧力センサ待機フラグ (auto-collectとは独立した変数)
+  bool kfs_manual_front_pressure_wait_ = false;
+  bool kfs_manual_rear_pressure_wait_ = false;
+  bool kfs_manual_front_pressure_detected_ = false;
+  bool kfs_manual_rear_pressure_detected_ = false;
+  rclcpp::Time kfs_manual_front_pressure_start_time_ = this->now();
+  rclcpp::Time kfs_manual_rear_pressure_start_time_ = this->now();
   int auto_collect_kfs_fkfs_step_ = DEFAULT_STEP;
   int auto_collect_kfs_rkfs_step_ = DEFAULT_STEP;
 
