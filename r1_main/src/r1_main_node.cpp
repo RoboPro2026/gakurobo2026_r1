@@ -3314,12 +3314,14 @@ void R1MainNode::manual_mode7_spear_attack_task(int n, int m, bool _reverse_trig
   if (step == 1) {
     // reverse_triggerを更新
     reverse_trigger = _reverse_trigger;
+    // KFS回収機構を当たらない位置に移動
+    // yawは内向きにする
     kfs_fx_pos_ref(KFS_FX_NORMAL_POS);
     kfs_fz_pos_ref(KFS_FZ_NORMAL_POS);
-    kfs_fyaw_pos_ref(KFS_FYAW_SIDE_ANGLE);
+    kfs_fyaw_move_rear_mech_lock();
     kfs_rx_pos_ref(KFS_RX_NORMAL_POS);
     kfs_rz_pos_ref(KFS_RZ_NORMAL_POS);
-    kfs_ryaw_pos_ref(KFS_RYAW_SIDE_ANGLE);
+    kfs_ryaw_move_front_mech_lock();
     // 念の為push_valveはfalseにしておく
     spear_hand_push_valve(false);
     if (m == 1) {
