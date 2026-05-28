@@ -2873,6 +2873,7 @@ void R1MainNode::manual_mode4_fkfs(void)
     if (ps4_->is_pushing_l2()) {
       kfs_fyaw_pos_ref(kfs_fyaw_position_ref_ + 0.05);
     } else {
+      fyaw_step++;
       if (fyaw_step > 3) {
         fyaw_step = 3;
       }
