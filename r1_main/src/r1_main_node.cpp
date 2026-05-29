@@ -3541,7 +3541,7 @@ void R1MainNode::manual_mode7_spear_attack(void)
   }
 }
 
-bool R1MainNode::get_travel_angle_odom(double & angle_out) const
+bool R1MainNode::get_travel_angle_odom(double & angle_out)
 {
   // 現在のオドメトリ速度（ボディフレーム）→ odom座標系の角度に変換
   const double vx = odometry_.twist.twist.linear.x;
@@ -3564,6 +3564,9 @@ bool R1MainNode::get_travel_angle_odom(double & angle_out) const
     }
   }
 
+  RCLCPP_WARN_THROTTLE(
+    this->get_logger(), *this->get_clock(), 250,
+    "get_travel_angle_odom unable to determine travel angle from odometry");
   return false;
 }
 
@@ -3575,7 +3578,7 @@ double R1MainNode::round_to_nearest_90deg(double angle_rad)
 }
 
 R1MainNode::KfsTravelCapture R1MainNode::calc_kfs_offset_from_travel_dir(
-  const std::string & mechanism_type) const
+  const std::string & mechanism_type)
 {
   KfsTravelCapture cap;
 
@@ -3588,25 +3591,26 @@ R1MainNode::KfsTravelCapture R1MainNode::calc_kfs_offset_from_travel_dir(
 
   // cos(進行角 - ロボット向き) > 0 のとき、進行方向がロボット前方向と一致 → front_kfs が先行
   // cos(進行角 - ロボット向き) <= 0 のとき、進行方向がロボット後方向と一致 → rear_kfs が先行
+  // offset_xとoffset_yは後行、wall_offset_xとwall_offset_yは先行の機構に対して適用する
   if (mechanism_type == "front_kfs") {
-    if (std::cos(cap.round_yaw - yaw_) > 0) {
-      // front_kfs が先行: 進行方向に center_offset を適用
+    if (std::cos(cap.round_yaw - yaw_) < 0) {
+      // front_kfs が後行: 進行方向に center_offset を適用
       cap.offset_x = COLLECT_KFS_OFFSET * std::cos(cap.round_yaw);
       cap.offset_y = COLLECT_KFS_OFFSET * std::sin(cap.round_yaw);
     } else {
-      // front_kfs が後行: 壁センサーが front_kfs より先に反応するため補正が必要
+      // front_kfs が先行: 壁センサーが front_kfs より先に反応するため補正が必要
       cap.wall_offset_x = WALL_SENSOR_DELAY_OFFSET_DISTANCE * std::cos(cap.round_yaw);
       cap.wall_offset_y = WALL_SENSOR_DELAY_OFFSET_DISTANCE * std::sin(cap.round_yaw);
     }
   } else {  // rear_kfs
     if (std::cos(cap.round_yaw - yaw_) > 0) {
-      // rear_kfs が後行: 壁センサーが rear_kfs より先に反応するため補正が必要
-      cap.wall_offset_x = WALL_SENSOR_DELAY_OFFSET_DISTANCE * std::cos(cap.round_yaw);
-      cap.wall_offset_y = WALL_SENSOR_DELAY_OFFSET_DISTANCE * std::sin(cap.round_yaw);
-    } else {
-      // rear_kfs が先行: 進行方向に center_offset を適用
+      // rear_kfs が後行: 進行方向に center_offset を適用
       cap.offset_x = COLLECT_KFS_OFFSET * std::cos(cap.round_yaw);
       cap.offset_y = COLLECT_KFS_OFFSET * std::sin(cap.round_yaw);
+    } else {
+      // rear_kfs が先行: 壁センサーが rear_kfs より先に反応するため補正が必要
+      cap.wall_offset_x = WALL_SENSOR_DELAY_OFFSET_DISTANCE * std::cos(cap.round_yaw);
+      cap.wall_offset_y = WALL_SENSOR_DELAY_OFFSET_DISTANCE * std::sin(cap.round_yaw);
     }
   }
 
@@ -3979,13 +3983,13 @@ void R1MainNode::auto_collect_kfs_task(void)
       if (ENABLE_AUTO_COLLECT_KFS_ACTUATOR) {
         // 回収位置に移動し、回収動作を行う
         // 進行方向の逆向きのメカロックに当てるか、zone/inner で決定する
-        // forward_body > 0 (前進中) → front mech lock
-        // forward_body < 0 (後退中) → rear mech lock
+        // forward_body > 0 (前進中) → rear mech lock
+        // forward_body < 0 (後退中) → front mech lock
         // ※ 実機で逆なら calc_kfs_offset_from_travel_dir 内の forward_body の符号を反転させる
         auto choose_use_front_mech_lock = [&]() -> bool {
           if (ENABLE_VELOCITY_BASED_YAW) {
             const double forward_body = std::cos(cap.round_yaw - yaw_);
-            return forward_body > 0.0;  // 進行中 → front mech lock
+            return forward_body < 0.0;  // 後退中 → front mech lock
           }
           // フォールバック: 従来の zone/inner 判定
           if (zone_ == "blue")

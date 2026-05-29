@@ -661,9 +661,9 @@ public:
   void stop_kfs_auto_collect(void);
   void reset_kfs_auto_collect_tracking(void);
   // 進行方向ベース yaw/offset ヘルパー
-  bool get_travel_angle_odom(double & angle_out) const;
+  bool get_travel_angle_odom(double & angle_out);
   static double round_to_nearest_90deg(double angle_rad);
-  KfsTravelCapture calc_kfs_offset_from_travel_dir(const std::string & mechanism_type) const;
+  KfsTravelCapture calc_kfs_offset_from_travel_dir(const std::string & mechanism_type);
   // ========== 各アクチュエータ単体の動作関数 ==========
   bool chassis_rotate90 = false;
   // 足回り
