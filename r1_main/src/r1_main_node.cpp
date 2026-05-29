@@ -3979,13 +3979,13 @@ void R1MainNode::auto_collect_kfs_task(void)
       if (ENABLE_AUTO_COLLECT_KFS_ACTUATOR) {
         // 回収位置に移動し、回収動作を行う
         // 進行方向の逆向きのメカロックに当てるか、zone/inner で決定する
-        // forward_body > 0 (前進中) → 逆は後方 → rear mech lock
-        // forward_body < 0 (後退中) → 逆は前方 → front mech lock
+        // forward_body > 0 (前進中) → front mech lock
+        // forward_body < 0 (後退中) → rear mech lock
         // ※ 実機で逆なら calc_kfs_offset_from_travel_dir 内の forward_body の符号を反転させる
         auto choose_use_front_mech_lock = [&]() -> bool {
           if (ENABLE_VELOCITY_BASED_YAW) {
             const double forward_body = std::cos(cap.round_yaw - yaw_);
-            return forward_body < 0.0;  // 後退中 → front mech lock
+            return forward_body > 0.0;  // 後退中 → front mech lock
           }
           // フォールバック: 従来の zone/inner 判定
           if (zone_ == "blue")
