@@ -297,7 +297,7 @@ r1_main_node:
     move_distance_after_wall_detect: 0.35
     # 壁の検出範囲のサイズ [m]
     wall_sensor_detect_height: 0.6
-    wall_sensor_detect_width: 1.8
+    wall_sensor_detect_width: 1.2
     # 壁検出の遅延距離オフセット [m]
     # センサーが反応したときに展開すると回収機構がぶつかる方のセンサーに適用される
     wall_sensor_delay_offset_distance: 0.05
