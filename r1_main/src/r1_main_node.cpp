@@ -3614,12 +3614,12 @@ R1MainNode::KfsTravelCapture R1MainNode::calc_kfs_offset_from_travel_dir(
   cap.wall_move_dist_x = MOVE_DISTANCE_AFTER_WALL_DETECT * std::cos(cap.round_yaw);
   cap.wall_move_dist_y = MOVE_DISTANCE_AFTER_WALL_DETECT * std::sin(cap.round_yaw);
 
-  RCLCPP_INFO(
-    this->get_logger(),
-    "calc_kfs_offset_from_travel_dir [%s]: round_yaw=%.2f deg, forward_body=%.2f, "
-    "offset=(%.3f,%.3f), wall_offset=(%.3f,%.3f)",
-    mechanism_type.c_str(), cap.round_yaw * 180.0 / M_PI, std::cos(cap.round_yaw - yaw_),
-    cap.offset_x, cap.offset_y, cap.wall_offset_x, cap.wall_offset_y);
+  // RCLCPP_INFO(
+  //   this->get_logger(),
+  //   "calc_kfs_offset_from_travel_dir [%s]: round_yaw=%.2f deg, forward_body=%.2f, "
+  //   "offset=(%.3f,%.3f), wall_offset=(%.3f,%.3f)",
+  //   mechanism_type.c_str(), cap.round_yaw * 180.0 / M_PI, std::cos(cap.round_yaw - yaw_),
+  //   cap.offset_x, cap.offset_y, cap.wall_offset_x, cap.wall_offset_y);
 
   return cap;
 }
@@ -3826,10 +3826,10 @@ void R1MainNode::auto_collect_kfs_task(void)
     // ENABLE_VELOCITY_BASED_YAW=true のとき: 進行方向から算出（step1でキャプチャした値を使用）
     // ENABLE_VELOCITY_BASED_YAW=false のとき: 従来の zone/inner 判定を使用
     if (ENABLE_VELOCITY_BASED_YAW) {
-      offset_x         = cap.offset_x;
-      offset_y         = cap.offset_y;
-      wall_offset_x    = cap.wall_offset_x;
-      wall_offset_y    = cap.wall_offset_y;
+      offset_x = cap.offset_x;
+      offset_y = cap.offset_y;
+      wall_offset_x = cap.wall_offset_x;
+      wall_offset_y = cap.wall_offset_y;
       wall_move_dist_x = cap.wall_move_dist_x;
       wall_move_dist_y = cap.wall_move_dist_y;
     } else {
