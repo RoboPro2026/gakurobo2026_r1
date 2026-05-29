@@ -3591,14 +3591,19 @@ R1MainNode::KfsTravelCapture R1MainNode::calc_kfs_offset_from_travel_dir(
 
   // cos(進行角 - ロボット向き) > 0 のとき、進行方向がロボット前方向と一致 → front_kfs が先行
   // cos(進行角 - ロボット向き) <= 0 のとき、進行方向がロボット後方向と一致 → rear_kfs が先行
-  // offset_xとoffset_yは後行、wall_offset_xとwall_offset_yは先行の機構に対して適用する
+  //
+  // オフセットの方向:
+  //   後行機構: center を進行方向にずらす（機構がロボット中心より後ろにあるため）
+  //   先行機構: center を進行方向の逆にずらす（機構がロボット中心より前にあるため）
   if (mechanism_type == "front_kfs") {
     if (std::cos(cap.round_yaw - yaw_) < 0) {
       // front_kfs が後行: 進行方向に center_offset を適用
       cap.offset_x = COLLECT_KFS_OFFSET * std::cos(cap.round_yaw);
       cap.offset_y = COLLECT_KFS_OFFSET * std::sin(cap.round_yaw);
     } else {
-      // front_kfs が先行: 壁センサーが front_kfs より先に反応するため補正が必要
+      // front_kfs が先行: 進行方向の逆に center_offset を適用
+      cap.offset_x = -COLLECT_KFS_OFFSET * std::cos(cap.round_yaw);
+      cap.offset_y = -COLLECT_KFS_OFFSET * std::sin(cap.round_yaw);
       cap.wall_offset_x = WALL_SENSOR_DELAY_OFFSET_DISTANCE * std::cos(cap.round_yaw);
       cap.wall_offset_y = WALL_SENSOR_DELAY_OFFSET_DISTANCE * std::sin(cap.round_yaw);
     }
@@ -3608,7 +3613,9 @@ R1MainNode::KfsTravelCapture R1MainNode::calc_kfs_offset_from_travel_dir(
       cap.offset_x = COLLECT_KFS_OFFSET * std::cos(cap.round_yaw);
       cap.offset_y = COLLECT_KFS_OFFSET * std::sin(cap.round_yaw);
     } else {
-      // rear_kfs が先行: 壁センサーが rear_kfs より先に反応するため補正が必要
+      // rear_kfs が先行: 進行方向の逆に center_offset を適用
+      cap.offset_x = -COLLECT_KFS_OFFSET * std::cos(cap.round_yaw);
+      cap.offset_y = -COLLECT_KFS_OFFSET * std::sin(cap.round_yaw);
       cap.wall_offset_x = WALL_SENSOR_DELAY_OFFSET_DISTANCE * std::cos(cap.round_yaw);
       cap.wall_offset_y = WALL_SENSOR_DELAY_OFFSET_DISTANCE * std::sin(cap.round_yaw);
     }
