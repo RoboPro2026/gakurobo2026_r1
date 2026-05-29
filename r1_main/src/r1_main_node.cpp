@@ -3985,7 +3985,7 @@ void R1MainNode::auto_collect_kfs_task(void)
         auto choose_use_front_mech_lock = [&]() -> bool {
           if (ENABLE_VELOCITY_BASED_YAW) {
             const double forward_body = std::cos(cap.round_yaw - yaw_);
-            return forward_body > 0.0;  // 後退中 → front mech lock
+            return forward_body > 0.0;  // 進行中 → front mech lock
           }
           // フォールバック: 従来の zone/inner 判定
           if (zone_ == "blue")
