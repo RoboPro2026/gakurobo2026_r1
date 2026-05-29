@@ -3598,24 +3598,32 @@ R1MainNode::KfsTravelCapture R1MainNode::calc_kfs_offset_from_travel_dir(
   if (mechanism_type == "front_kfs") {
     if (std::cos(cap.round_yaw - yaw_) < 0) {
       // front_kfs が後行: 進行方向に center_offset を適用
-      cap.offset_x = COLLECT_KFS_OFFSET * std::cos(cap.round_yaw);
-      cap.offset_y = COLLECT_KFS_OFFSET * std::sin(cap.round_yaw);
-    } else {
-      // front_kfs が先行: 進行方向の逆に center_offset を適用
       cap.offset_x = -COLLECT_KFS_OFFSET * std::cos(cap.round_yaw);
       cap.offset_y = -COLLECT_KFS_OFFSET * std::sin(cap.round_yaw);
+      // cap.offset_x = COLLECT_KFS_OFFSET * std::cos(cap.round_yaw);
+      // cap.offset_y = COLLECT_KFS_OFFSET * std::sin(cap.round_yaw);
+    } else {
+      // front_kfs が先行: 進行方向の逆に center_offset を適用
+      // cap.offset_x = -COLLECT_KFS_OFFSET * std::cos(cap.round_yaw);
+      // cap.offset_y = -COLLECT_KFS_OFFSET * std::sin(cap.round_yaw);
+      cap.offset_x = COLLECT_KFS_OFFSET * std::cos(cap.round_yaw);
+      cap.offset_y = COLLECT_KFS_OFFSET * std::sin(cap.round_yaw);
       cap.wall_offset_x = WALL_SENSOR_DELAY_OFFSET_DISTANCE * std::cos(cap.round_yaw);
       cap.wall_offset_y = WALL_SENSOR_DELAY_OFFSET_DISTANCE * std::sin(cap.round_yaw);
     }
   } else {  // rear_kfs
     if (std::cos(cap.round_yaw - yaw_) > 0) {
       // rear_kfs が後行: 進行方向に center_offset を適用
-      cap.offset_x = COLLECT_KFS_OFFSET * std::cos(cap.round_yaw);
-      cap.offset_y = COLLECT_KFS_OFFSET * std::sin(cap.round_yaw);
-    } else {
-      // rear_kfs が先行: 進行方向の逆に center_offset を適用
       cap.offset_x = -COLLECT_KFS_OFFSET * std::cos(cap.round_yaw);
       cap.offset_y = -COLLECT_KFS_OFFSET * std::sin(cap.round_yaw);
+      // cap.offset_x = COLLECT_KFS_OFFSET * std::cos(cap.round_yaw);
+      // cap.offset_y = COLLECT_KFS_OFFSET * std::sin(cap.round_yaw);
+    } else {
+      // rear_kfs が先行: 進行方向の逆に center_offset を適用
+      // cap.offset_x = -COLLECT_KFS_OFFSET * std::cos(cap.round_yaw);
+      // cap.offset_y = -COLLECT_KFS_OFFSET * std::sin(cap.round_yaw);
+      cap.offset_x = COLLECT_KFS_OFFSET * std::cos(cap.round_yaw);
+      cap.offset_y = COLLECT_KFS_OFFSET * std::sin(cap.round_yaw);
       cap.wall_offset_x = WALL_SENSOR_DELAY_OFFSET_DISTANCE * std::cos(cap.round_yaw);
       cap.wall_offset_y = WALL_SENSOR_DELAY_OFFSET_DISTANCE * std::sin(cap.round_yaw);
     }
