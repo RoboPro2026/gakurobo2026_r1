@@ -308,7 +308,7 @@ r1_main_node:
     # false のとき従来の zone/inner 判定を使用する
     enable_velocity_based_yaw: true
     # odom位置履歴のバッファ保持時間 [s]（停止中の進行方向推定に使用）
-    travel_history_duration: 5.0
+    travel_history_duration: 7.0
     # 現在速度を信頼するための閾値 [m/s]（これ以上なら速度で判定、未満なら履歴を使用）
     travel_speed_threshold: 0.1
     # 履歴から進行方向を判定するための最小変位 [m]（これ以下なら判定不可）
