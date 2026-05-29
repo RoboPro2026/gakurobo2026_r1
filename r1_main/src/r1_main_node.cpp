@@ -3910,10 +3910,11 @@ void R1MainNode::auto_collect_kfs_task(void)
             this->get_logger(), *this->get_clock(), 250,
             "Step = %d, wall sensor status for forest %d %s kfs: map_x=%.2f, map_y=%.2f, "
             "odom_x=%.2f, "
-            "odom_y=%.2f, sensor_value_low=%.2f, sensor_value_middle=%.2f, wall_detected=%d",
+            "odom_y=%.2f, sensor_value_low=%.2f, sensor_value_middle=%.2f, wall_detected=%d, "
+            "offset_x=%.2f, offset_y=%.2f",
             step, target_forest_number, mechanism_type.c_str(), map_x, map_y, odom_x, odom_y,
-            log_sensor_low, log_sensor_middle,
-            (int)wall_sensor_detected_[target_forest_number - 1]);
+            log_sensor_low, log_sensor_middle, (int)wall_sensor_detected_[target_forest_number - 1],
+            offset_x, offset_y);
           if (is_detect_wall(target_forest_number)) {
             // 壁検出位置の座標を更新（odom座標系）
             wall_detect_pos_[target_forest_number - 1] = odometry_;
