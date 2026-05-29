@@ -3595,6 +3595,9 @@ R1MainNode::KfsTravelCapture R1MainNode::calc_kfs_offset_from_travel_dir(
   // オフセットの方向:
   //   後行機構: center を進行方向にずらす（機構がロボット中心より後ろにあるため）
   //   先行機構: center を進行方向の逆にずらす（機構がロボット中心より前にあるため）
+
+  // TODO: ここの符号は適当に入れ替えたので逆かも
+
   if (mechanism_type == "front_kfs") {
     if (std::cos(cap.round_yaw - yaw_) < 0) {
       // front_kfs が後行: 進行方向に center_offset を適用
