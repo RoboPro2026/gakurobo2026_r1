@@ -158,7 +158,7 @@ r1_main_node:
     chassis_low_omega: 0.2
     chassis_normal_velocity: 0.6
     chassis_normal_omega: 0.5
-    chassis_high_velocity: 2.5
+    chassis_high_velocity: 3.0
     chassis_high_omega: 1.5
     # ========== KFS回収 ==========
     # 現状だと、fx,fz,rx,rzのnormal_torqueが1Nmになっていて、長時間接触しているとC610が止まるので、falseにする
