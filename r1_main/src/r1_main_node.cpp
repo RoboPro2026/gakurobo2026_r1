@@ -1599,7 +1599,6 @@ void R1MainNode::invalidate_led_cache(void)
 
 void R1MainNode::r1_machine_initialize_done_callback(const std_msgs::msg::Empty::SharedPtr)
 {
-  is_initialized_ = true;
   initialize_done_time_ = this->now();
   // initialize 完了直後に LED を再送できるよう、出力キャッシュを無効化する。
   // 将来的にここへ原点検出後処理や初期姿勢への指令を追加する場合も、この callback を
@@ -4549,7 +4548,6 @@ void R1MainNode::main_task(void)
     sabacan_power_ref(!sabacan_is_ems_);
   }
   if (ps4_->is_pushed_ps()) {
-    is_initialized_ = false;
     is_act_paused_ = false;
     if (activate_lidar_on_ps_) {
       request_lidar_lifecycle_activation();
@@ -4589,7 +4587,7 @@ void R1MainNode::main_task(void)
         }
       }
     }
-    if (!right_stick_handled && (is_initialized_ || current_state.main == MainState::EMERGENCY)) {
+    if (!right_stick_handled) {
       bool started_auto = false;
       if (current_state.operation_mode == OperationMode::MODE1_DETECT_ORIGIN) {
         // MODE1のときはACT0_STARTを開始する
@@ -4802,12 +4800,6 @@ void R1MainNode::main_task(void)
   next_state.chassis_control_mode =
     chassis_auto_requested ? ChassisControlMode::AUTO : ChassisControlMode::MANUAL;
   state_machine_->set_next_state(next_state);
-
-  // EMERGENCY中はSabacan初期化が完了しないため、is_initialized_の待機をスキップする
-  // モーター保護はr1_machine_manage_nodeが担保しているため安全
-  if (is_initialized_ == false && current_state.main != MainState::EMERGENCY) {
-    return;
-  }
 
   manual_task();
   update_auto_chassis_task();

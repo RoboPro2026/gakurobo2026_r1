@@ -377,7 +377,6 @@ public:
   // robot_move
   r1_msgs::msg::RobotMove current_robot_move_;
 
-  bool is_initialized_ = false;
   RobotState initial_state_{
     MainState::READY, OperationMode::MODE1_DETECT_ORIGIN, ChassisControlMode::MANUAL};
 
