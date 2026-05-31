@@ -4803,7 +4803,9 @@ void R1MainNode::main_task(void)
     chassis_auto_requested ? ChassisControlMode::AUTO : ChassisControlMode::MANUAL;
   state_machine_->set_next_state(next_state);
 
-  if (is_initialized_ == false) {
+  // EMERGENCY中はSabacan初期化が完了しないため、is_initialized_の待機をスキップする
+  // モーター保護はr1_machine_manage_nodeが担保しているため安全
+  if (is_initialized_ == false && current_state.main != MainState::EMERGENCY) {
     return;
   }
 
