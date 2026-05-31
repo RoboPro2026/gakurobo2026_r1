@@ -4589,7 +4589,7 @@ void R1MainNode::main_task(void)
         }
       }
     }
-    if (!right_stick_handled && is_initialized_) {
+    if (!right_stick_handled && (is_initialized_ || current_state.main == MainState::EMERGENCY)) {
       bool started_auto = false;
       if (current_state.operation_mode == OperationMode::MODE1_DETECT_ORIGIN) {
         // MODE1のときはACT0_STARTを開始する
