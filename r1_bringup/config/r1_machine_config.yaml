@@ -1198,7 +1198,9 @@ sabacan_robomasv2_node_id6:
 sabacan_robomasv2_node_id7:
   ros__parameters:
     board_id: 7
-    enable_initialize: false
+    # 計測輪用基板だけ電源を入れた瞬間に初期化が行われるようにする
+    # 非常停止時に電源を入れてもこの基板だけは初期化が走る
+    enable_initialize: true
     publish_timer_rate: 100.0
     # none, none, x, y
     # monitor_reg1のABS_SPDとABS_POSを有効。monitor_reg2は無効

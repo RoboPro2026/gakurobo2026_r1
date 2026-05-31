@@ -50,8 +50,7 @@ const std::vector<OperationMode> kOperationModeOrder = {
   OperationMode::MODE1_DETECT_ORIGIN, OperationMode::MODE2_POLE,
   OperationMode::MODE3_SPEAR,         OperationMode::MODE4_FKFS,
   OperationMode::MODE5_RKFS,          OperationMode::MODE6_R2_LIFT,
-  OperationMode::MODE7_SPEAR_ATTACK,  OperationMode::MODE8_AUTO_COLLECT_KFS,
-  OperationMode::MODE9_AUTO_CHASSIS,
+  OperationMode::MODE7_SPEAR_ATTACK,
 };
 
 OperationMode cycle_operation_mode(OperationMode mode, int step)
@@ -1191,13 +1190,6 @@ R1MainNode::LedPattern R1MainNode::resolve_base_led_pattern(void)
   }
   if (state.operation_mode == OperationMode::MODE7_SPEAR_ATTACK) {
     return apply_led_blink(LedPattern{true, {50, 50, 50}, 0});
-  }
-  if (state.operation_mode == OperationMode::MODE8_AUTO_COLLECT_KFS) {
-    return apply_led_blink(LedPattern{true, {50, 25, 0}, 0});
-  }
-  if (state.operation_mode == OperationMode::MODE9_AUTO_CHASSIS) {
-    // TODO: 9の色は変える
-    return apply_led_blink(LedPattern{true, {50, 50, 0}, 0});
   }
 
   // 未定義なら消灯
@@ -4321,102 +4313,6 @@ void R1MainNode::auto_collect_kfs_task(void)
     // prev_within = within;
   }
 }
-void R1MainNode::manual_mode8_auto_collect_kfs(void)
-{
-  // if (ps4_->is_pushed_circle()) {
-  //   reset_position(true);
-  //   stop_kfs_auto_collect();
-  // }
-
-  // if (ps4_->is_pushed_up()) {
-  //   spear_x_pos_ref(spear_x_position_ref_ + 0.01);
-  // }
-
-  // if (ps4_->is_pushed_down()) {
-  //   spear_x_pos_ref(spear_x_position_ref_ - 0.01);
-  // }
-
-  // if (ps4_->is_pushed_left()) {
-  //   kfs_front_pump(0.0);
-  //   kfs_front_valve(true);
-  //   // setTimeout風で電磁弁をOFFにする。
-  //   if (manual_mode7_front_valve_timer_) {
-  //     manual_mode7_front_valve_timer_->cancel();
-  //   }
-  //   manual_mode7_front_valve_timer_ = this->create_wall_timer(250ms, [this]() {
-  //     kfs_front_valve(false);
-  //     if (manual_mode7_front_valve_timer_) {
-  //       manual_mode7_front_valve_timer_->cancel();
-  //     }
-  //   });
-  //   kfs_rear_pump(0.0);
-  //   kfs_rear_valve(true);
-  //   // setTimeout風で電磁弁をOFFにする。
-  //   if (manual_mode7_rear_valve_timer_) {
-  //     manual_mode7_rear_valve_timer_->cancel();
-  //   }
-  //   manual_mode7_rear_valve_timer_ = this->create_wall_timer(250ms, [this]() {
-  //     kfs_rear_valve(false);
-  //     if (manual_mode7_rear_valve_timer_) {
-  //       manual_mode7_rear_valve_timer_->cancel();
-  //     }
-  //   });
-  // }
-
-  // if (ps4_->is_pushed_l1()) {
-  //   // kfs_fxの微調整（指令値を減少）
-  //   kfs_fx_pos_ref(kfs_fx_position_ref_ - 0.01);
-  // }
-
-  // if (ps4_->is_pushed_r1()) {
-  //   // kfs_fxの微調整（指令値を増加）
-  //   kfs_fx_pos_ref(kfs_fx_position_ref_ + 0.01);
-  // }
-
-  // if (ps4_->is_pushed_l2()) {
-  //   // kfs_fzの微調整（指令値を減少）
-  //   kfs_fz_pos_ref(kfs_fz_position_ref_ - 0.01);
-  // }
-
-  // if (ps4_->is_pushed_r2()) {
-  //   // kfs_fzの微調整（指令値を増加）
-  //   kfs_fz_pos_ref(kfs_fz_position_ref_ + 0.01);
-  // }
-
-  // if (ps4_->is_pushed_square()) {
-  //   stop_kfs_auto_collect();
-  // }
-}
-
-void R1MainNode::manual_mode9_auto_chassis(void)
-{
-  //   const bool chassis_idle =
-  //     (chassis_act_status_ == ChassisAct::NONE) && !pending_auto_robot_move_valid_;
-
-  //   if (!chassis_idle) {
-  //     return;
-  //   }
-
-  //   if (ps4_->is_pushed_triangle()) {
-  // #if SPEAR_MECHANISM == SPEAR_MECHANISM_CHIDA
-  //     spear_x_pos_ref(SPEAR_X_MIDDLE_POS);
-  //     spear_roll_pos_ref(SPEAR_ROLL_VERTICAL_ANGLE);
-  // #endif
-  //     start_auto_chassis(ChassisAct::ACT0_START, std::vector<int>{}, std::vector<std::string>{});
-  //   } else if (ps4_->is_pushed_circle()) {
-  //     reset_position(true);
-  //   } else if (ps4_->is_pushed_down()) {
-  //     start_auto_chassis(ChassisAct::ACT1_START, std::vector<int>{}, std::vector<std::string>{});
-  //   }
-  //   if (ps4_->is_pushed_right()) {
-  //     kfs_fx_detect_origin();
-  //     kfs_fz_detect_origin();
-  //     kfs_fyaw_detect_origin();
-  //     kfs_rx_detect_origin();
-  //     kfs_rz_detect_origin();
-  //     kfs_ryaw_detect_origin();
-  //   }
-}
 
 void R1MainNode::update_auto_chassis_task(void)
 {
@@ -4619,10 +4515,6 @@ void R1MainNode::manual_task(void)
     manual_mode6_r2_lift();
   } else if (current_state.operation_mode == OperationMode::MODE7_SPEAR_ATTACK) {
     manual_mode7_spear_attack();
-  } else if (current_state.operation_mode == OperationMode::MODE8_AUTO_COLLECT_KFS) {
-    manual_mode8_auto_collect_kfs();
-  } else if (current_state.operation_mode == OperationMode::MODE9_AUTO_CHASSIS) {
-    manual_mode9_auto_chassis();
   }
 }
 
@@ -4634,11 +4526,8 @@ void R1MainNode::main_task(void)
     idle_task();
     return;
   }
-  if (current_state.main == MainState::EMERGENCY) {
-    emergency_task();
-    return;
-  }
-  if (current_state.main != MainState::READY) {
+  if (
+    current_state.main != MainState::READY && current_state.main != MainState::EMERGENCY) {
     return;
   }
 
