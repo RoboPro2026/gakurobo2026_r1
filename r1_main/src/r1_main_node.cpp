@@ -3699,16 +3699,19 @@ void R1MainNode::auto_collect_kfs_task(void)
 
     // センサーが反応しているかを確認
     if (kfs_height == HEIGHT_LOW) {
-      // 下段の検出：lセンサがOFF->ONの切り替わり
-      wall_detected = (sensor_value_low > WALL_SENSOR_DISTANCE_THRESHOLD);
+      // 下段の検出：lセンサがしきい値より遠いかつmセンサがしきい値より遠いとき：センサ反応
+      wall_detected =
+        (sensor_value_low > WALL_SENSOR_DISTANCE_THRESHOLD &&
+         sensor_value_middle > WALL_SENSOR_DISTANCE_THRESHOLD);
     } else if (kfs_height == HEIGHT_MIDDLE) {
-      // 中段の検出：9以外：lセンサがONかつmセンサがON->OFFの切り替わり
+      // 中段の検出：lセンサがしきい値より近いかつmセンサがしきい値より近いとき：センサ反応
       wall_detected =
         (sensor_value_low < WALL_SENSOR_DISTANCE_THRESHOLD &&
          sensor_value_middle > WALL_SENSOR_DISTANCE_THRESHOLD);
     } else if (kfs_height == HEIGHT_HIGH) {
-      // 上段の検出：mセンサがOFF->ONの切り替わり
-      wall_detected = (sensor_value_middle < WALL_SENSOR_DISTANCE_THRESHOLD);
+      // 上段の検出：lセンサがしきい値より近いかつmセンサがしきい値より近いとき：センサ反応
+      wall_detected = (sensor_value_low < WALL_SENSOR_DISTANCE_THRESHOLD) &&
+                      (sensor_value_middle < WALL_SENSOR_DISTANCE_THRESHOLD);
     }
     // センサーが初回の反応だった場合は開始時刻を更新
     if (wall_detected && wall_sensor_detected_[target_forest - 1] == false) {
@@ -3921,13 +3924,14 @@ void R1MainNode::auto_collect_kfs_task(void)
       // ENABLE_WALL_SENSOR == trueのとき、壁センサーの値を更新し、壁を検出する
       // ENABLE_WALL_SENSOR == falseのとき、座標ベースで回収動作を開始するかどうかの判定を行う
       if (ENABLE_WALL_SENSOR == true) {
-        // 壁センサーベースの判定
+        // 壁センサーのステータスを更新
+        update_wall_sensor_status(target_forest_number, within_index);
+
         // まずは壁検出機能が有効となる範囲内にロボットがいるかを確認する
         if (
           is_within_rotated_rectangle(
             map_x, map_y, center_x, center_y, rect_yaw, WALL_SENSOR_DETECT_WIDTH,
             WALL_SENSOR_DETECT_HEIGHT)) {
-          update_wall_sensor_status(target_forest_number, within_index);
           double log_sensor_low = (within_index == FKFS) ? scan_fl_data_ : scan_rl_data_;
           double log_sensor_middle = (within_index == FKFS) ? scan_fm_data_ : scan_rm_data_;
           RCLCPP_INFO_THROTTLE(

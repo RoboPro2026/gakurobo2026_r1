@@ -297,7 +297,7 @@ r1_main_node:
     move_distance_after_wall_detect: 0.35
     # 壁の検出範囲のサイズ [m]
     wall_sensor_detect_height: 0.6
-    wall_sensor_detect_width: 1.2
+    wall_sensor_detect_width: 2.4
     # 壁検出の遅延距離オフセット [m]
     # センサーが反応したときに展開すると回収機構がぶつかる方のセンサーに適用される
     wall_sensor_delay_offset_distance: 0.05
@@ -306,7 +306,7 @@ r1_main_node:
     # ── 進行方向ベース yaw/offset 機能 ──────────────────────────────────
     # true のとき進行方向（速度または位置履歴）に基づいて yaw メカロックと offset を決定する
     # false のとき従来の zone/inner 判定を使用する
-    enable_velocity_based_yaw: true
+    enable_velocity_based_yaw: false
     # odom位置履歴のバッファ保持時間 [s]（停止中の進行方向推定に使用）
     travel_history_duration: 7.0
     # 現在速度を信頼するための閾値 [m/s]（これ以上なら速度で判定、未満なら履歴を使用）
