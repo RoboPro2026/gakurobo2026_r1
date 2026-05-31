@@ -168,28 +168,6 @@ public:
   };
 
   // odom座標系での位置サンプル（進行方向推定用）
-  struct OdomPosSample
-  {
-    double x;
-    double y;
-    rclcpp::Time stamp;
-  };
-
-  // KFS機構ごとの進行情報（step1→2遷移時にキャプチャ、以降のstepで参照）
-  struct KfsTravelCapture
-  {
-    // 0, π/2, π, 3π/2 のいずれかに丸めた odom 座標系の進行角度
-    double round_yaw = 0.0;
-    // center_x/y への加算値（先行機構のみ非ゼロ）
-    double offset_x = 0.0;
-    double offset_y = 0.0;
-    // step2 の壁センサーゴール補正値（後行機構のみ非ゼロ）
-    double wall_offset_x = 0.0;
-    double wall_offset_y = 0.0;
-    // step6 の壁センサー移動距離（常に進行方向）
-    double wall_move_dist_x = 0.0;
-    double wall_move_dist_y = 0.0;
-  };
 
   using AutoChassisStatus = ChassisAct;
 
@@ -523,15 +501,6 @@ public:
   // r1_kfs_mechanism_refで回収命令(LOW/MIDDLE/HIGH)を受けたときに圧力センサを使用するか
   // trueのとき、圧力センサが反応したら自動でSTORAGE位置に移動する
   bool ENABLE_R1_KFS_MECHANISM_REF_PRESSURE_SENSOR = false;
-  // trueのとき、進行方向に基づいて yaw メカロックと offset を自動決定する
-  // falseのとき、従来の zone/inner 判定を使用する
-  bool ENABLE_VELOCITY_BASED_YAW = false;
-  // odom位置履歴のバッファ保持時間 [s]
-  double TRAVEL_HISTORY_DURATION = 2.0;
-  // 現在速度を信頼するための閾値 [m/s]
-  double TRAVEL_SPEED_THRESHOLD = 0.05;
-  // 履歴から進行方向を判定するための最小変位 [m]
-  double TRAVEL_DIST_THRESHOLD = 0.02;
   // 壁検出センサーの距離閾値 [m]
   double WALL_SENSOR_DISTANCE_THRESHOLD = 0.5;
   // 壁検出センサーの反応時間閾値 [s]
@@ -659,10 +628,6 @@ public:
     std::vector<std::string> kfs_mechanism_type);
   void stop_kfs_auto_collect(void);
   void reset_kfs_auto_collect_tracking(void);
-  // 進行方向ベース yaw/offset ヘルパー
-  bool get_travel_angle_odom(double & angle_out);
-  static double round_to_nearest_90deg(double angle_rad);
-  KfsTravelCapture calc_kfs_offset_from_travel_dir(const std::string & mechanism_type);
   // ========== 各アクチュエータ単体の動作関数 ==========
   bool chassis_rotate90 = false;
   // 足回り
@@ -885,13 +850,6 @@ public:
   rclcpp::Time kfs_manual_rear_pressure_start_time_ = this->now();
   int auto_collect_kfs_fkfs_step_ = DEFAULT_STEP;
   int auto_collect_kfs_rkfs_step_ = DEFAULT_STEP;
-
-  // ── 進行方向ベースの yaw / offset 機能 ──────────────────────────────
-  // odom位置の時系列バッファ（停止中の進行方向推定に使用）
-  std::deque<OdomPosSample> odom_pos_history_;
-  // 機構ごとのキャプチャ（step1→2遷移時に確定し、step2/4/6で参照）
-  KfsTravelCapture fkfs_travel_capture_;
-  KfsTravelCapture rkfs_travel_capture_;
 
   bool pending_auto_robot_move_valid_ = false;
   r1_msgs::msg::RobotMove pending_auto_robot_move_;

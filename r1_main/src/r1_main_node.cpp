@@ -47,9 +47,8 @@ std::optional<RobotState> parse_robot_control_mode_parameter(std::string_view va
 std::string robot_control_mode_parameter_help() { return "Accepted values: manual, auto."; }
 
 const std::vector<OperationMode> kOperationModeOrder = {
-  OperationMode::MODE1_DETECT_ORIGIN, OperationMode::MODE2_POLE,
-  OperationMode::MODE3_SPEAR,         OperationMode::MODE4_FKFS,
-  OperationMode::MODE5_RKFS,          OperationMode::MODE6_R2_LIFT,
+  OperationMode::MODE1_DETECT_ORIGIN, OperationMode::MODE2_POLE, OperationMode::MODE3_SPEAR,
+  OperationMode::MODE4_FKFS,          OperationMode::MODE5_RKFS, OperationMode::MODE6_R2_LIFT,
   OperationMode::MODE7_SPEAR_ATTACK,
 };
 
@@ -771,10 +770,6 @@ R1MainNode::R1MainNode() : Node("r1_main_node")
   declare_and_get_parameter("enable_pressure_sensor", ENABLE_PRESSURE_SENSOR);
   declare_and_get_parameter(
     "enable_r1_kfs_mechanism_ref_pressure_sensor", ENABLE_R1_KFS_MECHANISM_REF_PRESSURE_SENSOR);
-  declare_and_get_parameter("enable_velocity_based_yaw", ENABLE_VELOCITY_BASED_YAW);
-  declare_and_get_parameter("travel_history_duration", TRAVEL_HISTORY_DURATION);
-  declare_and_get_parameter("travel_speed_threshold", TRAVEL_SPEED_THRESHOLD);
-  declare_and_get_parameter("travel_dist_threshold", TRAVEL_DIST_THRESHOLD);
   declare_and_get_parameter("wall_sensor_distance_threshold", WALL_SENSOR_DISTANCE_THRESHOLD);
   declare_and_get_parameter("wall_sensor_time_threshold", WALL_SENSOR_TIME_THRESHOLD);
   declare_and_get_parameter("move_distance_after_wall_detect", MOVE_DISTANCE_AFTER_WALL_DETECT);
@@ -2020,8 +2015,6 @@ void R1MainNode::reset_kfs_auto_collect_tracking(void)
   for (int i = 0; i < 12; i++) {
     kfs_already_collected_[i] = false;
   }
-  fkfs_travel_capture_ = KfsTravelCapture{};
-  rkfs_travel_capture_ = KfsTravelCapture{};
 }
 
 void R1MainNode::start_kfs_auto_collect(
@@ -3532,126 +3525,8 @@ void R1MainNode::manual_mode7_spear_attack(void)
   }
 }
 
-bool R1MainNode::get_travel_angle_odom(double & angle_out)
-{
-  // 現在のオドメトリ速度（ボディフレーム）→ odom座標系の角度に変換
-  const double vx = odometry_.twist.twist.linear.x;
-  const double vy = odometry_.twist.twist.linear.y;
-  // 現在の速度ベクトルの大きさがしきい値以上のときは、ロボットの速度ベクトルの角度を返す
-  if (std::hypot(vx, vy) >= TRAVEL_SPEED_THRESHOLD) {
-    angle_out = std::atan2(vy, vx);
-    return true;
-  }
-
-  // 速度ベクトルがしきい値以下だったときは位置の履歴からロボットの進行方向の角度を返す
-  if (odom_pos_history_.size() >= 2) {
-    const auto & newest = odom_pos_history_.back();
-    const auto & oldest = odom_pos_history_.front();
-    const double dx = newest.x - oldest.x;
-    const double dy = newest.y - oldest.y;
-    if (std::hypot(dx, dy) >= TRAVEL_DIST_THRESHOLD) {
-      angle_out = std::atan2(dy, dx);
-      return true;
-    }
-  }
-
-  RCLCPP_WARN_THROTTLE(
-    this->get_logger(), *this->get_clock(), 250,
-    "get_travel_angle_odom unable to determine travel angle from odometry");
-  return false;
-}
-
-double R1MainNode::round_to_nearest_90deg(double angle_rad)
-{
-  // (-π, π] に正規化してから最近傍の 90° 倍数に丸める
-  // 正規化により出力は {-π, -π/2, 0, π/2, π} のいずれかになる
-  return std::round(angle_normalize(angle_rad) / (M_PI / 2.0)) * (M_PI / 2.0);
-}
-
-R1MainNode::KfsTravelCapture R1MainNode::calc_kfs_offset_from_travel_dir(
-  const std::string & mechanism_type)
-{
-  KfsTravelCapture cap;
-
-  double angle_raw = 0.0;
-  if (!get_travel_angle_odom(angle_raw)) {
-    return cap;
-  }
-
-  cap.round_yaw = round_to_nearest_90deg(angle_raw);
-
-  // cos(進行角 - ロボット向き) > 0 のとき、進行方向がロボット前方向と一致 → front_kfs が先行
-  // cos(進行角 - ロボット向き) <= 0 のとき、進行方向がロボット後方向と一致 → rear_kfs が先行
-  //
-  // オフセットの方向:
-  //   後行機構: center を進行方向にずらす（機構がロボット中心より後ろにあるため）
-  //   先行機構: center を進行方向の逆にずらす（機構がロボット中心より前にあるため）
-
-  // TODO: ここの符号は適当に入れ替えたので逆かも
-
-  if (mechanism_type == "front_kfs") {
-    if (std::cos(cap.round_yaw - yaw_) < 0) {
-      // front_kfs が後行: 進行方向に center_offset を適用
-      cap.offset_x = -COLLECT_KFS_OFFSET * std::cos(cap.round_yaw);
-      cap.offset_y = -COLLECT_KFS_OFFSET * std::sin(cap.round_yaw);
-      // cap.offset_x = COLLECT_KFS_OFFSET * std::cos(cap.round_yaw);
-      // cap.offset_y = COLLECT_KFS_OFFSET * std::sin(cap.round_yaw);
-    } else {
-      // front_kfs が先行: 進行方向の逆に center_offset を適用
-      // cap.offset_x = -COLLECT_KFS_OFFSET * std::cos(cap.round_yaw);
-      // cap.offset_y = -COLLECT_KFS_OFFSET * std::sin(cap.round_yaw);
-      cap.offset_x = COLLECT_KFS_OFFSET * std::cos(cap.round_yaw);
-      cap.offset_y = COLLECT_KFS_OFFSET * std::sin(cap.round_yaw);
-      cap.wall_offset_x = WALL_SENSOR_DELAY_OFFSET_DISTANCE * std::cos(cap.round_yaw);
-      cap.wall_offset_y = WALL_SENSOR_DELAY_OFFSET_DISTANCE * std::sin(cap.round_yaw);
-    }
-  } else {  // rear_kfs
-    if (std::cos(cap.round_yaw - yaw_) > 0) {
-      // rear_kfs が後行: 進行方向に center_offset を適用
-      cap.offset_x = -COLLECT_KFS_OFFSET * std::cos(cap.round_yaw);
-      cap.offset_y = -COLLECT_KFS_OFFSET * std::sin(cap.round_yaw);
-      // cap.offset_x = COLLECT_KFS_OFFSET * std::cos(cap.round_yaw);
-      // cap.offset_y = COLLECT_KFS_OFFSET * std::sin(cap.round_yaw);
-    } else {
-      // rear_kfs が先行: 進行方向の逆に center_offset を適用
-      // cap.offset_x = -COLLECT_KFS_OFFSET * std::cos(cap.round_yaw);
-      // cap.offset_y = -COLLECT_KFS_OFFSET * std::sin(cap.round_yaw);
-      cap.offset_x = COLLECT_KFS_OFFSET * std::cos(cap.round_yaw);
-      cap.offset_y = COLLECT_KFS_OFFSET * std::sin(cap.round_yaw);
-      cap.wall_offset_x = WALL_SENSOR_DELAY_OFFSET_DISTANCE * std::cos(cap.round_yaw);
-      cap.wall_offset_y = WALL_SENSOR_DELAY_OFFSET_DISTANCE * std::sin(cap.round_yaw);
-    }
-  }
-
-  // wall_move_dist は常に進行方向
-  cap.wall_move_dist_x = MOVE_DISTANCE_AFTER_WALL_DETECT * std::cos(cap.round_yaw);
-  cap.wall_move_dist_y = MOVE_DISTANCE_AFTER_WALL_DETECT * std::sin(cap.round_yaw);
-
-  // RCLCPP_INFO(
-  //   this->get_logger(),
-  //   "calc_kfs_offset_from_travel_dir [%s]: round_yaw=%.2f deg, forward_body=%.2f, "
-  //   "offset=(%.3f,%.3f), wall_offset=(%.3f,%.3f)",
-  //   mechanism_type.c_str(), cap.round_yaw * 180.0 / M_PI, std::cos(cap.round_yaw - yaw_),
-  //   cap.offset_x, cap.offset_y, cap.wall_offset_x, cap.wall_offset_y);
-
-  return cap;
-}
-
 void R1MainNode::auto_collect_kfs_task(void)
 {
-  // TODO: 現在はロボットの進行方向を速度ベクトルで判定しているけど、もしかしたら内積を用いた通過判定のアルゴリズムのほうがいいかも
-
-  // odom位置をdequeに追加
-  OdomPosSample pos_sample;
-  pos_sample.x = odometry_.pose.pose.position.x;
-  pos_sample.y = odometry_.pose.pose.position.y;
-  pos_sample.stamp = this->now();
-  odom_pos_history_.push_back(pos_sample);
-  const auto history_cutoff = this->now() - rclcpp::Duration::from_seconds(TRAVEL_HISTORY_DURATION);
-  while (!odom_pos_history_.empty() && odom_pos_history_.front().stamp < history_cutoff) {
-    odom_pos_history_.pop_front();
-  }
-
   constexpr int FKFS = 0;
   constexpr int RKFS = 1;
   constexpr int HEIGHT_LOW = 1;
@@ -3818,13 +3693,6 @@ void R1MainNode::auto_collect_kfs_task(void)
     within = false;
 
     auto & step = within_index == FKFS ? auto_collect_kfs_fkfs_step_ : auto_collect_kfs_rkfs_step_;
-    auto & cap = (within_index == FKFS) ? fkfs_travel_capture_ : rkfs_travel_capture_;
-
-    // step1 の間は毎周期キャプチャを更新する（ロボットが走行中のためライブ値が使える）
-    // step2 以降はキャプチャ値を固定したまま使用する
-    if (ENABLE_VELOCITY_BASED_YAW && step == 1) {
-      cap = calc_kfs_offset_from_travel_dir(mechanism_type);
-    }
 
     if (is_inner) {
       center_x = INNER_COLLECT_KFS_CENTER_POS[target_forest_number - 1][0];
@@ -3841,56 +3709,44 @@ void R1MainNode::auto_collect_kfs_task(void)
       // rect_yaw = angle_normalize(M_PI - rect_yaw);
     }
     // 足回りオフセットと壁センサーオフセットを計算する
-    // ENABLE_VELOCITY_BASED_YAW=true のとき: 進行方向から算出（step1でキャプチャした値を使用）
-    // ENABLE_VELOCITY_BASED_YAW=false のとき: 従来の zone/inner 判定を使用
-    if (ENABLE_VELOCITY_BASED_YAW) {
-      offset_x = cap.offset_x;
-      offset_y = cap.offset_y;
-      wall_offset_x = cap.wall_offset_x;
-      wall_offset_y = cap.wall_offset_y;
-      wall_move_dist_x = cap.wall_move_dist_x;
-      wall_move_dist_y = cap.wall_move_dist_y;
-    } else {
-      // 従来の zone/inner 判定
-      if (zone_ == "red") {
-        if (is_inner && mechanism_type == "front_kfs") {
-          offset_x = COLLECT_KFS_OFFSET * std::cos(rect_yaw);
-          offset_y = COLLECT_KFS_OFFSET * std::sin(rect_yaw);
-        } else if (!is_inner && mechanism_type == "rear_kfs") {
-          offset_x = COLLECT_KFS_OFFSET * std::cos(rect_yaw);
-          offset_y = COLLECT_KFS_OFFSET * std::sin(rect_yaw);
-        }
-      } else if (zone_ == "blue") {
-        if (is_inner && mechanism_type == "rear_kfs") {
-          offset_x = COLLECT_KFS_OFFSET * std::cos(rect_yaw);
-          offset_y = COLLECT_KFS_OFFSET * std::sin(rect_yaw);
-        } else if (!is_inner && mechanism_type == "front_kfs") {
-          offset_x = COLLECT_KFS_OFFSET * std::cos(rect_yaw);
-          offset_y = COLLECT_KFS_OFFSET * std::sin(rect_yaw);
-        }
+    if (zone_ == "red") {
+      if (is_inner && mechanism_type == "front_kfs") {
+        offset_x = COLLECT_KFS_OFFSET * std::cos(rect_yaw);
+        offset_y = COLLECT_KFS_OFFSET * std::sin(rect_yaw);
+      } else if (!is_inner && mechanism_type == "rear_kfs") {
+        offset_x = COLLECT_KFS_OFFSET * std::cos(rect_yaw);
+        offset_y = COLLECT_KFS_OFFSET * std::sin(rect_yaw);
       }
+    } else if (zone_ == "blue") {
+      if (is_inner && mechanism_type == "rear_kfs") {
+        offset_x = COLLECT_KFS_OFFSET * std::cos(rect_yaw);
+        offset_y = COLLECT_KFS_OFFSET * std::sin(rect_yaw);
+      } else if (!is_inner && mechanism_type == "front_kfs") {
+        offset_x = COLLECT_KFS_OFFSET * std::cos(rect_yaw);
+        offset_y = COLLECT_KFS_OFFSET * std::sin(rect_yaw);
+      }
+    }
 
-      // 壁センサーは進行方向に対して、回収機構よりも先に壁が反応するときにのみ適用する
-      if (zone_ == "red") {
-        wall_move_dist_x = MOVE_DISTANCE_AFTER_WALL_DETECT * std::cos(rect_yaw);
-        wall_move_dist_y = MOVE_DISTANCE_AFTER_WALL_DETECT * std::sin(rect_yaw);
-        if (is_inner && mechanism_type == "rear_kfs") {
-          wall_offset_x = WALL_SENSOR_DELAY_OFFSET_DISTANCE * std::cos(rect_yaw);
-          wall_offset_y = WALL_SENSOR_DELAY_OFFSET_DISTANCE * std::sin(rect_yaw);
-        } else if (!is_inner && mechanism_type == "front_kfs") {
-          wall_offset_x = WALL_SENSOR_DELAY_OFFSET_DISTANCE * std::cos(rect_yaw);
-          wall_offset_y = WALL_SENSOR_DELAY_OFFSET_DISTANCE * std::sin(rect_yaw);
-        }
-      } else if (zone_ == "blue") {
-        wall_move_dist_x = MOVE_DISTANCE_AFTER_WALL_DETECT * std::cos(rect_yaw);
-        wall_move_dist_y = MOVE_DISTANCE_AFTER_WALL_DETECT * std::sin(rect_yaw);
-        if (is_inner && mechanism_type == "front_kfs") {
-          wall_offset_x = WALL_SENSOR_DELAY_OFFSET_DISTANCE * std::cos(rect_yaw);
-          wall_offset_y = WALL_SENSOR_DELAY_OFFSET_DISTANCE * std::sin(rect_yaw);
-        } else if (!is_inner && mechanism_type == "rear_kfs") {
-          wall_offset_x = WALL_SENSOR_DELAY_OFFSET_DISTANCE * std::cos(rect_yaw);
-          wall_offset_y = WALL_SENSOR_DELAY_OFFSET_DISTANCE * std::sin(rect_yaw);
-        }
+    // 壁センサーは進行方向に対して、回収機構よりも先に壁が反応するときにのみ適用する
+    if (zone_ == "red") {
+      wall_move_dist_x = MOVE_DISTANCE_AFTER_WALL_DETECT * std::cos(rect_yaw);
+      wall_move_dist_y = MOVE_DISTANCE_AFTER_WALL_DETECT * std::sin(rect_yaw);
+      if (is_inner && mechanism_type == "rear_kfs") {
+        wall_offset_x = WALL_SENSOR_DELAY_OFFSET_DISTANCE * std::cos(rect_yaw);
+        wall_offset_y = WALL_SENSOR_DELAY_OFFSET_DISTANCE * std::sin(rect_yaw);
+      } else if (!is_inner && mechanism_type == "front_kfs") {
+        wall_offset_x = WALL_SENSOR_DELAY_OFFSET_DISTANCE * std::cos(rect_yaw);
+        wall_offset_y = WALL_SENSOR_DELAY_OFFSET_DISTANCE * std::sin(rect_yaw);
+      }
+    } else if (zone_ == "blue") {
+      wall_move_dist_x = MOVE_DISTANCE_AFTER_WALL_DETECT * std::cos(rect_yaw);
+      wall_move_dist_y = MOVE_DISTANCE_AFTER_WALL_DETECT * std::sin(rect_yaw);
+      if (is_inner && mechanism_type == "front_kfs") {
+        wall_offset_x = WALL_SENSOR_DELAY_OFFSET_DISTANCE * std::cos(rect_yaw);
+        wall_offset_y = WALL_SENSOR_DELAY_OFFSET_DISTANCE * std::sin(rect_yaw);
+      } else if (!is_inner && mechanism_type == "rear_kfs") {
+        wall_offset_x = WALL_SENSOR_DELAY_OFFSET_DISTANCE * std::cos(rect_yaw);
+        wall_offset_y = WALL_SENSOR_DELAY_OFFSET_DISTANCE * std::sin(rect_yaw);
       }
     }
 
@@ -3929,11 +3785,10 @@ void R1MainNode::auto_collect_kfs_task(void)
             this->get_logger(), *this->get_clock(), 250,
             "Step = %d, wall sensor status for forest %d %s kfs: map_x=%.2f, map_y=%.2f, "
             "odom_x=%.2f, odom_y=%.2f, sensor_value_low=%.2f, sensor_value_middle=%.2f, "
-            "wall_detected=%d, offset_x=%.2f, offset_y=%.2f, center_x=%.2f, center_y=%.2f, "
-            "round_yaw=%.0f deg",
+            "wall_detected=%d, offset_x=%.2f, offset_y=%.2f, center_x=%.2f, center_y=%.2f",
             step, target_forest_number, mechanism_type.c_str(), map_x, map_y, odom_x, odom_y,
             log_sensor_low, log_sensor_middle, (int)wall_sensor_detected_[target_forest_number - 1],
-            offset_x, offset_y, center_x, center_y, cap.round_yaw * 180.0 / M_PI);
+            offset_x, offset_y, center_x, center_y);
           if (is_detect_wall(target_forest_number)) {
             // 壁検出位置の座標を更新（odom座標系）
             wall_detect_pos_[target_forest_number - 1] = odometry_;
@@ -3996,17 +3851,7 @@ void R1MainNode::auto_collect_kfs_task(void)
     } else if (step == 4) {
       // 機構を展開
       if (ENABLE_AUTO_COLLECT_KFS_ACTUATOR) {
-        // 回収位置に移動し、回収動作を行う
-        // 進行方向の逆向きのメカロックに当てるか、zone/inner で決定する
-        // forward_body > 0 (前進中) → rear mech lock
-        // forward_body < 0 (後退中) → front mech lock
-        // ※ 実機で逆なら calc_kfs_offset_from_travel_dir 内の forward_body の符号を反転させる
         auto choose_use_front_mech_lock = [&]() -> bool {
-          if (ENABLE_VELOCITY_BASED_YAW) {
-            const double forward_body = std::cos(cap.round_yaw - yaw_);
-            return forward_body < 0.0;  // 後退中 → front mech lock
-          }
-          // フォールバック: 従来の zone/inner 判定
           if (zone_ == "blue")
             return is_inner;
           else
@@ -4192,124 +4037,6 @@ void R1MainNode::auto_collect_kfs_task(void)
       prev_fkfs_step = auto_collect_kfs_fkfs_step_;
       prev_rkfs_step = auto_collect_kfs_rkfs_step_;
     }
-
-    // trueのときは壁検出ベースの判定、falseのときは座標ベースの判定
-
-    // if (within == false) {
-    //   // trueからfalseに変わったら、収納動作を行う。
-    //   if (prev_within == true) {
-    //     if (ENABLE_AUTO_COLLECT_KFS_ACTUATOR) {
-    //       // 収納位置に移動
-    //       if (within_index == FKFS) {
-    //         kfs_fx_pos_ref(KFS_FX_STORAGE_POS);
-    //         kfs_fz_pos_ref(KFS_FZ_STORAGE_POS);
-    //         if (auto_collect_front_storage_yaw_timer_) {
-    //           auto_collect_front_storage_yaw_timer_->cancel();
-    //         }
-    //         auto_collect_front_storage_yaw_timer_ = this->create_wall_timer(
-    //           std::chrono::duration<double>(KFS_YAW_DELAY_TIME), [this]() {
-    //             kfs_fyaw_pos_ref(KFS_FYAW_SIDE_ANGLE);
-    //             if (auto_collect_front_storage_yaw_timer_) {
-    //               auto_collect_front_storage_yaw_timer_->cancel();
-    //             }
-    //           });
-    //       } else {
-    //         kfs_rx_pos_ref(KFS_RX_STORAGE_POS);
-    //         kfs_rz_pos_ref(KFS_RZ_STORAGE_POS);
-    //         if (auto_collect_rear_storage_yaw_timer_) {
-    //           auto_collect_rear_storage_yaw_timer_->cancel();
-    //         }
-    //         auto_collect_rear_storage_yaw_timer_ = this->create_wall_timer(
-    //           std::chrono::duration<double>(KFS_YAW_DELAY_TIME), [this]() {
-    //             kfs_ryaw_pos_ref(KFS_RYAW_SIDE_ANGLE);
-    //             if (auto_collect_rear_storage_yaw_timer_) {
-    //               auto_collect_rear_storage_yaw_timer_->cancel();
-    //             }
-    //           });
-    //       }
-    //     } else {
-    //       RCLCPP_INFO(
-    //         this->get_logger(),
-    //         "%d forest %s kfs storage skipped because enable_auto_collect_kfs_actuator=false",
-    //         target_forest_number, kfs_auto_collect_plan_.kfs_mechanism_type[i].c_str());
-    //     }
-    //     if (ENABLE_AUTO_COLLECT_KFS_ACTUATOR) {
-    //       RCLCPP_INFO(
-    //         this->get_logger(), "%d forest %s kfs storage", target_forest_number,
-    //         kfs_auto_collect_plan_.kfs_mechanism_type[i].c_str());
-    //     }
-    //   }
-    // } else {
-    //   // falseからtrueに変わったら、回収動作を行う。
-    //   if (prev_within == false) {
-    //     if (ENABLE_AUTO_COLLECT_KFS_ACTUATOR) {
-    //       // 回収位置に移動
-    //       if (within_index == FKFS) {
-    //         // 収納yawタイマーが残っている場合はキャンセルする
-    //         if (auto_collect_front_storage_yaw_timer_) {
-    //           auto_collect_front_storage_yaw_timer_->cancel();
-    //         }
-    //         // 回収機構を動かす
-    //         kfs_fx_pos_ref(KFS_FX_EXPAND_POS);
-    //         if (zone_ == "blue" && is_inner) {
-    //           kfs_fyaw_move_front_mech_lock();
-    //         } else if (zone_ == "blue" && !is_inner) {
-    //           kfs_fyaw_move_rear_mech_lock();
-    //         } else if (zone_ == "red" && is_inner) {
-    //           kfs_fyaw_move_rear_mech_lock();
-    //         } else if (zone_ == "red" && !is_inner) {
-    //           kfs_fyaw_move_front_mech_lock();
-    //         }
-    //         kfs_front_pump(1.0);
-    //         kfs_front_valve(false);
-    //         if (kfs_height == HEIGHT_LOW) {
-    //           kfs_fz_pos_ref(KFS_FZ_LOW_POS);
-    //         } else if (kfs_height == HEIGHT_MIDDLE) {
-    //           kfs_fz_pos_ref(KFS_FZ_MIDDLE_POS);
-    //         } else if (kfs_height == HEIGHT_HIGH) {
-    //           kfs_fz_pos_ref(KFS_FZ_HIGH_POS);
-    //         }
-    //       } else {
-    //         // 収納yawタイマーが残っている場合はキャンセルする
-    //         if (auto_collect_rear_storage_yaw_timer_) {
-    //           auto_collect_rear_storage_yaw_timer_->cancel();
-    //         }
-    //         // 回収機構を動かす
-    //         kfs_rx_pos_ref(KFS_RX_EXPAND_POS);
-    //         if (zone_ == "blue" && is_inner) {
-    //           kfs_ryaw_move_front_mech_lock();
-    //         } else if (zone_ == "blue" && !is_inner) {
-    //           kfs_ryaw_move_rear_mech_lock();
-    //         } else if (zone_ == "red" && is_inner) {
-    //           kfs_ryaw_move_rear_mech_lock();
-    //         } else if (zone_ == "red" && !is_inner) {
-    //           kfs_ryaw_move_front_mech_lock();
-    //         }
-    //         kfs_rear_pump(1.0);
-    //         kfs_rear_valve(false);
-    //         if (kfs_height == HEIGHT_LOW) {
-    //           kfs_rz_pos_ref(KFS_RZ_LOW_POS);
-    //         } else if (kfs_height == HEIGHT_MIDDLE) {
-    //           kfs_rz_pos_ref(KFS_RZ_MIDDLE_POS);
-    //         } else if (kfs_height == HEIGHT_HIGH) {
-    //           kfs_rz_pos_ref(KFS_RZ_HIGH_POS);
-    //         }
-    //       }
-    //     } else {
-    //       RCLCPP_INFO(
-    //         this->get_logger(),
-    //         "%d forest %s kfs collect skipped because enable_auto_collect_kfs_actuator=false",
-    //         target_forest_number, kfs_auto_collect_plan_.kfs_mechanism_type[i].c_str());
-    //     }
-    //     if (ENABLE_AUTO_COLLECT_KFS_ACTUATOR) {
-    //       RCLCPP_INFO(
-    //         this->get_logger(), "%d forest %s kfs collect", target_forest_number,
-    //         kfs_auto_collect_plan_.kfs_mechanism_type[i].c_str());
-    //     }
-    //   }
-    // }
-    // // 最後に前回値を更新する
-    // prev_within = within;
   }
 }
 
@@ -4525,8 +4252,7 @@ void R1MainNode::main_task(void)
     idle_task();
     return;
   }
-  if (
-    current_state.main != MainState::READY && current_state.main != MainState::EMERGENCY) {
+  if (current_state.main != MainState::READY && current_state.main != MainState::EMERGENCY) {
     return;
   }
 

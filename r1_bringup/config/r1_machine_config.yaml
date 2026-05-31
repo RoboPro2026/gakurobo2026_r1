@@ -303,16 +303,6 @@ r1_main_node:
     wall_sensor_delay_offset_distance: 0.05
     # 圧力センサの反応時間閾値
     pressure_sensor_time_threshold: 0.15
-    # ── 進行方向ベース yaw/offset 機能 ──────────────────────────────────
-    # true のとき進行方向（速度または位置履歴）に基づいて yaw メカロックと offset を決定する
-    # false のとき従来の zone/inner 判定を使用する
-    enable_velocity_based_yaw: false
-    # odom位置履歴のバッファ保持時間 [s]（停止中の進行方向推定に使用）
-    travel_history_duration: 7.0
-    # 現在速度を信頼するための閾値 [m/s]（これ以上なら速度で判定、未満なら履歴を使用）
-    travel_speed_threshold: 0.1
-    # 履歴から進行方向を判定するための最小変位 [m]（これ以下なら判定不可）
-    travel_dist_threshold: 0.02
     # 内回り/外回りのKFS回収範囲の中心座標 [x, y, yaw]
     # 内回りのときは2,1,4,7,10を通る
     red_inner_collect_kfs_center_pos:
