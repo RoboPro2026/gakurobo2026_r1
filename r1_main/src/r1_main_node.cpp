@@ -3648,6 +3648,8 @@ R1MainNode::KfsTravelCapture R1MainNode::calc_kfs_offset_from_travel_dir(
 
 void R1MainNode::auto_collect_kfs_task(void)
 {
+  // TODO: 現在はロボットの進行方向を速度ベクトルで判定しているけど、もしかしたら内積を用いた通過判定のアルゴリズムのほうがいいかも
+
   // odom位置をdequeに追加
   OdomPosSample pos_sample;
   pos_sample.x = odometry_.pose.pose.position.x;
@@ -3931,12 +3933,12 @@ void R1MainNode::auto_collect_kfs_task(void)
           RCLCPP_INFO_THROTTLE(
             this->get_logger(), *this->get_clock(), 250,
             "Step = %d, wall sensor status for forest %d %s kfs: map_x=%.2f, map_y=%.2f, "
-            "odom_x=%.2f, "
-            "odom_y=%.2f, sensor_value_low=%.2f, sensor_value_middle=%.2f, wall_detected=%d, "
-            "offset_x=%.2f, offset_y=%.2f",
+            "odom_x=%.2f, odom_y=%.2f, sensor_value_low=%.2f, sensor_value_middle=%.2f, "
+            "wall_detected=%d, offset_x=%.2f, offset_y=%.2f, center_x=%.2f, center_y=%.2f, "
+            "round_yaw=%.0f deg",
             step, target_forest_number, mechanism_type.c_str(), map_x, map_y, odom_x, odom_y,
             log_sensor_low, log_sensor_middle, (int)wall_sensor_detected_[target_forest_number - 1],
-            offset_x, offset_y);
+            offset_x, offset_y, center_x, center_y, cap.round_yaw * 180.0 / M_PI);
           if (is_detect_wall(target_forest_number)) {
             // 壁検出位置の座標を更新（odom座標系）
             wall_detect_pos_[target_forest_number - 1] = odometry_;
