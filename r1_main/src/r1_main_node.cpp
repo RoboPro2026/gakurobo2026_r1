@@ -3278,8 +3278,10 @@ void R1MainNode::manual_mode6_r2_lift(void)
       manual_mode6_r2_lift_timer_->cancel();
     }
     manual_mode6_r2_lift_timer_ = this->create_wall_timer(500ms, [this]() {
-      r2_flift_move_mech_lock(-1);
-      r2_rlift_move_mech_lock(-1);
+      // r2_flift_move_mech_lock(-1);
+      // r2_rlift_move_mech_lock(-1);
+      r2_flift_pos_ref(R2_FLIFT_NORMAL_POS);
+      r2_rlift_pos_ref(R2_RLIFT_NORMAL_POS);
       if (manual_mode6_r2_lift_timer_ != nullptr) {
         manual_mode6_r2_lift_timer_->cancel();
       }
@@ -3290,8 +3292,10 @@ void R1MainNode::manual_mode6_r2_lift(void)
   if (ps4_->is_pushed_down()) {
     publish_all_aruco_marker_id(DEFAULT_ARUCO_MARKER_ID);
     r1_log_info("aruco デフォ");
-    r2_flift_pos_ref(R2_FLIFT_DOWN_POS);
-    r2_rlift_pos_ref(R2_RLIFT_DOWN_POS);
+    // r2_flift_pos_ref(R2_FLIFT_DOWN_POS);
+    // r2_rlift_pos_ref(R2_RLIFT_DOWN_POS);
+    r2_flift_move_mech_lock(-1);
+    r2_rlift_move_mech_lock(-1);
   }
 
   if (ps4_->is_pushed_left()) {
@@ -3648,7 +3652,6 @@ void R1MainNode::auto_collect_kfs_task(void)
     bool wall_detected = false;
     double sensor_value_low = 0.0;
     double sensor_value_middle = 0.0;
-    double sensor_value_high = 0.0;
     if (within_index == FKFS) {
       sensor_value_low = scan_fl_data_;
       sensor_value_middle = scan_fm_data_;
