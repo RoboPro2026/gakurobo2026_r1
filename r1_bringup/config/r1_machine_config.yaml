@@ -712,7 +712,7 @@ r1_spear_roll1_node:
     # 原点検出・メカロック移動中に Robomas の torque_lim として使う値
     contact_torque_limit: 0.7 # Nm
     origin_detect_threshold_time: 0.5 # 秒
-    origin_detect_speed: 3.14 # rad/s
+    origin_detect_speed: -3.14 # rad/s
     angle_min: -5.0
     angle_max: 5.0
     normal_angle: 0.0
@@ -735,7 +735,7 @@ r1_spear_roll2_node:
     # 原点検出・メカロック移動中に Robomas の torque_lim として使う値
     contact_torque_limit: 0.7 # Nm
     origin_detect_threshold_time: 0.5 # 秒
-    origin_detect_speed: 3.14 # rad/s
+    origin_detect_speed: -3.14 # rad/s
     angle_min: -5.0
     angle_max: 5.0
     normal_angle: 0.0

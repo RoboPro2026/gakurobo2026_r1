@@ -2469,8 +2469,8 @@ void R1MainNode::manual_mode1_detect_origin(void)
   }
 
   if (ps4_->is_pushed_left()) {
-    spear_roll1_detect_origin();
-    spear_roll2_detect_origin();
+    // spear_roll1_detect_origin();
+    // spear_roll2_detect_origin();
   }
 
   if (ps4_->is_pushed_triangle()) {
@@ -2487,6 +2487,8 @@ void R1MainNode::manual_mode1_detect_origin(void)
 
   if (ps4_->is_pushed_square()) {
     spear_y_detect_origin();
+    spear_roll1_set_angle(0.0);
+    spear_roll2_set_angle(0.0);
   }
 
   if (ps4_->is_pushed_l1()) {
