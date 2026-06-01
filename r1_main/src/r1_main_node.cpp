@@ -2454,6 +2454,8 @@ void R1MainNode::detect_origin_all_actuator(void)
 
 void R1MainNode::manual_mode1_detect_origin(void)
 {
+  auto & hand_valve_step = manual_mode2_hand_valve_step_;
+
   if (ps4_->is_pushed_up()) {
     kfs_fx_detect_origin();
   }
@@ -2466,9 +2468,10 @@ void R1MainNode::manual_mode1_detect_origin(void)
     kfs_fyaw_detect_origin();
   }
 
-  // if (ps4_->is_pushed_left()) {
-  //   front_expand_detect_origin();
-  // }
+  if (ps4_->is_pushed_left()) {
+    spear_roll1_detect_origin();
+    spear_roll2_detect_origin();
+  }
 
   if (ps4_->is_pushed_triangle()) {
     kfs_rx_detect_origin();
@@ -2482,12 +2485,11 @@ void R1MainNode::manual_mode1_detect_origin(void)
     kfs_ryaw_detect_origin();
   }
 
-  // if (ps4_->is_pushed_square()) {
-  //   rear_expand_detect_origin();
-  // }
+  if (ps4_->is_pushed_square()) {
+    spear_y_detect_origin();
+  }
 
   if (ps4_->is_pushed_l1()) {
-    // spear1_detect_origin();
     kfs_robot_start_act(true);
     spear_y_pos_ref(SPEAR_Y_COLLECT1_POS);
     spear_roll1_pos_ref(SPEAR_ROLL1_VERTICAL_ANGLE);
@@ -2499,14 +2501,18 @@ void R1MainNode::manual_mode1_detect_origin(void)
   }
 
   if (ps4_->is_pushed_r1()) {
-    // spear2_detect_origin();
-    // spear_x, spear_y, spear_rollは原点検出ができないので、角度を設定する
-    // spear_x_set_pos(0.0);
-    // spear_y_set_pos(0.0);
-    // spear_y_set_pos(0.0);
-    spear_y_detect_origin();
-    spear_roll1_set_angle(0.0);
-    spear_roll2_set_angle(0.0);
+    if (hand_valve_step == 1) {
+      spear_hand1_valve(true);
+      spear_hand2_valve(true);
+      hand_valve_step = 2;
+    } else if (hand_valve_step == 2) {
+      spear_hand1_valve(false);
+      spear_hand2_valve(false);
+      hand_valve_step = 1;
+    }
+    // spear_y_detect_origin();
+    // spear_roll1_set_angle(0.0);
+    // spear_roll2_set_angle(0.0);
   }
 
   if (ps4_->is_pushed_l2()) {
@@ -4175,6 +4181,7 @@ void R1MainNode::update_auto_chassis_task(void)
 void R1MainNode::reset_step(void)
 {
   // 各手順のステップをリセット
+  manual_mode1_hand_valve_step_ = DEFAULT_STEP;
   manual_mode2_collect_pole_task_step_ = DEFAULT_STEP;
   manual_mode2_hand_valve_step_ = DEFAULT_STEP;
   manual_mode2_push_valve_step_ = DEFAULT_STEP;

@@ -792,6 +792,7 @@ public:
   void manual_mode7_spear_attack_task(int n, int m, bool _reverse_trigger);
   void manual_mode7_spear_throw_away_task(int n);
   static constexpr int DEFAULT_STEP = 1;
+  int manual_mode1_hand_valve_step_ = DEFAULT_STEP;
   int manual_mode2_collect_pole_task_step_ = DEFAULT_STEP;
   int manual_mode2_hand_valve_step_ = DEFAULT_STEP;
   int manual_mode2_push_valve_step_ = DEFAULT_STEP;
