@@ -22,8 +22,15 @@ public:
   {
     // パラメータを宣言
     this->declare_parameter<std::string>("port");
+    this->declare_parameter<double>("timer_rate", timer_rate_);
     // パラメータを取得
     std::string port_name = this->get_parameter("port").as_string();
+    timer_rate_ = this->get_parameter("timer_rate").as_double();
+    if (timer_rate_ <= 0) {
+      RCLCPP_WARN(
+        this->get_logger(), "Invalid timer_rate: %f. Using default value: %f", timer_rate_, 10.0);
+      timer_rate_ = 10.0;
+    }
 
     RCLCPP_INFO(this->get_logger(), "Connecting to port: %s", port_name.c_str());
 
@@ -47,7 +54,9 @@ public:
       "aruco_marker_id", 10,
       std::bind(&R1ArucoSerialNode::aruco_marker_id_callback, this, std::placeholders::_1));
     // 10Hz
-    timer_ = this->create_wall_timer(100ms, std::bind(&R1ArucoSerialNode::timer_callback, this));
+    timer_ = this->create_wall_timer(
+      std::chrono::duration<double>(1.0 / timer_rate_),
+      std::bind(&R1ArucoSerialNode::timer_callback, this));
   }
 
   void timer_callback()
@@ -72,6 +81,7 @@ public:
   }
 
   rclcpp::Subscription<std_msgs::msg::Int32>::SharedPtr aruco_marker_id_;
+  double timer_rate_ = 10.0;
   rclcpp::TimerBase::SharedPtr timer_;
   std::shared_ptr<SerialDriver> serial_;
   char recv_buff_[256];

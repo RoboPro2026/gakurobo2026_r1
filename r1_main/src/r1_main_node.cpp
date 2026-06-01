@@ -555,7 +555,14 @@ R1MainNode::R1MainNode() : Node("r1_main_node")
     std::bind(&R1MainNode::r1_machine_initialize_done_callback, this, std::placeholders::_1));
 
   // arucoマーカ
-  aruco_marker_id_publisher_ = this->create_publisher<std_msgs::msg::Int32>("/aruco_marker_id", 10);
+  spear_red_aruco_marker_id_publisher_ =
+    this->create_publisher<std_msgs::msg::Int32>("/spear_red_aruco_marker_id", 10);
+  spear_blue_aruco_marker_id_publisher_ =
+    this->create_publisher<std_msgs::msg::Int32>("/spear_blue_aruco_marker_id", 10);
+  r2_lift_lower_aruco_marker_id_publisher_ =
+    this->create_publisher<std_msgs::msg::Int32>("/r2_lift_lower_aruco_marker_id", 10);
+  r2_lift_upper_aruco_marker_id_publisher_ =
+    this->create_publisher<std_msgs::msg::Int32>("/r2_lift_upper_aruco_marker_id", 10);
 
   // スマホ通信
   r1_operation_mode_publisher_ =
@@ -1854,12 +1861,45 @@ void R1MainNode::publish_robot_move(
   current_robot_move_ = msg;
 }
 
-void R1MainNode::publish_aruco_marker_id(int id)
+void R1MainNode::publish_all_aruco_marker_id(int id)
+{
+  publish_spear_red_aruco_marker_id(id);
+  publish_spear_blue_aruco_marker_id(id);
+  publish_r2_lift_lower_aruco_marker_id(id);
+  publish_r2_lift_upper_aruco_marker_id(id);
+  RCLCPP_INFO(this->get_logger(), "publish all aruco marker id: %d", id);
+}
+
+void R1MainNode::publish_spear_red_aruco_marker_id(int id)
 {
   std_msgs::msg::Int32 msg;
   msg.data = id;
-  aruco_marker_id_publisher_->publish(msg);
-  RCLCPP_INFO(this->get_logger(), "publish aruco marker id: %d", id);
+  spear_red_aruco_marker_id_publisher_->publish(msg);
+  RCLCPP_INFO(this->get_logger(), "publish spear red aruco marker id: %d", id);
+}
+
+void R1MainNode::publish_spear_blue_aruco_marker_id(int id)
+{
+  std_msgs::msg::Int32 msg;
+  msg.data = id;
+  spear_blue_aruco_marker_id_publisher_->publish(msg);
+  RCLCPP_INFO(this->get_logger(), "publish spear blue aruco marker id: %d", id);
+}
+
+void R1MainNode::publish_r2_lift_lower_aruco_marker_id(int id)
+{
+  std_msgs::msg::Int32 msg;
+  msg.data = id;
+  r2_lift_lower_aruco_marker_id_publisher_->publish(msg);
+  RCLCPP_INFO(this->get_logger(), "publish r2 lift lower aruco marker id: %d", id);
+}
+
+void R1MainNode::publish_r2_lift_upper_aruco_marker_id(int id)
+{
+  std_msgs::msg::Int32 msg;
+  msg.data = id;
+  r2_lift_upper_aruco_marker_id_publisher_->publish(msg);
+  RCLCPP_INFO(this->get_logger(), "publish r2 lift upper aruco marker id: %d", id);
 }
 
 // void R1MainNode::publish_r1_log(const std::string & message)
@@ -2302,7 +2342,8 @@ void R1MainNode::kfs_collect_start_act(bool enable_pump, bool enable_push_valve)
   // spear_yを移動。push_valveをtrueにし、槍回収機構をKFS回収時用の高さに移動する
   spear_y_pos_ref(SPEAR_Y_COLLECT_KFS_POS);
   // arucoマーカをもとに戻す
-  publish_aruco_marker_id(0);
+  publish_all_aruco_marker_id(DEFAULT_ARUCO_MARKER_ID);
+  r1_log_info("aruco デフォ");
   if (enable_push_valve) {
     // hand_push_valveをtrueにし、やり回収機構を押し出す
     spear_hand_push_valve(true);
@@ -2599,7 +2640,8 @@ void R1MainNode::manual_mode3_make_spear_task(int n)
     // arucoマーカーは0をpublishする
     spear_y_pos_ref(SPEAR_Y_MAKE_SPEAR_POS);
     spear_hand_push_valve(true);
-    publish_aruco_marker_id(0);
+    publish_all_aruco_marker_id(DEFAULT_ARUCO_MARKER_ID);
+    r1_log_info("aruco デフォ");
 
     // 2. 少し遅延を入れて、rollを横向きにする
     manual_mode3_roll_timer_ = this->create_wall_timer(ROLL_DELAY, [this]() {
@@ -2626,8 +2668,8 @@ void R1MainNode::manual_mode3_make_spear_task(int n)
       });
     step++;
   } else if (step == 2) {
-    publish_aruco_marker_id(1);
-    r1_log_info("aruco_id 1");
+    publish_all_aruco_marker_id(SPEAR_COMBINE_ARUCO_MARKER_ID);
+    r1_log_info("aruco やり合体");
     step++;
   } else if (step == 3) {
     if (manual_mode3_roll_timer_) {
@@ -3196,19 +3238,22 @@ void R1MainNode::manual_mode5_rkfs(void)
 
 void R1MainNode::manual_mode6_r2_lift(void)
 {
-  int & aruco_step = manual_mode6_aruco_marker_step_;
+  int & triangle_step = manual_mode6_triangle_step_;
+  int & circle_step = manual_mode6_circle_step_;
+  int & cross_step = manual_mode6_cross_step_;
+  int & square_step = manual_mode6_square_step_;
+
   if (ps4_->is_pushed_up()) {
-    // arucoマーカを万が一変更し忘れたとき用に自動で変わる
-    publish_aruco_marker_id(2);
-    aruco_step = 2;
+    publish_all_aruco_marker_id(DEFAULT_ARUCO_MARKER_ID);
+    r1_log_info("aruco デフォ");
     r2_flift_pos_ref(R2_FLIFT_UP_POS);
     r2_rlift_pos_ref(R2_RLIFT_UP_POS);
   }
 
   if (ps4_->is_pushed_right()) {
     // 間違えてボタン押したときのために、aroco_marker_id=0に設定
-    publish_aruco_marker_id(0);
-    aruco_step = 1;
+    publish_all_aruco_marker_id(DEFAULT_ARUCO_MARKER_ID);
+    r1_log_info("aruco デフォ");
     kfs_fx_pos_ref(KFS_FX_R2_LIFT_POS);
     kfs_fz_pos_ref(KFS_FZ_R2_LIFT_POS);
     kfs_rx_pos_ref(KFS_RX_R2_LIFT_POS);
@@ -3228,14 +3273,16 @@ void R1MainNode::manual_mode6_r2_lift(void)
   }
 
   if (ps4_->is_pushed_down()) {
+    publish_all_aruco_marker_id(DEFAULT_ARUCO_MARKER_ID);
+    r1_log_info("aruco デフォ");
     r2_flift_pos_ref(R2_FLIFT_DOWN_POS);
     r2_rlift_pos_ref(R2_RLIFT_DOWN_POS);
   }
 
   if (ps4_->is_pushed_left()) {
     // 間違えてボタン押したときのために、aroco_marker_id=0に設定
-    publish_aruco_marker_id(0);
-    aruco_step = 1;
+    publish_all_aruco_marker_id(DEFAULT_ARUCO_MARKER_ID);
+    r1_log_info("aruco デフォ");
     r2_flift_pos_ref(R2_FLIFT_NORMAL_POS);
     r2_rlift_pos_ref(R2_RLIFT_NORMAL_POS);
     if (manual_mode6_r2_lift_timer_ != nullptr) {
@@ -3254,19 +3301,51 @@ void R1MainNode::manual_mode6_r2_lift(void)
   }
 
   if (ps4_->is_pushed_triangle()) {
+    if (triangle_step == 1) {
+      publish_all_aruco_marker_id(SECOND_KFS_ARUCO_MARKER_ID);
+      r1_log_info("aruco KFS2つ目");
+      triangle_step = 2;
+    } else if (triangle_step == 2) {
+      publish_all_aruco_marker_id(DEFAULT_ARUCO_MARKER_ID);
+      r1_log_info("aruco デフォ");
+      triangle_step = 1;
+    }
   }
 
   if (ps4_->is_pushed_circle()) {
-    if (aruco_step == 1) {
-      publish_aruco_marker_id(2);
-      aruco_step = 2;
-    } else if (aruco_step == 2) {
-      publish_aruco_marker_id(0);
-      aruco_step = 1;
+    if (circle_step == 1) {
+      publish_all_aruco_marker_id(FIRST_KFS_ARUCO_MARKER_ID);
+      r1_log_info("aruco KFS1つ目");
+      circle_step = 2;
+    } else if (circle_step == 2) {
+      publish_all_aruco_marker_id(0);
+      r1_log_info("aruco デフォ");
+      circle_step = 1;
     }
   }
 
   if (ps4_->is_pushed_cross()) {
+    if (cross_step == 1) {
+      publish_all_aruco_marker_id(PUT_KFS_ARUCO_MARKER_ID);
+      r1_log_info("aruco put_kfs");
+      cross_step = 2;
+    } else if (cross_step == 2) {
+      publish_all_aruco_marker_id(DEFAULT_ARUCO_MARKER_ID);
+      r1_log_info("aruco デフォ");
+      cross_step = 1;
+    }
+  }
+
+  if (ps4_->is_pushed_square()) {
+    if (square_step == 1) {
+      publish_all_aruco_marker_id(THIRD_KFS_ARUCO_MARKER_ID);
+      r1_log_info("aruco KFS3つ目");
+      square_step = 2;
+    } else if (square_step == 2) {
+      publish_all_aruco_marker_id(DEFAULT_ARUCO_MARKER_ID);
+      r1_log_info("aruco デフォ");
+      square_step = 1;
+    }
   }
 
   if (ps4_->is_pushed_l1()) {
@@ -4110,8 +4189,11 @@ void R1MainNode::reset_step(void)
   manual_mode5_ryaw_step_ = DEFAULT_STEP;
   manual_mode5_rear_pump_step_ = DEFAULT_STEP;
   manual_mode5_l2_r2_trigger_step_ = DEFAULT_STEP;
-  manual_mode6_aruco_marker_step_ = DEFAULT_STEP;
   manual_mode6_r2_lift_step_ = DEFAULT_STEP;
+  manual_mode6_triangle_step_ = DEFAULT_STEP;
+  manual_mode6_circle_step_ = DEFAULT_STEP;
+  manual_mode6_cross_step_ = DEFAULT_STEP;
+  manual_mode6_square_step_ = DEFAULT_STEP;
   manual_mode7_spear_attack_task_step_ = DEFAULT_STEP;
   manual_mode7_spear_throw_away_task_step_ = DEFAULT_STEP;
   manual_mode7_l2_r2_trigger_step_ = DEFAULT_STEP;
@@ -4165,7 +4247,7 @@ void R1MainNode::reset_robot(bool is_start_zone)
   state_machine_->print_state(initial_state_, "Reset to initial state: ");
   set_led_event(0, 0, 50, 0.2, 1.0);
   // arucoマーカをリセットする
-  publish_aruco_marker_id(0);
+  publish_all_aruco_marker_id(0);
   received_r1_collect_kfs_ = false;
   std_msgs::msg::Bool msg;
   msg.data = true;

@@ -16,6 +16,7 @@ PC 画面に PNG を表示する [r1_aruco_display_node](./r1_aruco_display_node
 | パラメータ名 | 型 | デフォルト値 | 説明 |
 | --- | --- | --- | --- |
 | `port` | string | なし | 接続先のシリアルデバイス名です。例: `/dev/ttyUSB0` |
+| `timer_rate` | double | `10.0` | シリアル受信ポーリングの周期 [Hz] です。`0` 以下を指定すると warning を出してデフォルト値 (`10.0`) に戻ります。 |
 
 ## シリアル送信仕様
 
@@ -28,7 +29,7 @@ PC 画面に PNG を表示する [r1_aruco_display_node](./r1_aruco_display_node
   - パリティ: `none`
   - ストップビット: `1`
 - 受信処理
-  - 100 ms 周期で受信をポーリングします。
+  - `timer_rate` で指定した周期で受信をポーリングします。デフォルトは 10 Hz (100 ms 周期)。
   - 受信バッファに `\0` が含まれていた場合、その時点までの文字列をログへ出します。
 
 ## 動作概要
@@ -54,6 +55,13 @@ source ~/ros2_ws/install/setup.bash
 ros2 run r1_ui r1_aruco_serial_node --ros-args -p port:=/dev/ttyUSB0
 ```
 
+ポーリング周期を変更する場合:
+
+```bash
+source ~/ros2_ws/install/setup.bash
+ros2 run r1_ui r1_aruco_serial_node --ros-args -p port:=/dev/ttyUSB0 -p timer_rate:=20.0
+```
+
 ## 送信確認例
 
 一度だけ送る:
@@ -71,6 +79,7 @@ ros2 topic pub /aruco_marker_id std_msgs/msg/Int32 "{data: 3}" -r 1
 ## 注意点
 
 - `port` パラメータ未指定のまま起動すると、正しいデバイスを開けず初期化に失敗する可能性があります。
+- `timer_rate` に `0` 以下の値を指定すると warning が出てデフォルト値 (`10.0`) に戻ります。
 - 送信フォーマットは単純な ASCII 文字列です。受信側ファームが別形式を要求する場合は、このノード側を合わせて変更してください。
 - 受信ログは `\0` 終端前提です。受信側が null 終端を返さない場合、現在の実装ではログ出力されません。
 - 受信バッファ長は 256 byte 固定です。長い応答を扱う場合はオーバーフロー対策を追加したほうが安全です。

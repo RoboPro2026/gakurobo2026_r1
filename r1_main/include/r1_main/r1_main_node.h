@@ -263,7 +263,17 @@ public:
   bool is_act_paused_ = false;
   bool enable_right_stick_pause_ = false;
   // arucoマーカ
-  rclcpp::Publisher<std_msgs::msg::Int32>::SharedPtr aruco_marker_id_publisher_;
+  rclcpp::Publisher<std_msgs::msg::Int32>::SharedPtr spear_red_aruco_marker_id_publisher_;
+  rclcpp::Publisher<std_msgs::msg::Int32>::SharedPtr spear_blue_aruco_marker_id_publisher_;
+  rclcpp::Publisher<std_msgs::msg::Int32>::SharedPtr r2_lift_lower_aruco_marker_id_publisher_;
+  rclcpp::Publisher<std_msgs::msg::Int32>::SharedPtr r2_lift_upper_aruco_marker_id_publisher_;
+  static constexpr int DEFAULT_ARUCO_MARKER_ID = 0;
+  static constexpr int SPEAR_COMBINE_ARUCO_MARKER_ID = 1;
+  static constexpr int FIRST_KFS_ARUCO_MARKER_ID = 2;
+  static constexpr int SECOND_KFS_ARUCO_MARKER_ID = 3;
+  static constexpr int THIRD_KFS_ARUCO_MARKER_ID = 4;
+  static constexpr int PUT_KFS_ARUCO_MARKER_ID = 10;
+
   // ========== スマホ関連 ==========
   // スマホから送られてくる初期化パラメータ
   rclcpp::Subscription<r1_msgs::msg::R1InitParameter>::SharedPtr r1_init_parameter_subscription_;
@@ -599,7 +609,11 @@ public:
   void publish_robot_move(
     ChassisAct act, std::vector<int> forest_order, std::vector<std::string> kfs_mechanism_type);
   // arucoマーカ
-  void publish_aruco_marker_id(int id);
+  void publish_all_aruco_marker_id(int id);
+  void publish_spear_red_aruco_marker_id(int id);
+  void publish_spear_blue_aruco_marker_id(int id);
+  void publish_r2_lift_lower_aruco_marker_id(int id);
+  void publish_r2_lift_upper_aruco_marker_id(int id);
   // スマホ関連
   void r1_init_parameter_callback(const r1_msgs::msg::R1InitParameter::SharedPtr msg);
   void r1_collect_kfs_callback(const r1_msgs::msg::R1CollectKfs::SharedPtr msg);
@@ -792,8 +806,11 @@ public:
   int manual_mode5_ryaw_step_ = DEFAULT_STEP;
   int manual_mode5_rear_pump_step_ = DEFAULT_STEP;
   int manual_mode5_l2_r2_trigger_step_ = DEFAULT_STEP;
-  int manual_mode6_aruco_marker_step_ = DEFAULT_STEP;
   int manual_mode6_r2_lift_step_ = DEFAULT_STEP;
+  int manual_mode6_triangle_step_ = DEFAULT_STEP;
+  int manual_mode6_circle_step_ = DEFAULT_STEP;
+  int manual_mode6_cross_step_ = DEFAULT_STEP;
+  int manual_mode6_square_step_ = DEFAULT_STEP;
   int manual_mode7_spear_attack_task_step_ = DEFAULT_STEP;
   int manual_mode7_spear_throw_away_task_step_ = DEFAULT_STEP;
   int manual_mode7_hand_valve_step_ = DEFAULT_STEP;
