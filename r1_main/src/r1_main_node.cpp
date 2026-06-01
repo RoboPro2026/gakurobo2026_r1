@@ -4274,11 +4274,11 @@ void R1MainNode::reset_position(bool is_start_zone)
     if (zone_ == "blue") {
       start_x = -5.5;
       start_y = 11.5;
-      start_yaw = M_PI / 2.0;
+      start_yaw = -M_PI / 2.0;
     } else {
       start_x = 5.5;
       start_y = 11.5;
-      start_yaw = M_PI / 2.0;
+      start_yaw = -M_PI / 2.0;
     }
   }
 
