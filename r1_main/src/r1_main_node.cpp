@@ -613,6 +613,7 @@ R1MainNode::R1MainNode() : Node("r1_main_node")
   declare_and_get_parameter("ps4_connection_timeout", ps4_connection_timeout_, 0.3);
   declare_and_get_parameter("activate_lidar_on_ps", activate_lidar_on_ps_, true);
   declare_and_get_parameter("share_long_press_sec", SHARE_LONG_PRESS_SEC, 1.0);
+  declare_and_get_parameter("ps_long_press_sec", PS_LONG_PRESS_SEC, 2.0);
   declare_and_get_parameter("enable_right_stick_pause", enable_right_stick_pause_, false);
   declare_and_get_parameter("initialpose_tf_log_delay_sec", initialpose_tf_log_delay_sec_, 1.0);
   declare_and_get_parameter("initialpose_retry1_delay_sec", initialpose_retry1_delay_sec_, 1.0);
@@ -4226,17 +4227,28 @@ void R1MainNode::reset_position(bool is_start_zone)
   }
 
   double start_x = 0.0;
-  double start_y = 0.5;
+  double start_y = 0.0;
   double start_yaw = 0.0;
-  if (zone_ == "blue") {
-    start_x = -5.5;
-    start_yaw = -M_PI / 2.0;
+  if (is_start_zone) {
+    if (zone_ == "blue") {
+      start_x = -5.5;
+      start_y = 0.5;
+      start_yaw = -M_PI / 2.0;
+    } else {
+      start_x = 5.5;
+      start_y = 0.5;
+      start_yaw = -M_PI / 2.0;
+    }
   } else {
-    start_x = 5.5;
-    start_yaw = -M_PI / 2.0;
-  }
-  if (!is_start_zone) {
-    // TODO: start zone 以外の初期位置が確定したらここで切り替える。
+    if (zone_ == "blue") {
+      start_x = -5.5;
+      start_y = 11.5;
+      start_yaw = M_PI / 2.0;
+    } else {
+      start_x = 5.5;
+      start_y = 11.5;
+      start_yaw = M_PI / 2.0;
+    }
   }
 
   // 現在の角度が start_yaw となるようなオフセットを設定する。
@@ -4370,7 +4382,25 @@ void R1MainNode::main_task(void)
   if (ps4_->is_pushed_options()) {
     sabacan_power_ref(!sabacan_is_ems_);
   }
+  // PSボタン: 短押し→reset_robot(true)、長押し→reset_robot(false) + 緑点滅
   if (ps4_->is_pushed_ps()) {
+    ps_press_start_time_ = this->now();
+    ps_long_press_triggered_ = false;
+  }
+  if (ps4_->is_pushing_ps() && !ps_long_press_triggered_) {
+    if ((this->now() - ps_press_start_time_).seconds() >= PS_LONG_PRESS_SEC) {
+      ps_long_press_triggered_ = true;
+      is_act_paused_ = false;
+      if (activate_lidar_on_ps_) {
+        request_lidar_lifecycle_activation();
+      }
+      reset_robot(false);
+      set_led_event(0, 50, 0, 0.2, 1.0);  // 緑点滅（reset_robot内の青を上書き）
+      publish_r1_machine_initialize();
+      return;
+    }
+  }
+  if (ps4_->is_released_ps() && !ps_long_press_triggered_) {
     is_act_paused_ = false;
     if (activate_lidar_on_ps_) {
       request_lidar_lifecycle_activation();

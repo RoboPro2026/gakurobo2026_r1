@@ -362,6 +362,11 @@ public:
   bool share_long_press_triggered_ = false;
   double SHARE_LONG_PRESS_SEC = 0.5;
 
+  // PSボタン長押し判定
+  rclcpp::Time ps_press_start_time_;
+  bool ps_long_press_triggered_ = false;
+  double PS_LONG_PRESS_SEC = 2.0;
+
   // robot_move
   r1_msgs::msg::RobotMove current_robot_move_;
 

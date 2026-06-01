@@ -147,6 +147,7 @@ r1_main_node:
     # PSボタンを押されたら、lidarをactivateするかどうか
     activate_lidar_on_ps: true
     share_long_press_sec: 0.4  # shareボタン長押し判定秒数 [s]
+    ps_long_press_sec: 1.0  # PSボタン長押し判定秒数 [s]（リトライ初期化）
     # /initialpose publish後に現在のTFをログするまでの遅延 [s]
     initialpose_tf_log_delay_sec: 5.0
     # /initialpose の再送遅延 [s]（LiDAR lifecycle 起動の非同期性に対応するため複数回送信する）
