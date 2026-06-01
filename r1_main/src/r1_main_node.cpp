@@ -4265,7 +4265,7 @@ void R1MainNode::manual_task(void)
   double slope = ENABLE_R2_ANALOG_SPEED_CONTROL == true ? ps4_->get_r2_analog() : 1.0;
   bool on_mode2_low_speed =
     (current_state.operation_mode == OperationMode::MODE2_POLE) && ps4_->is_pushing_r2() == false;
-  bool on_mode3_make_spear_speed =
+  bool on_mode3 =
     (current_state.operation_mode == OperationMode::MODE3_SPEAR) && ps4_->is_pushing_r2() == true;
   bool on_mode4_high_speed =
     (current_state.operation_mode == OperationMode::MODE4_FKFS) && ps4_->is_pushing_r2() == true;
@@ -4279,7 +4279,7 @@ void R1MainNode::manual_task(void)
     vx_max = CHASSIS_LOW_VELOCITY + (CHASSIS_NORMAL_VELOCITY - CHASSIS_LOW_VELOCITY) * slope;
     vy_max = CHASSIS_LOW_VELOCITY + (CHASSIS_NORMAL_VELOCITY - CHASSIS_LOW_VELOCITY) * slope;
     vz_max = CHASSIS_LOW_OMEGA + (CHASSIS_NORMAL_OMEGA - CHASSIS_LOW_OMEGA) * slope;
-  } else if (on_mode3_make_spear_speed) {
+  } else if (on_mode3) {
     // 最大速度と最大角速度をCHASSIS_LOW_VELOCITY / CHASSIS_LOW_OMEGAからCHASSIS_MAKE_SPEAR_VELOCITY / CHASSIS_MAKE_SPEAR_OMEGAまで線形に変化させる
     vx_max = CHASSIS_LOW_VELOCITY + (CHASSIS_MAKE_SPEAR_VELOCITY - CHASSIS_LOW_VELOCITY) * slope;
     vy_max = CHASSIS_LOW_VELOCITY + (CHASSIS_MAKE_SPEAR_VELOCITY - CHASSIS_LOW_VELOCITY) * slope;
