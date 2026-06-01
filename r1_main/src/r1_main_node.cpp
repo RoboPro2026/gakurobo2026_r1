@@ -2519,11 +2519,13 @@ void R1MainNode::manual_mode1_detect_origin(void)
   }
 
   if (ps4_->is_pushed_l2()) {
-    r2_rlift_detect_origin();
+    // r2_rlift_detect_origin();
+    r2_rlift_set_pos(0.0);
   }
 
   if (ps4_->is_pushed_r2()) {
-    r2_flift_detect_origin();
+    // r2_flift_detect_origin();
+    r2_flift_set_pos(0.0);
   }
 }
 
@@ -3257,8 +3259,10 @@ void R1MainNode::manual_mode6_r2_lift(void)
   if (ps4_->is_pushed_up()) {
     publish_all_aruco_marker_id(DEFAULT_ARUCO_MARKER_ID);
     r1_log_info("aruco デフォ");
-    r2_flift_pos_ref(R2_FLIFT_UP_POS);
-    r2_rlift_pos_ref(R2_RLIFT_UP_POS);
+    // r2_flift_pos_ref(R2_FLIFT_UP_POS);
+    // r2_rlift_pos_ref(R2_RLIFT_UP_POS);
+    r2_flit_move_mech_lock(1);
+    r2_rlift_move_mech_lock(1);
   }
 
   if (ps4_->is_pushed_right()) {
