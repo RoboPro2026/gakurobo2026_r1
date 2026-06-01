@@ -693,7 +693,7 @@ r1_spear_y_node:
     origin_detect_speed: -6.28 # rad/s
     pos_min: -0.1
     pos_max: 1.0
-    normal_pos: 0.05
+    normal_pos: 0.0
     # ギアが一周すると2*pi*15mm進むので、半径は15mm
     radius: 0.015
     inverse_motor: true
@@ -715,7 +715,7 @@ r1_spear_roll1_node:
     origin_detect_speed: -3.14 # rad/s
     angle_min: -5.0
     angle_max: 5.0
-    normal_angle: 0.1
+    normal_angle: 0.0
     # ギア比で割った値がモーターの角度指令値となる
     # 13.0 / 42.0 = 0.30952380952380953
     gear_ratio: 0.30952380952380953
@@ -738,7 +738,7 @@ r1_spear_roll2_node:
     origin_detect_speed: -3.14 # rad/s
     angle_min: -5.0
     angle_max: 5.0
-    normal_angle: 0.1
+    normal_angle: 0.0
     # ギア比で割った値がモーターの角度指令値となる
     # 13.0 / 42.0 = 0.30952380952380953
     gear_ratio: 0.30952380952380953
