@@ -3257,12 +3257,17 @@ void R1MainNode::manual_mode6_r2_lift(void)
   int & square_step = manual_mode6_square_step_;
 
   if (ps4_->is_pushed_up()) {
-    publish_all_aruco_marker_id(DEFAULT_ARUCO_MARKER_ID);
-    r1_log_info("aruco デフォ");
-    // r2_flift_pos_ref(R2_FLIFT_UP_POS);
-    // r2_rlift_pos_ref(R2_RLIFT_UP_POS);
-    r2_flift_move_mech_lock(1);
-    r2_rlift_move_mech_lock(1);
+    if (ps4_->is_pushing_l2()) {
+      // r2_fliftの微調整（指令値を増加）
+      r2_flift_pos_ref(r2_flift_position_ref_ + 0.01);
+    } else {
+      publish_all_aruco_marker_id(DEFAULT_ARUCO_MARKER_ID);
+      r1_log_info("aruco デフォ");
+      // r2_flift_pos_ref(R2_FLIFT_UP_POS);
+      // r2_rlift_pos_ref(R2_RLIFT_UP_POS);
+      r2_flift_move_mech_lock(1);
+      r2_rlift_move_mech_lock(1);
+    }
   }
 
   if (ps4_->is_pushed_right()) {
@@ -3290,12 +3295,17 @@ void R1MainNode::manual_mode6_r2_lift(void)
   }
 
   if (ps4_->is_pushed_down()) {
-    publish_all_aruco_marker_id(DEFAULT_ARUCO_MARKER_ID);
-    r1_log_info("aruco デフォ");
-    // r2_flift_pos_ref(R2_FLIFT_DOWN_POS);
-    // r2_rlift_pos_ref(R2_RLIFT_DOWN_POS);
-    r2_flift_move_mech_lock(-1);
-    r2_rlift_move_mech_lock(-1);
+    if (ps4_->is_pushing_l2()) {
+      // r2_fliftの微調整（指令値を減少）
+      r2_flift_pos_ref(r2_flift_position_ref_ - 0.01);
+    } else {
+      publish_all_aruco_marker_id(DEFAULT_ARUCO_MARKER_ID);
+      r1_log_info("aruco デフォ");
+      // r2_flift_pos_ref(R2_FLIFT_DOWN_POS);
+      // r2_rlift_pos_ref(R2_RLIFT_DOWN_POS);
+      r2_flift_move_mech_lock(-1);
+      r2_rlift_move_mech_lock(-1);
+    }
   }
 
   if (ps4_->is_pushed_left()) {
@@ -3320,14 +3330,19 @@ void R1MainNode::manual_mode6_r2_lift(void)
   }
 
   if (ps4_->is_pushed_triangle()) {
-    if (triangle_step == 1) {
-      publish_all_aruco_marker_id(SECOND_KFS_ARUCO_MARKER_ID);
-      r1_log_info("aruco KFS2つ目");
-      triangle_step = 2;
-    } else if (triangle_step == 2) {
-      publish_all_aruco_marker_id(DEFAULT_ARUCO_MARKER_ID);
-      r1_log_info("aruco デフォ");
-      triangle_step = 1;
+    if (ps4_->is_pushing_l2()) {
+      // r2_rliftの微調整（指令値を増加）
+      r2_rlift_pos_ref(r2_rlift_position_ref_ + 0.01);
+    } else {
+      if (triangle_step == 1) {
+        publish_all_aruco_marker_id(SECOND_KFS_ARUCO_MARKER_ID);
+        r1_log_info("aruco KFS2つ目");
+        triangle_step = 2;
+      } else if (triangle_step == 2) {
+        publish_all_aruco_marker_id(DEFAULT_ARUCO_MARKER_ID);
+        r1_log_info("aruco デフォ");
+        triangle_step = 1;
+      }
     }
   }
 
@@ -3344,14 +3359,19 @@ void R1MainNode::manual_mode6_r2_lift(void)
   }
 
   if (ps4_->is_pushed_cross()) {
-    if (cross_step == 1) {
-      publish_all_aruco_marker_id(PUT_KFS_ARUCO_MARKER_ID);
-      r1_log_info("aruco put_kfs");
-      cross_step = 2;
-    } else if (cross_step == 2) {
-      publish_all_aruco_marker_id(DEFAULT_ARUCO_MARKER_ID);
-      r1_log_info("aruco デフォ");
-      cross_step = 1;
+    if (ps4_->is_pushing_l2()) {
+      // r2_rliftの微調整（指令値を減少）
+      r2_rlift_pos_ref(r2_rlift_position_ref_ - 0.01);
+    } else {
+      if (cross_step == 1) {
+        publish_all_aruco_marker_id(PUT_KFS_ARUCO_MARKER_ID);
+        r1_log_info("aruco put_kfs");
+        cross_step = 2;
+      } else if (cross_step == 2) {
+        publish_all_aruco_marker_id(DEFAULT_ARUCO_MARKER_ID);
+        r1_log_info("aruco デフォ");
+        cross_step = 1;
+      }
     }
   }
 
@@ -3368,19 +3388,23 @@ void R1MainNode::manual_mode6_r2_lift(void)
   }
 
   if (ps4_->is_pushed_l1()) {
+    // TODO: ボタンの数が足りなくなったら削除してもいいかも
     r2_flift_pos_ref(r2_flift_position_ref_ - 0.01);
-  }
-
-  if (ps4_->is_pushed_r1()) {
-    r2_flift_pos_ref(r2_flift_position_ref_ + 0.01);
-  }
-
-  if (ps4_->is_pushed_l2()) {
     r2_rlift_pos_ref(r2_rlift_position_ref_ - 0.01);
   }
 
-  if (ps4_->is_pushed_r2()) {
+  if (ps4_->is_pushed_r1()) {
+    // TODO: ボタンの数が足りなくなったら削除してもいいかも
+    r2_flift_pos_ref(r2_flift_position_ref_ + 0.01);
     r2_rlift_pos_ref(r2_rlift_position_ref_ + 0.01);
+  }
+
+  if (ps4_->is_pushed_l2()) {
+    // 微調整トリガーとして使用
+  }
+
+  if (ps4_->is_pushed_r2()) {
+    // manual_task内で、速度トリガーとして使用
   }
 }
 
@@ -3784,8 +3808,8 @@ void R1MainNode::auto_collect_kfs_task(void)
     // 短い別名をつける。よくわからないけど、bool型はstd::vector<bool>::reference型で参照を取る必要があるらしい
     std::vector<bool>::reference within =
       kfs_auto_collect_within_[target_forest_number - 1][within_index];
-    std::vector<bool>::reference prev_within =
-      kfs_auto_collect_prev_within_[target_forest_number - 1][within_index];
+    // std::vector<bool>::reference prev_within =
+    //   kfs_auto_collect_prev_within_[target_forest_number - 1][within_index];
     // within はこの周期の判定結果なので、毎周期いったん false に戻して再評価する。
     within = false;
 
@@ -4291,27 +4315,23 @@ void R1MainNode::manual_task(void)
   double vy_max = CHASSIS_NORMAL_VELOCITY;
   double vz_max = CHASSIS_NORMAL_OMEGA;
   double slope = ENABLE_R2_ANALOG_SPEED_CONTROL == true ? ps4_->get_r2_analog() : 1.0;
-  bool on_mode2_low_speed =
-    (current_state.operation_mode == OperationMode::MODE2_POLE) && ps4_->is_pushing_r2() == false;
-  bool on_mode3 = (current_state.operation_mode == OperationMode::MODE3_SPEAR);
-  bool on_mode4_high_speed =
-    (current_state.operation_mode == OperationMode::MODE4_FKFS) && ps4_->is_pushing_r2() == true;
-  bool on_mode5_high_speed =
-    (current_state.operation_mode == OperationMode::MODE5_RKFS) && ps4_->is_pushing_r2() == true;
-  bool on_mode7_high_speed = (current_state.operation_mode == OperationMode::MODE7_SPEAR_ATTACK) &&
-                             ps4_->is_pushing_r2() == true;
 
-  if (on_mode2_low_speed) {
+  if (
+    (current_state.operation_mode == OperationMode::MODE2_POLE) ||
+    (current_state.operation_mode == OperationMode::MODE6_R2_LIFT)) {
     // 最大速度と最大角速度をCHASSIS_LOW_VELOCITY / CHASSIS_LOW_OMEGAからCHASSIS_NORMAL_VELOCITY / CHASSIS_NORMAL_OMEGAまで線形に変化させる
     vx_max = CHASSIS_LOW_VELOCITY + (CHASSIS_NORMAL_VELOCITY - CHASSIS_LOW_VELOCITY) * slope;
     vy_max = CHASSIS_LOW_VELOCITY + (CHASSIS_NORMAL_VELOCITY - CHASSIS_LOW_VELOCITY) * slope;
     vz_max = CHASSIS_LOW_OMEGA + (CHASSIS_NORMAL_OMEGA - CHASSIS_LOW_OMEGA) * slope;
-  } else if (on_mode3) {
+  } else if (current_state.operation_mode == OperationMode::MODE3_SPEAR) {
     // 最大速度と最大角速度をCHASSIS_LOW_VELOCITY / CHASSIS_LOW_OMEGAからCHASSIS_MAKE_SPEAR_VELOCITY / CHASSIS_MAKE_SPEAR_OMEGAまで線形に変化させる
     vx_max = CHASSIS_LOW_VELOCITY + (CHASSIS_MAKE_SPEAR_VELOCITY - CHASSIS_LOW_VELOCITY) * slope;
     vy_max = CHASSIS_LOW_VELOCITY + (CHASSIS_MAKE_SPEAR_VELOCITY - CHASSIS_LOW_VELOCITY) * slope;
     vz_max = CHASSIS_LOW_OMEGA + (CHASSIS_MAKE_SPEAR_OMEGA - CHASSIS_LOW_OMEGA) * slope;
-  } else if (on_mode4_high_speed || on_mode5_high_speed || on_mode7_high_speed) {
+  } else if (
+    (current_state.operation_mode == OperationMode::MODE4_FKFS) ||
+    (current_state.operation_mode == OperationMode::MODE5_RKFS) ||
+    (current_state.operation_mode == OperationMode::MODE7_SPEAR_ATTACK)) {
     // 最大速度と最大角速度をCHASSIS_NORMAL_VELOVITY / CHASSIS_NORMAL_OMEGAからCHASSIS_HIGH_VELOCITY / CHASSIS_HIGH_OMEGAまで線形に変化させる
     vx_max = CHASSIS_NORMAL_VELOCITY + (CHASSIS_HIGH_VELOCITY - CHASSIS_NORMAL_VELOCITY) * slope;
     vy_max = CHASSIS_NORMAL_VELOCITY + (CHASSIS_HIGH_VELOCITY - CHASSIS_NORMAL_VELOCITY) * slope;
