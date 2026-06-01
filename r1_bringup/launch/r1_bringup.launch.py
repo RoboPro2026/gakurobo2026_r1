@@ -514,19 +514,29 @@ def generate_launch_description():
     #     arguments=["--ros-args", "--log-level", "warn"],
     #     condition=IfCondition(use_aruco_display),
     # )
-    def create_r1_aruco_serial_node(node_name: str) -> Node:
+    def create_r1_aruco_serial_node(node_name: str, topic_prefix: str) -> Node:
         return Node(
             package="r1_ui",
             executable="r1_aruco_serial_node",
             name=node_name,
             parameters=[param_file],
             arguments=["--ros-args", "--log-level", "warn"],
+            remappings=[
+                ("aruco_marker_id", f"{topic_prefix}_aruco_marker_id"),
+            ],
         )
 
-    r1_aruco_red_serial_node = create_r1_aruco_serial_node("r1_aruco_red_serial_node")
-    r1_aruco_blue_serial_node = create_r1_aruco_serial_node("r1_aruco_blue_serial_node")
-    r1_aruco_r2_lift_serial_node = create_r1_aruco_serial_node(
-        "r1_aruco_r2_lift_serial_node"
+    r1_aruco_spear_red_serial_node = create_r1_aruco_serial_node(
+        "r1_aruco_spear_red_serial_node", "spear_red"
+    )
+    r1_aruco_spear_blue_serial_node = create_r1_aruco_serial_node(
+        "r1_aruco_spear_blue_serial_node", "spear_blue"
+    )
+    r1_aruco_r2_lift_lower_serial_node = create_r1_aruco_serial_node(
+        "r1_aruco_r2_lift_lower_serial_node", "r2_lift_lower"
+    )
+    r1_aruco_r2_lift_upper_serial_node = create_r1_aruco_serial_node(
+        "r1_aruco_r2_lift_upper_serial_node", "r2_lift_upper"
     )
 
     remote_debug_node = Node(
@@ -568,9 +578,10 @@ def generate_launch_description():
         rosbridge_launch,
         # r1_aruco_display_node,
         # r1_aruco_serial_node,
-        r1_aruco_red_serial_node,
-        r1_aruco_blue_serial_node,
-        r1_aruco_r2_lift_serial_node,
+        r1_aruco_spear_red_serial_node,
+        r1_aruco_spear_blue_serial_node,
+        r1_aruco_r2_lift_lower_serial_node,
+        r1_aruco_r2_lift_upper_serial_node,
         r1_kfs_fx_node,
         r1_kfs_fz_node,
         r1_kfs_fyaw_node,

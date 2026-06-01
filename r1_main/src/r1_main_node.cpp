@@ -47,11 +47,9 @@ std::optional<RobotState> parse_robot_control_mode_parameter(std::string_view va
 std::string robot_control_mode_parameter_help() { return "Accepted values: manual, auto."; }
 
 const std::vector<OperationMode> kOperationModeOrder = {
-  OperationMode::MODE1_DETECT_ORIGIN, OperationMode::MODE2_POLE,
-  OperationMode::MODE3_SPEAR,         OperationMode::MODE4_FKFS,
-  OperationMode::MODE5_RKFS,          OperationMode::MODE6_R2_LIFT,
-  OperationMode::MODE7_SPEAR_ATTACK,  OperationMode::MODE8_AUTO_COLLECT_KFS,
-  OperationMode::MODE9_AUTO_CHASSIS,
+  OperationMode::MODE1_DETECT_ORIGIN, OperationMode::MODE2_POLE, OperationMode::MODE3_SPEAR,
+  OperationMode::MODE4_FKFS,          OperationMode::MODE5_RKFS, OperationMode::MODE6_R2_LIFT,
+  OperationMode::MODE7_SPEAR_ATTACK,
 };
 
 OperationMode cycle_operation_mode(OperationMode mode, int step)
@@ -557,7 +555,14 @@ R1MainNode::R1MainNode() : Node("r1_main_node")
     std::bind(&R1MainNode::r1_machine_initialize_done_callback, this, std::placeholders::_1));
 
   // arucoマーカ
-  aruco_marker_id_publisher_ = this->create_publisher<std_msgs::msg::Int32>("/aruco_marker_id", 10);
+  spear_red_aruco_marker_id_publisher_ =
+    this->create_publisher<std_msgs::msg::Int32>("/spear_red_aruco_marker_id", 10);
+  spear_blue_aruco_marker_id_publisher_ =
+    this->create_publisher<std_msgs::msg::Int32>("/spear_blue_aruco_marker_id", 10);
+  r2_lift_lower_aruco_marker_id_publisher_ =
+    this->create_publisher<std_msgs::msg::Int32>("/r2_lift_lower_aruco_marker_id", 10);
+  r2_lift_upper_aruco_marker_id_publisher_ =
+    this->create_publisher<std_msgs::msg::Int32>("/r2_lift_upper_aruco_marker_id", 10);
 
   // スマホ通信
   r1_operation_mode_publisher_ =
@@ -608,6 +613,7 @@ R1MainNode::R1MainNode() : Node("r1_main_node")
   declare_and_get_parameter("ps4_connection_timeout", ps4_connection_timeout_, 0.3);
   declare_and_get_parameter("activate_lidar_on_ps", activate_lidar_on_ps_, true);
   declare_and_get_parameter("share_long_press_sec", SHARE_LONG_PRESS_SEC, 1.0);
+  declare_and_get_parameter("ps_long_press_sec", PS_LONG_PRESS_SEC, 2.0);
   declare_and_get_parameter("enable_right_stick_pause", enable_right_stick_pause_, false);
   declare_and_get_parameter("initialpose_tf_log_delay_sec", initialpose_tf_log_delay_sec_, 1.0);
   declare_and_get_parameter("initialpose_retry1_delay_sec", initialpose_retry1_delay_sec_, 1.0);
@@ -619,6 +625,8 @@ R1MainNode::R1MainNode() : Node("r1_main_node")
   declare_and_get_parameter("chassis_low_omega", CHASSIS_LOW_OMEGA);
   declare_and_get_parameter("chassis_normal_omega", CHASSIS_NORMAL_OMEGA);
   declare_and_get_parameter("chassis_high_omega", CHASSIS_HIGH_OMEGA);
+  declare_and_get_parameter("chassis_make_spear_velocity", CHASSIS_MAKE_SPEAR_VELOCITY);
+  declare_and_get_parameter("chassis_make_spear_omega", CHASSIS_MAKE_SPEAR_OMEGA);
 
   // ========== KFS回収 ==========
   declare_and_get_parameter("use_kfs_mech_lock", USE_KFS_MECH_LOCK);
@@ -1188,13 +1196,6 @@ R1MainNode::LedPattern R1MainNode::resolve_base_led_pattern(void)
   if (state.operation_mode == OperationMode::MODE7_SPEAR_ATTACK) {
     return apply_led_blink(LedPattern{true, {50, 50, 50}, 0});
   }
-  if (state.operation_mode == OperationMode::MODE8_AUTO_COLLECT_KFS) {
-    return apply_led_blink(LedPattern{true, {50, 25, 0}, 0});
-  }
-  if (state.operation_mode == OperationMode::MODE9_AUTO_CHASSIS) {
-    // TODO: 9の色は変える
-    return apply_led_blink(LedPattern{true, {50, 50, 0}, 0});
-  }
 
   // 未定義なら消灯
   return apply_led_blink(LedPattern{});
@@ -1603,7 +1604,6 @@ void R1MainNode::invalidate_led_cache(void)
 
 void R1MainNode::r1_machine_initialize_done_callback(const std_msgs::msg::Empty::SharedPtr)
 {
-  is_initialized_ = true;
   initialize_done_time_ = this->now();
   // initialize 完了直後に LED を再送できるよう、出力キャッシュを無効化する。
   // 将来的にここへ原点検出後処理や初期姿勢への指令を追加する場合も、この callback を
@@ -1864,12 +1864,45 @@ void R1MainNode::publish_robot_move(
   current_robot_move_ = msg;
 }
 
-void R1MainNode::publish_aruco_marker_id(int id)
+void R1MainNode::publish_all_aruco_marker_id(int id)
+{
+  publish_spear_red_aruco_marker_id(id);
+  publish_spear_blue_aruco_marker_id(id);
+  publish_r2_lift_lower_aruco_marker_id(id);
+  publish_r2_lift_upper_aruco_marker_id(id);
+  RCLCPP_INFO(this->get_logger(), "publish all aruco marker id: %d", id);
+}
+
+void R1MainNode::publish_spear_red_aruco_marker_id(int id)
 {
   std_msgs::msg::Int32 msg;
   msg.data = id;
-  aruco_marker_id_publisher_->publish(msg);
-  RCLCPP_INFO(this->get_logger(), "publish aruco marker id: %d", id);
+  spear_red_aruco_marker_id_publisher_->publish(msg);
+  RCLCPP_INFO(this->get_logger(), "publish spear red aruco marker id: %d", id);
+}
+
+void R1MainNode::publish_spear_blue_aruco_marker_id(int id)
+{
+  std_msgs::msg::Int32 msg;
+  msg.data = id;
+  spear_blue_aruco_marker_id_publisher_->publish(msg);
+  RCLCPP_INFO(this->get_logger(), "publish spear blue aruco marker id: %d", id);
+}
+
+void R1MainNode::publish_r2_lift_lower_aruco_marker_id(int id)
+{
+  std_msgs::msg::Int32 msg;
+  msg.data = id;
+  r2_lift_lower_aruco_marker_id_publisher_->publish(msg);
+  RCLCPP_INFO(this->get_logger(), "publish r2 lift lower aruco marker id: %d", id);
+}
+
+void R1MainNode::publish_r2_lift_upper_aruco_marker_id(int id)
+{
+  std_msgs::msg::Int32 msg;
+  msg.data = id;
+  r2_lift_upper_aruco_marker_id_publisher_->publish(msg);
+  RCLCPP_INFO(this->get_logger(), "publish r2 lift upper aruco marker id: %d", id);
 }
 
 // void R1MainNode::publish_r1_log(const std::string & message)
@@ -2312,7 +2345,8 @@ void R1MainNode::kfs_collect_start_act(bool enable_pump, bool enable_push_valve)
   // spear_yを移動。push_valveをtrueにし、槍回収機構をKFS回収時用の高さに移動する
   spear_y_pos_ref(SPEAR_Y_COLLECT_KFS_POS);
   // arucoマーカをもとに戻す
-  publish_aruco_marker_id(0);
+  publish_all_aruco_marker_id(DEFAULT_ARUCO_MARKER_ID);
+  r1_log_info("aruco デフォ");
   if (enable_push_valve) {
     // hand_push_valveをtrueにし、やり回収機構を押し出す
     spear_hand_push_valve(true);
@@ -2421,6 +2455,8 @@ void R1MainNode::detect_origin_all_actuator(void)
 
 void R1MainNode::manual_mode1_detect_origin(void)
 {
+  auto & hand_valve_step = manual_mode2_hand_valve_step_;
+
   if (ps4_->is_pushed_up()) {
     kfs_fx_detect_origin();
   }
@@ -2433,9 +2469,10 @@ void R1MainNode::manual_mode1_detect_origin(void)
     kfs_fyaw_detect_origin();
   }
 
-  // if (ps4_->is_pushed_left()) {
-  //   front_expand_detect_origin();
-  // }
+  if (ps4_->is_pushed_left()) {
+    // spear_roll1_detect_origin();
+    // spear_roll2_detect_origin();
+  }
 
   if (ps4_->is_pushed_triangle()) {
     kfs_rx_detect_origin();
@@ -2449,12 +2486,13 @@ void R1MainNode::manual_mode1_detect_origin(void)
     kfs_ryaw_detect_origin();
   }
 
-  // if (ps4_->is_pushed_square()) {
-  //   rear_expand_detect_origin();
-  // }
+  if (ps4_->is_pushed_square()) {
+    spear_y_detect_origin();
+    spear_roll1_set_angle(0.0);
+    spear_roll2_set_angle(0.0);
+  }
 
   if (ps4_->is_pushed_l1()) {
-    // spear1_detect_origin();
     kfs_robot_start_act(true);
     spear_y_pos_ref(SPEAR_Y_COLLECT1_POS);
     spear_roll1_pos_ref(SPEAR_ROLL1_VERTICAL_ANGLE);
@@ -2466,22 +2504,28 @@ void R1MainNode::manual_mode1_detect_origin(void)
   }
 
   if (ps4_->is_pushed_r1()) {
-    // spear2_detect_origin();
-    // spear_x, spear_y, spear_rollは原点検出ができないので、角度を設定する
-    // spear_x_set_pos(0.0);
-    // spear_y_set_pos(0.0);
-    // spear_y_set_pos(0.0);
-    spear_y_detect_origin();
-    spear_roll1_set_angle(0.0);
-    spear_roll2_set_angle(0.0);
+    if (hand_valve_step == 1) {
+      spear_hand1_valve(true);
+      spear_hand2_valve(true);
+      hand_valve_step = 2;
+    } else if (hand_valve_step == 2) {
+      spear_hand1_valve(false);
+      spear_hand2_valve(false);
+      hand_valve_step = 1;
+    }
+    // spear_y_detect_origin();
+    // spear_roll1_set_angle(0.0);
+    // spear_roll2_set_angle(0.0);
   }
 
   if (ps4_->is_pushed_l2()) {
-    r2_rlift_detect_origin();
+    // r2_rlift_detect_origin();
+    r2_rlift_set_pos(0.0);
   }
 
   if (ps4_->is_pushed_r2()) {
-    r2_flift_detect_origin();
+    // r2_flift_detect_origin();
+    r2_flift_set_pos(0.0);
   }
 }
 
@@ -2609,7 +2653,8 @@ void R1MainNode::manual_mode3_make_spear_task(int n)
     // arucoマーカーは0をpublishする
     spear_y_pos_ref(SPEAR_Y_MAKE_SPEAR_POS);
     spear_hand_push_valve(true);
-    publish_aruco_marker_id(0);
+    publish_all_aruco_marker_id(DEFAULT_ARUCO_MARKER_ID);
+    r1_log_info("aruco デフォ");
 
     // 2. 少し遅延を入れて、rollを横向きにする
     manual_mode3_roll_timer_ = this->create_wall_timer(ROLL_DELAY, [this]() {
@@ -2636,8 +2681,8 @@ void R1MainNode::manual_mode3_make_spear_task(int n)
       });
     step++;
   } else if (step == 2) {
-    publish_aruco_marker_id(1);
-    r1_log_info("aruco_id 1");
+    publish_all_aruco_marker_id(SPEAR_COMBINE_ARUCO_MARKER_ID);
+    r1_log_info("aruco やり合体");
     step++;
   } else if (step == 3) {
     if (manual_mode3_roll_timer_) {
@@ -3206,19 +3251,29 @@ void R1MainNode::manual_mode5_rkfs(void)
 
 void R1MainNode::manual_mode6_r2_lift(void)
 {
-  int & aruco_step = manual_mode6_aruco_marker_step_;
+  int & triangle_step = manual_mode6_triangle_step_;
+  int & circle_step = manual_mode6_circle_step_;
+  int & cross_step = manual_mode6_cross_step_;
+  int & square_step = manual_mode6_square_step_;
+
   if (ps4_->is_pushed_up()) {
-    // arucoマーカを万が一変更し忘れたとき用に自動で変わる
-    publish_aruco_marker_id(2);
-    aruco_step = 2;
-    r2_flift_pos_ref(R2_FLIFT_UP_POS);
-    r2_rlift_pos_ref(R2_RLIFT_UP_POS);
+    if (ps4_->is_pushing_l2()) {
+      // r2_fliftの微調整（指令値を増加）
+      r2_flift_pos_ref(r2_flift_position_ref_ + 0.01);
+    } else {
+      publish_all_aruco_marker_id(DEFAULT_ARUCO_MARKER_ID);
+      r1_log_info("aruco デフォ");
+      // r2_flift_pos_ref(R2_FLIFT_UP_POS);
+      // r2_rlift_pos_ref(R2_RLIFT_UP_POS);
+      r2_flift_move_mech_lock(1);
+      r2_rlift_move_mech_lock(1);
+    }
   }
 
   if (ps4_->is_pushed_right()) {
     // 間違えてボタン押したときのために、aroco_marker_id=0に設定
-    publish_aruco_marker_id(0);
-    aruco_step = 1;
+    publish_all_aruco_marker_id(DEFAULT_ARUCO_MARKER_ID);
+    r1_log_info("aruco デフォ");
     kfs_fx_pos_ref(KFS_FX_R2_LIFT_POS);
     kfs_fz_pos_ref(KFS_FZ_R2_LIFT_POS);
     kfs_rx_pos_ref(KFS_RX_R2_LIFT_POS);
@@ -3228,8 +3283,10 @@ void R1MainNode::manual_mode6_r2_lift(void)
       manual_mode6_r2_lift_timer_->cancel();
     }
     manual_mode6_r2_lift_timer_ = this->create_wall_timer(500ms, [this]() {
-      r2_flift_move_mech_lock(-1);
-      r2_rlift_move_mech_lock(-1);
+      // r2_flift_move_mech_lock(-1);
+      // r2_rlift_move_mech_lock(-1);
+      r2_flift_pos_ref(R2_FLIFT_NORMAL_POS);
+      r2_rlift_pos_ref(R2_RLIFT_NORMAL_POS);
       if (manual_mode6_r2_lift_timer_ != nullptr) {
         manual_mode6_r2_lift_timer_->cancel();
       }
@@ -3238,14 +3295,23 @@ void R1MainNode::manual_mode6_r2_lift(void)
   }
 
   if (ps4_->is_pushed_down()) {
-    r2_flift_pos_ref(R2_FLIFT_DOWN_POS);
-    r2_rlift_pos_ref(R2_RLIFT_DOWN_POS);
+    if (ps4_->is_pushing_l2()) {
+      // r2_fliftの微調整（指令値を減少）
+      r2_flift_pos_ref(r2_flift_position_ref_ - 0.01);
+    } else {
+      publish_all_aruco_marker_id(DEFAULT_ARUCO_MARKER_ID);
+      r1_log_info("aruco デフォ");
+      // r2_flift_pos_ref(R2_FLIFT_DOWN_POS);
+      // r2_rlift_pos_ref(R2_RLIFT_DOWN_POS);
+      r2_flift_move_mech_lock(-1);
+      r2_rlift_move_mech_lock(-1);
+    }
   }
 
   if (ps4_->is_pushed_left()) {
     // 間違えてボタン押したときのために、aroco_marker_id=0に設定
-    publish_aruco_marker_id(0);
-    aruco_step = 1;
+    publish_all_aruco_marker_id(DEFAULT_ARUCO_MARKER_ID);
+    r1_log_info("aruco デフォ");
     r2_flift_pos_ref(R2_FLIFT_NORMAL_POS);
     r2_rlift_pos_ref(R2_RLIFT_NORMAL_POS);
     if (manual_mode6_r2_lift_timer_ != nullptr) {
@@ -3264,35 +3330,81 @@ void R1MainNode::manual_mode6_r2_lift(void)
   }
 
   if (ps4_->is_pushed_triangle()) {
+    if (ps4_->is_pushing_l2()) {
+      // r2_rliftの微調整（指令値を増加）
+      r2_rlift_pos_ref(r2_rlift_position_ref_ + 0.01);
+    } else {
+      if (triangle_step == 1) {
+        publish_all_aruco_marker_id(SECOND_KFS_ARUCO_MARKER_ID);
+        r1_log_info("aruco KFS2つ目");
+        triangle_step = 2;
+      } else if (triangle_step == 2) {
+        publish_all_aruco_marker_id(DEFAULT_ARUCO_MARKER_ID);
+        r1_log_info("aruco デフォ");
+        triangle_step = 1;
+      }
+    }
   }
 
   if (ps4_->is_pushed_circle()) {
-    if (aruco_step == 1) {
-      publish_aruco_marker_id(2);
-      aruco_step = 2;
-    } else if (aruco_step == 2) {
-      publish_aruco_marker_id(0);
-      aruco_step = 1;
+    if (circle_step == 1) {
+      publish_all_aruco_marker_id(FIRST_KFS_ARUCO_MARKER_ID);
+      r1_log_info("aruco KFS1つ目");
+      circle_step = 2;
+    } else if (circle_step == 2) {
+      publish_all_aruco_marker_id(0);
+      r1_log_info("aruco デフォ");
+      circle_step = 1;
     }
   }
 
   if (ps4_->is_pushed_cross()) {
+    if (ps4_->is_pushing_l2()) {
+      // r2_rliftの微調整（指令値を減少）
+      r2_rlift_pos_ref(r2_rlift_position_ref_ - 0.01);
+    } else {
+      if (cross_step == 1) {
+        publish_all_aruco_marker_id(PUT_KFS_ARUCO_MARKER_ID);
+        r1_log_info("aruco put_kfs");
+        cross_step = 2;
+      } else if (cross_step == 2) {
+        publish_all_aruco_marker_id(DEFAULT_ARUCO_MARKER_ID);
+        r1_log_info("aruco デフォ");
+        cross_step = 1;
+      }
+    }
+  }
+
+  if (ps4_->is_pushed_square()) {
+    if (square_step == 1) {
+      publish_all_aruco_marker_id(THIRD_KFS_ARUCO_MARKER_ID);
+      r1_log_info("aruco KFS3つ目");
+      square_step = 2;
+    } else if (square_step == 2) {
+      publish_all_aruco_marker_id(DEFAULT_ARUCO_MARKER_ID);
+      r1_log_info("aruco デフォ");
+      square_step = 1;
+    }
   }
 
   if (ps4_->is_pushed_l1()) {
+    // TODO: ボタンの数が足りなくなったら削除してもいいかも
     r2_flift_pos_ref(r2_flift_position_ref_ - 0.01);
-  }
-
-  if (ps4_->is_pushed_r1()) {
-    r2_flift_pos_ref(r2_flift_position_ref_ + 0.01);
-  }
-
-  if (ps4_->is_pushed_l2()) {
     r2_rlift_pos_ref(r2_rlift_position_ref_ - 0.01);
   }
 
-  if (ps4_->is_pushed_r2()) {
+  if (ps4_->is_pushed_r1()) {
+    // TODO: ボタンの数が足りなくなったら削除してもいいかも
+    r2_flift_pos_ref(r2_flift_position_ref_ + 0.01);
     r2_rlift_pos_ref(r2_rlift_position_ref_ + 0.01);
+  }
+
+  if (ps4_->is_pushed_l2()) {
+    // 微調整トリガーとして使用
+  }
+
+  if (ps4_->is_pushed_r2()) {
+    // manual_task内で、速度トリガーとして使用
   }
 }
 
@@ -3564,7 +3676,6 @@ void R1MainNode::auto_collect_kfs_task(void)
     bool wall_detected = false;
     double sensor_value_low = 0.0;
     double sensor_value_middle = 0.0;
-    double sensor_value_high = 0.0;
     if (within_index == FKFS) {
       sensor_value_low = scan_fl_data_;
       sensor_value_middle = scan_fm_data_;
@@ -3575,16 +3686,19 @@ void R1MainNode::auto_collect_kfs_task(void)
 
     // センサーが反応しているかを確認
     if (kfs_height == HEIGHT_LOW) {
-      // 下段の検出：lセンサがOFF->ONの切り替わり
-      wall_detected = (sensor_value_low > WALL_SENSOR_DISTANCE_THRESHOLD);
+      // 下段の検出：lセンサがしきい値より遠いかつmセンサがしきい値より遠いとき：センサ反応
+      wall_detected =
+        (sensor_value_low > WALL_SENSOR_DISTANCE_THRESHOLD &&
+         sensor_value_middle > WALL_SENSOR_DISTANCE_THRESHOLD);
     } else if (kfs_height == HEIGHT_MIDDLE) {
-      // 中段の検出：9以外：lセンサがONかつmセンサがON->OFFの切り替わり
+      // 中段の検出：lセンサがしきい値より近いかつmセンサがしきい値より近いとき：センサ反応
       wall_detected =
         (sensor_value_low < WALL_SENSOR_DISTANCE_THRESHOLD &&
          sensor_value_middle > WALL_SENSOR_DISTANCE_THRESHOLD);
     } else if (kfs_height == HEIGHT_HIGH) {
-      // 上段の検出：mセンサがOFF->ONの切り替わり
-      wall_detected = (sensor_value_middle < WALL_SENSOR_DISTANCE_THRESHOLD);
+      // 上段の検出：lセンサがしきい値より近いかつmセンサがしきい値より近いとき：センサ反応
+      wall_detected = (sensor_value_low < WALL_SENSOR_DISTANCE_THRESHOLD) &&
+                      (sensor_value_middle < WALL_SENSOR_DISTANCE_THRESHOLD);
     }
     // センサーが初回の反応だった場合は開始時刻を更新
     if (wall_detected && wall_sensor_detected_[target_forest - 1] == false) {
@@ -3694,10 +3808,12 @@ void R1MainNode::auto_collect_kfs_task(void)
     // 短い別名をつける。よくわからないけど、bool型はstd::vector<bool>::reference型で参照を取る必要があるらしい
     std::vector<bool>::reference within =
       kfs_auto_collect_within_[target_forest_number - 1][within_index];
-    std::vector<bool>::reference prev_within =
-      kfs_auto_collect_prev_within_[target_forest_number - 1][within_index];
+    // std::vector<bool>::reference prev_within =
+    //   kfs_auto_collect_prev_within_[target_forest_number - 1][within_index];
     // within はこの周期の判定結果なので、毎周期いったん false に戻して再評価する。
     within = false;
+
+    auto & step = within_index == FKFS ? auto_collect_kfs_fkfs_step_ : auto_collect_kfs_rkfs_step_;
 
     if (is_inner) {
       center_x = INNER_COLLECT_KFS_CENTER_POS[target_forest_number - 1][0];
@@ -3713,7 +3829,7 @@ void R1MainNode::auto_collect_kfs_task(void)
       // center_x *= -1.0;
       // rect_yaw = angle_normalize(M_PI - rect_yaw);
     }
-    // 足回りは進行方向に対してオフセットを適用する
+    // 足回りオフセットと壁センサーオフセットを計算する
     if (zone_ == "red") {
       if (is_inner && mechanism_type == "front_kfs") {
         offset_x = COLLECT_KFS_OFFSET * std::cos(rect_yaw);
@@ -3767,7 +3883,6 @@ void R1MainNode::auto_collect_kfs_task(void)
     }
 
     int kfs_height = calc_height(target_forest_number);
-    auto & step = within_index == FKFS ? auto_collect_kfs_fkfs_step_ : auto_collect_kfs_rkfs_step_;
 
     if (step == 1) {
       // 既に回収完了済みの場合はスキップ
@@ -3777,23 +3892,24 @@ void R1MainNode::auto_collect_kfs_task(void)
       // ENABLE_WALL_SENSOR == trueのとき、壁センサーの値を更新し、壁を検出する
       // ENABLE_WALL_SENSOR == falseのとき、座標ベースで回収動作を開始するかどうかの判定を行う
       if (ENABLE_WALL_SENSOR == true) {
-        // 壁センサーベースの判定
+        // 壁センサーのステータスを更新
+        update_wall_sensor_status(target_forest_number, within_index);
+
         // まずは壁検出機能が有効となる範囲内にロボットがいるかを確認する
         if (
           is_within_rotated_rectangle(
             map_x, map_y, center_x, center_y, rect_yaw, WALL_SENSOR_DETECT_WIDTH,
             WALL_SENSOR_DETECT_HEIGHT)) {
-          update_wall_sensor_status(target_forest_number, within_index);
           double log_sensor_low = (within_index == FKFS) ? scan_fl_data_ : scan_rl_data_;
           double log_sensor_middle = (within_index == FKFS) ? scan_fm_data_ : scan_rm_data_;
           RCLCPP_INFO_THROTTLE(
             this->get_logger(), *this->get_clock(), 250,
             "Step = %d, wall sensor status for forest %d %s kfs: map_x=%.2f, map_y=%.2f, "
-            "odom_x=%.2f, "
-            "odom_y=%.2f, sensor_value_low=%.2f, sensor_value_middle=%.2f, wall_detected=%d",
+            "odom_x=%.2f, odom_y=%.2f, sensor_value_low=%.2f, sensor_value_middle=%.2f, "
+            "wall_detected=%d, offset_x=%.2f, offset_y=%.2f, center_x=%.2f, center_y=%.2f",
             step, target_forest_number, mechanism_type.c_str(), map_x, map_y, odom_x, odom_y,
-            log_sensor_low, log_sensor_middle,
-            (int)wall_sensor_detected_[target_forest_number - 1]);
+            log_sensor_low, log_sensor_middle, (int)wall_sensor_detected_[target_forest_number - 1],
+            offset_x, offset_y, center_x, center_y);
           if (is_detect_wall(target_forest_number)) {
             // 壁検出位置の座標を更新（odom座標系）
             wall_detect_pos_[target_forest_number - 1] = odometry_;
@@ -3856,7 +3972,13 @@ void R1MainNode::auto_collect_kfs_task(void)
     } else if (step == 4) {
       // 機構を展開
       if (ENABLE_AUTO_COLLECT_KFS_ACTUATOR) {
-        // 回収位置に移動し、回収動作を行う
+        auto choose_use_front_mech_lock = [&]() -> bool {
+          if (zone_ == "blue")
+            return is_inner;
+          else
+            return !is_inner;
+        };
+
         if (within_index == FKFS) {
           // 収納yawタイマーが残っている場合はキャンセルする
           if (auto_collect_front_storage_yaw_timer_) {
@@ -3864,14 +3986,10 @@ void R1MainNode::auto_collect_kfs_task(void)
           }
           // 回収機構を動かす
           kfs_fx_pos_ref(KFS_FX_EXPAND_POS);
-          if (zone_ == "blue" && is_inner) {
+          if (choose_use_front_mech_lock()) {
             kfs_fyaw_move_front_mech_lock();
-          } else if (zone_ == "blue" && !is_inner) {
+          } else {
             kfs_fyaw_move_rear_mech_lock();
-          } else if (zone_ == "red" && is_inner) {
-            kfs_fyaw_move_rear_mech_lock();
-          } else if (zone_ == "red" && !is_inner) {
-            kfs_fyaw_move_front_mech_lock();
           }
           kfs_front_pump(1.0);
           kfs_front_valve(false);
@@ -3889,14 +4007,10 @@ void R1MainNode::auto_collect_kfs_task(void)
           }
           // 回収機構を動かす
           kfs_rx_pos_ref(KFS_RX_EXPAND_POS);
-          if (zone_ == "blue" && is_inner) {
+          if (choose_use_front_mech_lock()) {
             kfs_ryaw_move_front_mech_lock();
-          } else if (zone_ == "blue" && !is_inner) {
+          } else {
             kfs_ryaw_move_rear_mech_lock();
-          } else if (zone_ == "red" && is_inner) {
-            kfs_ryaw_move_rear_mech_lock();
-          } else if (zone_ == "red" && !is_inner) {
-            kfs_ryaw_move_front_mech_lock();
           }
           kfs_rear_pump(1.0);
           kfs_rear_valve(false);
@@ -4044,221 +4158,7 @@ void R1MainNode::auto_collect_kfs_task(void)
       prev_fkfs_step = auto_collect_kfs_fkfs_step_;
       prev_rkfs_step = auto_collect_kfs_rkfs_step_;
     }
-
-    // trueのときは壁検出ベースの判定、falseのときは座標ベースの判定
-
-    // if (within == false) {
-    //   // trueからfalseに変わったら、収納動作を行う。
-    //   if (prev_within == true) {
-    //     if (ENABLE_AUTO_COLLECT_KFS_ACTUATOR) {
-    //       // 収納位置に移動
-    //       if (within_index == FKFS) {
-    //         kfs_fx_pos_ref(KFS_FX_STORAGE_POS);
-    //         kfs_fz_pos_ref(KFS_FZ_STORAGE_POS);
-    //         if (auto_collect_front_storage_yaw_timer_) {
-    //           auto_collect_front_storage_yaw_timer_->cancel();
-    //         }
-    //         auto_collect_front_storage_yaw_timer_ = this->create_wall_timer(
-    //           std::chrono::duration<double>(KFS_YAW_DELAY_TIME), [this]() {
-    //             kfs_fyaw_pos_ref(KFS_FYAW_SIDE_ANGLE);
-    //             if (auto_collect_front_storage_yaw_timer_) {
-    //               auto_collect_front_storage_yaw_timer_->cancel();
-    //             }
-    //           });
-    //       } else {
-    //         kfs_rx_pos_ref(KFS_RX_STORAGE_POS);
-    //         kfs_rz_pos_ref(KFS_RZ_STORAGE_POS);
-    //         if (auto_collect_rear_storage_yaw_timer_) {
-    //           auto_collect_rear_storage_yaw_timer_->cancel();
-    //         }
-    //         auto_collect_rear_storage_yaw_timer_ = this->create_wall_timer(
-    //           std::chrono::duration<double>(KFS_YAW_DELAY_TIME), [this]() {
-    //             kfs_ryaw_pos_ref(KFS_RYAW_SIDE_ANGLE);
-    //             if (auto_collect_rear_storage_yaw_timer_) {
-    //               auto_collect_rear_storage_yaw_timer_->cancel();
-    //             }
-    //           });
-    //       }
-    //     } else {
-    //       RCLCPP_INFO(
-    //         this->get_logger(),
-    //         "%d forest %s kfs storage skipped because enable_auto_collect_kfs_actuator=false",
-    //         target_forest_number, kfs_auto_collect_plan_.kfs_mechanism_type[i].c_str());
-    //     }
-    //     if (ENABLE_AUTO_COLLECT_KFS_ACTUATOR) {
-    //       RCLCPP_INFO(
-    //         this->get_logger(), "%d forest %s kfs storage", target_forest_number,
-    //         kfs_auto_collect_plan_.kfs_mechanism_type[i].c_str());
-    //     }
-    //   }
-    // } else {
-    //   // falseからtrueに変わったら、回収動作を行う。
-    //   if (prev_within == false) {
-    //     if (ENABLE_AUTO_COLLECT_KFS_ACTUATOR) {
-    //       // 回収位置に移動
-    //       if (within_index == FKFS) {
-    //         // 収納yawタイマーが残っている場合はキャンセルする
-    //         if (auto_collect_front_storage_yaw_timer_) {
-    //           auto_collect_front_storage_yaw_timer_->cancel();
-    //         }
-    //         // 回収機構を動かす
-    //         kfs_fx_pos_ref(KFS_FX_EXPAND_POS);
-    //         if (zone_ == "blue" && is_inner) {
-    //           kfs_fyaw_move_front_mech_lock();
-    //         } else if (zone_ == "blue" && !is_inner) {
-    //           kfs_fyaw_move_rear_mech_lock();
-    //         } else if (zone_ == "red" && is_inner) {
-    //           kfs_fyaw_move_rear_mech_lock();
-    //         } else if (zone_ == "red" && !is_inner) {
-    //           kfs_fyaw_move_front_mech_lock();
-    //         }
-    //         kfs_front_pump(1.0);
-    //         kfs_front_valve(false);
-    //         if (kfs_height == HEIGHT_LOW) {
-    //           kfs_fz_pos_ref(KFS_FZ_LOW_POS);
-    //         } else if (kfs_height == HEIGHT_MIDDLE) {
-    //           kfs_fz_pos_ref(KFS_FZ_MIDDLE_POS);
-    //         } else if (kfs_height == HEIGHT_HIGH) {
-    //           kfs_fz_pos_ref(KFS_FZ_HIGH_POS);
-    //         }
-    //       } else {
-    //         // 収納yawタイマーが残っている場合はキャンセルする
-    //         if (auto_collect_rear_storage_yaw_timer_) {
-    //           auto_collect_rear_storage_yaw_timer_->cancel();
-    //         }
-    //         // 回収機構を動かす
-    //         kfs_rx_pos_ref(KFS_RX_EXPAND_POS);
-    //         if (zone_ == "blue" && is_inner) {
-    //           kfs_ryaw_move_front_mech_lock();
-    //         } else if (zone_ == "blue" && !is_inner) {
-    //           kfs_ryaw_move_rear_mech_lock();
-    //         } else if (zone_ == "red" && is_inner) {
-    //           kfs_ryaw_move_rear_mech_lock();
-    //         } else if (zone_ == "red" && !is_inner) {
-    //           kfs_ryaw_move_front_mech_lock();
-    //         }
-    //         kfs_rear_pump(1.0);
-    //         kfs_rear_valve(false);
-    //         if (kfs_height == HEIGHT_LOW) {
-    //           kfs_rz_pos_ref(KFS_RZ_LOW_POS);
-    //         } else if (kfs_height == HEIGHT_MIDDLE) {
-    //           kfs_rz_pos_ref(KFS_RZ_MIDDLE_POS);
-    //         } else if (kfs_height == HEIGHT_HIGH) {
-    //           kfs_rz_pos_ref(KFS_RZ_HIGH_POS);
-    //         }
-    //       }
-    //     } else {
-    //       RCLCPP_INFO(
-    //         this->get_logger(),
-    //         "%d forest %s kfs collect skipped because enable_auto_collect_kfs_actuator=false",
-    //         target_forest_number, kfs_auto_collect_plan_.kfs_mechanism_type[i].c_str());
-    //     }
-    //     if (ENABLE_AUTO_COLLECT_KFS_ACTUATOR) {
-    //       RCLCPP_INFO(
-    //         this->get_logger(), "%d forest %s kfs collect", target_forest_number,
-    //         kfs_auto_collect_plan_.kfs_mechanism_type[i].c_str());
-    //     }
-    //   }
-    // }
-    // // 最後に前回値を更新する
-    // prev_within = within;
   }
-}
-void R1MainNode::manual_mode8_auto_collect_kfs(void)
-{
-  // if (ps4_->is_pushed_circle()) {
-  //   reset_position(true);
-  //   stop_kfs_auto_collect();
-  // }
-
-  // if (ps4_->is_pushed_up()) {
-  //   spear_x_pos_ref(spear_x_position_ref_ + 0.01);
-  // }
-
-  // if (ps4_->is_pushed_down()) {
-  //   spear_x_pos_ref(spear_x_position_ref_ - 0.01);
-  // }
-
-  // if (ps4_->is_pushed_left()) {
-  //   kfs_front_pump(0.0);
-  //   kfs_front_valve(true);
-  //   // setTimeout風で電磁弁をOFFにする。
-  //   if (manual_mode7_front_valve_timer_) {
-  //     manual_mode7_front_valve_timer_->cancel();
-  //   }
-  //   manual_mode7_front_valve_timer_ = this->create_wall_timer(250ms, [this]() {
-  //     kfs_front_valve(false);
-  //     if (manual_mode7_front_valve_timer_) {
-  //       manual_mode7_front_valve_timer_->cancel();
-  //     }
-  //   });
-  //   kfs_rear_pump(0.0);
-  //   kfs_rear_valve(true);
-  //   // setTimeout風で電磁弁をOFFにする。
-  //   if (manual_mode7_rear_valve_timer_) {
-  //     manual_mode7_rear_valve_timer_->cancel();
-  //   }
-  //   manual_mode7_rear_valve_timer_ = this->create_wall_timer(250ms, [this]() {
-  //     kfs_rear_valve(false);
-  //     if (manual_mode7_rear_valve_timer_) {
-  //       manual_mode7_rear_valve_timer_->cancel();
-  //     }
-  //   });
-  // }
-
-  // if (ps4_->is_pushed_l1()) {
-  //   // kfs_fxの微調整（指令値を減少）
-  //   kfs_fx_pos_ref(kfs_fx_position_ref_ - 0.01);
-  // }
-
-  // if (ps4_->is_pushed_r1()) {
-  //   // kfs_fxの微調整（指令値を増加）
-  //   kfs_fx_pos_ref(kfs_fx_position_ref_ + 0.01);
-  // }
-
-  // if (ps4_->is_pushed_l2()) {
-  //   // kfs_fzの微調整（指令値を減少）
-  //   kfs_fz_pos_ref(kfs_fz_position_ref_ - 0.01);
-  // }
-
-  // if (ps4_->is_pushed_r2()) {
-  //   // kfs_fzの微調整（指令値を増加）
-  //   kfs_fz_pos_ref(kfs_fz_position_ref_ + 0.01);
-  // }
-
-  // if (ps4_->is_pushed_square()) {
-  //   stop_kfs_auto_collect();
-  // }
-}
-
-void R1MainNode::manual_mode9_auto_chassis(void)
-{
-  //   const bool chassis_idle =
-  //     (chassis_act_status_ == ChassisAct::NONE) && !pending_auto_robot_move_valid_;
-
-  //   if (!chassis_idle) {
-  //     return;
-  //   }
-
-  //   if (ps4_->is_pushed_triangle()) {
-  // #if SPEAR_MECHANISM == SPEAR_MECHANISM_CHIDA
-  //     spear_x_pos_ref(SPEAR_X_MIDDLE_POS);
-  //     spear_roll_pos_ref(SPEAR_ROLL_VERTICAL_ANGLE);
-  // #endif
-  //     start_auto_chassis(ChassisAct::ACT0_START, std::vector<int>{}, std::vector<std::string>{});
-  //   } else if (ps4_->is_pushed_circle()) {
-  //     reset_position(true);
-  //   } else if (ps4_->is_pushed_down()) {
-  //     start_auto_chassis(ChassisAct::ACT1_START, std::vector<int>{}, std::vector<std::string>{});
-  //   }
-  //   if (ps4_->is_pushed_right()) {
-  //     kfs_fx_detect_origin();
-  //     kfs_fz_detect_origin();
-  //     kfs_fyaw_detect_origin();
-  //     kfs_rx_detect_origin();
-  //     kfs_rz_detect_origin();
-  //     kfs_ryaw_detect_origin();
-  //   }
 }
 
 void R1MainNode::update_auto_chassis_task(void)
@@ -4315,6 +4215,7 @@ void R1MainNode::update_auto_chassis_task(void)
 void R1MainNode::reset_step(void)
 {
   // 各手順のステップをリセット
+  manual_mode1_hand_valve_step_ = DEFAULT_STEP;
   manual_mode2_collect_pole_task_step_ = DEFAULT_STEP;
   manual_mode2_hand_valve_step_ = DEFAULT_STEP;
   manual_mode2_push_valve_step_ = DEFAULT_STEP;
@@ -4331,8 +4232,11 @@ void R1MainNode::reset_step(void)
   manual_mode5_ryaw_step_ = DEFAULT_STEP;
   manual_mode5_rear_pump_step_ = DEFAULT_STEP;
   manual_mode5_l2_r2_trigger_step_ = DEFAULT_STEP;
-  manual_mode6_aruco_marker_step_ = DEFAULT_STEP;
   manual_mode6_r2_lift_step_ = DEFAULT_STEP;
+  manual_mode6_triangle_step_ = DEFAULT_STEP;
+  manual_mode6_circle_step_ = DEFAULT_STEP;
+  manual_mode6_cross_step_ = DEFAULT_STEP;
+  manual_mode6_square_step_ = DEFAULT_STEP;
   manual_mode7_spear_attack_task_step_ = DEFAULT_STEP;
   manual_mode7_spear_throw_away_task_step_ = DEFAULT_STEP;
   manual_mode7_l2_r2_trigger_step_ = DEFAULT_STEP;
@@ -4354,17 +4258,28 @@ void R1MainNode::reset_position(bool is_start_zone)
   }
 
   double start_x = 0.0;
-  double start_y = 0.5;
+  double start_y = 0.0;
   double start_yaw = 0.0;
-  if (zone_ == "blue") {
-    start_x = -5.5;
-    start_yaw = -M_PI / 2.0;
+  if (is_start_zone) {
+    if (zone_ == "blue") {
+      start_x = -5.5;
+      start_y = 0.5;
+      start_yaw = -M_PI / 2.0;
+    } else {
+      start_x = 5.5;
+      start_y = 0.5;
+      start_yaw = -M_PI / 2.0;
+    }
   } else {
-    start_x = 5.5;
-    start_yaw = -M_PI / 2.0;
-  }
-  if (!is_start_zone) {
-    // TODO: start zone 以外の初期位置が確定したらここで切り替える。
+    if (zone_ == "blue") {
+      start_x = -5.5;
+      start_y = 11.5;
+      start_yaw = -M_PI / 2.0;
+    } else {
+      start_x = 5.5;
+      start_y = 11.5;
+      start_yaw = -M_PI / 2.0;
+    }
   }
 
   // 現在の角度が start_yaw となるようなオフセットを設定する。
@@ -4386,7 +4301,7 @@ void R1MainNode::reset_robot(bool is_start_zone)
   state_machine_->print_state(initial_state_, "Reset to initial state: ");
   set_led_event(0, 0, 50, 0.2, 1.0);
   // arucoマーカをリセットする
-  publish_aruco_marker_id(0);
+  publish_all_aruco_marker_id(0);
   received_r1_collect_kfs_ = false;
   std_msgs::msg::Bool msg;
   msg.data = true;
@@ -4400,24 +4315,24 @@ void R1MainNode::manual_task(void)
   double vy_max = CHASSIS_NORMAL_VELOCITY;
   double vz_max = CHASSIS_NORMAL_OMEGA;
   double slope = ENABLE_R2_ANALOG_SPEED_CONTROL == true ? ps4_->get_r2_analog() : 1.0;
-  bool on_mode2_low_speed =
-    (current_state.operation_mode == OperationMode::MODE2_POLE) && ps4_->is_pushing_r2() == false;
-  bool on_mode3_low_speed =
-    (current_state.operation_mode == OperationMode::MODE3_SPEAR) && ps4_->is_pushing_r2() == false;
-  bool on_mode4_high_speed =
-    (current_state.operation_mode == OperationMode::MODE4_FKFS) && ps4_->is_pushing_r2() == true;
-  bool on_mode5_high_speed =
-    (current_state.operation_mode == OperationMode::MODE5_RKFS) && ps4_->is_pushing_r2() == true;
-  bool on_mode7_high_speed = (current_state.operation_mode == OperationMode::MODE7_SPEAR_ATTACK) &&
-                             ps4_->is_pushing_r2() == true;
 
-  if (on_mode2_low_speed || on_mode3_low_speed) {
-    // 最大速度と最大角速度をCHASSIS_LOW_VELOCITY / CHASSIS_LOW_OMEGAまで線形に変化させる
+  if (
+    (current_state.operation_mode == OperationMode::MODE2_POLE) ||
+    (current_state.operation_mode == OperationMode::MODE6_R2_LIFT)) {
+    // 最大速度と最大角速度をCHASSIS_LOW_VELOCITY / CHASSIS_LOW_OMEGAからCHASSIS_NORMAL_VELOCITY / CHASSIS_NORMAL_OMEGAまで線形に変化させる
     vx_max = CHASSIS_LOW_VELOCITY + (CHASSIS_NORMAL_VELOCITY - CHASSIS_LOW_VELOCITY) * slope;
     vy_max = CHASSIS_LOW_VELOCITY + (CHASSIS_NORMAL_VELOCITY - CHASSIS_LOW_VELOCITY) * slope;
     vz_max = CHASSIS_LOW_OMEGA + (CHASSIS_NORMAL_OMEGA - CHASSIS_LOW_OMEGA) * slope;
-  } else if (on_mode4_high_speed || on_mode5_high_speed || on_mode7_high_speed) {
-    // 最大速度と最大角速度をCHASSIS_HIGH_VELOCITY / CHASSIS_HIGH_OMEGAまで線形に変化させる
+  } else if (current_state.operation_mode == OperationMode::MODE3_SPEAR) {
+    // 最大速度と最大角速度をCHASSIS_LOW_VELOCITY / CHASSIS_LOW_OMEGAからCHASSIS_MAKE_SPEAR_VELOCITY / CHASSIS_MAKE_SPEAR_OMEGAまで線形に変化させる
+    vx_max = CHASSIS_LOW_VELOCITY + (CHASSIS_MAKE_SPEAR_VELOCITY - CHASSIS_LOW_VELOCITY) * slope;
+    vy_max = CHASSIS_LOW_VELOCITY + (CHASSIS_MAKE_SPEAR_VELOCITY - CHASSIS_LOW_VELOCITY) * slope;
+    vz_max = CHASSIS_LOW_OMEGA + (CHASSIS_MAKE_SPEAR_OMEGA - CHASSIS_LOW_OMEGA) * slope;
+  } else if (
+    (current_state.operation_mode == OperationMode::MODE4_FKFS) ||
+    (current_state.operation_mode == OperationMode::MODE5_RKFS) ||
+    (current_state.operation_mode == OperationMode::MODE7_SPEAR_ATTACK)) {
+    // 最大速度と最大角速度をCHASSIS_NORMAL_VELOVITY / CHASSIS_NORMAL_OMEGAからCHASSIS_HIGH_VELOCITY / CHASSIS_HIGH_OMEGAまで線形に変化させる
     vx_max = CHASSIS_NORMAL_VELOCITY + (CHASSIS_HIGH_VELOCITY - CHASSIS_NORMAL_VELOCITY) * slope;
     vy_max = CHASSIS_NORMAL_VELOCITY + (CHASSIS_HIGH_VELOCITY - CHASSIS_NORMAL_VELOCITY) * slope;
     vz_max = CHASSIS_NORMAL_OMEGA + (CHASSIS_HIGH_OMEGA - CHASSIS_NORMAL_OMEGA) * slope;
@@ -4462,10 +4377,6 @@ void R1MainNode::manual_task(void)
     manual_mode6_r2_lift();
   } else if (current_state.operation_mode == OperationMode::MODE7_SPEAR_ATTACK) {
     manual_mode7_spear_attack();
-  } else if (current_state.operation_mode == OperationMode::MODE8_AUTO_COLLECT_KFS) {
-    manual_mode8_auto_collect_kfs();
-  } else if (current_state.operation_mode == OperationMode::MODE9_AUTO_CHASSIS) {
-    manual_mode9_auto_chassis();
   }
 }
 
@@ -4477,11 +4388,7 @@ void R1MainNode::main_task(void)
     idle_task();
     return;
   }
-  if (current_state.main == MainState::EMERGENCY) {
-    emergency_task();
-    return;
-  }
-  if (current_state.main != MainState::READY) {
+  if (current_state.main != MainState::READY && current_state.main != MainState::EMERGENCY) {
     return;
   }
 
@@ -4502,8 +4409,25 @@ void R1MainNode::main_task(void)
   if (ps4_->is_pushed_options()) {
     sabacan_power_ref(!sabacan_is_ems_);
   }
+  // PSボタン: 短押し→reset_robot(true)、長押し→reset_robot(false) + 緑点滅
   if (ps4_->is_pushed_ps()) {
-    is_initialized_ = false;
+    ps_press_start_time_ = this->now();
+    ps_long_press_triggered_ = false;
+  }
+  if (ps4_->is_pushing_ps() && !ps_long_press_triggered_) {
+    if ((this->now() - ps_press_start_time_).seconds() >= PS_LONG_PRESS_SEC) {
+      ps_long_press_triggered_ = true;
+      is_act_paused_ = false;
+      if (activate_lidar_on_ps_) {
+        request_lidar_lifecycle_activation();
+      }
+      reset_robot(false);
+      set_led_event(0, 50, 0, 0.2, 1.0);  // 緑点滅（reset_robot内の青を上書き）
+      publish_r1_machine_initialize();
+      return;
+    }
+  }
+  if (ps4_->is_released_ps() && !ps_long_press_triggered_) {
     is_act_paused_ = false;
     if (activate_lidar_on_ps_) {
       request_lidar_lifecycle_activation();
@@ -4543,7 +4467,7 @@ void R1MainNode::main_task(void)
         }
       }
     }
-    if (!right_stick_handled && is_initialized_) {
+    if (!right_stick_handled) {
       bool started_auto = false;
       if (current_state.operation_mode == OperationMode::MODE1_DETECT_ORIGIN) {
         // MODE1のときはACT0_STARTを開始する
@@ -4756,10 +4680,6 @@ void R1MainNode::main_task(void)
   next_state.chassis_control_mode =
     chassis_auto_requested ? ChassisControlMode::AUTO : ChassisControlMode::MANUAL;
   state_machine_->set_next_state(next_state);
-
-  if (is_initialized_ == false) {
-    return;
-  }
 
   manual_task();
   update_auto_chassis_task();

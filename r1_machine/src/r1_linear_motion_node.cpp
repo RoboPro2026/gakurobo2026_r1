@@ -100,6 +100,8 @@ public:
     this->declare_parameter("inverse_motor", false);
     this->declare_parameter("inverse_low_switch_logic", false);
     this->declare_parameter("inverse_high_switch_logic", false);
+    this->declare_parameter("use_torque_detection_for_origin", true);
+    this->declare_parameter("use_torque_detection_for_mech_lock", true);
 
     this->get_parameter("timer_rate", timer_rate_);
     this->get_parameter("use_low_switch", use_low_switch_);
@@ -119,6 +121,8 @@ public:
     motor_dir_ = inverse_motor ? -1.0 : 1.0;
     this->get_parameter("inverse_low_switch_logic", inverse_low_switch_logic_);
     this->get_parameter("inverse_high_switch_logic", inverse_high_switch_logic_);
+    this->get_parameter("use_torque_detection_for_origin", use_torque_detection_for_origin_);
+    this->get_parameter("use_torque_detection_for_mech_lock", use_torque_detection_for_mech_lock_);
 
     timer_ = this->create_wall_timer(
       std::chrono::duration<double>(1.0 / timer_rate_), std::bind(&MyNode::timer_callback, this));
@@ -232,6 +236,16 @@ public:
         RCLCPP_INFO(
           this->get_logger(), "Updated parameter: inverse_high_switch_logic = %s",
           inverse_high_switch_logic_ ? "true" : "false");
+      } else if (name == "use_torque_detection_for_origin") {
+        use_torque_detection_for_origin_ = parameter.as_bool();
+        RCLCPP_INFO(
+          this->get_logger(), "Updated parameter: use_torque_detection_for_origin = %s",
+          use_torque_detection_for_origin_ ? "true" : "false");
+      } else if (name == "use_torque_detection_for_mech_lock") {
+        use_torque_detection_for_mech_lock_ = parameter.as_bool();
+        RCLCPP_INFO(
+          this->get_logger(), "Updated parameter: use_torque_detection_for_mech_lock = %s",
+          use_torque_detection_for_mech_lock_ ? "true" : "false");
       } else {
         result.successful = false;
         result.reason = "Invalid parameter name: " + name;
@@ -433,31 +447,43 @@ public:
     if (mode_ == MODE_SPEED) {
       bool detect_stop = false;
       if (is_contact_detection_enabled_in_speed_mode()) {
-        // 現在のトルクがしきい値以下のとき
-        if (std::abs(current_torque_) <= torque_threshold_) {
-          // 最後に通常のトルクを検出した時刻を更新
+        // メカロック時は進行方向に対応するスイッチのみ有効
+        const bool check_low_switch =
+          (speed_mode_reason_ != SPEED_MODE_MECH_LOCK) || (mech_lock_direction_ < 0);
+        const bool check_high_switch =
+          (speed_mode_reason_ != SPEED_MODE_MECH_LOCK) || (mech_lock_direction_ > 0);
+
+        // 現在のモードに応じたトルク検出フラグ
+        const bool use_torque_detection =
+          (speed_mode_reason_ == SPEED_MODE_ORIGIN_DETECTION) ? use_torque_detection_for_origin_
+                                                               : use_torque_detection_for_mech_lock_;
+
+        // トルク検出が有効のとき、現在のトルクがしきい値以下なら時刻を更新
+        if (use_torque_detection && std::abs(current_torque_) <= torque_threshold_) {
           last_normal_torque_time_ = this->now();
         }
-        // リミットスイッチが反応していないとき
-        if (use_low_switch_ && low_switch_ == false) {
-          // 最後にリミットスイッチが反応していない時刻を更新
+        // リミットスイッチが反応していないとき時刻を更新
+        if (use_low_switch_ && check_low_switch && low_switch_ == false) {
           last_low_switch_not_detect_time_ = this->now();
         }
-        if (use_high_switch_ && high_switch_ == false) {
-          // 最後にリミットスイッチが反応していない時刻を更新
+        if (use_high_switch_ && check_high_switch && high_switch_ == false) {
           last_high_switch_not_detect_time_ = this->now();
         }
 
-        // 一定時間トルクのしきい値を超えた場合、原点検出とみなす
+        // 一定時間トルクのしきい値を超えた場合、停止とみなす（トルク検出有効時のみ）
+        if (use_torque_detection) {
+          detect_stop |=
+            ((this->now() - last_normal_torque_time_).seconds() > origin_detect_threshold_time_);
+        }
+        // 一定時間リミットスイッチが反応した場合、停止とみなす
         detect_stop |=
-          ((this->now() - last_normal_torque_time_).seconds() > origin_detect_threshold_time_);
-        // 一定時間リミットスイッチが反応した場合、原点検出とみなす
+          (use_low_switch_ && check_low_switch &&
+           (this->now() - last_low_switch_not_detect_time_).seconds() >
+             origin_detect_threshold_time_);
         detect_stop |=
-          (use_low_switch_ && (this->now() - last_low_switch_not_detect_time_).seconds() >
-                                origin_detect_threshold_time_);
-        detect_stop |=
-          (use_high_switch_ && (this->now() - last_high_switch_not_detect_time_).seconds() >
-                                 origin_detect_threshold_time_);
+          (use_high_switch_ && check_high_switch &&
+           (this->now() - last_high_switch_not_detect_time_).seconds() >
+             origin_detect_threshold_time_);
       }
 
       auto motor_ref_msg = r1_msgs::msg::MotorRef();
@@ -545,6 +571,8 @@ private:
   bool high_switch_ = false;
   bool inverse_low_switch_logic_ = false;
   bool inverse_high_switch_logic_ = false;
+  bool use_torque_detection_for_origin_ = true;
+  bool use_torque_detection_for_mech_lock_ = true;
   double timer_rate_ = 100.0;
   double current_torque_ = 0.0;
   double current_speed_ = 0.0;
