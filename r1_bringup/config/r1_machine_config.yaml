@@ -510,6 +510,8 @@ r1_kfs_fx_node:
     use_high_switch: false
     inverse_low_switch_logic: false
     inverse_high_switch_logic: false
+    use_torque_detection_for_origin: true
+    use_torque_detection_for_mech_lock: true
 # linear motion node
 r1_kfs_fz_node:
   ros__parameters:
@@ -534,6 +536,8 @@ r1_kfs_fz_node:
     use_high_switch: false
     inverse_low_switch_logic: false
     inverse_high_switch_logic: false
+    use_torque_detection_for_origin: true
+    use_torque_detection_for_mech_lock: true
 # angle motion node
 r1_kfs_fyaw_node:
   ros__parameters:
@@ -558,6 +562,8 @@ r1_kfs_fyaw_node:
     use_high_switch: false
     inverse_low_switch_logic: false
     inverse_high_switch_logic: false
+    use_torque_detection_for_origin: true
+    use_torque_detection_for_mech_lock: true
 # linear motion node
 # C620
 r1_r2_flift_node:
@@ -572,7 +578,7 @@ r1_r2_flift_node:
     origin_detect_threshold_time: 0.5 # 秒
     # 原点検出のときは、0の方向に戻るので、負の速度にする
     origin_detect_speed: -6.28 # rad/s
-    pos_min: -0.1
+    pos_min: -0.2
     pos_max: 1.0
     normal_pos: 0.025
     # モータが1回転すると30pimm進むので、半径は15mm
@@ -582,6 +588,8 @@ r1_r2_flift_node:
     use_high_switch: true
     inverse_low_switch_logic: false
     inverse_high_switch_logic: false
+    use_torque_detection_for_origin: false
+    use_torque_detection_for_mech_lock: false
 # linear motion node
 r1_kfs_rx_node:
   ros__parameters:
@@ -606,6 +614,8 @@ r1_kfs_rx_node:
     use_high_switch: false
     inverse_low_switch_logic: false
     inverse_high_switch_logic: false
+    use_torque_detection_for_origin: true
+    use_torque_detection_for_mech_lock: true
 # linear motion node
 r1_kfs_rz_node:
   ros__parameters:
@@ -630,6 +640,8 @@ r1_kfs_rz_node:
     use_high_switch: false
     inverse_low_switch_logic: false
     inverse_high_switch_logic: false
+    use_torque_detection_for_origin: true
+    use_torque_detection_for_mech_lock: true
 # angle motion node
 r1_kfs_ryaw_node:
   ros__parameters:
@@ -654,6 +666,8 @@ r1_kfs_ryaw_node:
     use_high_switch: false
     inverse_low_switch_logic: false
     inverse_high_switch_logic: false
+    use_torque_detection_for_origin: true
+    use_torque_detection_for_mech_lock: true
 # linear motion node
 # C620
 r1_r2_rlift_node:
@@ -668,7 +682,7 @@ r1_r2_rlift_node:
     origin_detect_threshold_time: 0.5 # 秒
     # 原点検出のときは、0の方向に戻るので、負の速度にする
     origin_detect_speed: -6.28 # rad/s
-    pos_min: -0.1
+    pos_min: -0.2
     pos_max: 1.0
     normal_pos: 0.025
     # モータが1回転すると30pimm進むので、半径は15mm
@@ -678,6 +692,8 @@ r1_r2_rlift_node:
     use_high_switch: true
     inverse_low_switch_logic: false
     inverse_high_switch_logic: false
+    use_torque_detection_for_origin: false
+    use_torque_detection_for_mech_lock: false
 # ---------- やり ----------
 # C610
 r1_spear_y_node:
@@ -702,6 +718,8 @@ r1_spear_y_node:
     use_high_switch: false
     inverse_low_switch_logic: false
     inverse_high_switch_logic: false
+    use_torque_detection_for_origin: true
+    use_torque_detection_for_mech_lock: true
 # angle motion node
 r1_spear_roll1_node:
   ros__parameters:
@@ -725,6 +743,8 @@ r1_spear_roll1_node:
     use_high_switch: false
     inverse_low_switch_logic: false
     inverse_high_switch_logic: false
+    use_torque_detection_for_origin: true
+    use_torque_detection_for_mech_lock: true
 # angle motion node
 r1_spear_roll2_node:
   ros__parameters:
@@ -748,6 +768,8 @@ r1_spear_roll2_node:
     use_high_switch: false
     inverse_low_switch_logic: false
     inverse_high_switch_logic: false
+    use_torque_detection_for_origin: true
+    use_torque_detection_for_mech_lock: true
 r1_machine_manage_node:
   ros__parameters:
     # 足回りの制御方式。"mecanum" または "swerve"

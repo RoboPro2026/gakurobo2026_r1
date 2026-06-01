@@ -42,6 +42,8 @@
 | `inverse_motor` | bool | `false` | モータ正転方向を反転するフラグ。`true` で `ref` に -1 を掛けます。 |
 | `inverse_low_switch_logic` | bool | `false` | 低側リミットスイッチの論理を反転します。 |
 | `inverse_high_switch_logic` | bool | `false` | 高側リミットスイッチの論理を反転します。 |
+| `use_torque_detection_for_origin` | bool | `true` | 原点検出時にトルク上昇を停止条件として使うか。`false` にするとリミットスイッチのみで停止します。 |
+| `use_torque_detection_for_mech_lock` | bool | `true` | メカロック検出時にトルク上昇を停止条件として使うか。`false` にするとリミットスイッチのみで停止します。 |
 
 ## 動作の流れ
 
@@ -51,9 +53,12 @@
 4. `/angle_motion_speed_ref` によるユーザ速度モード中は、原点検出用のトルク上昇判定とリミットスイッチ判定を行いません。停止は `/angle_motion_speed_mode_stop`、`/angle_motion_initialize`、または位置指令を含む別モード要求で行います。
 5. `/angle_motion_detect_origin` に `true` を送ると速度モード（原点検出）へ移行し、`timer_rate` 周期のタイマで `"VELOCITY"` 指令 `origin_detect_speed` を流し続けます。この切替と同時に `/angle_motion_torque_limit_ref` へ `contact_torque_limit` を publish します。検出条件は以下の OR です。  
    - `use_low_switch`/`use_high_switch` が有効で、対応するスイッチがオン。  
-   - `|torque| > torque_threshold` の状態が `origin_detect_threshold_time` 秒以上続く。
+   - `use_torque_detection_for_origin` が `true` かつ `|torque| > torque_threshold` の状態が `origin_detect_threshold_time` 秒以上続く。
 6. 検出条件を満たすと、現在の `pos` から `angle_offset = gear_ratio * pos` を設定し、その場の角度で `"POSITION"` 指令を出して位置モードへ復帰します。`/angle_motion_detect_origin` に `false` を送った場合も、その時点の角度を保持して位置モードへ戻ります。
-7. `/angle_motion_move_mech_lock` に `1` または `-1` を送ると、指定方向へ `"VELOCITY"` 指令 `move_mech_lock_speed` を流し続けます。このときの `/angle_motion_torque_limit_ref` は `normal_torque_limit` のままです。停止判定は原点検出と同じで、トルク上昇またはスイッチ反応が `origin_detect_threshold_time` 以上続いたときです。停止後はオフセットを更新せず、その時点のモータ位置を `"POSITION"` 指令で保持します。`data == 0` を送った場合も現在角度保持で停止します。
+7. `/angle_motion_move_mech_lock` に `1` または `-1` を送ると、指定方向へ `"VELOCITY"` 指令 `move_mech_lock_speed` を流し続けます。このときの `/angle_motion_torque_limit_ref` は `normal_torque_limit` のままです。停止判定の条件は以下の OR です。方向が負のとき `low_switch`、正のとき `high_switch` のみが停止判定に使われます。  
+   - 方向に対応するリミットスイッチがオンの状態が `origin_detect_threshold_time` 秒以上続く。  
+   - `use_torque_detection_for_mech_lock` が `true` かつ `|torque| > torque_threshold` の状態が `origin_detect_threshold_time` 秒以上続く。  
+   停止後はオフセットを更新せず、その時点のモータ位置を `"POSITION"` 指令で保持します。`data == 0` を送った場合も現在角度保持で停止します。
 8. `/angle_motion_initialize` を受けると、原点検出中、`move_mech_lock` 中、ユーザ速度モード中であっても速度モードを中断し、`angle_offset = gear_ratio * pos` を再計算してその時点のモータ角度が論理上 0 rad になるようにします。その後、現在のモータ角度を `"POSITION"` で保持します。このときトルク制限も `normal_torque_limit` に戻します。
 9. `/angle_motion_set_angle` を受けると、速度モードを中断して位置モードへ戻し、`angle_offset = gear_ratio * pos - target_angle`（`inverse_motor` 有効時は符号反転込み）となるようオフセットを再計算します。その後、受信した論理角度 [rad] を目標値とする `"POSITION"` 指令を publish するため、見かけ上その場の角度を指定値へ再定義して保持できます。
 
