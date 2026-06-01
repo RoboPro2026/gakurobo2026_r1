@@ -377,6 +377,8 @@ public:
   double CHASSIS_LOW_OMEGA = 0.0;
   double CHASSIS_NORMAL_OMEGA = 0.0;
   double CHASSIS_HIGH_OMEGA = 0.0;
+  double CHASSIS_MAKE_SPEAR_VELOCITY = 0.0;
+  double CHASSIS_MAKE_SPEAR_OMEGA = 0.0;
   // ========== KFS回収 ==========
   bool USE_KFS_MECH_LOCK = false;
   // fx

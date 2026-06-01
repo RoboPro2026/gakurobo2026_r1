@@ -154,12 +154,19 @@ r1_main_node:
     initialpose_retry2_delay_sec: 3.0
     # ========== 足回り ==========
     enable_r2_analog_speed_control: true
+    # 低速
     chassis_low_velocity: 0.2
     chassis_low_omega: 0.2
+    # 中速
     chassis_normal_velocity: 0.6
     chassis_normal_omega: 0.5
+    # 高速
     chassis_high_velocity: 3.0
     chassis_high_omega: 1.5
+    # やり合体時の速度
+    # やり合体のときは力が必要なので、指令値を大米に設定
+    chassis_make_spear_velocity: 1.0
+    chassis_make_spear_omega: 0.5
     # ========== KFS回収 ==========
     # 現状だと、fx,fz,rx,rzのnormal_torqueが1Nmになっていて、長時間接触しているとC610が止まるので、falseにする
     # normal_torqueをもう少し低くできれば、trueにする予定

@@ -624,6 +624,8 @@ R1MainNode::R1MainNode() : Node("r1_main_node")
   declare_and_get_parameter("chassis_low_omega", CHASSIS_LOW_OMEGA);
   declare_and_get_parameter("chassis_normal_omega", CHASSIS_NORMAL_OMEGA);
   declare_and_get_parameter("chassis_high_omega", CHASSIS_HIGH_OMEGA);
+  declare_and_get_parameter("chassis_make_spear_velocity", CHASSIS_MAKE_SPEAR_VELOCITY);
+  declare_and_get_parameter("chassis_make_spear_omega", CHASSIS_MAKE_SPEAR_OMEGA);
 
   // ========== KFS回収 ==========
   declare_and_get_parameter("use_kfs_mech_lock", USE_KFS_MECH_LOCK);
@@ -4272,13 +4274,18 @@ void R1MainNode::manual_task(void)
   bool on_mode7_high_speed = (current_state.operation_mode == OperationMode::MODE7_SPEAR_ATTACK) &&
                              ps4_->is_pushing_r2() == true;
 
-  if (on_mode2_low_speed || on_mode3_low_speed) {
-    // 最大速度と最大角速度をCHASSIS_LOW_VELOCITY / CHASSIS_LOW_OMEGAまで線形に変化させる
+  if (on_mode2_low_speed) {
+    // 最大速度と最大角速度をCHASSIS_LOW_VELOCITY / CHASSIS_LOW_OMEGAからCHASSIS_NORMAL_VELOCITY / CHASSIS_NORMAL_OMEGAまで線形に変化させる
     vx_max = CHASSIS_LOW_VELOCITY + (CHASSIS_NORMAL_VELOCITY - CHASSIS_LOW_VELOCITY) * slope;
     vy_max = CHASSIS_LOW_VELOCITY + (CHASSIS_NORMAL_VELOCITY - CHASSIS_LOW_VELOCITY) * slope;
     vz_max = CHASSIS_LOW_OMEGA + (CHASSIS_NORMAL_OMEGA - CHASSIS_LOW_OMEGA) * slope;
+  } else if (on_mode3_low_speed) {
+    // 最大速度と最大角速度をCHASSIS_LOW_VELOCITY / CHASSIS_LOW_OMEGAからCHASSIS_MAKE_SPEAR_VELOCITY / CHASSIS_MAKE_SPEAR_OMEGAまで線形に変化させる
+    vx_max = CHASSIS_LOW_VELOCITY + (CHASSIS_MAKE_SPEAR_VELOCITY - CHASSIS_LOW_VELOCITY) * slope;
+    vy_max = CHASSIS_LOW_VELOCITY + (CHASSIS_MAKE_SPEAR_VELOCITY - CHASSIS_LOW_VELOCITY) * slope;
+    vz_max = CHASSIS_LOW_OMEGA + (CHASSIS_MAKE_SPEAR_OMEGA - CHASSIS_LOW_OMEGA) * slope;
   } else if (on_mode4_high_speed || on_mode5_high_speed || on_mode7_high_speed) {
-    // 最大速度と最大角速度をCHASSIS_HIGH_VELOCITY / CHASSIS_HIGH_OMEGAまで線形に変化させる
+    // 最大速度と最大角速度をCHASSIS_NORMAL_VELOVITY / CHASSIS_NORMAL_OMEGAからCHASSIS_HIGH_VELOCITY / CHASSIS_HIGH_OMEGAまで線形に変化させる
     vx_max = CHASSIS_NORMAL_VELOCITY + (CHASSIS_HIGH_VELOCITY - CHASSIS_NORMAL_VELOCITY) * slope;
     vy_max = CHASSIS_NORMAL_VELOCITY + (CHASSIS_HIGH_VELOCITY - CHASSIS_NORMAL_VELOCITY) * slope;
     vz_max = CHASSIS_NORMAL_OMEGA + (CHASSIS_HIGH_OMEGA - CHASSIS_NORMAL_OMEGA) * slope;
