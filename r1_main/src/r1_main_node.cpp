@@ -4265,8 +4265,7 @@ void R1MainNode::manual_task(void)
   double slope = ENABLE_R2_ANALOG_SPEED_CONTROL == true ? ps4_->get_r2_analog() : 1.0;
   bool on_mode2_low_speed =
     (current_state.operation_mode == OperationMode::MODE2_POLE) && ps4_->is_pushing_r2() == false;
-  bool on_mode3 =
-    (current_state.operation_mode == OperationMode::MODE3_SPEAR) && ps4_->is_pushing_r2() == true;
+  bool on_mode3 = (current_state.operation_mode == OperationMode::MODE3_SPEAR);
   bool on_mode4_high_speed =
     (current_state.operation_mode == OperationMode::MODE4_FKFS) && ps4_->is_pushing_r2() == true;
   bool on_mode5_high_speed =
