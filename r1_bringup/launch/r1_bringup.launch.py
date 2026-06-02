@@ -38,7 +38,7 @@ def generate_launch_description():
 
     with open(param_file, "r") as f:
         _config = yaml.safe_load(f)
-    use_record = _config.get("r1_bringup", {}).get("use_record", False)
+    use_record = _config.get("r1_bringup", {}).get("ros__parameters", {}).get("use_record", False)
     zone_parameter = {"zone": zone}
     robot_control_mode_parameter = {"robot_control_mode": robot_control_mode}
 
