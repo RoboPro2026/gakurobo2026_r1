@@ -579,7 +579,9 @@ r1_r2_flift_node:
     normal_torque_limit: 4.0 # Nm
     # 原点検出・メカロック移動中に Robomas の torque_lim として使う値
     contact_torque_limit: 1.0 # Nm
-    origin_detect_threshold_time: 0.5 # 秒
+    # origin_detect_threshold_time: 0.5 # 秒
+    # あたった瞬間に止まるようにする
+    origin_detect_threshold_time: 0.0 # 秒
     # 原点検出のときは、0の方向に戻るので、負の速度にする
     origin_detect_speed: -6.28 # rad/s
     move_mech_lock_speed: 20.0 # rad/s
@@ -684,7 +686,8 @@ r1_r2_rlift_node:
     normal_torque_limit: 4.0 # Nm
     # 原点検出・メカロック移動中に Robomas の torque_lim として使う値
     contact_torque_limit: 1.0 # Nm
-    origin_detect_threshold_time: 0.5 # 秒
+    # あたった瞬間に止まるようにする
+    origin_detect_threshold_time: 0.0 # 秒
     # 原点検出のときは、0の方向に戻るので、負の速度にする
     origin_detect_speed: -6.28 # rad/s
     move_mech_lock_speed: 20.0 # rad/s
