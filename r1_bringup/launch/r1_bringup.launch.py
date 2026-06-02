@@ -1,10 +1,12 @@
 import os
 import time
+import yaml
 
 from ament_index_python.packages import get_package_share_directory
 from launch import LaunchDescription
 from launch.actions import (
     DeclareLaunchArgument,
+    ExecuteProcess,
     GroupAction,
     IncludeLaunchDescription,
     SetEnvironmentVariable,
@@ -30,6 +32,10 @@ def generate_launch_description():
     robot_control_mode = LaunchConfiguration("robot_control_mode")
     use_phone = LaunchConfiguration("use_phone")
     zone = LaunchConfiguration("zone")
+
+    with open(param_file, "r") as f:
+        _config = yaml.safe_load(f)
+    use_record = _config.get("r1_bringup", {}).get("use_record", False)
 
     # パラメータファイルのフルパスを作成
     param_file = os.path.join(pkg_dir, "config", "r1_machine_config.yaml")
@@ -539,6 +545,12 @@ def generate_launch_description():
         "r1_aruco_r2_lift_upper_serial_node", "r2_lift_upper"
     )
 
+    _CAN_TOPIC_REGEX = r"(^|/)(sabacan_[^/]*|(from|to)_can_bus[^/]*)$"
+    record_process = ExecuteProcess(
+        cmd=["ros2", "bag", "record", "-a", "--exclude", _CAN_TOPIC_REGEX],
+        output="screen",
+    ) if use_record else None
+
     remote_debug_node = Node(
         package="r1_bringup",
         executable="remote_debug_node.py",
@@ -657,5 +669,6 @@ def generate_launch_description():
             ),
             TimerAction(period=0.0, actions=sim_nodes, condition=IfCondition(use_sim)),
             TimerAction(period=3.0, actions=delay_nodes),
+            *([] if record_process is None else [TimerAction(period=2.0, actions=[record_process])]),
         ]
     )

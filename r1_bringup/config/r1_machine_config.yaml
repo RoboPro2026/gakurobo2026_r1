@@ -1,3 +1,6 @@
+r1_bringup:
+  use_record: true
+
 r1_chassis_control_node:
   ros__parameters:
     # =========== r1_chassis_control_nodeの基本パラメータ ==========
