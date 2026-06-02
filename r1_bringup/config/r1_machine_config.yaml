@@ -258,8 +258,11 @@ r1_main_node:
     spear_y_middle_attack_pos: 0.65
     spear_y_high_attack_pos: 0.775
     spear_y_throw_away_pos: 0.05
-    spear_roll1_normal_angle: 0.0
-    spear_roll1_vertical_angle: 0.0
+    # 垂直のときは0だとちょっとだけ斜めってるので、少し角度をつける
+    spear_roll1_normal_angle: -0.03
+    spear_roll1_vertical_angle: -0.03
+    # spear_roll1_normal_angle: 0.0
+    # spear_roll1_vertical_angle: 0.0
     spear_roll1_horizontal_angle: 1.5707963267948966
     spear_roll1_inv_horizontal_angle: -1.5707963267948966
     spear_roll1_red_low_attack_angle: -1.5707963267948966
@@ -268,8 +271,11 @@ r1_main_node:
     spear_roll1_blue_low_attack_angle: 1.5707963267948966
     spear_roll1_blue_middle_attack_angle: 1.2
     spear_roll1_blue_high_attack_angle: 0.67
-    spear_roll2_normal_angle: 0.0
-    spear_roll2_vertical_angle: 0.0
+    # 垂直のときは0だとちょっとだけ斜めってるので、少し角度をつける
+    # spear_roll2_normal_angle: 0.0
+    # spear_roll2_vertical_angle: 0.0
+    spear_roll2_normal_angle: -0.03
+    spear_roll2_vertical_angle: -0.03
     spear_roll2_horizontal_angle: 1.5707963267948966
     spear_roll2_inv_horizontal_angle: -1.5707963267948966
     spear_roll2_red_low_attack_angle: -1.5707963267948966
