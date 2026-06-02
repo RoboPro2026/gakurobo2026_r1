@@ -64,4 +64,6 @@ echo "---------- USB setup OK ----------"
 sudo ./src/gakurobo2026_common/can_setup.bash
 
 echo "--------- USB2CAN setup OK ----------"
+echo "  ROS_DOMAIN_ID      = ${ROS_DOMAIN_ID:-(未設定, デフォルト0)}"
+echo "  ROS_LOCALHOST_ONLY = ${ROS_LOCALHOST_ONLY:-(未設定, デフォルト無効)}"
 echo "========= R1 setup success =========="

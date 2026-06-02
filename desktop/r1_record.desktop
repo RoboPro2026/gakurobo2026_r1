@@ -1,0 +1,9 @@
+[Desktop Entry]
+Version=1.0
+Type=Application
+Name=R1 Record
+Comment=R1 bag record 開始
+Exec=gnome-terminal -- bash -i -c "cd $HOME/ros2_ws && bash src/gakurobo2026_r1/scripts/record.bash; exec bash"
+Icon=r1_record
+Terminal=false
+Categories=Application;
