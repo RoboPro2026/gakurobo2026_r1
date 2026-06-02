@@ -33,12 +33,12 @@ def generate_launch_description():
     use_phone = LaunchConfiguration("use_phone")
     zone = LaunchConfiguration("zone")
 
+    # パラメータファイルのフルパスを作成
+    param_file = os.path.join(pkg_dir, "config", "r1_machine_config.yaml")
+
     with open(param_file, "r") as f:
         _config = yaml.safe_load(f)
     use_record = _config.get("r1_bringup", {}).get("use_record", False)
-
-    # パラメータファイルのフルパスを作成
-    param_file = os.path.join(pkg_dir, "config", "r1_machine_config.yaml")
     zone_parameter = {"zone": zone}
     robot_control_mode_parameter = {"robot_control_mode": robot_control_mode}
 
