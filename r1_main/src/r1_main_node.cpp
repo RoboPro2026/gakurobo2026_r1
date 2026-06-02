@@ -3263,10 +3263,10 @@ void R1MainNode::manual_mode6_r2_lift(void)
     } else {
       publish_all_aruco_marker_id(DEFAULT_ARUCO_MARKER_ID);
       r1_log_info("aruco デフォ");
-      // r2_flift_pos_ref(R2_FLIFT_UP_POS);
-      // r2_rlift_pos_ref(R2_RLIFT_UP_POS);
-      r2_flift_move_mech_lock(1);
-      r2_rlift_move_mech_lock(1);
+      r2_flift_pos_ref(R2_FLIFT_UP_POS);
+      r2_rlift_pos_ref(R2_RLIFT_UP_POS);
+      // r2_flift_move_mech_lock(1);
+      // r2_rlift_move_mech_lock(1);
     }
   }
 
@@ -3301,10 +3301,10 @@ void R1MainNode::manual_mode6_r2_lift(void)
     } else {
       publish_all_aruco_marker_id(DEFAULT_ARUCO_MARKER_ID);
       r1_log_info("aruco デフォ");
-      // r2_flift_pos_ref(R2_FLIFT_DOWN_POS);
-      // r2_rlift_pos_ref(R2_RLIFT_DOWN_POS);
-      r2_flift_move_mech_lock(-1);
-      r2_rlift_move_mech_lock(-1);
+      r2_flift_pos_ref(R2_FLIFT_DOWN_POS);
+      r2_rlift_pos_ref(R2_RLIFT_DOWN_POS);
+      // r2_flift_move_mech_lock(-1);
+      // r2_rlift_move_mech_lock(-1);
     }
   }
 
