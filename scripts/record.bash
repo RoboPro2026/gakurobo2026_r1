@@ -12,4 +12,9 @@ CAN_TOPIC_REGEX='(^|/)(sabacan_[^/]*|(from|to)_can_bus[^/]*)$'
 
 echo "exclude topic regex: ${CAN_TOPIC_REGEX}"
 
-ros2 bag record -a --exclude "${CAN_TOPIC_REGEX}" "$@"
+# ターミナルのXボタン等でSIGHUPが来た場合もSIGINTで正常終了させる
+trap 'kill -SIGINT $REC_PID 2>/dev/null; wait $REC_PID' SIGHUP SIGTERM
+
+ros2 bag record -a --exclude "${CAN_TOPIC_REGEX}" "$@" &
+REC_PID=$!
+wait $REC_PID
