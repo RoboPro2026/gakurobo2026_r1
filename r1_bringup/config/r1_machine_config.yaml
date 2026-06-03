@@ -1,6 +1,6 @@
 r1_bringup:
   ros__parameters:
-    use_record: true
+    use_record: false
 
 r1_chassis_control_node:
   ros__parameters:
