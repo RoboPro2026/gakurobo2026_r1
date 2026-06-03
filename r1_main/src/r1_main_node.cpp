@@ -2579,21 +2579,47 @@ void R1MainNode::manual_mode2_pole(void)
   auto & hand_valve_step = manual_mode2_hand_valve_step_;
   auto & push_valve_step = manual_mode2_push_valve_step_;
   if (ps4_->is_pushed_up()) {
-    spear_y_pos_ref(spear_y_position_ref_ + 0.01);
+    if (ps4_->is_pushing_l2()) {
+      // 微調整
+      spear_y_pos_ref(spear_y_position_ref_ + 0.002);
+    } else {
+      // 通常調整
+      spear_y_pos_ref(spear_y_position_ref_ + 0.01);
+    }
   }
 
   if (ps4_->is_pushed_right()) {
-    spear_roll1_pos_ref(spear_roll1_position_ref_ + 0.025);
-    spear_roll2_pos_ref(spear_roll2_position_ref_ + 0.025);
+    if (ps4_->is_pushing_l2()) {
+      // 微調整
+      spear_roll1_pos_ref(spear_roll1_position_ref_ + 0.01);
+      spear_roll2_pos_ref(spear_roll2_position_ref_ + 0.01);
+    } else {
+      // 通常調整
+      spear_roll1_pos_ref(spear_roll1_position_ref_ + 0.03);
+      spear_roll2_pos_ref(spear_roll2_position_ref_ + 0.03);
+    }
   }
 
   if (ps4_->is_pushed_down()) {
-    spear_y_pos_ref(spear_y_position_ref_ - 0.01);
+    if (ps4_->is_pushing_l2()) {
+      // 微調整
+      spear_y_pos_ref(spear_y_position_ref_ - 0.002);
+    } else {
+      // 通常調整
+      spear_y_pos_ref(spear_y_position_ref_ - 0.01);
+    }
   }
 
   if (ps4_->is_pushed_left()) {
-    spear_roll1_pos_ref(spear_roll1_position_ref_ - 0.025);
-    spear_roll2_pos_ref(spear_roll2_position_ref_ - 0.025);
+    if (ps4_->is_pushing_l2()) {
+      // 微調整
+      spear_roll1_pos_ref(spear_roll1_position_ref_ - 0.01);
+      spear_roll2_pos_ref(spear_roll2_position_ref_ - 0.01);
+    } else {
+      // 通常調整
+      spear_roll1_pos_ref(spear_roll1_position_ref_ - 0.03);
+      spear_roll2_pos_ref(spear_roll2_position_ref_ - 0.03);
+    }
   }
 
   if (ps4_->is_pushed_triangle()) {
@@ -2633,6 +2659,7 @@ void R1MainNode::manual_mode2_pole(void)
   }
 
   if (ps4_->is_pushed_l2()) {
+    // 微調整トリガー
   }
 
   if (ps4_->is_pushed_r2()) {
