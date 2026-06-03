@@ -2458,40 +2458,40 @@ void R1MainNode::manual_mode1_detect_origin(void)
   auto & hand_valve_step = manual_mode2_hand_valve_step_;
 
   if (ps4_->is_pushed_up()) {
-    kfs_fx_detect_origin();
+    kfs_rx_detect_origin();
   }
 
   if (ps4_->is_pushed_right()) {
-    kfs_fz_detect_origin();
+    kfs_rz_detect_origin();
   }
 
   if (ps4_->is_pushed_down()) {
-    kfs_fyaw_detect_origin();
+    kfs_ryaw_detect_origin();
   }
 
   if (ps4_->is_pushed_left()) {
+    spear_y_detect_origin();
+    // spear_roll1_set_angle(0.0);
+    // spear_roll2_set_angle(0.0);
+  }
+
+  if (ps4_->is_pushed_triangle()) {
+    kfs_fx_detect_origin();
+  }
+
+  if (ps4_->is_pushed_circle()) {
+    kfs_fz_detect_origin();
+  }
+
+  if (ps4_->is_pushed_cross()) {
+    kfs_fyaw_detect_origin();
+  }
+
+  if (ps4_->is_pushed_square()) {
     spear_roll1_set_angle(1.5707963267948966);
     spear_roll2_set_angle(1.5707963267948966);
     // spear_roll1_detect_origin();
     // spear_roll2_detect_origin();
-  }
-
-  if (ps4_->is_pushed_triangle()) {
-    kfs_rx_detect_origin();
-  }
-
-  if (ps4_->is_pushed_circle()) {
-    kfs_rz_detect_origin();
-  }
-
-  if (ps4_->is_pushed_cross()) {
-    kfs_ryaw_detect_origin();
-  }
-
-  if (ps4_->is_pushed_square()) {
-    spear_y_detect_origin();
-    // spear_roll1_set_angle(0.0);
-    // spear_roll2_set_angle(0.0);
   }
 
   if (ps4_->is_pushed_l1()) {
@@ -3260,8 +3260,8 @@ void R1MainNode::manual_mode6_r2_lift(void)
 
   if (ps4_->is_pushed_up()) {
     if (ps4_->is_pushing_l2()) {
-      // r2_fliftの微調整（指令値を増加）
-      r2_flift_pos_ref(r2_flift_position_ref_ + 0.01);
+      // r2_rliftの微調整（指令値を増加）
+      r2_rlift_pos_ref(r2_rlift_position_ref_ + 0.01);
     } else {
       publish_all_aruco_marker_id(DEFAULT_ARUCO_MARKER_ID);
       r1_log_info("aruco デフォ");
@@ -3298,8 +3298,8 @@ void R1MainNode::manual_mode6_r2_lift(void)
 
   if (ps4_->is_pushed_down()) {
     if (ps4_->is_pushing_l2()) {
-      // r2_fliftの微調整（指令値を減少）
-      r2_flift_pos_ref(r2_flift_position_ref_ - 0.01);
+      // r2_rliftの微調整（指令値を減少）
+      r2_rlift_pos_ref(r2_rlift_position_ref_ - 0.01);
     } else {
       publish_all_aruco_marker_id(DEFAULT_ARUCO_MARKER_ID);
       r1_log_info("aruco デフォ");
@@ -3333,8 +3333,8 @@ void R1MainNode::manual_mode6_r2_lift(void)
 
   if (ps4_->is_pushed_triangle()) {
     if (ps4_->is_pushing_l2()) {
-      // r2_rliftの微調整（指令値を増加）
-      r2_rlift_pos_ref(r2_rlift_position_ref_ + 0.01);
+      // r2_fliftの微調整（指令値を増加）
+      r2_flift_pos_ref(r2_flift_position_ref_ + 0.01);
     } else {
       if (triangle_step == 1) {
         publish_all_aruco_marker_id(SECOND_KFS_ARUCO_MARKER_ID);
@@ -3362,8 +3362,8 @@ void R1MainNode::manual_mode6_r2_lift(void)
 
   if (ps4_->is_pushed_cross()) {
     if (ps4_->is_pushing_l2()) {
-      // r2_rliftの微調整（指令値を減少）
-      r2_rlift_pos_ref(r2_rlift_position_ref_ - 0.01);
+      // r2_fliftの微調整（指令値を減少）
+      r2_flift_pos_ref(r2_flift_position_ref_ - 0.01);
     } else {
       if (cross_step == 1) {
         publish_all_aruco_marker_id(PUT_KFS_ARUCO_MARKER_ID);
