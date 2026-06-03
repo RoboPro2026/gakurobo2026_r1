@@ -284,6 +284,10 @@ r1_main_node:
     spear_roll2_blue_low_attack_angle: 1.5707963267948966
     spear_roll2_blue_middle_attack_angle: 1.2
     spear_roll2_blue_high_attack_angle: 0.67
+    # spear_rollの微調整用パラメータ
+    # ロボットスタート時のみこのパラメータの範囲内のとき、調整が有効となる
+    # そのとき、最初のやり回収のときに指令値が上書きされることはなくなる
+    spear_roll_adjust_angle: 0.15
     # ========== KFS回収の移動関連 ==========
     # 手動回収のときに圧力センサを有効にするか
     enable_r1_kfs_mechanism_ref_pressure_sensor: true

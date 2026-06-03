@@ -491,7 +491,8 @@ public:
   double SPEAR_ROLL2_BLUE_LOW_ATTACK_ANGLE = 0.0;
   double SPEAR_ROLL2_BLUE_MIDDLE_ATTACK_ANGLE = 0.0;
   double SPEAR_ROLL2_BLUE_HIGH_ATTACK_ANGLE = 0.0;
-
+  // spear_rollの微調整用パラメータ
+  double SPEAR_ROLL_ADJUST_ANGLE = 0.0;
   // 内回り/外回りでKFS回収の判定に使う長方形中心の座標 [x, y, yaw]
   // yaw=0 のときは map 座標系に平行で、yaw を与えるとその分だけ長方形が回転する
   std::vector<std::vector<double>> INNER_COLLECT_KFS_CENTER_POS;

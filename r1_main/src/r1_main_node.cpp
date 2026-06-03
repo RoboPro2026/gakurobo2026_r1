@@ -739,6 +739,8 @@ R1MainNode::R1MainNode() : Node("r1_main_node")
     "spear_roll2_blue_middle_attack_angle", SPEAR_ROLL2_BLUE_MIDDLE_ATTACK_ANGLE);
   declare_and_get_parameter(
     "spear_roll2_blue_high_attack_angle", SPEAR_ROLL2_BLUE_HIGH_ATTACK_ANGLE);
+  // spear_roll微調整用パラメータ
+  declare_and_get_parameter("spear_roll_adjust_angle", SPEAR_ROLL_ADJUST_ANGLE);
 
   for (int i = 0; i < 12; i++) {
     const std::string idx = std::to_string(i + 1);
@@ -2503,6 +2505,7 @@ void R1MainNode::manual_mode1_detect_origin(void)
     spear_hand2_valve(true);
     // hand_push_valveはfalseにする。理由は展開制限に引っかかるから
     spear_hand_push_valve(false);
+    r1_log_info("初期化動作完了");
   }
 
   if (ps4_->is_pushed_r1()) {
@@ -2535,15 +2538,27 @@ void R1MainNode::manual_mode2_collect_pole_task(void)
 {
   int & step = manual_mode2_collect_pole_task_step_;
   // RCLCPP_INFO(this->get_logger(), "manual_mode2_collect_pole_task step: %d", step);
+
   r1_log_info("mode2 ポール step%d", step);
   if (step == 1) {
     kfs_robot_start_act();
     spear_y_pos_ref(SPEAR_Y_COLLECT1_POS);
-    spear_roll1_pos_ref(SPEAR_ROLL1_VERTICAL_ANGLE);
-    spear_roll2_pos_ref(SPEAR_ROLL2_VERTICAL_ANGLE);
     spear_hand1_valve(true);
     spear_hand2_valve(true);
     spear_hand_push_valve(true);
+    // spear_rollは角度調整が行われていた場合は指令値を送らないようにする
+    // この処理はmode2_collect_pole_taskのこのときにしか行われない特例措置
+    bool roll1_adjusted =
+      (spear_roll1_position_ref_ - SPEAR_ROLL_ADJUST_ANGLE) < SPEAR_ROLL1_VERTICAL_ANGLE &&
+      (SPEAR_ROLL1_VERTICAL_ANGLE < spear_roll1_position_ref_ + SPEAR_ROLL_ADJUST_ANGLE);
+    bool roll2_adjusted =
+      (spear_roll2_position_ref_ - SPEAR_ROLL_ADJUST_ANGLE) < SPEAR_ROLL2_VERTICAL_ANGLE &&
+      (SPEAR_ROLL2_VERTICAL_ANGLE < spear_roll2_position_ref_ + SPEAR_ROLL_ADJUST_ANGLE);
+    // どちらかが微調整されていなければ指令値を送信
+    if (!roll1_adjusted || !roll2_adjusted) {
+      spear_roll1_pos_ref(SPEAR_ROLL1_VERTICAL_ANGLE);
+      spear_roll2_pos_ref(SPEAR_ROLL2_VERTICAL_ANGLE);
+    }
     step++;
   } else if (step == 2) {
     spear_hand1_valve(false);
