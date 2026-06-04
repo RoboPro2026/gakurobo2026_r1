@@ -816,10 +816,6 @@ public:
   int manual_mode5_rear_pump_step_ = DEFAULT_STEP;
   int manual_mode5_l2_r2_trigger_step_ = DEFAULT_STEP;
   int manual_mode6_r2_lift_step_ = DEFAULT_STEP;
-  int manual_mode6_triangle_step_ = DEFAULT_STEP;
-  int manual_mode6_circle_step_ = DEFAULT_STEP;
-  int manual_mode6_cross_step_ = DEFAULT_STEP;
-  int manual_mode6_square_step_ = DEFAULT_STEP;
   int manual_mode7_spear_attack_task_step_ = DEFAULT_STEP;
   int manual_mode7_spear_throw_away_task_step_ = DEFAULT_STEP;
   int manual_mode7_hand_valve_step_ = DEFAULT_STEP;

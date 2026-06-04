@@ -3295,11 +3295,6 @@ void R1MainNode::manual_mode5_rkfs(void)
 
 void R1MainNode::manual_mode6_r2_lift(void)
 {
-  int & triangle_step = manual_mode6_triangle_step_;
-  int & circle_step = manual_mode6_circle_step_;
-  int & cross_step = manual_mode6_cross_step_;
-  int & square_step = manual_mode6_square_step_;
-
   if (ps4_->is_pushed_up()) {
     if (ps4_->is_pushing_l2()) {
       // r2_rliftの微調整（指令値を増加）
@@ -3315,27 +3310,33 @@ void R1MainNode::manual_mode6_r2_lift(void)
   }
 
   if (ps4_->is_pushed_right()) {
-    // 間違えてボタン押したときのために、aroco_marker_id=0に設定
-    publish_all_aruco_marker_id(DEFAULT_ARUCO_MARKER_ID);
-    r1_log_info("aruco デフォ");
-    kfs_fx_pos_ref(KFS_FX_R2_LIFT_POS);
-    kfs_fz_pos_ref(KFS_FZ_R2_LIFT_POS);
-    kfs_rx_pos_ref(KFS_RX_R2_LIFT_POS);
-    kfs_rz_pos_ref(KFS_RZ_R2_LIFT_POS);
-    RCLCPP_INFO(this->get_logger(), "moved to r2_lift position");
-    if (manual_mode6_r2_lift_timer_ != nullptr) {
-      manual_mode6_r2_lift_timer_->cancel();
-    }
-    manual_mode6_r2_lift_timer_ = this->create_wall_timer(500ms, [this]() {
-      // r2_flift_move_mech_lock(-1);
-      // r2_rlift_move_mech_lock(-1);
-      r2_flift_pos_ref(R2_FLIFT_NORMAL_POS);
-      r2_rlift_pos_ref(R2_RLIFT_NORMAL_POS);
+    if (ps4_->is_pushing_l2()) {
+      // arucoマーカを初期状態にする
+      publish_all_aruco_marker_id(DEFAULT_ARUCO_MARKER_ID);
+      r1_log_info("aruco デフォ");
+    } else {
+      // 間違えてボタン押したときのために、aroco_marker_id=0に設定
+      publish_all_aruco_marker_id(DEFAULT_ARUCO_MARKER_ID);
+      r1_log_info("aruco デフォ");
+      kfs_fx_pos_ref(KFS_FX_R2_LIFT_POS);
+      kfs_fz_pos_ref(KFS_FZ_R2_LIFT_POS);
+      kfs_rx_pos_ref(KFS_RX_R2_LIFT_POS);
+      kfs_rz_pos_ref(KFS_RZ_R2_LIFT_POS);
+      RCLCPP_INFO(this->get_logger(), "moved to r2_lift position");
       if (manual_mode6_r2_lift_timer_ != nullptr) {
         manual_mode6_r2_lift_timer_->cancel();
       }
-      RCLCPP_INFO(this->get_logger(), "r2 lift stop (timer)");
-    });
+      manual_mode6_r2_lift_timer_ = this->create_wall_timer(500ms, [this]() {
+        // r2_flift_move_mech_lock(-1);
+        // r2_rlift_move_mech_lock(-1);
+        r2_flift_pos_ref(R2_FLIFT_NORMAL_POS);
+        r2_rlift_pos_ref(R2_RLIFT_NORMAL_POS);
+        if (manual_mode6_r2_lift_timer_ != nullptr) {
+          manual_mode6_r2_lift_timer_->cancel();
+        }
+        RCLCPP_INFO(this->get_logger(), "r2 lift stop (timer)");
+      });
+    }
   }
 
   if (ps4_->is_pushed_down()) {
@@ -3343,8 +3344,9 @@ void R1MainNode::manual_mode6_r2_lift(void)
       // r2_rliftの微調整（指令値を減少）
       r2_rlift_pos_ref(r2_rlift_position_ref_ - 0.01);
     } else {
-      publish_all_aruco_marker_id(DEFAULT_ARUCO_MARKER_ID);
-      r1_log_info("aruco デフォ");
+      // 誤動作防止の為、arucoマーカを初期状態にするのは無効化する
+      // publish_all_aruco_marker_id(DEFAULT_ARUCO_MARKER_ID);
+      // r1_log_info("aruco デフォ");
       r2_flift_pos_ref(R2_FLIFT_DOWN_POS);
       r2_rlift_pos_ref(R2_RLIFT_DOWN_POS);
       // r2_flift_move_mech_lock(-1);
@@ -3378,28 +3380,14 @@ void R1MainNode::manual_mode6_r2_lift(void)
       // r2_fliftの微調整（指令値を増加）
       r2_flift_pos_ref(r2_flift_position_ref_ + 0.01);
     } else {
-      if (triangle_step == 1) {
-        publish_all_aruco_marker_id(SECOND_KFS_ARUCO_MARKER_ID);
-        r1_log_info("aruco KFS2つ目");
-        triangle_step = 2;
-      } else if (triangle_step == 2) {
-        publish_all_aruco_marker_id(DEFAULT_ARUCO_MARKER_ID);
-        r1_log_info("aruco デフォ");
-        triangle_step = 1;
-      }
+      publish_all_aruco_marker_id(SECOND_KFS_ARUCO_MARKER_ID);
+      r1_log_info("aruco KFS2つ目");
     }
   }
 
   if (ps4_->is_pushed_circle()) {
-    if (circle_step == 1) {
-      publish_all_aruco_marker_id(FIRST_KFS_ARUCO_MARKER_ID);
-      r1_log_info("aruco KFS1つ目");
-      circle_step = 2;
-    } else if (circle_step == 2) {
-      publish_all_aruco_marker_id(0);
-      r1_log_info("aruco デフォ");
-      circle_step = 1;
-    }
+    publish_all_aruco_marker_id(FIRST_KFS_ARUCO_MARKER_ID);
+    r1_log_info("aruco KFS1つ目");
   }
 
   if (ps4_->is_pushed_cross()) {
@@ -3407,28 +3395,14 @@ void R1MainNode::manual_mode6_r2_lift(void)
       // r2_fliftの微調整（指令値を減少）
       r2_flift_pos_ref(r2_flift_position_ref_ - 0.01);
     } else {
-      if (cross_step == 1) {
-        publish_all_aruco_marker_id(PUT_KFS_ARUCO_MARKER_ID);
-        r1_log_info("aruco put_kfs");
-        cross_step = 2;
-      } else if (cross_step == 2) {
-        publish_all_aruco_marker_id(DEFAULT_ARUCO_MARKER_ID);
-        r1_log_info("aruco デフォ");
-        cross_step = 1;
-      }
+      publish_all_aruco_marker_id(PUT_KFS_ARUCO_MARKER_ID);
+      r1_log_info("aruco put_kfs");
     }
   }
 
   if (ps4_->is_pushed_square()) {
-    if (square_step == 1) {
-      publish_all_aruco_marker_id(THIRD_KFS_ARUCO_MARKER_ID);
-      r1_log_info("aruco KFS3つ目");
-      square_step = 2;
-    } else if (square_step == 2) {
-      publish_all_aruco_marker_id(DEFAULT_ARUCO_MARKER_ID);
-      r1_log_info("aruco デフォ");
-      square_step = 1;
-    }
+    publish_all_aruco_marker_id(THIRD_KFS_ARUCO_MARKER_ID);
+    r1_log_info("aruco KFS3つ目");
   }
 
   if (ps4_->is_pushed_l1()) {
@@ -4277,10 +4251,6 @@ void R1MainNode::reset_step(void)
   manual_mode5_rear_pump_step_ = DEFAULT_STEP;
   manual_mode5_l2_r2_trigger_step_ = DEFAULT_STEP;
   manual_mode6_r2_lift_step_ = DEFAULT_STEP;
-  manual_mode6_triangle_step_ = DEFAULT_STEP;
-  manual_mode6_circle_step_ = DEFAULT_STEP;
-  manual_mode6_cross_step_ = DEFAULT_STEP;
-  manual_mode6_square_step_ = DEFAULT_STEP;
   manual_mode7_spear_attack_task_step_ = DEFAULT_STEP;
   manual_mode7_spear_throw_away_task_step_ = DEFAULT_STEP;
   manual_mode7_l2_r2_trigger_step_ = DEFAULT_STEP;
