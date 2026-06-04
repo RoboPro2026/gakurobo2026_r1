@@ -2681,7 +2681,7 @@ void R1MainNode::manual_mode3_make_spear_task(int n)
   int & step = manual_mode3_make_spear_task_step_;
 
   auto ROLL_DELAY = 300ms;
-  auto PUSH_VALVE_DELAY = 1000ms;
+  auto PUSH_VALVE_DELAY = 600ms;
   // RCLCPP_INFO(this->get_logger(), "manual_mode3_make_spear_task step: %d", step);
   r1_log_info("mode3 やり step%d", step);
   if (step == 1) {
