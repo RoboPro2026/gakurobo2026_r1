@@ -3577,6 +3577,8 @@ void R1MainNode::manual_mode7_spear_throw_away_task(int n)
 
 void R1MainNode::manual_mode7_spear_attack(void)
 {
+  constexpr int FKFS = 0;
+  constexpr int RKFS = 1;
   auto & hand_valve_step = manual_mode7_hand_valve_step_;
   auto & push_valve_step = manual_mode7_push_valve_step_;
   int & l2_r2_trigger_step = manual_mode7_l2_r2_trigger_step_;
@@ -3585,6 +3587,9 @@ void R1MainNode::manual_mode7_spear_attack(void)
 
   bool front_pressure_detected = !front_pressure_switch_status_;
   bool rear_pressure_detected = !rear_pressure_switch_status_;
+
+  // 適当な初期値を代入
+  static int kfs_select = FKFS;
 
   if (ps4_->is_pushed_up()) {
     spear_y_pos_ref(spear_y_position_ref_ + 0.01);
@@ -3611,6 +3616,7 @@ void R1MainNode::manual_mode7_spear_attack(void)
             kfs_rx_pos_ref(KFS_RX_NORMAL_POS);
             kfs_rz_pos_ref(KFS_RZ_PUT_POS);
             kfs_ryaw_pos_ref(KFS_RYAW_SIDE_ANGLE);
+            kfs_select = FKFS;
             RCLCPP_INFO(this->get_logger(), "moved to front_kfs put position");
           } else if (rear_pressure_detected) {
             // put動作
@@ -3620,6 +3626,7 @@ void R1MainNode::manual_mode7_spear_attack(void)
             kfs_rx_pos_ref(KFS_RX_PUT_POS);
             kfs_rz_pos_ref(KFS_RZ_PUT_POS);
             kfs_ryaw_pos_ref(KFS_RYAW_SIDE_ANGLE);
+            kfs_select = RKFS;
             RCLCPP_INFO(this->get_logger(), "moved to rear_kfs put position");
           }
 
@@ -3639,7 +3646,9 @@ void R1MainNode::manual_mode7_spear_attack(void)
   if (ps4_->is_pushed_left()) {
     if (ps4_->is_pushing_l2()) {
       if (ENABLE_PRESSURE_SENSOR) {
-        if (front_pressure_detected) {
+        // 置くときは箱を持ち上げている状態で、そのとき圧力が下がりきっていない可能性があるので
+        // 最後に右ボタンを押されたときに動かしたKFS回収機構の方を動かすようにする
+        if (kfs_select == FKFS) {
           kfs_front_pump(0.0);
           kfs_front_valve(true);
           // setTimeout風で電磁弁をOFFにする。
@@ -3653,7 +3662,7 @@ void R1MainNode::manual_mode7_spear_attack(void)
                 manual_mode7_front_valve_timer_->cancel();
               }
             });
-        } else if (rear_pressure_detected) {
+        } else if (kfs_select == RKFS) {
           kfs_rear_pump(0.0);
           kfs_rear_valve(true);
           // setTimeout風で電磁弁をOFFにする。
