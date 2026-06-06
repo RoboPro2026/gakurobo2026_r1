@@ -2946,7 +2946,7 @@ void R1MainNode::manual_mode4_fkfs(void)
         if (manual_mode4_front_valve_timer_) {
           manual_mode4_front_valve_timer_->cancel();
         }
-        auto delay_time = manual_mode4_front_valve_timer_ =
+        manual_mode4_front_valve_timer_ =
           this->create_wall_timer(std::chrono::duration<double>(KFS_VALVE_DELAY_TIME), [this]() {
             kfs_front_valve(false);
             if (manual_mode4_front_valve_timer_) {
@@ -3577,11 +3577,14 @@ void R1MainNode::manual_mode7_spear_throw_away_task(int n)
 
 void R1MainNode::manual_mode7_spear_attack(void)
 {
-  constexpr int FKFS = 0;
-  constexpr int RKFS = 1;
   auto & hand_valve_step = manual_mode7_hand_valve_step_;
   auto & push_valve_step = manual_mode7_push_valve_step_;
   int & l2_r2_trigger_step = manual_mode7_l2_r2_trigger_step_;
+
+  bool reverse_trigger = ps4_->is_pushing_l2();
+
+  bool front_pressure_detected = !front_pressure_switch_status_;
+  bool rear_pressure_detected = !rear_pressure_switch_status_;
 
   if (ps4_->is_pushed_up()) {
     spear_y_pos_ref(spear_y_position_ref_ + 0.01);
@@ -3590,25 +3593,36 @@ void R1MainNode::manual_mode7_spear_attack(void)
   if (ps4_->is_pushed_right()) {
     if (ps4_->is_pushing_l2()) {
       if (ENABLE_PRESSURE_SENSOR) {
-        if (pressure_sensor_detected_[FKFS]) {
-          // put動作
-          kfs_fx_pos_ref(KFS_FX_PUT_POS);
-          kfs_fz_pos_ref(KFS_FZ_PUT_POS);
-          kfs_fyaw_pos_ref(KFS_FYAW_SIDE_ANGLE);
-          kfs_rx_pos_ref(KFS_RX_NORMAL_POS);
-          kfs_rz_pos_ref(KFS_RZ_PUT_POS);
-          kfs_ryaw_pos_ref(KFS_RYAW_SIDE_ANGLE);
-          RCLCPP_INFO(this->get_logger(), "moved to front_kfs put position");
-        } else if (pressure_sensor_detected_[RKFS]) {
-          // put動作
-          kfs_fx_pos_ref(KFS_FX_NORMAL_POS);
-          kfs_fz_pos_ref(KFS_FZ_PUT_POS);
-          kfs_fyaw_pos_ref(KFS_FYAW_SIDE_ANGLE);
-          kfs_rx_pos_ref(KFS_RX_PUT_POS);
-          kfs_rz_pos_ref(KFS_RZ_PUT_POS);
-          kfs_ryaw_pos_ref(KFS_RYAW_SIDE_ANGLE);
-          RCLCPP_INFO(this->get_logger(), "moved to rear_kfs put position");
+        // やり攻撃の最後のステップを実行し、アクチュエータをspear_yとspear_rollを移動させる
+        manual_mode7_spear_attack_task_step_ = 3;
+        manual_mode7_spear_attack_task(2, 1, reverse_trigger);
+
+        if (manual_mode7_put_timer_) {
+          manual_mode7_put_timer_->cancel();
         }
+
+        manual_mode7_put_timer_ = this->create_wall_timer(500ms, [&] {
+          // 圧力センサが反応している方のput動作を行う
+          if (front_pressure_detected) {
+            // put動作
+            kfs_fx_pos_ref(KFS_FX_PUT_POS);
+            kfs_fz_pos_ref(KFS_FZ_PUT_POS);
+            kfs_fyaw_pos_ref(KFS_FYAW_SIDE_ANGLE);
+            kfs_rx_pos_ref(KFS_RX_NORMAL_POS);
+            kfs_rz_pos_ref(KFS_RZ_PUT_POS);
+            kfs_ryaw_pos_ref(KFS_RYAW_SIDE_ANGLE);
+            RCLCPP_INFO(this->get_logger(), "moved to front_kfs put position");
+          } else if (rear_pressure_detected) {
+            // put動作
+            kfs_fx_pos_ref(KFS_FX_NORMAL_POS);
+            kfs_fz_pos_ref(KFS_FZ_PUT_POS);
+            kfs_fyaw_pos_ref(KFS_FYAW_SIDE_ANGLE);
+            kfs_rx_pos_ref(KFS_RX_PUT_POS);
+            kfs_rz_pos_ref(KFS_RZ_PUT_POS);
+            kfs_ryaw_pos_ref(KFS_RYAW_SIDE_ANGLE);
+            RCLCPP_INFO(this->get_logger(), "moved to rear_kfs put position");
+          }
+        });
       }
     } else {
       spear_roll1_pos_ref(spear_roll1_position_ref_ + 0.05);
@@ -3623,21 +3637,21 @@ void R1MainNode::manual_mode7_spear_attack(void)
   if (ps4_->is_pushed_left()) {
     if (ps4_->is_pushing_l2()) {
       if (ENABLE_PRESSURE_SENSOR) {
-        if (pressure_sensor_detected_[FKFS]) {
+        if (front_pressure_detected) {
           kfs_front_pump(0.0);
           kfs_front_valve(true);
           // setTimeout風で電磁弁をOFFにする。
           if (manual_mode7_front_valve_timer_) {
             manual_mode7_front_valve_timer_->cancel();
           }
-          auto delay_time = manual_mode7_front_valve_timer_ =
+          manual_mode7_front_valve_timer_ =
             this->create_wall_timer(std::chrono::duration<double>(KFS_VALVE_DELAY_TIME), [this]() {
               kfs_front_valve(false);
               if (manual_mode7_front_valve_timer_) {
                 manual_mode7_front_valve_timer_->cancel();
               }
             });
-        } else if (pressure_sensor_detected_[RKFS]) {
+        } else if (rear_pressure_detected) {
           kfs_rear_pump(0.0);
           kfs_rear_valve(true);
           // setTimeout風で電磁弁をOFFにする。
@@ -3658,8 +3672,6 @@ void R1MainNode::manual_mode7_spear_attack(void)
       spear_roll2_pos_ref(spear_roll2_position_ref_ - 0.05);
     }
   }
-
-  bool reverse_trigger = ps4_->is_pushing_l2();
 
   if (ps4_->is_pushed_triangle()) {
     // 番号は千田機構だったときの名残で2を指定。現在、この指定には意味はない。

@@ -830,6 +830,7 @@ public:
   rclcpp::TimerBase::SharedPtr manual_mode4_front_valve_timer_;
   rclcpp::TimerBase::SharedPtr manual_mode5_rear_valve_timer_;
   rclcpp::TimerBase::SharedPtr manual_mode6_r2_lift_timer_;
+  rclcpp::TimerBase::SharedPtr manual_mode7_put_timer_;
   rclcpp::TimerBase::SharedPtr manual_mode7_front_valve_timer_;
   rclcpp::TimerBase::SharedPtr manual_mode7_rear_valve_timer_;
   rclcpp::TimerBase::SharedPtr manual_mode8_roll_timer_;
