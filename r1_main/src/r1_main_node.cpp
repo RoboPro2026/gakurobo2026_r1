@@ -3446,13 +3446,15 @@ void R1MainNode::manual_mode7_spear_attack_task(int n, int m, bool _reverse_trig
     // reverse_triggerを更新
     reverse_trigger = _reverse_trigger;
     // KFS回収機構を当たらない位置に移動
-    // yawは内向きにする
     kfs_fx_pos_ref(KFS_FX_NORMAL_POS);
     kfs_fz_pos_ref(KFS_FZ_NORMAL_POS);
-    kfs_fyaw_move_rear_mech_lock();
     kfs_rx_pos_ref(KFS_RX_NORMAL_POS);
     kfs_rz_pos_ref(KFS_RZ_NORMAL_POS);
-    kfs_ryaw_move_front_mech_lock();
+    // 中段と上段を狙うときのみ、yawは内向きにする
+    if (m == 2 || m == 3) {
+      kfs_fyaw_move_rear_mech_lock();
+      kfs_ryaw_move_front_mech_lock();
+    }
     // 念の為push_valveはfalseにしておく
     spear_hand_push_valve(false);
     if (m == 1) {
@@ -3575,16 +3577,43 @@ void R1MainNode::manual_mode7_spear_throw_away_task(int n)
 
 void R1MainNode::manual_mode7_spear_attack(void)
 {
+  constexpr int FKFS = 0;
+  constexpr int RKFS = 1;
   auto & hand_valve_step = manual_mode7_hand_valve_step_;
   auto & push_valve_step = manual_mode7_push_valve_step_;
   int & l2_r2_trigger_step = manual_mode7_l2_r2_trigger_step_;
+
   if (ps4_->is_pushed_up()) {
     spear_y_pos_ref(spear_y_position_ref_ + 0.01);
   }
 
   if (ps4_->is_pushed_right()) {
-    spear_roll1_pos_ref(spear_roll1_position_ref_ + 0.05);
-    spear_roll2_pos_ref(spear_roll2_position_ref_ + 0.05);
+    if (ps4_->is_pushing_l2()) {
+      if (ENABLE_PRESSURE_SENSOR) {
+        if (pressure_sensor_detected_[FKFS]) {
+          // put動作
+          kfs_fx_pos_ref(KFS_FX_PUT_POS);
+          kfs_fz_pos_ref(KFS_FZ_PUT_POS);
+          kfs_fyaw_pos_ref(KFS_FYAW_SIDE_ANGLE);
+          kfs_rx_pos_ref(KFS_RX_NORMAL_POS);
+          kfs_rz_pos_ref(KFS_RZ_PUT_POS);
+          kfs_ryaw_pos_ref(KFS_RYAW_SIDE_ANGLE);
+          RCLCPP_INFO(this->get_logger(), "moved to front_kfs put position");
+        } else if (pressure_sensor_detected_[RKFS]) {
+          // put動作
+          kfs_fx_pos_ref(KFS_FX_NORMAL_POS);
+          kfs_fz_pos_ref(KFS_FZ_PUT_POS);
+          kfs_fyaw_pos_ref(KFS_FYAW_SIDE_ANGLE);
+          kfs_rx_pos_ref(KFS_RX_PUT_POS);
+          kfs_rz_pos_ref(KFS_RZ_PUT_POS);
+          kfs_ryaw_pos_ref(KFS_RYAW_SIDE_ANGLE);
+          RCLCPP_INFO(this->get_logger(), "moved to rear_kfs put position");
+        }
+      }
+    } else {
+      spear_roll1_pos_ref(spear_roll1_position_ref_ + 0.05);
+      spear_roll2_pos_ref(spear_roll2_position_ref_ + 0.05);
+    }
   }
 
   if (ps4_->is_pushed_down()) {
@@ -3592,8 +3621,42 @@ void R1MainNode::manual_mode7_spear_attack(void)
   }
 
   if (ps4_->is_pushed_left()) {
-    spear_roll1_pos_ref(spear_roll1_position_ref_ - 0.05);
-    spear_roll2_pos_ref(spear_roll2_position_ref_ - 0.05);
+    if (ps4_->is_pushing_l2()) {
+      if (ENABLE_PRESSURE_SENSOR) {
+        if (pressure_sensor_detected_[FKFS]) {
+          kfs_front_pump(0.0);
+          kfs_front_valve(true);
+          // setTimeout風で電磁弁をOFFにする。
+          if (manual_mode7_front_valve_timer_) {
+            manual_mode7_front_valve_timer_->cancel();
+          }
+          auto delay_time = manual_mode7_front_valve_timer_ =
+            this->create_wall_timer(std::chrono::duration<double>(KFS_VALVE_DELAY_TIME), [this]() {
+              kfs_front_valve(false);
+              if (manual_mode7_front_valve_timer_) {
+                manual_mode7_front_valve_timer_->cancel();
+              }
+            });
+        } else if (pressure_sensor_detected_[RKFS]) {
+          kfs_rear_pump(0.0);
+          kfs_rear_valve(true);
+          // setTimeout風で電磁弁をOFFにする。
+          if (manual_mode7_rear_valve_timer_) {
+            manual_mode7_rear_valve_timer_->cancel();
+          }
+          manual_mode7_rear_valve_timer_ =
+            this->create_wall_timer(std::chrono::duration<double>(KFS_VALVE_DELAY_TIME), [this]() {
+              kfs_rear_valve(false);
+              if (manual_mode7_rear_valve_timer_) {
+                manual_mode7_rear_valve_timer_->cancel();
+              }
+            });
+        }
+      }
+    } else {
+      spear_roll1_pos_ref(spear_roll1_position_ref_ - 0.05);
+      spear_roll2_pos_ref(spear_roll2_position_ref_ - 0.05);
+    }
   }
 
   bool reverse_trigger = ps4_->is_pushing_l2();
