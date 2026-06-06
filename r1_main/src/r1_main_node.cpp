@@ -3622,6 +3622,8 @@ void R1MainNode::manual_mode7_spear_attack(void)
             kfs_ryaw_pos_ref(KFS_RYAW_SIDE_ANGLE);
             RCLCPP_INFO(this->get_logger(), "moved to rear_kfs put position");
           }
+
+          manual_mode7_put_timer_->cancel();
         });
       }
     } else {
