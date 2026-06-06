@@ -3606,7 +3606,7 @@ void R1MainNode::manual_mode7_spear_attack(void)
           manual_mode7_put_timer_->cancel();
         }
 
-        manual_mode7_put_timer_ = this->create_wall_timer(500ms, [&] {
+        manual_mode7_put_timer_ = this->create_wall_timer(500ms, [&, front_pressure_detected, rear_pressure_detected] {
           // 圧力センサが反応している方のput動作を行う
           RCLCPP_INFO(
             this->get_logger(), "front_pressure_detected: %s, rear_pressure_detected: %s",
