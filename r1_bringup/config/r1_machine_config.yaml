@@ -843,7 +843,7 @@ r1_aruco_r2_lift_lower_serial_node:
 
 r1_aruco_r2_lift_upper_serial_node:
   ros__parameters:
-    port: "/dev/serial/by-path/pci-0000:00:14.0-usb-0:1.1.1:1.0"
+    port: "/dev/serial/by-path/pci-0000:00:14.0-usb-0:1.1.1:1.0-port0"
     # 受信ポーリングのタイマー周期
     timer_rate: 10.0
 
