@@ -828,29 +828,34 @@ r1_aruco_spear_red_serial_node:
     port: "/dev/serial/by-path/pci-0000:00:14.0-usb-0:1.1.2:1.0-port0"
     # 受信ポーリングのタイマー周期
     timer_rate: 10.0
+    reconnect_interval_sec: 1.0
 
 r1_aruco_spear_blue_serial_node:
   ros__parameters:
     port: "/dev/serial/by-path/pci-0000:00:14.0-usb-0:1.1.3:1.0-port0"
     # 受信ポーリングのタイマー周期
     timer_rate: 10.0
+    reconnect_interval_sec: 1.0
 
 r1_aruco_r2_lift_lower_serial_node:
   ros__parameters:
     port: "/dev/serial/by-path/pci-0000:00:14.0-usb-0:1.1.4.3:1.0"
     # 受信ポーリングのタイマー周期
     timer_rate: 10.0
+    reconnect_interval_sec: 1.0
 
 r1_aruco_r2_lift_upper_serial_node:
   ros__parameters:
     port: "/dev/serial/by-path/pci-0000:00:14.0-usb-0:1.1.1:1.0-port0"
     # 受信ポーリングのタイマー周期
     timer_rate: 10.0
+    reconnect_interval_sec: 1.0
 
 # IMU
 bno086_node:
   ros__parameters:
     port: "/dev/serial/by-path/pci-0000:00:14.0-usb-0:1.1.4.4:1.0-port0"
+    reconnect_interval_sec: 1.0
 
 # 前上段sdm15
 # ydlidar_fh_ros2_driver_node:

@@ -17,6 +17,7 @@ PC 画面に PNG を表示する [r1_aruco_display_node](./r1_aruco_display_node
 | --- | --- | --- | --- |
 | `port` | string | なし | 接続先のシリアルデバイス名です。例: `/dev/ttyUSB0` |
 | `timer_rate` | double | `10.0` | シリアル受信ポーリングの周期 [Hz] です。`0` 以下を指定すると warning を出してデフォルト値 (`10.0`) に戻ります。 |
+| `reconnect_interval_sec` | double | `1.0` | 断線検出後、再接続を試みる間隔 [秒] です。実行中に `ros2 param set` で変更できます。 |
 
 ## シリアル送信仕様
 
@@ -36,8 +37,19 @@ PC 画面に PNG を表示する [r1_aruco_display_node](./r1_aruco_display_node
 
 1. 起動時に `port` パラメータから接続先シリアルポートを開きます。
 2. `/aruco_marker_id` を購読します。
-3. `Int32.data` を受け取るたびに `"<marker_id>\n"` 形式の文字列を送信します。
+3. `Int32.data` を受け取るたびに `"<marker_id>\n"` 形式の文字列を送信します（断線中はスキップ）。
 4. 別タイマでシリアル受信をポーリングし、終端 `\0` を受けたときだけ受信内容をログに出します。
+5. 断線（EIO / ENXIO 等）を検出した場合、`reconnect_interval_sec` 秒おきに再接続を試みます。
+
+## 断線・再接続時のログ
+
+| 状況 | レベル | メッセージ例 |
+| --- | --- | --- |
+| 断線検出（read） | ERROR | `Serial port '/dev/ttyUSB0' disconnected. errno = 5(Input/output error)` |
+| 断線検出（write） | ERROR | `Serial port '/dev/ttyUSB0' disconnected during write. errno = 5(Input/output error)` |
+| 再接続試行 | WARN | `Serial disconnected. Attempting reconnect to '/dev/ttyUSB0'... (interval: 1.0s)` |
+| 再接続成功 | INFO | `Reconnected to '/dev/ttyUSB0' successfully.` |
+| 再接続失敗（ポートなし） | ERROR | `errno = 2(No such file or directory), port '/dev/ttyUSB0' can't open` |
 
 ## ビルド
 
@@ -55,11 +67,17 @@ source ~/ros2_ws/install/setup.bash
 ros2 run r1_ui r1_aruco_serial_node --ros-args -p port:=/dev/ttyUSB0
 ```
 
-ポーリング周期を変更する場合:
+ポーリング周期・再接続間隔を変更する場合:
 
 ```bash
 source ~/ros2_ws/install/setup.bash
-ros2 run r1_ui r1_aruco_serial_node --ros-args -p port:=/dev/ttyUSB0 -p timer_rate:=20.0
+ros2 run r1_ui r1_aruco_serial_node --ros-args -p port:=/dev/ttyUSB0 -p timer_rate:=20.0 -p reconnect_interval_sec:=5.0
+```
+
+実行中に再接続間隔を変更する場合:
+
+```bash
+ros2 param set /r1_aruco_serial_node reconnect_interval_sec 3.0
 ```
 
 ## 送信確認例
