@@ -3082,12 +3082,12 @@ void R1MainNode::manual_mode4_fkfs(void)
 
   if (ps4_->is_pushing_l2() && ps4_->is_pushing_r2()) {
     if (l2_r2_trigger_step == DEFAULT_STEP) {
-      // 回収初期値に戻す
-      kfs_fx_pos_ref(KFS_FX_START_POS);
-      kfs_fz_pos_ref(KFS_FZ_START_POS);
+      // ストレージ位置に戻す
+      kfs_fx_pos_ref(KFS_FX_STORAGE_POS);
+      kfs_fz_pos_ref(KFS_FZ_STORAGE_POS);
       kfs_fyaw_pos_ref(KFS_FYAW_START_ANGLE);
-      kfs_rx_pos_ref(KFS_RX_START_POS);
-      kfs_rz_pos_ref(KFS_RZ_START_POS);
+      kfs_rx_pos_ref(KFS_RX_STORAGE_POS);
+      kfs_rz_pos_ref(KFS_RZ_STORAGE_POS);
       kfs_ryaw_pos_ref(KFS_RYAW_START_ANGLE);
       // 真空ポンプ関連の指令値は、操縦ミスでKFSを落とすのを防止するため、操作しない。
       l2_r2_trigger_step = 2;
@@ -3301,11 +3301,11 @@ void R1MainNode::manual_mode5_rkfs(void)
   if (ps4_->is_pushing_l2() && ps4_->is_pushing_r2()) {
     if (l2_r2_trigger_step == DEFAULT_STEP) {
       // 回収初期値に戻す
-      kfs_fx_pos_ref(KFS_FX_START_POS);
-      kfs_fz_pos_ref(KFS_FZ_START_POS);
+      kfs_fx_pos_ref(KFS_FX_STORAGE_POS);
+      kfs_fz_pos_ref(KFS_FZ_STORAGE_POS);
       kfs_fyaw_pos_ref(KFS_FYAW_START_ANGLE);
-      kfs_rx_pos_ref(KFS_RX_START_POS);
-      kfs_rz_pos_ref(KFS_RZ_START_POS);
+      kfs_rx_pos_ref(KFS_RX_STORAGE_POS);
+      kfs_rz_pos_ref(KFS_RZ_STORAGE_POS);
       kfs_ryaw_pos_ref(KFS_RYAW_START_ANGLE);
       // 真空ポンプ関連の指令値は、操縦ミスでKFSを落とすのを防止するため、操作しない。
       l2_r2_trigger_step = 2;
@@ -3558,11 +3558,11 @@ void R1MainNode::manual_mode7_spear_throw_away_task(int n)
 
   if (step == 1) {
     // KFS回収機構はスタート時の高い位置に移動させる
-    kfs_fx_pos_ref(KFS_FX_START_POS);
-    kfs_fz_pos_ref(KFS_FZ_START_POS);
+    kfs_fx_pos_ref(KFS_FX_STORAGE_POS);
+    kfs_fz_pos_ref(KFS_FZ_STORAGE_POS);
     kfs_fyaw_pos_ref(KFS_FYAW_START_ANGLE);
-    kfs_rx_pos_ref(KFS_RX_START_POS);
-    kfs_rz_pos_ref(KFS_RZ_START_POS);
+    kfs_rx_pos_ref(KFS_RX_STORAGE_POS);
+    kfs_rz_pos_ref(KFS_RZ_STORAGE_POS);
     kfs_ryaw_pos_ref(KFS_RYAW_START_ANGLE);
     step++;
   } else if (step == 2) {
@@ -3764,11 +3764,11 @@ void R1MainNode::manual_mode7_spear_attack(void)
   if (ps4_->is_pushing_l2() && ps4_->is_pushing_r2()) {
     if (l2_r2_trigger_step == DEFAULT_STEP) {
       // 回収初期値に戻す
-      kfs_fx_pos_ref(KFS_FX_START_POS);
-      kfs_fz_pos_ref(KFS_FZ_START_POS);
+      kfs_fx_pos_ref(KFS_FX_STORAGE_POS);
+      kfs_fz_pos_ref(KFS_FZ_STORAGE_POS);
       kfs_fyaw_pos_ref(KFS_FYAW_START_ANGLE);
-      kfs_rx_pos_ref(KFS_RX_START_POS);
-      kfs_rz_pos_ref(KFS_RZ_START_POS);
+      kfs_rx_pos_ref(KFS_RX_STORAGE_POS);
+      kfs_rz_pos_ref(KFS_RZ_STORAGE_POS);
       kfs_ryaw_pos_ref(KFS_RYAW_START_ANGLE);
       // 真空ポンプ関連の指令値は、操縦ミスでKFSを落とすのを防止するため、操作しない。
       l2_r2_trigger_step = 2;
