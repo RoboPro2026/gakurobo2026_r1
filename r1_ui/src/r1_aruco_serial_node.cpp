@@ -9,6 +9,8 @@
  *
  */
 
+#include <optional>
+
 #include "r1_ui/serial_driver.h"
 #include "rclcpp/rclcpp.hpp"
 #include "std_msgs/msg/int32.hpp"
@@ -73,6 +75,11 @@ public:
         last_reconnect_attempt_ = now;
         if (serial_->reconnect()) {
           RCLCPP_INFO(this->get_logger(), "Reconnected to '%s' successfully.", port_name_.c_str());
+          if (last_marker_id_.has_value()) {
+            RCLCPP_INFO(
+              this->get_logger(), "Resending last marker_id: %d", last_marker_id_.value());
+            send_marker_id(last_marker_id_.value());
+          }
         }
       }
       return;
@@ -90,8 +97,13 @@ public:
 
   void aruco_marker_id_callback(const std_msgs::msg::Int32::SharedPtr msg)
   {
+    last_marker_id_ = msg->data;
     if (!serial_->is_connected()) return;
-    int marker_id = msg->data;
+    send_marker_id(msg->data);
+  }
+
+  void send_marker_id(int marker_id)
+  {
     std::string send_str = std::to_string(marker_id);
     std::vector<uint8_t> tx_buff(send_str.begin(), send_str.end());
     serial_->write_buff(tx_buff);
@@ -101,6 +113,7 @@ public:
   double timer_rate_ = 10.0;
   double reconnect_interval_sec_ = 1.0;
   rclcpp::Time last_reconnect_attempt_;
+  std::optional<int> last_marker_id_;
   rclcpp::Subscription<std_msgs::msg::Int32>::SharedPtr aruco_marker_id_;
   rclcpp::TimerBase::SharedPtr timer_;
   std::shared_ptr<SerialDriver> serial_;
