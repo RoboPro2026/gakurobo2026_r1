@@ -594,6 +594,9 @@ R1MainNode::R1MainNode() : Node("r1_main_node")
   r1_initialize_all_actuator_subscription_ = this->create_subscription<std_msgs::msg::Int32>(
     "/r1_initialize_all_actuator", 10,
     std::bind(&R1MainNode::r1_initialize_all_actuator_callback, this, std::placeholders::_1));
+  r1_aruco_marker_id_subscription_ = this->create_subscription<std_msgs::msg::Int32>(
+    "/r1_aruco_marker_id", 10,
+    std::bind(&R1MainNode::r1_aruco_marker_id_callback, this, std::placeholders::_1));
 
   // tf関連
   tf_buffer_ = std::make_shared<tf2_ros::Buffer>(this->get_clock());
@@ -1535,6 +1538,25 @@ void R1MainNode::r1_initialize_all_actuator_callback(const std_msgs::msg::Int32:
   (void)msg;
   RCLCPP_INFO(this->get_logger(), "received /r1_initialize_all_actuator");
   detect_origin_all_actuator();
+}
+
+void R1MainNode::r1_aruco_marker_id_callback(const std_msgs::msg::Int32::SharedPtr msg)
+{
+  if (msg->data == DEFAULT_ARUCO_MARKER_ID) {
+    publish_all_aruco_marker_id(msg->data);
+  } else if (msg->data == SPEAR_COMBINE_ARUCO_MARKER_ID) {
+    publish_all_aruco_marker_id(msg->data);
+  } else if (msg->data == FIRST_KFS_ARUCO_MARKER_ID) {
+    publish_all_aruco_marker_id(msg->data);
+  } else if (msg->data == SECOND_KFS_ARUCO_MARKER_ID) {
+    publish_all_aruco_marker_id(msg->data);
+  } else if (msg->data == THIRD_KFS_ARUCO_MARKER_ID) {
+    publish_all_aruco_marker_id(msg->data);
+  } else if (msg->data == PUT_KFS_ARUCO_MARKER_ID) {
+    publish_all_aruco_marker_id(msg->data);
+  } else {
+    r1_log_warn("Received unknown ArUco marker ID: %d", msg->data);
+  }
 }
 
 void R1MainNode::publish_r1_machine_initialize(void)
@@ -3606,35 +3628,37 @@ void R1MainNode::manual_mode7_spear_attack(void)
           manual_mode7_put_timer_->cancel();
         }
 
-        manual_mode7_put_timer_ = this->create_wall_timer(500ms, [&, front_pressure_detected, rear_pressure_detected] {
-          // 圧力センサが反応している方のput動作を行う
-          RCLCPP_INFO(
-            this->get_logger(), "front_pressure_detected: %s, rear_pressure_detected: %s",
-            front_pressure_detected ? "true" : "false", rear_pressure_detected ? "true" : "false");
-          if (front_pressure_detected) {
-            // put動作
-            kfs_fx_pos_ref(KFS_FX_PUT_POS);
-            kfs_fz_pos_ref(KFS_FZ_PUT_POS);
-            kfs_fyaw_pos_ref(KFS_FYAW_SIDE_ANGLE);
-            kfs_rx_pos_ref(KFS_RX_NORMAL_POS);
-            kfs_rz_pos_ref(KFS_RZ_PUT_POS);
-            kfs_ryaw_pos_ref(KFS_RYAW_SIDE_ANGLE);
-            kfs_select = FKFS;
-            RCLCPP_INFO(this->get_logger(), "moved to front_kfs put position");
-          } else if (rear_pressure_detected) {
-            // put動作
-            kfs_fx_pos_ref(KFS_FX_NORMAL_POS);
-            kfs_fz_pos_ref(KFS_FZ_PUT_POS);
-            kfs_fyaw_pos_ref(KFS_FYAW_SIDE_ANGLE);
-            kfs_rx_pos_ref(KFS_RX_PUT_POS);
-            kfs_rz_pos_ref(KFS_RZ_PUT_POS);
-            kfs_ryaw_pos_ref(KFS_RYAW_SIDE_ANGLE);
-            kfs_select = RKFS;
-            RCLCPP_INFO(this->get_logger(), "moved to rear_kfs put position");
-          }
+        manual_mode7_put_timer_ =
+          this->create_wall_timer(500ms, [&, front_pressure_detected, rear_pressure_detected] {
+            // 圧力センサが反応している方のput動作を行う
+            RCLCPP_INFO(
+              this->get_logger(), "front_pressure_detected: %s, rear_pressure_detected: %s",
+              front_pressure_detected ? "true" : "false",
+              rear_pressure_detected ? "true" : "false");
+            if (front_pressure_detected) {
+              // put動作
+              kfs_fx_pos_ref(KFS_FX_PUT_POS);
+              kfs_fz_pos_ref(KFS_FZ_PUT_POS);
+              kfs_fyaw_pos_ref(KFS_FYAW_SIDE_ANGLE);
+              kfs_rx_pos_ref(KFS_RX_NORMAL_POS);
+              kfs_rz_pos_ref(KFS_RZ_PUT_POS);
+              kfs_ryaw_pos_ref(KFS_RYAW_SIDE_ANGLE);
+              kfs_select = FKFS;
+              RCLCPP_INFO(this->get_logger(), "moved to front_kfs put position");
+            } else if (rear_pressure_detected) {
+              // put動作
+              kfs_fx_pos_ref(KFS_FX_NORMAL_POS);
+              kfs_fz_pos_ref(KFS_FZ_PUT_POS);
+              kfs_fyaw_pos_ref(KFS_FYAW_SIDE_ANGLE);
+              kfs_rx_pos_ref(KFS_RX_PUT_POS);
+              kfs_rz_pos_ref(KFS_RZ_PUT_POS);
+              kfs_ryaw_pos_ref(KFS_RYAW_SIDE_ANGLE);
+              kfs_select = RKFS;
+              RCLCPP_INFO(this->get_logger(), "moved to rear_kfs put position");
+            }
 
-          manual_mode7_put_timer_->cancel();
-        });
+            manual_mode7_put_timer_->cancel();
+          });
       }
     } else {
       spear_roll1_pos_ref(spear_roll1_position_ref_ + 0.05);

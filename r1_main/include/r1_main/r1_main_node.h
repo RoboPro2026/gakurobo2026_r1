@@ -293,6 +293,8 @@ public:
   int r1_collect_3rd_kfs_ = -1;
   // ロボットの全アクチュエータを初期化する
   rclcpp::Subscription<std_msgs::msg::Int32>::SharedPtr r1_initialize_all_actuator_subscription_;
+  // スマホから送られるarucoマーカーのID
+  rclcpp::Subscription<std_msgs::msg::Int32>::SharedPtr r1_aruco_marker_id_subscription_;
 
   rclcpp::Publisher<std_msgs::msg::Int32>::SharedPtr r1_operation_mode_publisher_;
   // rclcpp::Publisher<std_msgs::msg::String>::SharedPtr r1_log_message_publisher_;
@@ -630,6 +632,7 @@ public:
   void r1_retry_collect_callback(const std_msgs::msg::Int32::SharedPtr msg);
   void r1_collect_3rd_kfs_callback(const std_msgs::msg::Int32::SharedPtr msg);
   void r1_initialize_all_actuator_callback(const std_msgs::msg::Int32::SharedPtr msg);
+  void r1_aruco_marker_id_callback(const std_msgs::msg::Int32::SharedPtr msg);
   // void publish_r1_log(const std::string & message);
   // スマホにログ出力する関数
   // よくわからないけど、__attribute__((format(printf, 2, 3)));をつけると、型ミスをしていたときにコンパイラが警告を出してくれるらしい
