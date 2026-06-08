@@ -3336,14 +3336,14 @@ void R1MainNode::manual_mode5_rkfs(void)
 
 void R1MainNode::manual_mode6_r2_lift(void)
 {
-  static bool is_speed_mode = false;
+  // static bool is_speed_mode = false;
 
   if (ps4_->is_pushed_up()) {
     if (ps4_->is_pushing_l2()) {
       // r2_rliftの微調整（指令値を増加）
+      r2_rlift_pos_ref(r2_rlift_position_ref_ + 0.01);
       // 微調整は他とは異なり、現在位置に対して行う
-      r2_rlift_pos_ref(r2_rlift_current_pos_ + 0.01);
-      // r2_rlift_pos_ref(r2_rlift_position_ref_ + 0.01);
+      // r2_rlift_pos_ref(r2_rlift_current_pos_ + 0.01);
     } else {
       publish_all_aruco_marker_id(DEFAULT_ARUCO_MARKER_ID);
       r1_log_info("aruco デフォ");
@@ -3384,41 +3384,46 @@ void R1MainNode::manual_mode6_r2_lift(void)
     }
   }
 
-  // if (ps4_->is_pushed_down()) {
-  //   if (ps4_->is_pushing_l2()) {
-  //     // r2_rliftの微調整（指令値を減少）
-  //     r2_rlift_pos_ref(r2_rlift_position_ref_ - 0.01);
-  //   } else {
-  //     // 誤動作防止の為、arucoマーカを初期状態にするのは無効化する
-  //     // publish_all_aruco_marker_id(DEFAULT_ARUCO_MARKER_ID);
-  //     // r1_log_info("aruco デフォ");
-  //     r2_flift_pos_ref(R2_FLIFT_DOWN_POS);
-  //     r2_rlift_pos_ref(R2_RLIFT_DOWN_POS);
-  //     // r2_flift_move_mech_lock(-1);
-  //     // r2_rlift_move_mech_lock(-1);
-  //   }
-  // }
-
-  // 下ろすときは速度制御でおろしてみる
-  if (ps4_->is_pushed_down() && ps4_->is_pushing_l2()) {
-    // L2を押しながら単押し: r2_rliftの微調整（指令値を減少）
-    // 微調整は他とは異なり、現在位置に対して行う
-    r2_rlift_pos_ref(r2_rlift_current_pos_ - 0.01);
-    // r2_rlift_pos_ref(r2_rlift_position_ref_ - 0.01);
-    is_speed_mode = false;
-  } else if (ps4_->is_pushing_down() && !ps4_->is_pushing_l2()) {
-    // 下のみが押されているときは速度制御で下ろす
-    r2_flift_speed_ref(-3.0);
-    r2_rlift_speed_ref(-3.0);
-    is_speed_mode = true;
-  } else {
-    if (is_speed_mode) {
-      is_speed_mode = false;
-      // 速度制御停止（L2+下の微調整後も含む）
-      r2_flift_speed_mode_stop();
-      r2_rlift_speed_mode_stop();
+  if (ps4_->is_pushed_down()) {
+    if (ps4_->is_pushing_l2()) {
+      // r2_rliftの微調整（指令値を減少）
+      r2_rlift_pos_ref(r2_rlift_position_ref_ - 0.01);
+    } else {
+      // まず最初にR2昇降機構をもとの位置に移動する
+      // 理由は微調整後の輪ゴムの伸びの差による誤動作を防止するため
+      r2_flift_pos_ref(R2_FLIFT_UP_POS);
+      r2_rlift_pos_ref(R2_RLIFT_UP_POS);
+      // 次に少ししたら下降する
+      if (manual_mode6_r2_lift_timer_ != nullptr) {
+        manual_mode6_r2_lift_timer_->cancel();
+      }
+      manual_mode6_r2_lift_timer_ = this->create_wall_timer(700ms, [this]() {
+        r2_flift_pos_ref(R2_FLIFT_DOWN_POS);
+        r2_rlift_pos_ref(R2_RLIFT_DOWN_POS);
+      });
     }
   }
+
+  // 下ろすときは速度制御でおろしてみる
+  // if (ps4_->is_pushed_down() && ps4_->is_pushing_l2()) {
+  //   // L2を押しながら単押し: r2_rliftの微調整（指令値を減少）
+  //   // 微調整は他とは異なり、現在位置に対して行う
+  //   r2_rlift_pos_ref(r2_rlift_current_pos_ - 0.01);
+  //   // r2_rlift_pos_ref(r2_rlift_position_ref_ - 0.01);
+  //   is_speed_mode = false;
+  // } else if (ps4_->is_pushing_down() && !ps4_->is_pushing_l2()) {
+  //   // 下のみが押されているときは速度制御で下ろす
+  //   r2_flift_speed_ref(-3.0);
+  //   r2_rlift_speed_ref(-3.0);
+  //   is_speed_mode = true;
+  // } else {
+  //   if (is_speed_mode) {
+  //     is_speed_mode = false;
+  //     // 速度制御停止（L2+下の微調整後も含む）
+  //     r2_flift_speed_mode_stop();
+  //     r2_rlift_speed_mode_stop();
+  //   }
+  // }
 
   if (ps4_->is_pushed_left()) {
     // 間違えてボタン押したときのために、aroco_marker_id=0に設定
@@ -3444,9 +3449,9 @@ void R1MainNode::manual_mode6_r2_lift(void)
   if (ps4_->is_pushed_triangle()) {
     if (ps4_->is_pushing_l2()) {
       // r2_fliftの微調整（指令値を増加）
+      r2_flift_pos_ref(r2_flift_position_ref_ + 0.01);
       // 微調整は他とは異なり、現在位置に対して行う
-      r2_flift_pos_ref(r2_flift_current_pos_ + 0.01);
-      // r2_flift_pos_ref(r2_flift_position_ref_ + 0.01);
+      // r2_flift_pos_ref(r2_flift_current_pos_ + 0.01);
     } else {
       publish_all_aruco_marker_id(SECOND_KFS_ARUCO_MARKER_ID);
       r1_log_info("aruco KFS2つ目");
@@ -3461,9 +3466,9 @@ void R1MainNode::manual_mode6_r2_lift(void)
   if (ps4_->is_pushed_cross()) {
     if (ps4_->is_pushing_l2()) {
       // r2_fliftの微調整（指令値を減少）
+      r2_flift_pos_ref(r2_flift_position_ref_ - 0.01);
       // 微調整は他とは異なり、現在位置に対して行う
       r2_flift_pos_ref(r2_flift_current_pos_ - 0.01);
-      // r2_flift_pos_ref(r2_flift_position_ref_ - 0.01);
     } else {
       publish_all_aruco_marker_id(PUT_KFS_ARUCO_MARKER_ID);
       r1_log_info("aruco put_kfs");
@@ -3477,20 +3482,20 @@ void R1MainNode::manual_mode6_r2_lift(void)
 
   if (ps4_->is_pushed_l1()) {
     // r2_fliftの微調整（指令値を減少）
+    r2_flift_pos_ref(r2_flift_position_ref_ - 0.01);
+    r2_rlift_pos_ref(r2_rlift_position_ref_ - 0.01);
     // 微調整は他とは異なり、現在位置に対して行う
-    r2_flift_pos_ref(r2_flift_current_pos_ - 0.01);
-    r2_rlift_pos_ref(r2_rlift_current_pos_ - 0.01);
-    // r2_flift_pos_ref(r2_flift_position_ref_ - 0.01);
-    // r2_rlift_pos_ref(r2_rlift_position_ref_ - 0.01);
+    // r2_flift_pos_ref(r2_flift_current_pos_ - 0.01);
+    // r2_rlift_pos_ref(r2_rlift_current_pos_ - 0.01);
   }
 
   if (ps4_->is_pushed_r1()) {
     // r2_fliftの微調整（指令値を増加）
+    r2_flift_pos_ref(r2_flift_position_ref_ + 0.01);
+    r2_rlift_pos_ref(r2_rlift_position_ref_ + 0.01);
     // 微調整は他とは異なり、現在位置に対して行う
-    r2_flift_pos_ref(r2_flift_current_pos_ + 0.01);
-    r2_rlift_pos_ref(r2_rlift_current_pos_ + 0.01);
-    // r2_flift_pos_ref(r2_flift_position_ref_ + 0.01);
-    // r2_rlift_pos_ref(r2_rlift_position_ref_ + 0.01);
+    // r2_flift_pos_ref(r2_flift_current_pos_ + 0.01);
+    // r2_rlift_pos_ref(r2_rlift_current_pos_ + 0.01);
   }
 
   if (ps4_->is_pushed_l2()) {
