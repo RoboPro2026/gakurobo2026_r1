@@ -160,18 +160,22 @@ R1MainNode::create_switch_status_callback(bool * switch_status)
  */
 void R1MainNode::register_position_axis(
   const std::string & name, double * position_ref_alias, double * speed_ref_alias,
-  bool use_set_angle_topic)
+  bool use_set_angle_topic, double * current_pos_alias)
 {
   auto [it, inserted] = position_axes_.try_emplace(name);
   (void)inserted;
   auto & axis = it->second;
   axis.position_ref_alias = position_ref_alias;
   axis.speed_ref_alias = speed_ref_alias;
+  axis.current_pos_alias = current_pos_alias;
   if (axis.position_ref_alias != nullptr) {
     *axis.position_ref_alias = axis.position_ref;
   }
   if (axis.speed_ref_alias != nullptr) {
     *axis.speed_ref_alias = axis.speed_ref;
+  }
+  if (axis.current_pos_alias != nullptr) {
+    *axis.current_pos_alias = axis.current_pos;
   }
 
   axis.position_ref_publisher =
@@ -188,6 +192,14 @@ void R1MainNode::register_position_axis(
     this->create_publisher<std_msgs::msg::Int32>("/" + name + "_move_mech_lock", 10);
   axis.mode_status_subscription = this->create_subscription<std_msgs::msg::Int32>(
     "/" + name + "_mode_status", 10, create_mode_status_callback(&axis, name));
+  const std::string current_pos_suffix = use_set_angle_topic ? "_current_angle" : "_current_pos";
+  axis.current_pos_subscription = this->create_subscription<std_msgs::msg::Float64>(
+    "/" + name + current_pos_suffix, 10, [&axis](const std_msgs::msg::Float64::SharedPtr msg) {
+      axis.current_pos = msg->data;
+      if (axis.current_pos_alias != nullptr) {
+        *axis.current_pos_alias = msg->data;
+      }
+    });
 }
 
 /**
@@ -466,17 +478,23 @@ R1MainNode::R1MainNode() : Node("r1_main_node")
   joy_subscription_ = this->create_subscription<sensor_msgs::msg::Joy>(
     "/joy", 10, std::bind(&R1MainNode::joy_callback, this, std::placeholders::_1));
   // ========== 位置制御軸 ==========
-  register_position_axis("kfs_fx", &kfs_fx_position_ref_);
-  register_position_axis("kfs_fz", &kfs_fz_position_ref_);
-  register_position_axis("kfs_fyaw", &kfs_fyaw_position_ref_, nullptr, true);
-  register_position_axis("kfs_rx", &kfs_rx_position_ref_);
-  register_position_axis("kfs_rz", &kfs_rz_position_ref_);
-  register_position_axis("kfs_ryaw", &kfs_ryaw_position_ref_, nullptr, true);
-  register_position_axis("r2_flift", &r2_flift_position_ref_);
-  register_position_axis("r2_rlift", &r2_rlift_position_ref_);
-  register_position_axis("spear_y", &spear_y_position_ref_);
-  register_position_axis("spear_roll1", &spear_roll1_position_ref_, nullptr, true);
-  register_position_axis("spear_roll2", &spear_roll2_position_ref_, nullptr, true);
+  register_position_axis("kfs_fx", &kfs_fx_position_ref_, nullptr, false, &kfs_fx_current_pos_);
+  register_position_axis("kfs_fz", &kfs_fz_position_ref_, nullptr, false, &kfs_fz_current_pos_);
+  register_position_axis(
+    "kfs_fyaw", &kfs_fyaw_position_ref_, nullptr, true, &kfs_fyaw_current_pos_);
+  register_position_axis("kfs_rx", &kfs_rx_position_ref_, nullptr, false, &kfs_rx_current_pos_);
+  register_position_axis("kfs_rz", &kfs_rz_position_ref_, nullptr, false, &kfs_rz_current_pos_);
+  register_position_axis(
+    "kfs_ryaw", &kfs_ryaw_position_ref_, nullptr, true, &kfs_ryaw_current_pos_);
+  register_position_axis(
+    "r2_flift", &r2_flift_position_ref_, nullptr, false, &r2_flift_current_pos_);
+  register_position_axis(
+    "r2_rlift", &r2_rlift_position_ref_, nullptr, false, &r2_rlift_current_pos_);
+  register_position_axis("spear_y", &spear_y_position_ref_, nullptr, false, &spear_y_current_pos_);
+  register_position_axis(
+    "spear_roll1", &spear_roll1_position_ref_, nullptr, true, &spear_roll1_current_pos_);
+  register_position_axis(
+    "spear_roll2", &spear_roll2_position_ref_, nullptr, true, &spear_roll2_current_pos_);
   // // ========== R2昇降指令値 ==========
   // register_velocity_axis("r2_flift", "/r2_flift_motor_ref", &r2_flift_velocity_ref_);
   // register_velocity_axis("r2_rlift", "/r2_rlift_motor_ref", &r2_rlift_velocity_ref_);
@@ -3320,7 +3338,9 @@ void R1MainNode::manual_mode6_r2_lift(void)
   if (ps4_->is_pushed_up()) {
     if (ps4_->is_pushing_l2()) {
       // r2_rliftの微調整（指令値を増加）
-      r2_rlift_pos_ref(r2_rlift_position_ref_ + 0.01);
+      // 微調整は他とは異なり、現在位置に対して行う
+      r2_rlift_pos_ref(r2_rlift_current_pos_ + 0.01);
+      // r2_rlift_pos_ref(r2_rlift_position_ref_ + 0.01);
     } else {
       publish_all_aruco_marker_id(DEFAULT_ARUCO_MARKER_ID);
       r1_log_info("aruco デフォ");
@@ -3361,19 +3381,35 @@ void R1MainNode::manual_mode6_r2_lift(void)
     }
   }
 
-  if (ps4_->is_pushed_down()) {
-    if (ps4_->is_pushing_l2()) {
-      // r2_rliftの微調整（指令値を減少）
-      r2_rlift_pos_ref(r2_rlift_position_ref_ - 0.01);
-    } else {
-      // 誤動作防止の為、arucoマーカを初期状態にするのは無効化する
-      // publish_all_aruco_marker_id(DEFAULT_ARUCO_MARKER_ID);
-      // r1_log_info("aruco デフォ");
-      r2_flift_pos_ref(R2_FLIFT_DOWN_POS);
-      r2_rlift_pos_ref(R2_RLIFT_DOWN_POS);
-      // r2_flift_move_mech_lock(-1);
-      // r2_rlift_move_mech_lock(-1);
-    }
+  // if (ps4_->is_pushed_down()) {
+  //   if (ps4_->is_pushing_l2()) {
+  //     // r2_rliftの微調整（指令値を減少）
+  //     r2_rlift_pos_ref(r2_rlift_position_ref_ - 0.01);
+  //   } else {
+  //     // 誤動作防止の為、arucoマーカを初期状態にするのは無効化する
+  //     // publish_all_aruco_marker_id(DEFAULT_ARUCO_MARKER_ID);
+  //     // r1_log_info("aruco デフォ");
+  //     r2_flift_pos_ref(R2_FLIFT_DOWN_POS);
+  //     r2_rlift_pos_ref(R2_RLIFT_DOWN_POS);
+  //     // r2_flift_move_mech_lock(-1);
+  //     // r2_rlift_move_mech_lock(-1);
+  //   }
+  // }
+
+  // 下ろすときは速度制御でおろしてみる
+  if (ps4_->is_pushed_down() && ps4_->is_pushing_l2()) {
+    // L2を押しながら単押し: r2_rliftの微調整（指令値を減少）
+    // 微調整は他とは異なり、現在位置に対して行う
+    r2_rlift_pos_ref(r2_rlift_current_pos_ - 0.01);
+    // r2_rlift_pos_ref(r2_rlift_position_ref_ - 0.01);
+  } else if (ps4_->is_pushing_down() && !ps4_->is_pushing_l2()) {
+    // 下のみが押されているときは速度制御(-15rad/s)で下ろす
+    r2_flift_speed_ref(-15.0);
+    r2_rlift_speed_ref(-15.0);
+  } else {
+    // 速度制御停止（L2+下の微調整後も含む）
+    r2_flift_speed_mode_stop();
+    r2_rlift_speed_mode_stop();
   }
 
   if (ps4_->is_pushed_left()) {
@@ -3400,7 +3436,9 @@ void R1MainNode::manual_mode6_r2_lift(void)
   if (ps4_->is_pushed_triangle()) {
     if (ps4_->is_pushing_l2()) {
       // r2_fliftの微調整（指令値を増加）
-      r2_flift_pos_ref(r2_flift_position_ref_ + 0.01);
+      // 微調整は他とは異なり、現在位置に対して行う
+      r2_flift_pos_ref(r2_flift_current_pos_ + 0.01);
+      // r2_flift_pos_ref(r2_flift_position_ref_ + 0.01);
     } else {
       publish_all_aruco_marker_id(SECOND_KFS_ARUCO_MARKER_ID);
       r1_log_info("aruco KFS2つ目");
@@ -3415,7 +3453,9 @@ void R1MainNode::manual_mode6_r2_lift(void)
   if (ps4_->is_pushed_cross()) {
     if (ps4_->is_pushing_l2()) {
       // r2_fliftの微調整（指令値を減少）
-      r2_flift_pos_ref(r2_flift_position_ref_ - 0.01);
+      // 微調整は他とは異なり、現在位置に対して行う
+      r2_flift_pos_ref(r2_flift_current_pos_ - 0.01);
+      // r2_flift_pos_ref(r2_flift_position_ref_ - 0.01);
     } else {
       publish_all_aruco_marker_id(PUT_KFS_ARUCO_MARKER_ID);
       r1_log_info("aruco put_kfs");
@@ -3428,15 +3468,21 @@ void R1MainNode::manual_mode6_r2_lift(void)
   }
 
   if (ps4_->is_pushed_l1()) {
-    // TODO: ボタンの数が足りなくなったら削除してもいいかも
-    r2_flift_pos_ref(r2_flift_position_ref_ - 0.01);
-    r2_rlift_pos_ref(r2_rlift_position_ref_ - 0.01);
+    // r2_fliftの微調整（指令値を減少）
+    // 微調整は他とは異なり、現在位置に対して行う
+    r2_flift_pos_ref(r2_flift_current_pos_ - 0.01);
+    r2_rlift_pos_ref(r2_rlift_current_pos_ - 0.01);
+    // r2_flift_pos_ref(r2_flift_position_ref_ - 0.01);
+    // r2_rlift_pos_ref(r2_rlift_position_ref_ - 0.01);
   }
 
   if (ps4_->is_pushed_r1()) {
-    // TODO: ボタンの数が足りなくなったら削除してもいいかも
-    r2_flift_pos_ref(r2_flift_position_ref_ + 0.01);
-    r2_rlift_pos_ref(r2_rlift_position_ref_ + 0.01);
+    // r2_fliftの微調整（指令値を増加）
+    // 微調整は他とは異なり、現在位置に対して行う
+    r2_flift_pos_ref(r2_flift_current_pos_ + 0.01);
+    r2_rlift_pos_ref(r2_rlift_current_pos_ + 0.01);
+    // r2_flift_pos_ref(r2_flift_position_ref_ + 0.01);
+    // r2_rlift_pos_ref(r2_rlift_position_ref_ + 0.01);
   }
 
   if (ps4_->is_pushed_l2()) {

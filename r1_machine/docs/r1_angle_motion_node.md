@@ -19,6 +19,7 @@
   - `/angle_motion_motor_ref` (`r1_msgs/msg/MotorRef`): `r1_machine_manage_node` へ渡す制御指令。`control_type` は `"POSITION"` または `"VELOCITY"`、`ref` は角度 [rad] もしくは角速度 [rad/s]。
   - `/angle_motion_mode_status` (`std_msgs/msg/Int32`): モードを送信。mode=0のとき、通常動作（位置制御モード）。mode=1のとき、原点復帰中、機械端移動中、またはユーザ速度モード中（速度制御モード）。
   - `/angle_motion_torque_limit_ref` (`std_msgs/msg/Float64`): 現在モードで使う Robomas の `torque_lim` [Nm]。原点検出中のみ `contact_torque_limit`、それ以外の通常時、`move_mech_lock` 中、ユーザ速度モード中は `normal_torque_limit` を出力します。
+  - `/angle_motion_current_angle` (`std_msgs/msg/Float64`): 現在の論理角度 [rad]。`angle_offset` と `gear_ratio` を適用した値を `timer_rate` 周期で配信します。原点検出前は `angle_offset = 0` の状態での値になります。
 
 ## 主なパラメータ
 

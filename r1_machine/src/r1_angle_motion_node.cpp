@@ -74,6 +74,8 @@ public:
 
     mode_status_publisher_ =
       this->create_publisher<std_msgs::msg::Int32>("/angle_motion_mode_status", 10);
+    current_angle_publisher_ =
+      this->create_publisher<std_msgs::msg::Float64>("/angle_motion_current_angle", 10);
     rclcpp::QoS torque_limit_qos(1);
     torque_limit_qos.reliable();
     torque_limit_qos.transient_local();
@@ -530,6 +532,10 @@ private:
     auto mode_msg = std_msgs::msg::Int32();
     mode_msg.data = mode_;
     mode_status_publisher_->publish(mode_msg);
+    // 現在角度をPublish
+    auto angle_msg = std_msgs::msg::Float64();
+    angle_msg.data = (current_angle_ * gear_ratio_ - angle_offset_) / motor_dir_;
+    current_angle_publisher_->publish(angle_msg);
   }
 
   rclcpp::Subscription<r1_msgs::msg::AngleMotion>::SharedPtr angle_motion_status_subscription_;
@@ -545,6 +551,7 @@ private:
   rclcpp::Subscription<std_msgs::msg::Float64>::SharedPtr set_angle_subscription_;
   rclcpp::Publisher<std_msgs::msg::Int32>::SharedPtr mode_status_publisher_;
   rclcpp::Publisher<std_msgs::msg::Float64>::SharedPtr torque_limit_ref_publisher_;
+  rclcpp::Publisher<std_msgs::msg::Float64>::SharedPtr current_angle_publisher_;
   rclcpp::node_interfaces::OnSetParametersCallbackHandle::SharedPtr parameter_callback_handler_;
 
   rclcpp::TimerBase::SharedPtr timer_;

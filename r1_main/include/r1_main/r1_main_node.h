@@ -70,11 +70,14 @@ public:
     rclcpp::Publisher<std_msgs::msg::Empty>::SharedPtr speed_mode_stop_publisher;
     rclcpp::Publisher<std_msgs::msg::Int32>::SharedPtr move_mech_lock_publisher;
     rclcpp::Subscription<std_msgs::msg::Int32>::SharedPtr mode_status_subscription;
+    rclcpp::Subscription<std_msgs::msg::Float64>::SharedPtr current_pos_subscription;
     bool is_pos_mode = false;
     double position_ref = 0.0;
     double speed_ref = 0.0;
+    double current_pos = 0.0;
     double * position_ref_alias = nullptr;
     double * speed_ref_alias = nullptr;
+    double * current_pos_alias = nullptr;
   };
 
   struct VelocityAxisInterface
@@ -323,6 +326,15 @@ public:
   double kfs_ryaw_position_ref_ = 0.0;
   double r2_flift_position_ref_ = 0.0;
   double r2_rlift_position_ref_ = 0.0;
+  // 現在位置
+  double kfs_fx_current_pos_ = 0.0;
+  double kfs_fz_current_pos_ = 0.0;
+  double kfs_fyaw_current_pos_ = 0.0;
+  double kfs_rx_current_pos_ = 0.0;
+  double kfs_rz_current_pos_ = 0.0;
+  double kfs_ryaw_current_pos_ = 0.0;
+  double r2_flift_current_pos_ = 0.0;
+  double r2_rlift_current_pos_ = 0.0;
 
   double kfs_front_pump_ref_ = 0.0;
   double kfs_rear_pump_ref_ = 0.0;
@@ -333,6 +345,9 @@ public:
   double spear_y_position_ref_ = 0.0;
   double spear_roll1_position_ref_ = 0.0;
   double spear_roll2_position_ref_ = 0.0;
+  double spear_y_current_pos_ = 0.0;
+  double spear_roll1_current_pos_ = 0.0;
+  double spear_roll2_current_pos_ = 0.0;
   bool spear_hand1_valve_ref_ = false;
   bool spear_hand2_valve_ref_ = false;
   bool spear_hand_push_valve_ref_ = false;
@@ -545,7 +560,8 @@ public:
     bool * switch_status);
   void register_position_axis(
     const std::string & name, double * position_ref_alias = nullptr,
-    double * speed_ref_alias = nullptr, bool use_set_angle_topic = false);
+    double * speed_ref_alias = nullptr, bool use_set_angle_topic = false,
+    double * current_pos_alias = nullptr);
   void register_velocity_axis(
     const std::string & name, const std::string & topic_name,
     double * velocity_ref_alias = nullptr);

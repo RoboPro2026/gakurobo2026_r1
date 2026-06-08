@@ -74,6 +74,8 @@ public:
 
     mode_status_publisher_ =
       this->create_publisher<std_msgs::msg::Int32>("/linear_motion_mode_status", 10);
+    current_pos_publisher_ =
+      this->create_publisher<std_msgs::msg::Float64>("/linear_motion_current_pos", 10);
     rclcpp::QoS torque_limit_qos(1);
     torque_limit_qos.reliable();
     torque_limit_qos.transient_local();
@@ -530,6 +532,10 @@ public:
     auto mode_msg = std_msgs::msg::Int32();
     mode_msg.data = mode_;
     mode_status_publisher_->publish(mode_msg);
+    // 現在位置をPublish
+    auto pos_msg = std_msgs::msg::Float64();
+    pos_msg.data = (current_pos_ * radius_ - pos_offset_) / motor_dir_;
+    current_pos_publisher_->publish(pos_msg);
   }
 
 private:
@@ -546,6 +552,7 @@ private:
   rclcpp::Subscription<std_msgs::msg::Float64>::SharedPtr set_pos_subscription_;
   rclcpp::Publisher<std_msgs::msg::Int32>::SharedPtr mode_status_publisher_;
   rclcpp::Publisher<std_msgs::msg::Float64>::SharedPtr torque_limit_ref_publisher_;
+  rclcpp::Publisher<std_msgs::msg::Float64>::SharedPtr current_pos_publisher_;
   rclcpp::node_interfaces::OnSetParametersCallbackHandle::SharedPtr parameter_callback_handler_;
 
   rclcpp::TimerBase::SharedPtr timer_;
