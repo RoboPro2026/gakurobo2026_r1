@@ -193,11 +193,12 @@ void R1MainNode::register_position_axis(
   axis.mode_status_subscription = this->create_subscription<std_msgs::msg::Int32>(
     "/" + name + "_mode_status", 10, create_mode_status_callback(&axis, name));
   const std::string current_pos_suffix = use_set_angle_topic ? "_current_angle" : "_current_pos";
+  PositionAxisInterface * axis_ptr = &axis;
   axis.current_pos_subscription = this->create_subscription<std_msgs::msg::Float64>(
-    "/" + name + current_pos_suffix, 10, [&axis](const std_msgs::msg::Float64::SharedPtr msg) {
-      axis.current_pos = msg->data;
-      if (axis.current_pos_alias != nullptr) {
-        *axis.current_pos_alias = msg->data;
+    "/" + name + current_pos_suffix, 10, [axis_ptr](const std_msgs::msg::Float64::SharedPtr msg) {
+      axis_ptr->current_pos = msg->data;
+      if (axis_ptr->current_pos_alias != nullptr) {
+        *axis_ptr->current_pos_alias = msg->data;
       }
     });
 }
