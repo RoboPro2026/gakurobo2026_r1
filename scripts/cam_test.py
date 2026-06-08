@@ -15,15 +15,21 @@ def main():
 
     # 3. ウェブカメラの起動 (通常 0番)
     # cap = cv2.VideoCapture(3)
-    cap = cv2.VideoCapture(0)
+    # cap = cv2.VideoCapture(0)
 
     # C1カメラの場合
     # cap = cv2.VideoCapture("/dev/video2", cv2.CAP_V4L2)
-
     # cap.set(cv2.CAP_PROP_FOURCC, cv2.VideoWriter_fourcc(*"UYVY"))
     # cap.set(cv2.CAP_PROP_FRAME_WIDTH, 1920)
     # cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 1280)
     # cap.set(cv2.CAP_PROP_FPS, 30)
+
+    # /dev/video2 Ugreenのウェブカメラの場合 (MJPG, 1280x720, 30fps)
+    cap = cv2.VideoCapture("/dev/video2", cv2.CAP_V4L2)
+    cap.set(cv2.CAP_PROP_FOURCC, cv2.VideoWriter_fourcc(*"MJPG"))
+    cap.set(cv2.CAP_PROP_FRAME_WIDTH, 1280)
+    cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 720)
+    cap.set(cv2.CAP_PROP_FPS, 30)
 
     print("カメラを起動しました。'q' キーで終了します。")
 

@@ -3335,6 +3335,8 @@ void R1MainNode::manual_mode5_rkfs(void)
 
 void R1MainNode::manual_mode6_r2_lift(void)
 {
+  static bool is_speed_mode = false;
+
   if (ps4_->is_pushed_up()) {
     if (ps4_->is_pushing_l2()) {
       // r2_rliftの微調整（指令値を増加）
@@ -3402,14 +3404,19 @@ void R1MainNode::manual_mode6_r2_lift(void)
     // 微調整は他とは異なり、現在位置に対して行う
     r2_rlift_pos_ref(r2_rlift_current_pos_ - 0.01);
     // r2_rlift_pos_ref(r2_rlift_position_ref_ - 0.01);
+    is_speed_mode = false;
   } else if (ps4_->is_pushing_down() && !ps4_->is_pushing_l2()) {
-    // 下のみが押されているときは速度制御(-15rad/s)で下ろす
-    r2_flift_speed_ref(-15.0);
-    r2_rlift_speed_ref(-15.0);
+    // 下のみが押されているときは速度制御で下ろす
+    r2_flift_speed_ref(-3.0);
+    r2_rlift_speed_ref(-3.0);
+    is_speed_mode = true;
   } else {
-    // 速度制御停止（L2+下の微調整後も含む）
-    r2_flift_speed_mode_stop();
-    r2_rlift_speed_mode_stop();
+    if (is_speed_mode) {
+      is_speed_mode = false;
+      // 速度制御停止（L2+下の微調整後も含む）
+      r2_flift_speed_mode_stop();
+      r2_rlift_speed_mode_stop();
+    }
   }
 
   if (ps4_->is_pushed_left()) {
