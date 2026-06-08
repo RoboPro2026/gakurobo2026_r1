@@ -242,10 +242,10 @@ r1_main_node:
     # ========== 展開 ==========
     # R2昇降
     r2_flift_normal_pos: 0.0
-    r2_flift_up_pos: 0.55
+    r2_flift_up_pos: 0.6
     r2_flift_down_pos: 0.0
     r2_rlift_normal_pos: 0.0
-    r2_rlift_up_pos: 0.55
+    r2_rlift_up_pos: 0.6
     r2_rlift_down_pos: 0.0
 
     # ========== やり ==========
