@@ -3400,6 +3400,9 @@ void R1MainNode::manual_mode6_r2_lift(void)
       manual_mode6_r2_lift_timer_ = this->create_wall_timer(700ms, [this]() {
         r2_flift_pos_ref(R2_FLIFT_DOWN_POS);
         r2_rlift_pos_ref(R2_RLIFT_DOWN_POS);
+        if (manual_mode6_r2_lift_timer_ != nullptr) {
+          manual_mode6_r2_lift_timer_->cancel();
+        }
       });
     }
   }
