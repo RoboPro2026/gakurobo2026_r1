@@ -854,7 +854,7 @@ r1_aruco_r2_lift_upper_serial_node:
 # IMU
 bno086_node:
   ros__parameters:
-    port: "/dev/serial/by-path/pci-0000:00:14.0-usb-0:1.4.4.3:1.0-port0"
+    port: "/dev/serial/by-path/pci-0000:00:14.0-usb-0:1.2:1.0-port0"
     reconnect_interval_sec: 1.0
 
 # 前上段sdm15
