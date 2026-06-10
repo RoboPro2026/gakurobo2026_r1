@@ -714,6 +714,8 @@ R1MainNode::R1MainNode() : Node("r1_main_node")
   declare_and_get_parameter("kfs_ryaw_high_mech_lock_angle", KFS_RYAW_HIGH_MECH_LOCK_ANGLE);
   // 真空用電磁弁の遅延時間[s]
   declare_and_get_parameter("kfs_valve_delay_time", KFS_VALVE_DELAY_TIME);
+  // arucoマーカの指令を受け取ってからもとのarucoマーカの表示に戻す時間 [s]
+  declare_and_get_parameter("aruco_marker_reset_time", ARUCO_MARKER_RESET_TIME);
 
   // ========== 展開 ==========
   // R2昇降
@@ -1562,22 +1564,37 @@ void R1MainNode::r1_initialize_all_actuator_callback(const std_msgs::msg::Int32:
 void R1MainNode::r1_aruco_marker_id_callback(const std_msgs::msg::Int32::SharedPtr msg)
 {
   // arucoマーカの数が増えて管理が面倒なので、送られてきた数字をPublishする実装に変更
-  publish_all_aruco_marker_id(msg->data);
-  // if (msg->data == DEFAULT_ARUCO_MARKER_ID) {
-  //   publish_all_aruco_marker_id(msg->data);
-  // } else if (msg->data == SPEAR_COMBINE_ARUCO_MARKER_ID) {
-  //   publish_all_aruco_marker_id(msg->data);
-  // } else if (msg->data == FIRST_KFS_ARUCO_MARKER_ID) {
-  //   publish_all_aruco_marker_id(msg->data);
-  // } else if (msg->data == SECOND_KFS_ARUCO_MARKER_ID) {
-  //   publish_all_aruco_marker_id(msg->data);
-  // } else if (msg->data == THIRD_KFS_ARUCO_MARKER_ID) {
-  //   publish_all_aruco_marker_id(msg->data);
-  // } else if (msg->data == PUT_KFS_ARUCO_MARKER_ID) {
-  //   publish_all_aruco_marker_id(msg->data);
-  // } else {
-  //   r1_log_warn("Received unknown ArUco marker ID: %d", msg->data);
-  // }
+  if (msg->data == DEFAULT_ARUCO_MARKER_ID) {
+    // タイマーが存在していた場合はリセット
+    if (aruco_marker_timer_) {
+      aruco_marker_timer_->cancel();
+    }
+
+    publish_all_aruco_marker_id(msg->data);
+  } else if (msg->data == SPEAR_COMBINE_ARUCO_MARKER_ID) {
+    // タイマーが存在していた場合はリセット
+    if (aruco_marker_timer_) {
+      aruco_marker_timer_->cancel();
+    }
+
+    // やり合体終了の合図はタイマーでDEFAULT_ARUCO_MARKER_IDに戻さない
+    // 理由はarucoマーカーが読めなかったときに表示し続けたいため
+    publish_all_aruco_marker_id(msg->data);
+  } else {
+    // それ以外のときはarucoマーカを表示し、一定時間後にDEFAULT_ARUCO_MARKER_IDに戻す
+    if (aruco_marker_timer_) {
+      aruco_marker_timer_->cancel();
+    }
+
+    publish_all_aruco_marker_id(msg->data);
+
+    aruco_marker_timer_ =
+      this->create_wall_timer(std::chrono::duration<double>(ARUCO_MARKER_RESET_TIME), [this]() {
+        publish_all_aruco_marker_id(DEFAULT_ARUCO_MARKER_ID);
+        r1_log_info("aruco デフォ(リセット)");
+        aruco_marker_timer_->cancel();
+      });
+  }
 }
 
 void R1MainNode::publish_r1_machine_initialize(void)
@@ -3460,12 +3477,30 @@ void R1MainNode::manual_mode6_r2_lift(void)
     } else {
       publish_all_aruco_marker_id(SECOND_KFS_ARUCO_MARKER_ID);
       r1_log_info("aruco KFS2つ目");
+      if (aruco_marker_timer_) {
+        aruco_marker_timer_->cancel();
+      }
+      aruco_marker_timer_ =
+        this->create_wall_timer(std::chrono::duration<double>(ARUCO_MARKER_RESET_TIME), [this]() {
+          publish_all_aruco_marker_id(DEFAULT_ARUCO_MARKER_ID);
+          r1_log_info("aruco デフォ(リセット)");
+          aruco_marker_timer_->cancel();
+        });
     }
   }
 
   if (ps4_->is_pushed_circle()) {
+    if (aruco_marker_timer_) {
+      aruco_marker_timer_->cancel();
+    }
     publish_all_aruco_marker_id(FIRST_KFS_ARUCO_MARKER_ID);
     r1_log_info("aruco KFS1つ目");
+    aruco_marker_timer_ =
+      this->create_wall_timer(std::chrono::duration<double>(ARUCO_MARKER_RESET_TIME), [this]() {
+        publish_all_aruco_marker_id(DEFAULT_ARUCO_MARKER_ID);
+        r1_log_info("aruco デフォ(リセット)");
+        aruco_marker_timer_->cancel();
+      });
   }
 
   if (ps4_->is_pushed_cross()) {
@@ -3475,14 +3510,32 @@ void R1MainNode::manual_mode6_r2_lift(void)
       // 微調整は他とは異なり、現在位置に対して行う
       r2_flift_pos_ref(r2_flift_current_pos_ - 0.01);
     } else {
+      if (aruco_marker_timer_) {
+        aruco_marker_timer_->cancel();
+      }
       publish_all_aruco_marker_id(PUT_KFS_ARUCO_MARKER_ID);
       r1_log_info("aruco put_kfs");
+      aruco_marker_timer_ =
+        this->create_wall_timer(std::chrono::duration<double>(ARUCO_MARKER_RESET_TIME), [this]() {
+          publish_all_aruco_marker_id(DEFAULT_ARUCO_MARKER_ID);
+          r1_log_info("aruco デフォ(リセット)");
+          aruco_marker_timer_->cancel();
+        });
     }
   }
 
   if (ps4_->is_pushed_square()) {
+    if (aruco_marker_timer_) {
+      aruco_marker_timer_->cancel();
+    }
     publish_all_aruco_marker_id(THIRD_KFS_ARUCO_MARKER_ID);
     r1_log_info("aruco KFS3つ目");
+    aruco_marker_timer_ =
+      this->create_wall_timer(std::chrono::duration<double>(ARUCO_MARKER_RESET_TIME), [this]() {
+        publish_all_aruco_marker_id(DEFAULT_ARUCO_MARKER_ID);
+        r1_log_info("aruco デフォ(リセット)");
+        aruco_marker_timer_->cancel();
+      });
   }
 
   if (ps4_->is_pushed_l1()) {

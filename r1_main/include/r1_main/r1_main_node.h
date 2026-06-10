@@ -466,6 +466,8 @@ public:
 
   // 真空用電磁弁の遅延時間[s]
   double KFS_VALVE_DELAY_TIME = 0.0;
+  // arucoマーカの指令を受け取ってからもとのarucoマーカの表示に戻す時間[s]
+  double ARUCO_MARKER_RESET_TIME = 0.0;
 
   // R2昇降
   double R2_FLIFT_NORMAL_POS = 0.0;
@@ -853,6 +855,8 @@ public:
   rclcpp::TimerBase::SharedPtr manual_mode7_front_valve_timer_;
   rclcpp::TimerBase::SharedPtr manual_mode7_rear_valve_timer_;
   rclcpp::TimerBase::SharedPtr manual_mode8_roll_timer_;
+
+  rclcpp::TimerBase::SharedPtr aruco_marker_timer_;
   // ========== 自動シャーシ ==========
   void auto_collect_kfs_task(void);
   rclcpp::TimerBase::SharedPtr auto_collect_front_storage_yaw_timer_;
