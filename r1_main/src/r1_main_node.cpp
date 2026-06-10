@@ -3698,7 +3698,7 @@ void R1MainNode::manual_mode7_spear_attack_task(int n, int m, bool _reverse_trig
     spear_roll1_pos_ref(SPEAR_ROLL1_VERTICAL_ANGLE);
     spear_roll2_pos_ref(SPEAR_ROLL2_VERTICAL_ANGLE);
     // spear_yは攻撃動作前の位置に戻す
-    spear_y_pos_ref(SPEAR_Y_MAKE_SPEAR_POS);
+    spear_y_pos_ref(SPEAR_Y_COLLECT_KFS_POS);
     step = 1;
     // RCLCPP_INFO(this->get_logger(), "spear attack task completed");
     r1_log_info("mode7 やり攻撃 完了");
@@ -3747,7 +3747,7 @@ void R1MainNode::manual_mode7_spear_throw_away_task(int n)
     spear_roll1_pos_ref(SPEAR_ROLL1_VERTICAL_ANGLE);
     spear_roll2_pos_ref(SPEAR_ROLL2_VERTICAL_ANGLE);
     // spear_yは攻撃動作前の位置に戻す
-    spear_y_pos_ref(SPEAR_Y_MAKE_SPEAR_POS);
+    spear_y_pos_ref(SPEAR_Y_COLLECT_KFS_POS);
     step = 1;
     r1_log_info("mode7 やり廃棄 完了");
     // RCLCPP_INFO(this->get_logger(), "spear throw away task completed");
