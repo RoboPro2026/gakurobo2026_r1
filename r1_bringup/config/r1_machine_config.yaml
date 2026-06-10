@@ -241,7 +241,7 @@ r1_main_node:
     kfs_valve_delay_time: 1.0
 
     # arucoマーカの指令を受け取ってからもとのarucoマーカの表示に戻す時間 [s]
-    aruco_marker_reset_time: 3.0
+    aruco_marker_reset_time: 4.0
     # ========== 展開 ==========
     # R2昇降
     r2_flift_normal_pos: 0.0
