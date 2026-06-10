@@ -268,7 +268,7 @@ r1_main_node:
     # spear_roll1_vertical_angle: 0.0
     # horizontalのときも角度が少しだけ曲がっているので調整
     spear_roll1_horizontal_angle: 1.5207963267948966
-    spear_roll1_inv_horizontal_angle: -1.5707963267948966
+    spear_roll1_inv_horizontal_angle: -1.5207963267948966
     spear_roll1_red_low_attack_angle: -1.5707963267948966
     spear_roll1_red_middle_attack_angle: -1.2
     spear_roll1_red_high_attack_angle: -0.67
@@ -282,7 +282,7 @@ r1_main_node:
     spear_roll2_vertical_angle: -0.03
     # horizontalのときも角度が少しだけ曲がっているので調整
     spear_roll2_horizontal_angle: 1.5207963267948966
-    spear_roll2_inv_horizontal_angle: -1.5707963267948966
+    spear_roll2_inv_horizontal_angle: -1.5207963267948966
     spear_roll2_red_low_attack_angle: -1.5707963267948966
     spear_roll2_red_middle_attack_angle: -1.2
     spear_roll2_red_high_attack_angle: -0.67
