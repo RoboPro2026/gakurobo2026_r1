@@ -4841,16 +4841,16 @@ void R1MainNode::main_task(void)
               }
               const bool is_tie = (f_inner_count == f_outer_count);
               // 優先順位リストに従って森を抽出（最大2つ = front_kfs + rear_kfs）
-              // INNER(多数決勝ち): 2,1,4,7,10 の順
-              // INNER(引き分け):   3,2,1,4,7,10,11,12 の順
-              // OUTER(多数決勝ち): 3,6,9,12,11,10 の順
-              // OUTER(引き分け):   1,2,3,6,9,12,11,10 の順
-              const std::vector<int> priority_list =
-                (mode3_collect_status == KfsAutoCollectStatus::OUTER_ACTIVE)
-                  ? (is_tie ? std::vector<int>{1, 2, 3, 6, 9, 12, 11, 10}
-                             : std::vector<int>{3, 6, 9, 12, 11, 10})
-                  : (is_tie ? std::vector<int>{3, 2, 1, 4, 7, 10, 11, 12}
-                             : std::vector<int>{2, 1, 4, 7, 10});
+              std::vector<int> priority_list;
+              if (mode3_collect_status == KfsAutoCollectStatus::OUTER_ACTIVE && is_tie) {
+                priority_list = {1, 2, 3, 6, 9, 12, 11, 10};  // OUTER(引き分け)
+              } else if (mode3_collect_status == KfsAutoCollectStatus::OUTER_ACTIVE) {
+                priority_list = {3, 6, 9, 12, 11, 10};  // OUTER(多数決勝ち)
+              } else if (is_tie) {
+                priority_list = {3, 2, 1, 4, 7, 10, 11, 12};  // INNER(引き分け)
+              } else {
+                priority_list = {2, 1, 4, 7, 10};  // INNER(多数決勝ち)
+              }
               for (int prio : priority_list) {
                 if (forest_order.size() >= 2) break;
                 for (int v : all_forests) {
