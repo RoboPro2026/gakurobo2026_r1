@@ -2601,7 +2601,17 @@ void R1MainNode::manual_mode2_collect_pole_task(void)
 
   r1_log_info("mode2 ポール step%d", step);
   if (step == 1) {
-    kfs_robot_start_act();
+    // kfs_robot_start_act();
+    // KFS回収機構を回収位置に移動
+    // この動作をするときはzを高く上げる
+    kfs_fx_pos_ref(KFS_FX_START_POS);
+    kfs_rx_pos_ref(KFS_RX_START_POS);
+    kfs_fz_pos_ref(KFS_FZ_STORAGE_POS);
+    kfs_rz_pos_ref(KFS_RZ_STORAGE_POS);
+    // スタートゾーンから出たら、yawは90度にする
+    kfs_fyaw_pos_ref(KFS_FYAW_START_ANGLE);
+    kfs_ryaw_pos_ref(KFS_RYAW_START_ANGLE);
+
     spear_y_pos_ref(SPEAR_Y_COLLECT1_POS);
     spear_hand1_valve(true);
     spear_hand2_valve(true);
@@ -2757,6 +2767,15 @@ void R1MainNode::manual_mode3_make_spear_task(int n)
     // arucoマーカーは0をpublishする
     spear_y_pos_ref(SPEAR_Y_MAKE_SPEAR_POS);
     spear_hand_push_valve(true);
+    // KFS回収機構を回収位置に移動
+    // この動作をするときはzを高く上げる
+    kfs_fx_pos_ref(KFS_FX_START_POS);
+    kfs_rx_pos_ref(KFS_RX_START_POS);
+    kfs_fz_pos_ref(KFS_FZ_STORAGE_POS);
+    kfs_rz_pos_ref(KFS_RZ_STORAGE_POS);
+    // スタートゾーンから出たら、yawは90度にする
+    kfs_fyaw_pos_ref(KFS_FYAW_START_ANGLE);
+    kfs_ryaw_pos_ref(KFS_RYAW_START_ANGLE);
     publish_all_aruco_marker_id(DEFAULT_ARUCO_MARKER_ID);
     r1_log_info("aruco デフォ");
 
