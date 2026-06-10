@@ -3404,6 +3404,18 @@ void R1MainNode::manual_mode6_r2_lift(void)
         }
         RCLCPP_INFO(this->get_logger(), "r2 lift stop (timer)");
       });
+
+      if (aruco_marker_timer_) {
+        aruco_marker_timer_->cancel();
+      }
+      publish_all_aruco_marker_id(PUT_UPPER_ROW_ARUCO_MARKER_ID);
+      r1_log_info("aruco 上段配置");
+      aruco_marker_timer_ =
+        this->create_wall_timer(std::chrono::duration<double>(ARUCO_MARKER_RESET_TIME), [this]() {
+          publish_all_aruco_marker_id(DEFAULT_ARUCO_MARKER_ID);
+          r1_log_info("aruco デフォ(リセット)");
+          aruco_marker_timer_->cancel();
+        });
     }
   }
 
@@ -3479,11 +3491,12 @@ void R1MainNode::manual_mode6_r2_lift(void)
       // 微調整は他とは異なり、現在位置に対して行う
       // r2_flift_pos_ref(r2_flift_current_pos_ + 0.01);
     } else {
-      publish_all_aruco_marker_id(SECOND_KFS_ARUCO_MARKER_ID);
-      r1_log_info("aruco KFS2つ目");
+      r1_log_info("aruco 中段5");
       if (aruco_marker_timer_) {
         aruco_marker_timer_->cancel();
       }
+      publish_all_aruco_marker_id(PUT_MIDDLE_ROW5_ARUCO_MARKER_ID);
+
       aruco_marker_timer_ =
         this->create_wall_timer(std::chrono::duration<double>(ARUCO_MARKER_RESET_TIME), [this]() {
           publish_all_aruco_marker_id(DEFAULT_ARUCO_MARKER_ID);
@@ -3497,8 +3510,8 @@ void R1MainNode::manual_mode6_r2_lift(void)
     if (aruco_marker_timer_) {
       aruco_marker_timer_->cancel();
     }
-    publish_all_aruco_marker_id(FIRST_KFS_ARUCO_MARKER_ID);
-    r1_log_info("aruco KFS1つ目");
+    publish_all_aruco_marker_id(PUT_MIDDLE_ROW6_ARUCO_MARKER_ID);
+    r1_log_info("aruco 中段6");
     aruco_marker_timer_ =
       this->create_wall_timer(std::chrono::duration<double>(ARUCO_MARKER_RESET_TIME), [this]() {
         publish_all_aruco_marker_id(DEFAULT_ARUCO_MARKER_ID);
@@ -3532,8 +3545,8 @@ void R1MainNode::manual_mode6_r2_lift(void)
     if (aruco_marker_timer_) {
       aruco_marker_timer_->cancel();
     }
-    publish_all_aruco_marker_id(THIRD_KFS_ARUCO_MARKER_ID);
-    r1_log_info("aruco KFS3つ目");
+    publish_all_aruco_marker_id(PUT_MIDDLE_ROW4_ARUCO_MARKER_ID);
+    r1_log_info("aruco 中段4");
     aruco_marker_timer_ =
       this->create_wall_timer(std::chrono::duration<double>(ARUCO_MARKER_RESET_TIME), [this]() {
         publish_all_aruco_marker_id(DEFAULT_ARUCO_MARKER_ID);

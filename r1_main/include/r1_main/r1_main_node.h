@@ -276,6 +276,12 @@ public:
   static constexpr int SECOND_KFS_ARUCO_MARKER_ID = 3;
   static constexpr int THIRD_KFS_ARUCO_MARKER_ID = 4;
   static constexpr int PUT_KFS_ARUCO_MARKER_ID = 10;
+  // 全部上段配置
+  static constexpr int PUT_UPPER_ROW_ARUCO_MARKER_ID = 12;
+  // 中段配置
+  static constexpr int PUT_MIDDLE_ROW4_ARUCO_MARKER_ID = 13;
+  static constexpr int PUT_MIDDLE_ROW5_ARUCO_MARKER_ID = 14;
+  static constexpr int PUT_MIDDLE_ROW6_ARUCO_MARKER_ID = 15;
 
   // ========== スマホ関連 ==========
   // スマホから送られてくる初期化パラメータ
