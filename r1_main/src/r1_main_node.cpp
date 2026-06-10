@@ -1561,21 +1561,23 @@ void R1MainNode::r1_initialize_all_actuator_callback(const std_msgs::msg::Int32:
 
 void R1MainNode::r1_aruco_marker_id_callback(const std_msgs::msg::Int32::SharedPtr msg)
 {
-  if (msg->data == DEFAULT_ARUCO_MARKER_ID) {
-    publish_all_aruco_marker_id(msg->data);
-  } else if (msg->data == SPEAR_COMBINE_ARUCO_MARKER_ID) {
-    publish_all_aruco_marker_id(msg->data);
-  } else if (msg->data == FIRST_KFS_ARUCO_MARKER_ID) {
-    publish_all_aruco_marker_id(msg->data);
-  } else if (msg->data == SECOND_KFS_ARUCO_MARKER_ID) {
-    publish_all_aruco_marker_id(msg->data);
-  } else if (msg->data == THIRD_KFS_ARUCO_MARKER_ID) {
-    publish_all_aruco_marker_id(msg->data);
-  } else if (msg->data == PUT_KFS_ARUCO_MARKER_ID) {
-    publish_all_aruco_marker_id(msg->data);
-  } else {
-    r1_log_warn("Received unknown ArUco marker ID: %d", msg->data);
-  }
+  // arucoマーカの数が増えて管理が面倒なので、送られてきた数字をPublishする実装に変更
+  publish_all_aruco_marker_id(msg->data);
+  // if (msg->data == DEFAULT_ARUCO_MARKER_ID) {
+  //   publish_all_aruco_marker_id(msg->data);
+  // } else if (msg->data == SPEAR_COMBINE_ARUCO_MARKER_ID) {
+  //   publish_all_aruco_marker_id(msg->data);
+  // } else if (msg->data == FIRST_KFS_ARUCO_MARKER_ID) {
+  //   publish_all_aruco_marker_id(msg->data);
+  // } else if (msg->data == SECOND_KFS_ARUCO_MARKER_ID) {
+  //   publish_all_aruco_marker_id(msg->data);
+  // } else if (msg->data == THIRD_KFS_ARUCO_MARKER_ID) {
+  //   publish_all_aruco_marker_id(msg->data);
+  // } else if (msg->data == PUT_KFS_ARUCO_MARKER_ID) {
+  //   publish_all_aruco_marker_id(msg->data);
+  // } else {
+  //   r1_log_warn("Received unknown ArUco marker ID: %d", msg->data);
+  // }
 }
 
 void R1MainNode::publish_r1_machine_initialize(void)

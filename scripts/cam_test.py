@@ -31,6 +31,14 @@ def main():
     cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 720)
     cap.set(cv2.CAP_PROP_FPS, 30)
 
+    # 自動露出OFF → 露出固定
+    # cap.set(cv2.CAP_PROP_AUTO_EXPOSURE, 1)  # V4L2では 1=manual, 3=auto のことが多い
+    # cap.set(cv2.CAP_PROP_EXPOSURE, 80)  # 値はカメラ依存
+
+    # # ゲインを下げる
+    # cap.set(cv2.CAP_PROP_GAIN, 0)
+    # cap.set(cv2.CAP_PROP_GAIN, 2)
+
     print("カメラを起動しました。'q' キーで終了します。")
 
     while True:

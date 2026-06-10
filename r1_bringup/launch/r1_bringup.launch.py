@@ -550,7 +550,7 @@ def generate_launch_description():
     _CAN_TOPIC_REGEX = r"(^|/)(sabacan_[^/]*|(from|to)_can_bus[^/]*)$"
     record_process = ExecuteProcess(
         cmd=["ros2", "bag", "record", "-a", "--exclude", _CAN_TOPIC_REGEX,
-             "--ros-args", "--log-level", "warn"],
+             "--log-level", "warn"],
         output="screen",
     ) if use_record else None
 
