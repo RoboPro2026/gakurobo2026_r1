@@ -17,5 +17,11 @@ source install/setup.bash
 ZONE="${1:-blue}"
 USE_PHONE="${2:-false}"
 export RCUTILS_COLORIZED_OUTPUT=1
+
+LOG_DIR="$HOME/ros2_ws/log_txt_dir"
+mkdir -p "$LOG_DIR"
+LOG_FILE="$LOG_DIR/r1_auto_$(date +%Y%m%d_%H%M%S).log"
+
 echo "========== R1 bringup start (zone: $ZONE, use_phone: $USE_PHONE) =========="
-ros2 launch r1_bringup r1_bringup.launch.py use_sim:=false use_lidar:=true robot_control_mode:=auto use_aruco_display:=true zone:=$ZONE use_phone:=$USE_PHONE
+echo "Log: $LOG_FILE"
+ros2 launch r1_bringup r1_bringup.launch.py use_sim:=false use_lidar:=true robot_control_mode:=auto use_aruco_display:=true zone:=$ZONE use_phone:=$USE_PHONE 2>&1 | tee "$LOG_FILE"
