@@ -10,3 +10,5 @@ int32[] r2_fake_kfs_value
 bool enable_auto_select
 # KFS回収時に足回りを自動制御するか（falseの場合はmode2以降の足回り自動制御のみを無効化）
 bool enable_kfs_auto_chassis
+# ルート、0:自動、1:内回り、2:外回り
+int32 route

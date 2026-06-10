@@ -1275,6 +1275,7 @@ void R1MainNode::r1_init_parameter_callback(const r1_msgs::msg::R1InitParameter:
        (r1_init_parameter_.enable_auto_select ? "true" : "false") + "\n";
   s += std::string("enable_kfs_auto_chassis: ") +
        (r1_init_parameter_.enable_kfs_auto_chassis ? "true" : "false") + "\n";
+  s += std::string("route: ") + std::to_string(r1_init_parameter_.route) + "\n";
   RCLCPP_INFO(this->get_logger(), "received /r1_init_parameter:\n%s", s.c_str());
   r1_log_info("Initialize received: zone=%s", r1_init_parameter_.zone.c_str());
   if (r1_init_parameter_.zone != zone_) {
@@ -4826,12 +4827,30 @@ void R1MainNode::main_task(void)
             if (!all_forests.empty()) {
               // 有効な値で多数決してINNER/OUTERを決定する
               mode3_collect_status = determine_status(all_forests);
+              // route=1: 強制内回り、route=2: 強制外回り、route=0: 自動判定
+              if (r1_init_parameter_.route == 1) {
+                mode3_collect_status = KfsAutoCollectStatus::INNER_ACTIVE;
+              } else if (r1_init_parameter_.route == 2) {
+                mode3_collect_status = KfsAutoCollectStatus::OUTER_ACTIVE;
+              }
+              // 引き分け判定
+              int f_inner_count = 0, f_outer_count = 0;
+              for (int n : all_forests) {
+                if (is_inner_forest(n)) f_inner_count++;
+                if (is_outer_forest(n)) f_outer_count++;
+              }
+              const bool is_tie = (f_inner_count == f_outer_count);
               // 優先順位リストに従って森を抽出（最大2つ = front_kfs + rear_kfs）
-              // INNER: 2,1,4,7,10 の順、OUTER: 3,6,9,12,11,10 の順
-              const std::vector<int> priority_list =
-                (mode3_collect_status == KfsAutoCollectStatus::INNER_ACTIVE)
-                  ? std::vector<int>{2, 1, 4, 7, 10}
-                  : std::vector<int>{3, 6, 9, 12, 11, 10};
+              std::vector<int> priority_list;
+              if (mode3_collect_status == KfsAutoCollectStatus::OUTER_ACTIVE && is_tie) {
+                priority_list = {1, 2, 3, 6, 9, 12, 11, 10};  // OUTER(引き分け)
+              } else if (mode3_collect_status == KfsAutoCollectStatus::OUTER_ACTIVE) {
+                priority_list = {3, 6, 9, 12, 11, 10};  // OUTER(多数決勝ち)
+              } else if (is_tie) {
+                priority_list = {3, 2, 1, 4, 7, 10, 11, 12};  // INNER(引き分け)
+              } else {
+                priority_list = {2, 1, 4, 7, 10};  // INNER(多数決勝ち)
+              }
               for (int prio : priority_list) {
                 if (forest_order.size() >= 2) break;
                 for (int v : all_forests) {
@@ -4839,6 +4858,13 @@ void R1MainNode::main_task(void)
                     forest_order.push_back(prio);
                     break;
                   }
+                }
+              }
+              // 優先リストにない森も追加（最大2つまで）
+              for (int v : all_forests) {
+                if (forest_order.size() >= 2) break;
+                if (std::find(forest_order.begin(), forest_order.end(), v) == forest_order.end()) {
+                  forest_order.push_back(v);
                 }
               }
               if (forest_order.empty()) {
@@ -4895,6 +4921,12 @@ void R1MainNode::main_task(void)
                 r1_collect_kfs_.forest_order.begin(), r1_collect_kfs_.forest_order.end());
               collect_kfs_type = r1_collect_kfs_.kfs_mechanism_type;
               mode3_collect_status = determine_status(forest_order);
+              // route=1: 強制内回り、route=2: 強制外回り、route=0: 自動判定
+              if (r1_init_parameter_.route == 1) {
+                mode3_collect_status = KfsAutoCollectStatus::INNER_ACTIVE;
+              } else if (r1_init_parameter_.route == 2) {
+                mode3_collect_status = KfsAutoCollectStatus::OUTER_ACTIVE;
+              }
               RCLCPP_INFO(
                 this->get_logger(),
                 "MODE3 enable_auto_select=false: using r1_collect_kfs directly, status=%s",
