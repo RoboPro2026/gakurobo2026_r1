@@ -87,6 +87,10 @@ public:
 
     std::vector<uint8_t> rx_buff = serial_->read();
     for (int i = 0; i < (int)rx_buff.size(); i++) {
+      if (recv_index_ >= (int)sizeof(recv_buff_) - 1) {
+        RCLCPP_WARN(this->get_logger(), "recv_buff_ overflow, resetting");
+        recv_index_ = 0;
+      }
       recv_buff_[recv_index_++] = rx_buff[i];
       if (rx_buff[i] == '\0') {
         RCLCPP_INFO(this->get_logger(), "%s", recv_buff_);
