@@ -488,7 +488,8 @@ public:
   double SPEAR_Y_NORMAL_POS = 0.0;
   double SPEAR_Y_COLLECT1_POS = 0.0;
   double SPEAR_Y_COLLECT2_POS = 0.0;
-  double SPEAR_Y_MAKE_SPEAR_POS = 0.0;
+  double SPEAR_Y_MAKE_SPEAR1_POS = 0.0;
+  double SPEAR_Y_MAKE_SPEAR2_POS = 0.0;
   double SPEAR_Y_COLLECT_KFS_POS = 0.0;
   double SPEAR_Y_LOW_ATTACK_POS = 0.0;
   double SPEAR_Y_MIDDLE_ATTACK_POS = 0.0;

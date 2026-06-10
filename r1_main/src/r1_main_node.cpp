@@ -729,7 +729,8 @@ R1MainNode::R1MainNode() : Node("r1_main_node")
   // spear_y
   declare_and_get_parameter("spear_y_collect1_pos", SPEAR_Y_COLLECT1_POS);
   declare_and_get_parameter("spear_y_collect2_pos", SPEAR_Y_COLLECT2_POS);
-  declare_and_get_parameter("spear_y_make_spear_pos", SPEAR_Y_MAKE_SPEAR_POS);
+  declare_and_get_parameter("spear_y_make_spear1_pos", SPEAR_Y_MAKE_SPEAR1_POS);
+  declare_and_get_parameter("spear_y_make_spear2_pos", SPEAR_Y_MAKE_SPEAR2_POS);
   declare_and_get_parameter("spear_y_collect_kfs_pos", SPEAR_Y_COLLECT_KFS_POS);
   declare_and_get_parameter("spear_y_low_attack_pos", SPEAR_Y_LOW_ATTACK_POS);
   declare_and_get_parameter("spear_y_middle_attack_pos", SPEAR_Y_MIDDLE_ATTACK_POS);
@@ -2765,7 +2766,7 @@ void R1MainNode::manual_mode3_make_spear_task(int n)
     // 1. spear_yを動かす。
     // hand_push_valveを動かし、機構を前に出す。
     // arucoマーカーは0をpublishする
-    spear_y_pos_ref(SPEAR_Y_MAKE_SPEAR_POS);
+    spear_y_pos_ref(SPEAR_Y_MAKE_SPEAR1_POS);
     spear_hand_push_valve(true);
     // KFS回収機構を回収位置に移動
     // この動作をするときはzを高く上げる
@@ -2808,6 +2809,9 @@ void R1MainNode::manual_mode3_make_spear_task(int n)
     r1_log_info("aruco やり合体");
     step++;
   } else if (step == 3) {
+    spear_y_pos_ref(SPEAR_Y_MAKE_SPEAR2_POS);
+    step++;
+  } else if (step == 4) {
     if (manual_mode3_roll_timer_) {
       manual_mode3_roll_timer_->cancel();
     }
