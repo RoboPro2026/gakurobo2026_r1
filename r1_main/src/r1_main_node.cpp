@@ -2856,7 +2856,7 @@ void R1MainNode::manual_mode3_spear(void)
     if (ps4_->is_pushing_l2()) {
       // 微調整
       // spear_y_pos_ref(spear_y_position_ref_ + 0.002);
-      spear_y_pos_ref(spear_y_position_ref_ + 0.001);
+      spear_y_pos_ref(spear_y_position_ref_ + 0.0015);
     } else {
       // 通常調整
       // spear_y_pos_ref(spear_y_position_ref_ + 0.01);
@@ -2880,7 +2880,7 @@ void R1MainNode::manual_mode3_spear(void)
     if (ps4_->is_pushing_l2()) {
       // 微調整
       // spear_y_pos_ref(spear_y_position_ref_ - 0.002);
-      spear_y_pos_ref(spear_y_position_ref_ - 0.001);
+      spear_y_pos_ref(spear_y_position_ref_ - 0.0015);
     } else {
       // 通常調整
       spear_y_pos_ref(spear_y_position_ref_ - 0.01);

@@ -271,11 +271,13 @@ r1_main_node:
     # horizontalのときも角度が少しだけ曲がっているので調整
     spear_roll1_horizontal_angle: 1.5207963267948966
     spear_roll1_inv_horizontal_angle: -1.5207963267948966
-    spear_roll1_red_low_attack_angle: -1.5707963267948966
-    spear_roll1_red_middle_attack_angle: -1.2
+    # 少しだけ上に向ける
+    spear_roll1_red_low_attack_angle: -1.5207963267948966
+    spear_roll1_red_middle_attack_angle: -1.0
     spear_roll1_red_high_attack_angle: -0.67
-    spear_roll1_blue_low_attack_angle: 1.5707963267948966
-    spear_roll1_blue_middle_attack_angle: 1.2
+    # 少しだけ上に向ける
+    spear_roll1_blue_low_attack_angle: 1.5207963267948966
+    spear_roll1_blue_middle_attack_angle: 1.0
     spear_roll1_blue_high_attack_angle: 0.67
     # 垂直のときは0だとちょっとだけ斜めってるので、少し角度をつける
     # spear_roll2_normal_angle: 0.0
@@ -285,11 +287,13 @@ r1_main_node:
     # horizontalのときも角度が少しだけ曲がっているので調整
     spear_roll2_horizontal_angle: 1.5207963267948966
     spear_roll2_inv_horizontal_angle: -1.5207963267948966
-    spear_roll2_red_low_attack_angle: -1.5707963267948966
-    spear_roll2_red_middle_attack_angle: -1.2
+    # 少しだけ上に向ける
+    spear_roll2_red_low_attack_angle: -1.5207963267948966
+    spear_roll2_red_middle_attack_angle: -1.0
     spear_roll2_red_high_attack_angle: -0.67
-    spear_roll2_blue_low_attack_angle: 1.5707963267948966
-    spear_roll2_blue_middle_attack_angle: 1.2
+    # 少しだけ上に向ける
+    spear_roll2_blue_low_attack_angle: 1.5207963267948966
+    spear_roll2_blue_middle_attack_angle: 1.0
     spear_roll2_blue_high_attack_angle: 0.67
     # spear_rollの微調整用パラメータ
     # ロボットスタート時のみこのパラメータの範囲内のとき、調整が有効となる
