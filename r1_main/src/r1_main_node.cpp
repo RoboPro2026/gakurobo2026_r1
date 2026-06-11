@@ -2408,9 +2408,21 @@ void R1MainNode::kfs_collect_start_act(bool enable_pump, bool enable_push_valve)
 
   // spear_yを移動。push_valveをtrueにし、槍回収機構をKFS回収時用の高さに移動する
   spear_y_pos_ref(SPEAR_Y_COLLECT_KFS_POS);
-  // arucoマーカをもとに戻す
-  publish_all_aruco_marker_id(DEFAULT_ARUCO_MARKER_ID);
-  r1_log_info("aruco デフォ");
+  // 操作ミスでやり合体シーケンスが終わっていないときに、KFS回収シーケンスに進んでしまったときに備えて
+  // やり合体完了のアルコマーカを表示し、一定時間後に消す
+  if (aruco_marker_timer_) {
+    aruco_marker_timer_->cancel();
+  }
+  // やり合体完了のアルコマーカー
+  publish_all_aruco_marker_id(SPEAR_COMBINE_ARUCO_MARKER_ID);
+  r1_log_info("aruco やり合体完了");
+  aruco_marker_timer_ =
+    this->create_wall_timer(std::chrono::duration<double>(ARUCO_MARKER_RESET_TIME), [this]() {
+      publish_all_aruco_marker_id(DEFAULT_ARUCO_MARKER_ID);
+      r1_log_info("aruco デフォ(リセット)");
+      aruco_marker_timer_->cancel();
+    });
+
   if (enable_push_valve) {
     // hand_push_valveをtrueにし、やり回収機構を押し出す
     spear_hand_push_valve(true);
