@@ -66,9 +66,11 @@ cd ~/ros2_ws/src/gakurobo2026_r1
 - [`scripts/r1_manual.bash`](./scripts/r1_manual.bash)
   - `r1_setup.bash` を実行したあと、実機モード + LiDAR 有効 + 手動モードで `r1_bringup.launch.py` を起動します。
   - 第 1 引数でゾーンを指定できます（省略時は `blue`）。
+  - 第 2 引数で `use_phone` を指定できます（省略時は `false`。`true` で iPhone コントローラを使用）。
 - [`scripts/r1_auto.bash`](./scripts/r1_auto.bash)
   - `r1_setup.bash` を実行したあと、実機モード + LiDAR 有効 + 自動モードで `r1_bringup.launch.py` を起動します。
   - 第 1 引数でゾーンを指定できます（省略時は `blue`）。
+  - 第 2 引数で `use_phone` を指定できます（省略時は `false`。`true` で iPhone コントローラを使用）。
 - [`scripts/record.bash`](./scripts/record.bash)
   - CAN 関連 topic を除外して bag を記録します。
 - [`scripts/r1_desktop_setup.bash`](./scripts/r1_desktop_setup.bash)
@@ -95,8 +97,9 @@ bash ~/ros2_ws/src/gakurobo2026_r1/scripts/r1_desktop_setup.bash
 
 | ファイル | 内容 |
 |---|---|
-| `desktop/r1_auto_blue.desktop` | 自動機 blueゾーン（`r1_auto.bash blue`） |
-| `desktop/r1_auto_red.desktop` | 自動機 redゾーン（`r1_auto.bash red`） |
+| `desktop/r1_auto_blue.desktop` | 自動機 blueゾーン・iPhoneコントローラ（`r1_auto.bash blue true`） |
+| `desktop/r1_auto_red.desktop` | 自動機 redゾーン・iPhoneコントローラ（`r1_auto.bash red true`） |
+| `desktop/r1_record.desktop` | bag 記録（`record.bash`） |
 | `desktop/r1_stop.desktop` | 全ノードをクリーンシャットダウン（`Ctrl+C` 相当） |
 
 パッケージの役割は次のとおりです。  
@@ -131,24 +134,23 @@ bash ~/ros2_ws/src/gakurobo2026_r1/scripts/r1_desktop_setup.bash
 ```mermaid
 flowchart LR
   subgraph input["入力・センサ"]
-    joy["joy_node"]
+    joy["joy_node\n(PS4 / rosbridge)"]
     imu["bno086_node"]
   end
 
   subgraph control["高レベル制御"]
     main["r1_main_node"]
-    chassis["r1_chassis_control_node (自律経路追従)"]
+    chassis["r1_chassis_control_node\n(自律経路追従)"]
     vel["r1_chassis_velocity_control_node"]
   end
 
-  subgraph drive["足回り"]
-    mecanum["r1_mecanum_node (既定: mecanum)"]
-    swerve["r1_swerve_drive_node (任意: swerve)"]
+  subgraph drive["足回り (mecanum)"]
+    mecanum["r1_mecanum_node"]
     odom["r1_odometry_node"]
   end
 
   subgraph mechanism["機構制御"]
-    motion["r1_linear_motion_node 群 / r1_angle_motion_node 群"]
+    motion["r1_linear_motion_node 群\nr1_angle_motion_node 群"]
     manage["r1_machine_manage_node"]
   end
 
@@ -160,14 +162,12 @@ flowchart LR
   joy -->|/joy| main
   imu -->|/bno086/imu/data_raw| main
   imu -->|/bno086/imu/data_raw| mecanum
-  imu -->|/bno086/imu/data_raw| swerve
   imu -->|/bno086/imu/data_raw| odom
 
   main -->|/cmd_vel_target| vel
   main -->|/chassis_act_ref, /robot_move| chassis
   main -->|/set_odometry| odom
   main -->|/set_mecanum_yaw| mecanum
-  main -->|/set_swerve_drive_yaw| swerve
   main -->|/axis_position_ref, /axis_speed_ref, /axis_speed_mode_stop, /axis_detect_origin| motion
   main -->|/r2_*_motor_ref, /gpio_*_ref, /r1_machine_initialize| manage
 
@@ -177,13 +177,9 @@ flowchart LR
   odom -->|/odometry| vel
 
   vel -->|/cmd_vel| mecanum
-  vel -->|/cmd_vel| swerve
 
   mecanum -->|/mecanum_wheel_speeds_ref| manage
   manage -->|/mecanum_wheel_speeds_feedback| mecanum
-
-  swerve -->|/swerve_drive_ref| manage
-  manage -->|/swerve_*_motor_status, /swerve_drive_initialize| swerve
 
   motion -->|/axis_motor_ref, /axis_torque_limit_ref| manage
   manage -->|/axis_motion_status, /axis_initialize, /switch_status| motion
@@ -204,10 +200,15 @@ flowchart TD
   subgraph real["実機: use_sim=false"]
     bno["bno086_node"]
     odom["r1_odometry_node"]
-    urg["urg_node2_node (use_lidar=true)"]
-    scan_filter["scan_filter_chain"]
-    amcl["amcl"]
-    dummy_map_real["r1_dummy_map_node (use_lidar=false)"]
+
+    subgraph lidar_on["use_lidar=true (r1_slam.launch.py)"]
+      urg1["urg_node2_1 → scan1"]
+      urg2["urg_node2_2 → scan2"]
+      merger["dual_laser_merger → /scan"]
+      amcl["amcl"]
+    end
+
+    dummy_map_real["r1_dummy_map_node\n(use_lidar=false)"]
   end
 
   subgraph sim["シミュレーション: use_sim=true"]
@@ -227,8 +228,9 @@ flowchart TD
   odom -->|/odometry| chassis
   odom -->|/odometry| vel
 
-  urg -->|/scan| scan_filter
-  scan_filter -->|scan filtered| amcl
+  urg1 -->|scan1| merger
+  urg2 -->|scan2| merger
+  merger -->|/scan| amcl
   amcl -->|TF map to odom| main
   dummy_map_real -->|TF map to odom| main
 
@@ -246,7 +248,7 @@ flowchart TD
 - [`r1_machine_config.yaml`](./r1_bringup/config/r1_machine_config.yaml) の既定値は `drive_mode: "mecanum"` です。
 - `use_sim:=true` のとき、`/odometry` は [`r1_dummy_odometry_node`](./r1_control/docs/r1_dummy_odometry_node.md) が生成します。
 - `use_lidar:=true` のときは `amcl` が `map -> odom` を担当し、`use_lidar:=false` のときは [`r1_dummy_map_node`](./r1_control/docs/r1_dummy_map_node.md) が担当します。
-- [`r1_bringup.launch.py`](./r1_bringup/launch/r1_bringup.launch.py) では `r1_chassis_control_node` は `robot_control_mode:=auto` のときだけ起動し、`r1_swerve_drive_node` は現行の通常起動リストではコメントアウトされています。
+- [`r1_bringup.launch.py`](./r1_bringup/launch/r1_bringup.launch.py) では `r1_chassis_control_node` は常時起動します（`robot_control_mode` はパラメータとして渡され、ノード内部で動作を切り替えます）。`r1_swerve_drive_node` は現行の通常起動リストではコメントアウトされています。
 
 ## リポジトリ構成
 
@@ -359,8 +361,6 @@ Hokuyo LiDAR 用の package です。
   - 移動制御
 - `r1_chassis_velocity_control_node`
   - 車体速度のフィードバック補正
-- `r1_swerve_drive_node`
-  - 独ステ計算
 - `r1_odometry_node`
   - オドメトリ計算
 - `r1_machine_manage_node`
@@ -434,7 +434,8 @@ source install/setup.bash
 | `use_sim` | `false` | `true` でシミュレーションモード |
 | `use_lidar` | `true` | `false` で LiDAR なし構成（`r1_dummy_map_node` が代替） |
 | `robot_control_mode` | `manual` | `auto` で足回り `ChassisControlMode=AUTO` 起動 |
-| `use_aruco_display` | `false` | `true` で `r1_aruco_display_node` を起動 |
+| `use_aruco_display` | `false` | 現在は未使用（`r1_aruco_display_node` はコメントアウト済み） |
+| `use_phone` | `false` | `true` で iPhone コントローラ（rosbridge 経由）を使用。`false` の場合は `joy_node`（PS4） |
 | `zone` | `blue` | `blue` または `red`。フィールドマップ・座標パラメータをゾーン別に切り替えます。`blue` / `red` 以外は `r1_main_node` が異常終了します。 |
 
 ### 基本の起動コマンド（これさえ覚えればOK）
@@ -542,8 +543,8 @@ CSV ファイルのパスは環境に合わせて指定してください。
 
 ```bash
 cd ~/ros2_ws
-colcon build --symlink-install r1_control
-python src/gakurobo2026_r1/src/trajectory_planner_gui.py
+colcon build --symlink-install --packages-select r1_control
+python src/gakurobo2026_r1/r1_control/src/trajectory_planner_gui.py
 ```
 
 ## ドキュメント
